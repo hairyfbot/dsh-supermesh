@@ -1,5 +1,5 @@
 import type { Insertable, Kysely, Selectable, Updateable } from 'kysely'
-import type { CiState, DB, PullRequestState, ReportState, TicketStatus } from '../types'
+import type { CiState, DB, PullRequestState, TicketStatus } from '../types'
 import { Model } from 'kysely-model'
 import { Inbox } from './inbox'
 
@@ -189,19 +189,22 @@ export class Ticket extends Model<DB, 'ticket'> {
       const row = await this.findById(ticketId)
       if (!row || CLOSED_STATUS.includes(row.status))
         continue
-      const own = row.prUrl === thread.url || (row.prUrl === null && !!branch && (await this.latestWorker(ticketId))?.branch === branch)
-      if (own)
+      const owns = row.prUrl === thread.url || (row.prUrl === null && !!branch && (await this.latestWorker(ticketId))?.branch === branch)
+      if (!owns && row.prUrl)
+        continue
+      if (owns)
         await this.setPullRequest(ticketId, thread.url, outcome, row.ciState)
-      const closed = await this.followsDone(row)
+      const ticket = (await this.findById(ticketId))!
+      const closed = await this.followsDone(ticket, owns ? thread : undefined)
       if (!closed || await this.unfinished(ticketId, at))
         continue
-      await this.end(row, closed.outcome, closed.at)
+      await this.end(ticket, closed.outcome, closed.at)
       ended.push(ticketId)
     }
     return ended
   }
 
-  async endOnReport(ticketId: string, report: ReportState, at: string): Promise<boolean> {
+  async endOnReport(ticketId: string, at: string): Promise<boolean> {
     const ticket = await this.findById(ticketId)
     if (!ticket || CLOSED_STATUS.includes(ticket.status))
       return false
@@ -229,9 +232,9 @@ export class Ticket extends Model<DB, 'ticket'> {
       .execute()
   }
 
-  private async followsDone(ticket: Selectable<DB['ticket']>): Promise<{ at: string, outcome: 'merged' | 'closed' } | undefined> {
+  private async followsDone(ticket: Selectable<DB['ticket']>, followed?: Selectable<DB['thread']>): Promise<{ at: string, outcome: 'merged' | 'closed' } | undefined> {
     const threads = await this.pullThreads(ticket.id)
-    const own = threads.filter(thread => thread.url === ticket.prUrl)
+    const own = ticket.prUrl ? threads.filter(thread => thread.url === ticket.prUrl) : followed && followed.url ? [followed] : []
     const counted = own.length ? own : threads
     if (!counted.length)
       return undefined
@@ -263,11 +266,9 @@ export class Ticket extends Model<DB, 'ticket'> {
 
   private async unfinished(ticketId: string, at: string): Promise<boolean> {
     const worker = await this.latestWorker(ticketId)
-    if (!worker)
+    if (!worker || !((worker.startedAt ?? worker.createdAt) > at))
       return false
-    if (!((worker.startedAt ?? worker.createdAt) > at))
-      return false
-    return worker.reportState !== 'ready'
+    return !['ready', 'dropped'].includes(worker.reportState ?? '')
   }
 
   private async latestWorker(ticketId: string): Promise<Selectable<DB['worker']> | undefined> {

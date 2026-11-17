@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-DIaWpI2T.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-Cs8h8GPx.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -1382,7 +1382,8 @@ var GitLabChannel = class {
 		const at = timestamp(remote.merged_at ?? remote.closed_at ?? remote.updated_at);
 		for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
 			const ticket = await db.ticket.findById(ticketId);
-			if (ticket && ticket.projectId === projectId && !["done", "cancelled"].includes(ticket.status)) await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState);
+			if (!ticket || ticket.projectId !== projectId || ticket.prUrl && ticket.prUrl !== thread.url) continue;
+			if (!["done", "cancelled"].includes(ticket.status)) await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState);
 		}
 		await this.threadClosed(projectId, thread, state, at, branch);
 	}

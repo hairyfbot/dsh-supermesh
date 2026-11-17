@@ -140,7 +140,7 @@ export class Worker extends Model<DB, 'worker'> {
       await new Worker(trx).setReport(id, reportState, report, now)
       const message = await new Inbox(trx).enqueue({ type: 'project', projectId: ticket.projectId, origin: 'worker', kind: 'ticket', ticketId: ticket.id, workerId: id, title: reportState, message: report })
       if (reportState === 'ready')
-        await new Ticket(trx).endOnReport(ticket.id, reportState, now)
+        await new Ticket(trx).endOnReport(ticket.id, now)
       return message
     })
   }

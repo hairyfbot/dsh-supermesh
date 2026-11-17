@@ -1093,15 +1093,18 @@ var Ticket = class Ticket extends Model {
 		for (const { ticketId } of await this.db.selectFrom("ticket_thread").select("ticketId").where("threadId", "=", threadId).orderBy("createdAt").execute()) {
 			const row = await this.findById(ticketId);
 			if (!row || CLOSED_STATUS.includes(row.status)) continue;
-			if (row.prUrl === thread.url || row.prUrl === null && !!branch && (await this.latestWorker(ticketId))?.branch === branch) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
-			const closed = await this.followsDone(row);
+			const owns = row.prUrl === thread.url || row.prUrl === null && !!branch && (await this.latestWorker(ticketId))?.branch === branch;
+			if (!owns && row.prUrl) continue;
+			if (owns) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
+			const ticket = await this.findById(ticketId);
+			const closed = await this.followsDone(ticket, owns ? thread : void 0);
 			if (!closed || await this.unfinished(ticketId, at)) continue;
-			await this.end(row, closed.outcome, closed.at);
+			await this.end(ticket, closed.outcome, closed.at);
 			ended.push(ticketId);
 		}
 		return ended;
 	}
-	async endOnReport(ticketId, report, at) {
+	async endOnReport(ticketId, at) {
 		const ticket = await this.findById(ticketId);
 		if (!ticket || CLOSED_STATUS.includes(ticket.status)) return false;
 		const closed = await this.followsDone(ticket);
@@ -1139,9 +1142,9 @@ var Ticket = class Ticket extends Model {
 			updatedAt
 		})).execute();
 	}
-	async followsDone(ticket) {
+	async followsDone(ticket, followed) {
 		const threads = await this.pullThreads(ticket.id);
-		const own = threads.filter((thread) => thread.url === ticket.prUrl);
+		const own = ticket.prUrl ? threads.filter((thread) => thread.url === ticket.prUrl) : followed && followed.url ? [followed] : [];
 		const counted = own.length ? own : threads;
 		if (!counted.length) return void 0;
 		const closes = [];
@@ -1161,9 +1164,8 @@ var Ticket = class Ticket extends Model {
 	}
 	async unfinished(ticketId, at) {
 		const worker = await this.latestWorker(ticketId);
-		if (!worker) return false;
-		if (!((worker.startedAt ?? worker.createdAt) > at)) return false;
-		return worker.reportState !== "ready";
+		if (!worker || !((worker.startedAt ?? worker.createdAt) > at)) return false;
+		return !["ready", "dropped"].includes(worker.reportState ?? "");
 	}
 	async latestWorker(ticketId) {
 		return this.db.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
@@ -1398,7 +1400,7 @@ var Worker = class Worker extends Model {
 				title: reportState,
 				message: report
 			});
-			if (reportState === "ready") await new Ticket(trx).endOnReport(ticket.id, reportState, now);
+			if (reportState === "ready") await new Ticket(trx).endOnReport(ticket.id, now);
 			return message;
 		});
 	}
@@ -3728,7 +3730,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CjVwRUk1.js");
+			const { shell } = await import("./shell-CUhb7TlH.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3737,7 +3739,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CjVwRUk1.js");
+			const { shell } = await import("./shell-CUhb7TlH.js");
 			await shell.refresh();
 			return view;
 		});
