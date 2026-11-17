@@ -8,7 +8,6 @@ import type { PluginContextValue } from './config/context'
 import type { ClientContext } from './types/context'
 import { NS, PANEL_ID } from '../config/constants'
 import { NexusIcon } from './components/icons'
-import { Mailbox } from './components/mailbox'
 import { PluginContext } from './config/context'
 import { dicts } from './locale'
 import { Panel } from './panel'
@@ -23,11 +22,6 @@ export function apply(ctx: ClientContext): void {
   )
 
   const t = ctx.locale.bind(NS)
-
-  ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
-    { name: 'conversation.input.dock', id: 'nexus-mailbox', order: 10, locale: NS },
-    Mailbox,
-  ))
 
   ctx.slots.inject('main', () => ctx.slots.register(
     {

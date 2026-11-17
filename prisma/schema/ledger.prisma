@@ -199,9 +199,3 @@ model TicketTransition {
   ticket Ticket @relation(fields: [ticketId], references: [id])
   @@map("ticket_transition")
 }
-
-model InboxMessage {
-  id String @id
-  messageId String @unique
-  @@map("inbox_message")
-}
