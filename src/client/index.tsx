@@ -4,7 +4,6 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
-import type { PluginContextValue } from './config/context'
 import type { ClientContext } from './types/context'
 import { NS, PANEL_ID } from '../config/constants'
 import { NexusIcon } from './components/icons'
@@ -30,7 +29,7 @@ export function apply(ctx: ClientContext): void {
       locale: NS,
       store,
     },
-    (props: Omit<PluginContextValue, 'ctx'>) => (
+    props => (
       <PluginContext.Provider value={{
         ctx,
         t: props.t,
@@ -51,6 +50,6 @@ export function apply(ctx: ClientContext): void {
       label: () => t('panel'),
       locale: NS,
     },
-    ({ size }: { size: number }) => <NexusIcon width={size} height={size} />,
+    ({ size }) => <NexusIcon width={size} height={size} />,
   ))
 }

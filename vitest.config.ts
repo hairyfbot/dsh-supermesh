@@ -8,7 +8,6 @@ export default defineConfig({
           name: 'unit',
           include: ['test/**/*.test.ts'],
           exclude: ['test/e2e/**', 'test/browser/**'],
-          testTimeout: 30_000,
           sequence: {
             groupOrder: 0,
           },
