@@ -3,6 +3,7 @@ import type { DB, ReportState, WorkerEndReason } from '../types'
 import { randomUUID } from 'node:crypto'
 import { Model } from 'kysely-model'
 import { Inbox } from './inbox'
+import { Ticket } from './ticket'
 
 export class Worker extends Model<DB, 'worker'> {
   constructor(db: Kysely<DB>) {
@@ -137,7 +138,10 @@ export class Worker extends Model<DB, 'worker'> {
         throw new Error('工单已结束或不存在')
       const now = new Date().toISOString()
       await new Worker(trx).setReport(id, reportState, report, now)
-      return new Inbox(trx).enqueue({ type: 'project', projectId: ticket.projectId, origin: 'worker', kind: 'ticket', ticketId: ticket.id, workerId: id, title: reportState, message: report })
+      const message = await new Inbox(trx).enqueue({ type: 'project', projectId: ticket.projectId, origin: 'worker', kind: 'ticket', ticketId: ticket.id, workerId: id, title: reportState, message: report })
+      if (reportState === 'ready')
+        await new Ticket(trx).endOnReport(ticket.id, reportState, now)
+      return message
     })
   }
 }

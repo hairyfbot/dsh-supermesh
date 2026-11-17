@@ -50,7 +50,7 @@ export const getPanel = defineHandler(async () => {
   const currentTickets = [...ticketMap.values()].filter(ticket => !['closed', 'done', 'cancelled'].includes(ticket.status) || runningTicketIds.has(ticket.id))
   const currentTicketIds = new Set(currentTickets.map(ticket => ticket.id))
   const currentWorkers = activeWorkers.filter(worker => currentTicketIds.has(worker.ticketId) && (worker.status === 'running' || !['closed', 'done', 'cancelled'].includes(ticketMap.get(worker.ticketId)!.status)))
-  const currentProjects = projects.filter(project => ['running', 'background', 'queued'].includes(projectSessions.get(project.id)!.status) || openTickets.some(ticket => ticket.projectId === project.id))
+  const currentProjects = projects.filter(project => ['running', 'background', 'queued'].includes(projectSessions.get(project.id)!.status) || currentTickets.some(ticket => ticket.projectId === project.id))
   const hasRuntime = currentTickets.length > 0 || currentProjects.length > 0 || ['running', 'background', 'queued'].includes(mainBinding.status)
   const channels = channelCatalog.filter(channel => channel.configured && channel.supported && currentTickets.some(ticket => ticket.channelId === channel.id))
   const nodes = [

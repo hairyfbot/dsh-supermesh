@@ -1088,20 +1088,26 @@ var Ticket = class Ticket extends Model {
 	async closeThread(threadId, outcome, at, branch) {
 		const thread = await this.db.selectFrom("thread").selectAll().where("id", "=", threadId).executeTakeFirst();
 		if (!thread?.url || thread.kind !== "pull") return [];
-		await this.recordClosed(thread, outcome, at);
+		await this.threadClosed(thread, outcome, at);
 		const ended = [];
 		for (const { ticketId } of await this.db.selectFrom("ticket_thread").select("ticketId").where("threadId", "=", threadId).orderBy("createdAt").execute()) {
 			const row = await this.findById(ticketId);
 			if (!row || CLOSED_STATUS.includes(row.status)) continue;
-			const worker = await this.latestWorker(ticketId);
-			if (row.prUrl === thread.url || row.prUrl === null && branch !== null && worker?.branch === branch) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
-			const done = await this.done(row);
-			if (!done || await this.unfinished(ticketId, at, worker)) continue;
-			const resumed = !!worker && (worker.startedAt ?? worker.createdAt) > at;
-			await this.end(row, done.outcome, resumed ? (/* @__PURE__ */ new Date()).toISOString() : done.at);
+			if (row.prUrl === thread.url || row.prUrl === null && !!branch && (await this.latestWorker(ticketId))?.branch === branch) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
+			const closed = await this.followsDone(row);
+			if (!closed || await this.unfinished(ticketId, at)) continue;
+			await this.end(row, closed.outcome, closed.at);
 			ended.push(ticketId);
 		}
 		return ended;
+	}
+	async endOnReport(ticketId, report, at) {
+		const ticket = await this.findById(ticketId);
+		if (!ticket || CLOSED_STATUS.includes(ticket.status)) return false;
+		const closed = await this.followsDone(ticket);
+		if (!closed) return false;
+		await this.end(ticket, closed.outcome, at);
+		return true;
 	}
 	async end(ticket, outcome, at) {
 		await this.finish(ticket.id, "done", at, (/* @__PURE__ */ new Date()).toISOString());
@@ -1117,7 +1123,7 @@ var Ticket = class Ticket extends Model {
 			message
 		});
 	}
-	async recordClosed(thread, outcome, at) {
+	async threadClosed(thread, outcome, at) {
 		const updatedAt = (/* @__PURE__ */ new Date()).toISOString();
 		const value = JSON.stringify({
 			at,
@@ -1133,9 +1139,9 @@ var Ticket = class Ticket extends Model {
 			updatedAt
 		})).execute();
 	}
-	async done(row) {
-		const threads = await this.pullThreads(row.id);
-		const own = threads.filter((thread) => thread.url === row.prUrl);
+	async followsDone(ticket) {
+		const threads = await this.pullThreads(ticket.id);
+		const own = threads.filter((thread) => thread.url === ticket.prUrl);
 		const counted = own.length ? own : threads;
 		if (!counted.length) return void 0;
 		const closes = [];
@@ -1146,17 +1152,18 @@ var Ticket = class Ticket extends Model {
 		}
 		return closes.sort((left, right) => left.at.localeCompare(right.at)).at(-1);
 	}
-	async unfinished(ticketId, at, worker) {
-		if (!worker) return false;
-		if (!["ready", "dropped"].includes(worker.reportState ?? "") && (worker.startedAt ?? worker.createdAt) > at) return true;
-		return !!await this.db.selectFrom("inbox").select("id").where("ticketId", "=", ticketId).where("origin", "=", "channel").where("kind", "=", "trigger").where("readAt", ">", worker.reportAt ?? worker.createdAt).executeTakeFirst();
+	async threadClosedAt(thread) {
+		const row = await this.db.selectFrom("source_state").select("value").where("channelId", "=", thread.channelId).where("name", "=", closedName(thread.id)).executeTakeFirst();
+		return row ? JSON.parse(row.value) : void 0;
 	}
 	async pullThreads(ticketId) {
 		return this.db.selectFrom("ticket_thread").innerJoin("thread", "thread.id", "ticket_thread.threadId").selectAll("thread").where("ticket_thread.ticketId", "=", ticketId).where("thread.kind", "=", "pull").orderBy("ticket_thread.createdAt").execute();
 	}
-	async threadClosedAt(thread) {
-		const row = await this.db.selectFrom("source_state").select("value").where("channelId", "=", thread.channelId).where("name", "=", closedName(thread.id)).executeTakeFirst();
-		return row ? JSON.parse(row.value) : void 0;
+	async unfinished(ticketId, at) {
+		const worker = await this.latestWorker(ticketId);
+		if (!worker) return false;
+		if (!((worker.startedAt ?? worker.createdAt) > at)) return false;
+		return worker.reportState !== "ready";
 	}
 	async latestWorker(ticketId) {
 		return this.db.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
@@ -1381,7 +1388,7 @@ var Worker = class Worker extends Model {
 			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单已结束或不存在");
 			const now = (/* @__PURE__ */ new Date()).toISOString();
 			await new Worker(trx).setReport(id, reportState, report, now);
-			return new Inbox(trx).enqueue({
+			const message = await new Inbox(trx).enqueue({
 				type: "project",
 				projectId: ticket.projectId,
 				origin: "worker",
@@ -1391,6 +1398,8 @@ var Worker = class Worker extends Model {
 				title: reportState,
 				message: report
 			});
+			if (reportState === "ready") await new Ticket(trx).endOnReport(ticket.id, reportState, now);
+			return message;
 		});
 	}
 };
@@ -3256,7 +3265,7 @@ const getPanel = defineHandler(async () => {
 		"running",
 		"background",
 		"queued"
-	].includes(projectSessions.get(project.id).status) || openTickets.some((ticket) => ticket.projectId === project.id));
+	].includes(projectSessions.get(project.id).status) || currentTickets.some((ticket) => ticket.projectId === project.id));
 	const hasRuntime = currentTickets.length > 0 || currentProjects.length > 0 || [
 		"running",
 		"background",
@@ -3719,7 +3728,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DHKf4QmX.js");
+			const { shell } = await import("./shell-CjVwRUk1.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3728,7 +3737,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DHKf4QmX.js");
+			const { shell } = await import("./shell-CjVwRUk1.js");
 			await shell.refresh();
 			return view;
 		});
