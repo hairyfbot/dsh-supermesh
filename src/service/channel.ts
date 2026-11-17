@@ -58,12 +58,20 @@ export const channel = defineService({
   removeCredentials(kind: string): Promise<ChannelView> {
     const operation = writing.then(() => removeCredentials(kind))
     writing = operation.catch(() => undefined)
-    return operation
+    return operation.then(async (view) => {
+      const { shell } = await import('./shell')
+      await shell.refresh()
+      return view
+    })
   },
   save(kind: string, patch: ChannelConfiguration): Promise<ChannelView> {
     const operation = writing.then(() => save(kind, patch))
     writing = operation.catch(() => undefined)
-    return operation
+    return operation.then(async (view) => {
+      const { shell } = await import('./shell')
+      await shell.refresh()
+      return view
+    })
   },
 })
 

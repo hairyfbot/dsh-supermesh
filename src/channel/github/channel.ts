@@ -254,7 +254,7 @@ export class GitHubChannel {
     await db.trigger.ingest(trigger)
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)
     const historical = timestamp(row.created_at ?? row.submitted_at) < baseline
-    const admin = accounts.some(account => account.role === 'admin' && account.name.toLowerCase() === actorName.toLowerCase())
+    const admin = (await setting.load()).administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
     if (!human || (historical && !subscriptions.length))
       return
     if (!subscriptions.length && (!admin || (kind !== 'open' && !mentioned) || (thread.triage === 'ignored' && !mentioned)))
@@ -406,7 +406,7 @@ export class GitHubChannel {
     const author = record(row.user)
     const login = text(author.login)
     const accounts = await db.channelAccount.findByChannel('github')
-    if (author.type !== 'User' || login.endsWith('[bot]') || accounts.some(account => account.role === 'bot' && account.name.toLowerCase() === login.toLowerCase()) || !accounts.some(account => account.role === 'admin' && account.name.toLowerCase() === login.toLowerCase()))
+    if (author.type !== 'User' || login.endsWith('[bot]') || accounts.some(account => account.role === 'bot' && account.name.toLowerCase() === login.toLowerCase()) || !(await setting.load()).administrators.some(name => name.toLowerCase() === login.toLowerCase()))
       return
     const body = typeof row.body === 'string' ? row.body : ''
     const answers = new Map<string, string>()
@@ -690,4 +690,12 @@ function failure(error: unknown): string {
 }
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+export function commentIssueNumber(issueUrl: unknown, repository: string): number | null {
+  const match = typeof issueUrl === 'string' && /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/issues\/([1-9]\d*)$/.exec(issueUrl)
+  const number = match ? Number(match[2]) : NaN
+  if (!match || match[1]!.toLowerCase() !== repository || !Number.isSafeInteger(number))
+    return null
+  return number
 }

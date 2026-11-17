@@ -7,13 +7,17 @@ export class Channel extends Model<DB, 'channel'> {
     super(db, 'channel', 'id')
   }
 
-  async saveConfiguration(id: string, name: string, host: string | null, enabled: boolean, metadata: { commitName: string, commitEmail: string, expectedAccount?: string }, account?: { name: string, avatar: string | null }, resetAdmins = false): Promise<void> {
+  async saveConfiguration(id: string, name: string, host: string | null, enabled: boolean, metadata: { commitName: string, commitEmail: string, expectedAccount?: string }, account?: { name: string, avatar: string | null }, hostChanged = false): Promise<void> {
     const now = new Date().toISOString()
     await this.db.transaction().execute(async (trx) => {
+      const previous = await trx.selectFrom('channel').selectAll().where('id', '=', id).executeTakeFirst()
+      const activation = await trx.selectFrom('source_state').select('name').where('channelId', '=', id).where('name', '=', 'activation').executeTakeFirst()
       await trx.insertInto('channel').values({ id, name, host, enabled: enabled ? 1 : 0, createdAt: now }).onConflict(oc => oc.column('id').doUpdateSet({ name, host, enabled: enabled ? 1 : 0 })).execute()
+      if (enabled && (!previous?.enabled || hostChanged || !activation)) {
+        const observedAt = previous?.enabled && !hostChanged ? previous.createdAt : now
+        await trx.insertInto('source_state').values({ channelId: id, name: 'activation', value: JSON.stringify(observedAt), updatedAt: now }).onConflict(oc => oc.columns(['channelId', 'name']).doUpdateSet({ value: JSON.stringify(observedAt), updatedAt: now })).execute()
+      }
       await trx.insertInto('source_state').values({ channelId: id, name: 'configuration', value: JSON.stringify(metadata), updatedAt: now }).onConflict(oc => oc.columns(['channelId', 'name']).doUpdateSet({ value: JSON.stringify(metadata), updatedAt: now })).execute()
-      if (resetAdmins && id === 'gitlab')
-        await trx.deleteFrom('channel_account').where('channelId', '=', id).where('role', '=', 'admin').execute()
       if (account) {
         await trx.deleteFrom('channel_account').where('channelId', '=', id).where('role', '=', 'bot').execute()
         await trx.insertInto('channel_account').values({ id: `${id}:bot`, channelId: id, role: 'bot', name: account.name, avatar: account.avatar, status: 'online', createdAt: now }).execute()

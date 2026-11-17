@@ -1,4 +1,5 @@
 export interface Settings {
+  administrators: string[]
   maxWorkers: number
   backgroundLimitMinutes: number
   autoMerge: boolean

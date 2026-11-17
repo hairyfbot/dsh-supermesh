@@ -1,7 +1,7 @@
 import type { GhRequest, GhRunner } from './types'
 import { execFile } from 'node:child_process'
-import process from 'node:process'
 import { channel } from '../../service/channel'
+import { shell } from '../../service/shell'
 import { channelProxyEnvironment } from '../proxy'
 
 export class GhError extends Error {
@@ -19,7 +19,7 @@ export class ExecFileGhRunner implements GhRunner {
       throw new GhError('interrupted')
     if (!token?.trim())
       throw new GhError('not_logged_in')
-    const env = await channelProxyEnvironment(new URL(`https://${request.site}`), process.env)
+    const env = await channelProxyEnvironment(new URL(`https://${request.site}`), shell.commandEnvironment())
     for (const key of Object.keys(env)) {
       if (['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN'].includes(key.toUpperCase()))
         delete env[key]

@@ -14,10 +14,13 @@
  *   pnpm run dev:dsh            # 构建一次 + 持续 watch，然后起实例
  *   pnpm run dev:dsh --once     # 只构建一次，不 watch
  *   pnpm run dev:dsh --no-open  # 不自动开浏览器
+ *   pnpm run dev:dsh --no-build # 复用已有构建，不再启动 watcher
  *
  * 环境变量：
  *   DSH_DEV_PROFILE   profile 名，默认 nexus-dev
  *   DSH_DEV_PORT      端口，默认 3091
+ *   DSH_DEV_CLI       官方 lib/bin.js，设置后绕过 Desktop 全局 shim
+ *   DSH_DEV_NODE      执行官方 CLI 的运行时，默认 process.execPath
  */
 import type { ChildProcess } from 'node:child_process'
 import type { Output } from 'tinyexec'
@@ -32,7 +35,10 @@ const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const PROFILE = process.env.DSH_DEV_PROFILE ?? 'nexus-dev'
 const PORT = process.env.DSH_DEV_PORT ?? '3091'
 const OPEN_BROWSER = !process.argv.includes('--no-open')
-const WATCH = !process.argv.includes('--once')
+const BUILD = !process.argv.includes('--no-build')
+const WATCH = BUILD && !process.argv.includes('--once')
+const CLI = process.env.DSH_DEV_CLI
+const NODE = process.env.DSH_DEV_NODE ?? process.execPath
 
 interface PackageJson {
   name?: string
@@ -59,10 +65,8 @@ const linkSpec = `link:${REPO_ROOT.replace(/\\/gu, '/')}`
 
 /** 跑一条命令并把输出直接透到当前终端；非零退出即失败。 */
 async function run(command: string, args: string[]): Promise<void> {
-  const result: Output = await x(command, args, {
-    // inherit 而不是 pipe：沙箱下管道 stdio 会被拒绝，而且这里本来就要人看得到输出
-    // windowsHide：Windows 上 spawn 默认会给子进程开一个新控制台窗口，这里要压掉
-    nodeOptions: { cwd: REPO_ROOT, stdio: 'inherit', windowsHide: true },
+  const result: Output = await x(command === 'dsh' && CLI ? NODE : command, command === 'dsh' && CLI ? [CLI, ...args] : args, {
+    nodeOptions: { cwd: command === 'dsh' ? process.env.DSH_HOME ?? REPO_ROOT : REPO_ROOT, stdio: 'inherit', windowsHide: true },
   })
   if (result.exitCode !== 0)
     throw new Error(`\`${command} ${args.join(' ')}\` exited ${result.exitCode}`)
@@ -118,11 +122,14 @@ async function main(): Promise<void> {
   await ensureLinked()
 
   // 先完整构建一次：watch 的首轮产物要等它自己编译，实例不该在空 dist 上启动。
-  await run('pnpm', ['run', 'build'])
+  if (BUILD)
+    await run(NODE, [join(REPO_ROOT, 'node_modules/tsdown/dist/run.mjs')])
+  else
+    console.log('[dev:dsh] --no-build: using existing watcher artifacts; no build or watcher started')
 
   if (WATCH) {
     // tsdown --watch 之后每次源码变动都会重写 dist/，由 DSH 的 hmr / client-hmr 接手。
-    const watcher = x('pnpm', ['run', 'dev'], {
+    const watcher = x(NODE, [join(REPO_ROOT, 'node_modules/tsdown/dist/run.mjs'), '--watch'], {
       nodeOptions: { cwd: REPO_ROOT, stdio: 'inherit', windowsHide: true },
       persist: true,
     })

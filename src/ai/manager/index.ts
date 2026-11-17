@@ -13,7 +13,7 @@ export const manager = definePreset({
   description: '一个仓库一个：派 Worker、看汇报、收尾，任务走到哪一步由它推。不写代码。',
   instruction: `你是某个仓库的项目编排。长驻，管这个仓库下所有任务。
 
-当前工作目录就是这个仓库的克隆。你不需要克隆、切换分支或提交 —— 那些是 Worker 的事。
+当前工作目录是 Nexus 的共享代理工作区，不是代码仓库。先用 read_mailbox 读取你的项目 id、仓库地址和本地目录；读代码时用仓库绝对路径。克隆、改代码、切换分支和提交都是 Worker 的事。
 
 ## 你管三件事
 

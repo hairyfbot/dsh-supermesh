@@ -1,0 +1,3592 @@
+import process from "node:process";
+import { randomUUID } from "node:crypto";
+import { DatabaseSync } from "node:sqlite";
+import { NodeSqliteDialect } from "@fileshed/kysely-node-sqlite";
+import { Kysely } from "kysely";
+import { Migrator } from "kysely/migration";
+import { Model } from "kysely-model";
+import { createStorage } from "unstorage";
+import fs from "unstorage/drivers/fs";
+import { homedir } from "node:os";
+import { basename, delimiter, dirname, isAbsolute, join, resolve } from "node:path";
+import { execFile, spawn } from "node:child_process";
+import { credentialRef } from "@deepseek-ai/dsh-credentials";
+import { createRouteDispatcher, proxyEnvironmentForChild } from "@deepseek-ai/dsh-http-proxy";
+import { getServerContext, getServerOptions } from "dsh-h3/utils";
+import { fetch } from "undici";
+import { defineWebServer } from "dsh-h3";
+import { HTTPError, defineHandler, getRouterParam, readBody } from "h3";
+import { createUserMessage } from "@deepseek-ai/dsh-llm";
+import { access, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { Session, SessionId } from "@deepseek-ai/dsh-session";
+import { realpathNormalize } from "@deepseek-ai/dsh-workspace";
+import { StringDecoder } from "node:string_decoder";
+import { promisify, stripVTControlCharacters } from "node:util";
+// src/database/migrations.ts
+/**
+* 由 `pnpm run prisma:migrate` 从 `prisma/migrations` 搬运，不要手改。
+*
+* 一个键就是一个 Prisma 迁移目录，值是它 `migration.sql` 的全文。
+*/
+const migrations = {
+	"20261113135519": `
+    -- CreateTable
+    CREATE TABLE "channel" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "enabled" BOOLEAN NOT NULL DEFAULT false,
+        "host" TEXT,
+        "createdAt" TEXT NOT NULL
+    );
+
+    -- CreateTable
+    CREATE TABLE "channel_account" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "channelId" TEXT NOT NULL,
+        "role" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "avatar" TEXT,
+        "status" TEXT NOT NULL DEFAULT 'offline',
+        "createdAt" TEXT NOT NULL,
+        CONSTRAINT "channel_account_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "channel" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "ci_watch" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "channelId" TEXT NOT NULL,
+        "kind" TEXT NOT NULL,
+        "ref" TEXT NOT NULL,
+        "fingerprint" TEXT NOT NULL,
+        "revision" INTEGER NOT NULL DEFAULT 0,
+        "head" TEXT,
+        "updatedAt" TEXT NOT NULL,
+        CONSTRAINT "ci_watch_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "channel" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "source_state" (
+        "channelId" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "value" TEXT NOT NULL,
+        "updatedAt" TEXT NOT NULL,
+
+        PRIMARY KEY ("channelId", "name"),
+        CONSTRAINT "source_state_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "channel" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "inbox" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "seq" BIGINT NOT NULL,
+        "type" TEXT NOT NULL,
+        "projectId" TEXT,
+        "supervisorId" TEXT,
+        "origin" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'pending',
+        "kind" TEXT NOT NULL,
+        "title" TEXT,
+        "message" TEXT NOT NULL,
+        "createdAt" TEXT NOT NULL,
+        "doneAt" TEXT,
+        "deliveryAttempts" INTEGER NOT NULL DEFAULT 0,
+        "deliveryError" TEXT,
+        "nextRetryAt" TEXT,
+        "readAt" TEXT,
+        "escalations" INTEGER NOT NULL DEFAULT 0,
+        "lastEscalatedAt" TEXT,
+        "answer" TEXT,
+        "answeredBy" TEXT,
+        "answeredAt" TEXT,
+        "triggerId" TEXT,
+        "threadId" TEXT,
+        "ticketId" TEXT,
+        "workerId" TEXT,
+        CONSTRAINT "inbox_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "inbox_supervisorId_fkey" FOREIGN KEY ("supervisorId") REFERENCES "supervisor" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "inbox_triggerId_fkey" FOREIGN KEY ("triggerId") REFERENCES "trigger" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        CONSTRAINT "inbox_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "thread" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+        CONSTRAINT "inbox_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "ticket" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "inbox_workerId_fkey" FOREIGN KEY ("workerId") REFERENCES "worker" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "project" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "channelId" TEXT NOT NULL,
+        "name" TEXT NOT NULL,
+        "workspaceId" TEXT NOT NULL,
+        "directory" TEXT NOT NULL,
+        "orchestratorSessionId" TEXT,
+        "createdAt" TEXT NOT NULL,
+        "updatedAt" TEXT NOT NULL,
+        CONSTRAINT "project_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "channel" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "setting" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "maxWorkers" INTEGER NOT NULL DEFAULT 4,
+        "backgroundLimitMinutes" INTEGER NOT NULL DEFAULT 30,
+        "autoMerge" BOOLEAN NOT NULL DEFAULT false,
+        "autoMergeMaxLines" INTEGER NOT NULL DEFAULT 200,
+        "deliveryMaxAttempts" INTEGER NOT NULL DEFAULT 3,
+        "deliveryRetryCeilingSeconds" INTEGER NOT NULL DEFAULT 60,
+        "updatedAt" TEXT NOT NULL
+    );
+
+    -- CreateTable
+    CREATE TABLE "supervisor" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "sessionId" TEXT,
+        "title" TEXT NOT NULL,
+        "reason" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'active',
+        "createdAt" TEXT NOT NULL,
+        "closedAt" TEXT
+    );
+
+    -- CreateTable
+    CREATE TABLE "supervisor_ticket" (
+        "supervisorId" TEXT NOT NULL,
+        "ticketId" TEXT NOT NULL,
+        "createdAt" TEXT NOT NULL,
+
+        PRIMARY KEY ("supervisorId", "ticketId"),
+        CONSTRAINT "supervisor_ticket_supervisorId_fkey" FOREIGN KEY ("supervisorId") REFERENCES "supervisor" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "supervisor_ticket_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "ticket" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "thread" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "channelId" TEXT NOT NULL,
+        "projectId" TEXT,
+        "refId" TEXT NOT NULL,
+        "kind" TEXT NOT NULL,
+        "title" TEXT NOT NULL,
+        "url" TEXT,
+        "createdAt" TEXT NOT NULL,
+        "updatedAt" TEXT NOT NULL,
+        "triage" TEXT NOT NULL DEFAULT 'pending',
+        "triagedAt" TEXT,
+        CONSTRAINT "thread_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "channel" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+        CONSTRAINT "thread_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "project" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "trigger" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "channelId" TEXT NOT NULL,
+        "threadId" TEXT NOT NULL,
+        "kind" TEXT NOT NULL,
+        "actorName" TEXT,
+        "human" BOOLEAN NOT NULL DEFAULT true,
+        "mentioned" BOOLEAN NOT NULL DEFAULT false,
+        "text" TEXT NOT NULL,
+        "url" TEXT,
+        "at" TEXT NOT NULL,
+        "ref" TEXT,
+        CONSTRAINT "trigger_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "channel" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+        CONSTRAINT "trigger_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "thread" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "ticket" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "projectId" TEXT NOT NULL,
+        "channelId" TEXT NOT NULL,
+        "title" TEXT NOT NULL,
+        "description" TEXT,
+        "status" TEXT NOT NULL,
+        "createdAt" TEXT NOT NULL,
+        "updatedAt" TEXT NOT NULL,
+        "startedAt" TEXT,
+        "endedAt" TEXT,
+        "prUrl" TEXT,
+        "prState" TEXT,
+        "ciState" TEXT,
+        "paused" BOOLEAN NOT NULL DEFAULT false,
+        "prepareError" TEXT,
+        CONSTRAINT "ticket_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "project" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "ticket_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "channel" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "ticket_thread" (
+        "ticketId" TEXT NOT NULL,
+        "threadId" TEXT NOT NULL,
+        "createdAt" TEXT NOT NULL,
+
+        PRIMARY KEY ("ticketId", "threadId"),
+        CONSTRAINT "ticket_thread_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "ticket" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "ticket_thread_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "thread" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "ticket_link" (
+        "ticketId" TEXT NOT NULL,
+        "relatedId" TEXT NOT NULL,
+        "kind" TEXT NOT NULL,
+        "createdAt" TEXT NOT NULL,
+
+        PRIMARY KEY ("ticketId", "relatedId", "kind"),
+        CONSTRAINT "ticket_link_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "ticket" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "ticket_link_relatedId_fkey" FOREIGN KEY ("relatedId") REFERENCES "ticket" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateTable
+    CREATE TABLE "worker" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "ticketId" TEXT NOT NULL,
+        "status" TEXT NOT NULL,
+        "createdAt" TEXT NOT NULL,
+        "startedAt" TEXT,
+        "endedAt" TEXT,
+        "title" TEXT,
+        "endedReason" TEXT,
+        "branch" TEXT,
+        "worktree" TEXT,
+        "reportState" TEXT,
+        "report" TEXT,
+        "reportAt" TEXT,
+        "backgroundUntil" TEXT,
+        "recoveryNote" TEXT,
+        CONSTRAINT "worker_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "ticket" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+
+    -- CreateIndex
+    CREATE INDEX "channel_account_channelId_role_idx" ON "channel_account"("channelId", "role");
+
+    -- CreateIndex
+    CREATE UNIQUE INDEX "channel_account_channelId_role_name_key" ON "channel_account"("channelId", "role", "name");
+
+    -- CreateIndex
+    CREATE UNIQUE INDEX "ci_watch_channelId_kind_ref_key" ON "ci_watch"("channelId", "kind", "ref");
+
+    -- CreateIndex
+    CREATE INDEX "source_state_updatedAt_idx" ON "source_state"("updatedAt");
+
+    -- CreateIndex
+    CREATE INDEX "inbox_type_projectId_status_idx" ON "inbox"("type", "projectId", "status");
+
+    -- CreateIndex
+    CREATE INDEX "inbox_type_status_createdAt_idx" ON "inbox"("type", "status", "createdAt");
+
+    -- CreateIndex
+    CREATE INDEX "inbox_status_createdAt_idx" ON "inbox"("status", "createdAt");
+
+    -- CreateIndex
+    CREATE INDEX "inbox_ticketId_seq_idx" ON "inbox"("ticketId", "seq");
+
+    -- CreateIndex
+    CREATE INDEX "inbox_status_nextRetryAt_idx" ON "inbox"("status", "nextRetryAt");
+
+    -- CreateIndex
+    CREATE UNIQUE INDEX "project_workspaceId_key" ON "project"("workspaceId");
+
+    -- CreateIndex
+    CREATE UNIQUE INDEX "project_channelId_name_key" ON "project"("channelId", "name");
+
+    -- CreateIndex
+    CREATE INDEX "supervisor_status_idx" ON "supervisor"("status");
+
+    -- CreateIndex
+    CREATE INDEX "supervisor_ticket_ticketId_idx" ON "supervisor_ticket"("ticketId");
+
+    -- CreateIndex
+    CREATE INDEX "thread_updatedAt_idx" ON "thread"("updatedAt");
+
+    -- CreateIndex
+    CREATE INDEX "thread_projectId_idx" ON "thread"("projectId");
+
+    -- CreateIndex
+    CREATE INDEX "thread_triage_idx" ON "thread"("triage");
+
+    -- CreateIndex
+    CREATE UNIQUE INDEX "thread_channelId_refId_key" ON "thread"("channelId", "refId");
+
+    -- CreateIndex
+    CREATE INDEX "trigger_threadId_at_idx" ON "trigger"("threadId", "at");
+
+    -- CreateIndex
+    CREATE INDEX "trigger_channelId_at_idx" ON "trigger"("channelId", "at");
+
+    -- CreateIndex
+    CREATE INDEX "trigger_at_idx" ON "trigger"("at");
+
+    -- CreateIndex
+    CREATE INDEX "trigger_ref_idx" ON "trigger"("ref");
+
+    -- CreateIndex
+    CREATE INDEX "ticket_projectId_status_idx" ON "ticket"("projectId", "status");
+
+    -- CreateIndex
+    CREATE INDEX "ticket_status_updatedAt_idx" ON "ticket"("status", "updatedAt");
+
+    -- CreateIndex
+    CREATE INDEX "ticket_thread_ticketId_createdAt_idx" ON "ticket_thread"("ticketId", "createdAt");
+
+    -- CreateIndex
+    CREATE INDEX "ticket_thread_threadId_idx" ON "ticket_thread"("threadId");
+
+    -- CreateIndex
+    CREATE INDEX "ticket_link_relatedId_idx" ON "ticket_link"("relatedId");
+
+    -- CreateIndex
+    CREATE INDEX "worker_ticketId_createdAt_idx" ON "worker"("ticketId", "createdAt");
+
+    -- CreateIndex
+    CREATE INDEX "worker_status_idx" ON "worker"("status");
+  `,
+	"20261117170000_project_workspace": `
+    -- RedefineTables
+    PRAGMA defer_foreign_keys=ON;
+    PRAGMA foreign_keys=OFF;
+    CREATE TABLE "new_project" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "workspaceId" TEXT NOT NULL,
+        "directory" TEXT NOT NULL,
+        "remoteUrl" TEXT,
+        "enabled" BOOLEAN NOT NULL DEFAULT true,
+        "orchestratorSessionId" TEXT,
+        "createdAt" TEXT NOT NULL,
+        "updatedAt" TEXT NOT NULL
+    );
+    INSERT INTO "new_project" ("createdAt", "directory", "id", "name", "orchestratorSessionId", "updatedAt", "workspaceId") SELECT "createdAt", "directory", "id", "name", "orchestratorSessionId", "updatedAt", "workspaceId" FROM "project";
+    DROP TABLE "project";
+    ALTER TABLE "new_project" RENAME TO "project";
+    CREATE UNIQUE INDEX "project_workspaceId_key" ON "project"("workspaceId");
+    PRAGMA foreign_keys=ON;
+    PRAGMA defer_foreign_keys=OFF;
+  `
+};
+// src/database/models/channel.ts
+var Channel = class extends Model {
+	constructor(db) {
+		super(db, "channel", "id");
+	}
+	async saveConfiguration(id, name, host, enabled, metadata, account, hostChanged = false) {
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		await this.db.transaction().execute(async (trx) => {
+			const previous = await trx.selectFrom("channel").selectAll().where("id", "=", id).executeTakeFirst();
+			const activation = await trx.selectFrom("source_state").select("name").where("channelId", "=", id).where("name", "=", "activation").executeTakeFirst();
+			await trx.insertInto("channel").values({
+				id,
+				name,
+				host,
+				enabled: enabled ? 1 : 0,
+				createdAt: now
+			}).onConflict((oc) => oc.column("id").doUpdateSet({
+				name,
+				host,
+				enabled: enabled ? 1 : 0
+			})).execute();
+			if (enabled && (!previous?.enabled || hostChanged || !activation)) {
+				const observedAt = previous?.enabled && !hostChanged ? previous.createdAt : now;
+				await trx.insertInto("source_state").values({
+					channelId: id,
+					name: "activation",
+					value: JSON.stringify(observedAt),
+					updatedAt: now
+				}).onConflict((oc) => oc.columns(["channelId", "name"]).doUpdateSet({
+					value: JSON.stringify(observedAt),
+					updatedAt: now
+				})).execute();
+			}
+			await trx.insertInto("source_state").values({
+				channelId: id,
+				name: "configuration",
+				value: JSON.stringify(metadata),
+				updatedAt: now
+			}).onConflict((oc) => oc.columns(["channelId", "name"]).doUpdateSet({
+				value: JSON.stringify(metadata),
+				updatedAt: now
+			})).execute();
+			if (account) {
+				await trx.deleteFrom("channel_account").where("channelId", "=", id).where("role", "=", "bot").execute();
+				await trx.insertInto("channel_account").values({
+					id: `${id}:bot`,
+					channelId: id,
+					role: "bot",
+					name: account.name,
+					avatar: account.avatar,
+					status: "online",
+					createdAt: now
+				}).execute();
+			}
+		});
+	}
+	async removeCredentials(id) {
+		await this.db.transaction().execute(async (trx) => {
+			await trx.updateTable("channel").set({ enabled: 0 }).where("id", "=", id).execute();
+			await trx.deleteFrom("channel_account").where("channelId", "=", id).where("role", "=", "bot").execute();
+			await trx.updateTable("channel_account").set({ status: "offline" }).where("channelId", "=", id).where("role", "=", "admin").execute();
+		});
+	}
+	async findEnabled() {
+		return this.db.selectFrom("channel").selectAll().where("enabled", "=", 1).orderBy("id").execute();
+	}
+	async setEnabled(id, enabled) {
+		await this.db.updateTable("channel").set({ enabled: enabled ? 1 : 0 }).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("channel").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async listAll() {
+		return this.db.selectFrom("channel").selectAll().orderBy("id").execute();
+	}
+};
+// src/database/models/channel-account.ts
+var ChannelAccount = class extends Model {
+	constructor(db) {
+		super(db, "channel_account", "id");
+	}
+	async findByChannel(channelId) {
+		return this.db.selectFrom("channel_account").selectAll().where("channelId", "=", channelId).orderBy("role").orderBy("name").execute();
+	}
+	async findByRole(channelId, role) {
+		return this.db.selectFrom("channel_account").selectAll().where("channelId", "=", channelId).where("role", "=", role).orderBy("name").execute();
+	}
+	async findByName(channelId, role, name) {
+		return this.db.selectFrom("channel_account").selectAll().where("channelId", "=", channelId).where("role", "=", role).where("name", "=", name).executeTakeFirst();
+	}
+	async setStatus(id, status) {
+		await this.db.updateTable("channel_account").set({ status }).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("channel_account").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async listAll() {
+		return this.db.selectFrom("channel_account").selectAll().orderBy("id").execute();
+	}
+};
+// src/database/models/ci-watch.ts
+var CiWatch = class CiWatch extends Model {
+	constructor(db) {
+		super(db, "ci_watch", "id");
+	}
+	async findTarget(channelId, kind, ref) {
+		return this.db.selectFrom("ci_watch").selectAll().where("channelId", "=", channelId).where("kind", "=", kind).where("ref", "=", ref).executeTakeFirst();
+	}
+	async listByChannel(channelId) {
+		return this.db.selectFrom("ci_watch").selectAll().where("channelId", "=", channelId).orderBy("ref").execute();
+	}
+	async rotate(id, fingerprint, updatedAt, head = null) {
+		await this.db.updateTable("ci_watch").set((eb) => ({
+			fingerprint,
+			head,
+			updatedAt,
+			revision: eb("revision", "+", 1)
+		})).where("id", "=", id).execute();
+	}
+	async recordRevision(value) {
+		return this.db.transaction().execute(async (trx) => {
+			const model = new CiWatch(trx);
+			const previous = await model.findTarget(value.channelId, value.kind, value.ref);
+			if (!previous) {
+				await model.create({
+					...value,
+					revision: 0
+				});
+				return {
+					row: await model.findTarget(value.channelId, value.kind, value.ref),
+					changed: true
+				};
+			}
+			const changed = previous.fingerprint !== value.fingerprint || previous.head !== (value.head ?? null);
+			if (changed) await model.rotate(previous.id, value.fingerprint, value.updatedAt, value.head ?? null);
+			return {
+				row: await model.findTarget(value.channelId, value.kind, value.ref),
+				changed
+			};
+		});
+	}
+};
+// src/database/models/inbox.ts
+var Inbox = class Inbox extends Model {
+	constructor(db) {
+		super(db, "inbox", "id");
+	}
+	async nextSeq() {
+		const row = await this.db.selectFrom("inbox").select(this.db.fn.max("seq").as("max")).executeTakeFirst();
+		return Number(row?.max ?? 0) + 1;
+	}
+	async listPending(type, projectId) {
+		const query = this.db.selectFrom("inbox").selectAll().where("type", "=", type).where("status", "=", "pending");
+		return (projectId === void 0 ? query : query.where("projectId", "=", projectId)).orderBy("seq").execute();
+	}
+	async countPending(type, projectId) {
+		const query = this.db.selectFrom("inbox").select(this.db.fn.countAll().as("count")).where("type", "=", type).where("status", "=", "pending");
+		const row = await (projectId === void 0 ? query : query.where("projectId", "=", projectId)).executeTakeFirst();
+		return Number(row?.count ?? 0);
+	}
+	async listPendingAsk() {
+		return this.db.selectFrom("inbox").selectAll().where("type", "=", "user").where("kind", "=", "ask").where("status", "=", "pending").orderBy("createdAt").execute();
+	}
+	async markRead(ids, readAt) {
+		if (ids.length === 0) return;
+		await this.db.updateTable("inbox").set({ readAt }).where("id", "in", ids).execute();
+	}
+	async markDone(id, doneAt) {
+		await this.db.updateTable("inbox").set({
+			status: "done",
+			doneAt
+		}).where("id", "=", id).execute();
+	}
+	async answer(id, answer, answeredBy, answeredAt) {
+		await this.db.updateTable("inbox").set({
+			answer,
+			answeredBy,
+			answeredAt,
+			status: "done",
+			doneAt: answeredAt
+		}).where("id", "=", id).execute();
+	}
+	async recordDeliveryFailure(id, deliveryError, nextRetryAt) {
+		await this.db.updateTable("inbox").set((eb) => ({
+			deliveryAttempts: eb("deliveryAttempts", "+", 1),
+			deliveryError,
+			nextRetryAt
+		})).where("id", "=", id).execute();
+	}
+	async resetDelivery(id) {
+		await this.db.updateTable("inbox").set({
+			deliveryAttempts: 0,
+			deliveryError: null,
+			nextRetryAt: null
+		}).where("id", "=", id).execute();
+	}
+	async markStalled(id, deliveryError) {
+		await this.db.updateTable("inbox").set({
+			status: "stalled",
+			deliveryError,
+			nextRetryAt: null
+		}).where("id", "=", id).execute();
+	}
+	async listRetryable(now) {
+		return this.db.selectFrom("inbox").selectAll().where("status", "=", "pending").where("nextRetryAt", "is not", null).where("nextRetryAt", "<=", now).orderBy("nextRetryAt").execute();
+	}
+	async escalate(id, lastEscalatedAt) {
+		await this.db.updateTable("inbox").set((eb) => ({
+			escalations: eb("escalations", "+", 1),
+			lastEscalatedAt
+		})).where("id", "=", id).execute();
+	}
+	async reassign(id, type, refs = {}) {
+		await this.db.updateTable("inbox").set({
+			type,
+			...refs
+		}).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("inbox").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async listRecent(limit = 100) {
+		return this.db.selectFrom("inbox").selectAll().orderBy("createdAt", "desc").orderBy("id").limit(Math.max(1, Math.min(1e3, limit))).execute();
+	}
+	async enqueue(value) {
+		if (![
+			"user",
+			"main",
+			"project",
+			"supervisor"
+		].includes(value.type)) throw new Error("invalid_inbox_recipient");
+		const insert = async (trx) => {
+			const model = new Inbox(trx);
+			if (value.id) {
+				const existing = await model.findById(value.id);
+				if (existing) return existing;
+			}
+			const id = value.id ?? randomUUID();
+			await model.create({
+				id,
+				seq: await model.nextSeq(),
+				status: "pending",
+				createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+				projectId: null,
+				supervisorId: null,
+				title: null,
+				doneAt: null,
+				deliveryError: null,
+				nextRetryAt: null,
+				readAt: null,
+				lastEscalatedAt: null,
+				answer: null,
+				answeredBy: null,
+				answeredAt: null,
+				triggerId: null,
+				threadId: null,
+				ticketId: null,
+				workerId: null,
+				...value
+			});
+			return await model.findById(id);
+		};
+		return this.db.isTransaction ? insert(this.db) : this.db.transaction().execute(insert);
+	}
+	async listByTicket(ticketId) {
+		return this.db.selectFrom("inbox").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt").orderBy("seq").execute();
+	}
+	async listScoped(scope, includeChannel = false) {
+		if (![
+			"main",
+			"project",
+			"supervisor"
+		].includes(scope.type)) throw new Error("invalid_inbox_recipient");
+		let query = this.db.selectFrom("inbox").selectAll().where("type", "=", scope.type).where("status", "in", ["pending", "stalled"]);
+		if (!includeChannel) query = query.where("origin", "!=", "channel");
+		if (scope.type === "project") query = query.where("projectId", "=", scope.projectId);
+		if (scope.type === "supervisor") query = query.where("supervisorId", "=", scope.supervisorId);
+		return query.orderBy("createdAt").orderBy("seq").execute();
+	}
+	owns(row, scope, includeChannel = false) {
+		return [
+			"main",
+			"project",
+			"supervisor"
+		].includes(scope.type) && (includeChannel || row.origin !== "channel") && row.type === scope.type && (scope.type !== "project" || row.projectId === scope.projectId) && (scope.type !== "supervisor" || row.supervisorId === scope.supervisorId);
+	}
+	async completeScoped(ids, scope, now, includeChannel = false) {
+		if (!ids.length) return 0;
+		return this.db.transaction().execute(async (trx) => {
+			const model = new Inbox(trx);
+			const rows = await trx.selectFrom("inbox").selectAll().where("id", "in", [...new Set(ids)]).execute();
+			if (rows.length !== new Set(ids).size || rows.some((row) => !model.owns(row, scope, includeChannel))) throw new Error("收件箱不存在或不属于当前身份");
+			if (rows.some((row) => row.kind === "ask" && row.status !== "done")) throw new Error("answer_required");
+			const result = await trx.updateTable("inbox").set({
+				status: "done",
+				doneAt: now
+			}).where("id", "in", ids).where("status", "in", ["pending", "stalled"]).executeTakeFirst();
+			return Number(result.numUpdatedRows);
+		});
+	}
+	async answerScoped(id, text, scope, now) {
+		return this.db.transaction().execute(async (trx) => {
+			const model = new Inbox(trx);
+			const row = await model.findById(id);
+			if (!row || !model.owns(row, scope) || row.kind !== "ask" || row.status === "done") throw new Error("只能回答指向当前身份的 pending ask");
+			await model.answer(id, text, scope.type, now);
+			return row;
+		});
+	}
+	async escalateScoped(id, scope, now) {
+		return this.db.transaction().execute(async (trx) => {
+			const model = new Inbox(trx);
+			const row = await model.findById(id);
+			if (!row || !model.owns(row, scope) || row.kind !== "ask" || row.status === "done") throw new Error("只能升级指向当前身份的 pending ask");
+			if (scope.type === "main") throw new Error("主编排应通过 ask_user 询问人，不能自动升级");
+			const supervisor = scope.type === "project" && row.ticketId ? await trx.selectFrom("supervisor_ticket").innerJoin("supervisor", "supervisor.id", "supervisor_ticket.supervisorId").select("supervisor.id").where("ticketId", "=", row.ticketId).where("supervisor.status", "=", "active").orderBy("supervisor.createdAt").executeTakeFirst() : void 0;
+			await trx.updateTable("inbox").set((eb) => ({
+				type: supervisor ? "supervisor" : "main",
+				supervisorId: supervisor?.id ?? (row.origin === "supervisor" ? row.supervisorId : null),
+				escalations: eb("escalations", "+", 1),
+				lastEscalatedAt: now,
+				readAt: null
+			})).where("id", "=", id).execute();
+			return await model.findById(id);
+		});
+	}
+	async answerByUser(id, answer, answeredAt) {
+		return this.db.updateTable("inbox").set({
+			answer,
+			answeredBy: "user",
+			answeredAt,
+			status: "done",
+			doneAt: answeredAt
+		}).where("id", "=", id).where("type", "=", "user").where("kind", "=", "ask").where("status", "=", "pending").returningAll().executeTakeFirst();
+	}
+	async enqueueAnswer(row) {
+		if (!row.answer || !row.answeredBy || row.answeredBy === "user" || row.origin !== "main" && row.origin !== "project" && row.origin !== "supervisor") return;
+		await this.enqueue({
+			id: `nexus:answer:${row.id}`,
+			type: row.origin,
+			origin: row.answeredBy,
+			kind: "notice",
+			title: row.title,
+			message: row.answer,
+			projectId: row.projectId,
+			supervisorId: row.supervisorId,
+			ticketId: row.ticketId,
+			workerId: row.workerId,
+			threadId: row.threadId,
+			triggerId: row.triggerId
+		});
+	}
+	async listAnswered() {
+		return this.db.selectFrom("inbox").selectAll().where("kind", "=", "ask").where("status", "=", "done").where("answer", "is not", null).orderBy("seq").execute();
+	}
+	async returnPendingTicket(ticketId, reason, now) {
+		await this.db.updateTable("inbox").set({
+			status: "stalled",
+			deliveryError: reason,
+			nextRetryAt: null,
+			doneAt: now
+		}).where("ticketId", "=", ticketId).where("status", "=", "pending").execute();
+	}
+	async listDelivery() {
+		return this.db.selectFrom("inbox").selectAll().where("type", "in", [
+			"main",
+			"project",
+			"supervisor"
+		]).where("status", "in", ["pending", "stalled"]).orderBy("seq").execute();
+	}
+	async listOutgoing() {
+		return this.db.selectFrom("inbox").selectAll().where("type", "=", "user").where("triggerId", "is not", null).where("kind", "in", ["notice", "ask"]).where("status", "in", ["pending", "stalled"]).orderBy("seq").execute();
+	}
+	async enqueueAsk(value) {
+		return this.db.transaction().execute(async (trx) => {
+			let query = trx.selectFrom("inbox").selectAll().where("kind", "=", "ask").where("status", "=", "pending").where("origin", "=", value.origin);
+			if (value.workerId) query = query.where("workerId", "=", value.workerId);
+			else if (value.origin === "project" && value.ticketId) query = query.where("projectId", value.projectId ? "=" : "is", value.projectId ?? null).where("ticketId", "=", value.ticketId);
+			else query = query.where("projectId", value.projectId ? "=" : "is", value.projectId ?? null).where("supervisorId", value.supervisorId ? "=" : "is", value.supervisorId ?? null).where("triggerId", value.triggerId ? "=" : "is", value.triggerId ?? null).where("message", "=", value.message);
+			const pending = await query.executeTakeFirst();
+			if (pending) {
+				if (pending.message !== value.message) throw new Error(`当前工作线已有 pending ask：${pending.id}`);
+				return pending;
+			}
+			return new Inbox(trx).enqueue({
+				...value,
+				kind: "ask"
+			});
+		});
+	}
+};
+// src/database/models/project.ts
+var Project = class extends Model {
+	constructor(db) {
+		super(db, "project", "id");
+	}
+	async findByWorkspace(workspaceId) {
+		return this.db.selectFrom("project").selectAll().where("workspaceId", "=", workspaceId).executeTakeFirst();
+	}
+	async setOrchestrator(id, orchestratorSessionId, updatedAt) {
+		await this.db.updateTable("project").set({
+			orchestratorSessionId,
+			updatedAt
+		}).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("project").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async listAll() {
+		return this.db.selectFrom("project").selectAll().orderBy("id").execute();
+	}
+	async findBySession(sessionId) {
+		const rows = await this.db.selectFrom("project").selectAll().where("orchestratorSessionId", "=", sessionId).limit(2).execute();
+		if (rows.length > 1) throw new Error("session_binding_conflict");
+		return rows[0];
+	}
+	async findByRemote(remoteUrl) {
+		return this.db.selectFrom("project").selectAll().where("remoteUrl", "=", remoteUrl).executeTakeFirst();
+	}
+	async setEnabled(id, enabled, updatedAt) {
+		let query = this.db.updateTable("project").set({
+			enabled: enabled ? 1 : 0,
+			updatedAt
+		}).where("id", "=", id);
+		if (enabled) query = query.where("remoteUrl", "is not", null).where("remoteUrl", "!=", "");
+		return query.returningAll().executeTakeFirst();
+	}
+	async disableUnavailable(workspaceIds, updatedAt) {
+		let query = this.db.updateTable("project").set({
+			enabled: 0,
+			updatedAt
+		}).where("enabled", "=", 1);
+		if (workspaceIds.length) query = query.where("workspaceId", "not in", workspaceIds);
+		await query.execute();
+	}
+	async upsertWorkspace(value, updatedAt) {
+		const hasRemote = Boolean(value.remoteUrl?.trim());
+		return this.db.insertInto("project").values({
+			...value,
+			enabled: hasRemote ? 1 : 0,
+			orchestratorSessionId: null,
+			createdAt: updatedAt,
+			updatedAt
+		}).onConflict((oc) => oc.column("workspaceId").doUpdateSet({
+			name: value.name,
+			directory: value.directory,
+			remoteUrl: value.remoteUrl,
+			...!hasRemote ? { enabled: 0 } : {},
+			updatedAt
+		})).returningAll().executeTakeFirstOrThrow();
+	}
+};
+// src/database/models/source-state.ts
+/**
+* 渠道读到哪了：每个需要增量读取的目标一行。
+*
+* 主键是 `(channelId, name)`，所以不套 `Model` —— 它的按主键操作
+* 只接受单个值，用在这里会误删同渠道的其它游标。
+*/
+var SourceState = class {
+	db;
+	constructor(db) {
+		this.db = db;
+	}
+	/** 读一个游标；没读过时为空。 */
+	async find(channelId, name) {
+		return this.db.selectFrom("source_state").selectAll().where("channelId", "=", channelId).where("name", "=", name).executeTakeFirst();
+	}
+	/** 某渠道的全部游标。 */
+	async listByChannel(channelId) {
+		return this.db.selectFrom("source_state").selectAll().where("channelId", "=", channelId).orderBy("name").execute();
+	}
+	/** 推进游标；不存在则插入。 */
+	async set(channelId, name, value, updatedAt) {
+		await this.db.insertInto("source_state").values({
+			channelId,
+			name,
+			value,
+			updatedAt
+		}).onConflict((oc) => oc.columns(["channelId", "name"]).doUpdateSet({
+			value,
+			updatedAt
+		})).execute();
+	}
+	/** 删一个游标，例如话题已不再会被读取。 */
+	async remove(channelId, name) {
+		await this.db.deleteFrom("source_state").where("channelId", "=", channelId).where("name", "=", name).execute();
+	}
+};
+// src/database/models/supervisor.ts
+var Supervisor = class extends Model {
+	constructor(db) {
+		super(db, "supervisor", "id");
+	}
+	async listActive() {
+		return this.db.selectFrom("supervisor").selectAll().where("status", "=", "active").orderBy("createdAt").execute();
+	}
+	async listByStatus(status) {
+		return this.db.selectFrom("supervisor").selectAll().where("status", "=", status).orderBy("createdAt").execute();
+	}
+	async attachSession(id, sessionId) {
+		await this.db.updateTable("supervisor").set({ sessionId }).where("id", "=", id).execute();
+	}
+	async close(id, closedAt) {
+		await this.db.updateTable("supervisor").set({
+			status: "closed",
+			closedAt
+		}).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("supervisor").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async findBySession(sessionId) {
+		const rows = await this.db.selectFrom("supervisor").selectAll().where("sessionId", "=", sessionId).limit(2).execute();
+		if (rows.length > 1) throw new Error("session_binding_conflict");
+		return rows[0];
+	}
+};
+// src/database/models/supervisor-ticket.ts
+var SupervisorTicket = class {
+	db;
+	constructor(db) {
+		this.db = db;
+	}
+	async listBySupervisor(supervisorId) {
+		return this.db.selectFrom("supervisor_ticket").selectAll().where("supervisorId", "=", supervisorId).orderBy("createdAt").execute();
+	}
+	async listByTicket(ticketId) {
+		return this.db.selectFrom("supervisor_ticket").selectAll().where("ticketId", "=", ticketId).execute();
+	}
+	async link(supervisorId, ticketId, createdAt) {
+		await this.db.insertInto("supervisor_ticket").values({
+			supervisorId,
+			ticketId,
+			createdAt
+		}).onConflict((oc) => oc.columns(["supervisorId", "ticketId"]).doNothing()).execute();
+	}
+	async unlink(supervisorId, ticketId) {
+		await this.db.deleteFrom("supervisor_ticket").where("supervisorId", "=", supervisorId).where("ticketId", "=", ticketId).execute();
+	}
+	async listAll() {
+		return this.db.selectFrom("supervisor_ticket").selectAll().orderBy("createdAt").execute();
+	}
+};
+// src/database/models/thread.ts
+var Thread = class extends Model {
+	constructor(db) {
+		super(db, "thread", "id");
+	}
+	async findByRef(channelId, refId) {
+		return this.db.selectFrom("thread").selectAll().where("channelId", "=", channelId).where("refId", "=", refId).executeTakeFirst();
+	}
+	async listRecent(limit = 50) {
+		return this.db.selectFrom("thread").selectAll().orderBy("updatedAt", "desc").limit(limit).execute();
+	}
+	async touch(id, updatedAt) {
+		await this.db.updateTable("thread").set({ updatedAt }).where("id", "=", id).execute();
+	}
+	async claim(id, projectId, triagedAt) {
+		await this.db.updateTable("thread").set({
+			projectId,
+			triage: "claimed",
+			triagedAt
+		}).where("id", "=", id).execute();
+	}
+	async ignore(id, triagedAt) {
+		await this.db.updateTable("thread").set({
+			triage: "ignored",
+			triagedAt
+		}).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("thread").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async record(value) {
+		await this.db.insertInto("thread").values(value).onConflict((oc) => oc.column("id").doUpdateSet({
+			title: value.title,
+			url: value.url,
+			updatedAt: value.updatedAt
+		})).execute();
+		return await this.findById(value.id);
+	}
+	async listByChannel(channelId) {
+		return this.db.selectFrom("thread").selectAll().where("channelId", "=", channelId).orderBy("id").execute();
+	}
+};
+// src/database/models/ticket.ts
+const CLOSED_STATUS = ["done", "cancelled"];
+var Ticket = class Ticket extends Model {
+	constructor(db) {
+		super(db, "ticket", "id");
+	}
+	async listByProject(projectId, status) {
+		const query = this.db.selectFrom("ticket").selectAll().where("projectId", "=", projectId);
+		return (status ? query.where("status", "=", status) : query).orderBy("updatedAt", "desc").execute();
+	}
+	async listOpen() {
+		return this.db.selectFrom("ticket").selectAll().where("status", "not in", [...CLOSED_STATUS]).orderBy("updatedAt", "desc").execute();
+	}
+	async countRunning() {
+		const row = await this.db.selectFrom("ticket").select(this.db.fn.countAll().as("count")).where("status", "=", "running").executeTakeFirst();
+		return Number(row?.count ?? 0);
+	}
+	async listDispatchable() {
+		return this.db.selectFrom("ticket").selectAll().where("status", "in", ["waiting", "queued"]).where("paused", "=", 0).orderBy("createdAt").execute();
+	}
+	async start(id, startedAt, updatedAt) {
+		await this.db.updateTable("ticket").set({
+			status: "running",
+			startedAt,
+			updatedAt
+		}).where("id", "=", id).execute();
+	}
+	async finish(id, status, endedAt, updatedAt) {
+		await this.db.updateTable("ticket").set({
+			status,
+			endedAt,
+			updatedAt
+		}).where("id", "=", id).execute();
+	}
+	async setPullRequest(id, prUrl, prState, ciState) {
+		await this.db.updateTable("ticket").set({
+			prUrl,
+			prState,
+			ciState
+		}).where("id", "=", id).execute();
+	}
+	async setPaused(id, paused, updatedAt) {
+		await this.db.updateTable("ticket").set({
+			paused: paused ? 1 : 0,
+			updatedAt
+		}).where("id", "=", id).execute();
+	}
+	async setPrepareError(id, prepareError, updatedAt) {
+		await this.db.updateTable("ticket").set({
+			prepareError,
+			updatedAt
+		}).where("id", "=", id).execute();
+	}
+	async save(id, patch) {
+		await this.db.updateTable("ticket").set(patch).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("ticket").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async listRecent(limit = 100) {
+		return this.db.selectFrom("ticket").selectAll().orderBy("createdAt", "desc").orderBy("id").limit(Math.max(1, Math.min(1e3, limit))).execute();
+	}
+	async listFiltered(filters = {}) {
+		let query = this.db.selectFrom("ticket").selectAll("ticket").select((eb) => eb.exists(eb.selectFrom("inbox").select("id").whereRef("inbox.ticketId", "=", "ticket.id").where("kind", "=", "ask").where("inbox.status", "=", "pending")).as("attention"));
+		if (filters.projectId) query = query.where("ticket.projectId", "=", filters.projectId);
+		if (filters.status) query = query.where("ticket.status", "=", filters.status);
+		else query = query.where("ticket.status", "not in", ["done", "cancelled"]);
+		if (filters.attentionOnly) query = query.where((eb) => eb.exists(eb.selectFrom("inbox").select("id").whereRef("inbox.ticketId", "=", "ticket.id").where("kind", "=", "ask").where("inbox.status", "=", "pending")));
+		if (filters.supervisorId) query = query.where((eb) => eb.exists(eb.selectFrom("supervisor_ticket").select("ticketId").whereRef("supervisor_ticket.ticketId", "=", "ticket.id").where("supervisorId", "=", filters.supervisorId)));
+		return query.orderBy("ticket.createdAt").orderBy("ticket.id").execute();
+	}
+	async createWithThreads(projectId, title, threadIds, description) {
+		if (!threadIds.length) throw new Error("至少需要一条来源话题");
+		return this.db.transaction().execute(async (trx) => {
+			if (!await trx.selectFrom("project").selectAll().where("id", "=", projectId).executeTakeFirst()) throw new Error("项目不存在");
+			const ids = [...new Set(threadIds)];
+			const threads = await trx.selectFrom("thread").selectAll().where("id", "in", ids).execute();
+			if (threads.length !== ids.length) throw new Error("来源话题不存在");
+			const duplicate = await trx.selectFrom("ticket_thread").select("ticketId").where("threadId", "in", ids).executeTakeFirst();
+			if (duplicate) throw new Error(`来源话题已关联工单：${duplicate.ticketId}`);
+			const now = (/* @__PURE__ */ new Date()).toISOString();
+			const id = `T-${randomUUID()}`;
+			const row = {
+				id,
+				projectId,
+				channelId: threads.find((row) => row.id === ids[0]).channelId,
+				title,
+				description: description ?? null,
+				status: "waiting",
+				createdAt: now,
+				updatedAt: now,
+				startedAt: null,
+				endedAt: null,
+				prUrl: null,
+				prState: null,
+				ciState: null,
+				prepareError: null
+			};
+			await trx.insertInto("ticket").values(row).execute();
+			for (const [index, threadId] of ids.entries()) await trx.insertInto("ticket_thread").values({
+				ticketId: id,
+				threadId,
+				createdAt: new Date(Date.parse(now) + index).toISOString()
+			}).execute();
+			return await new Ticket(trx).findById(id);
+		});
+	}
+	async requireOpen(id, projectId) {
+		const row = await this.findById(id);
+		if (!row || projectId !== void 0 && row.projectId !== projectId) throw new Error("工单不存在或不属于当前项目");
+		if (row.status === "done" || row.status === "cancelled") throw new Error("工单已结束");
+		return row;
+	}
+	async setPausedIfOpen(id, paused, updatedAt) {
+		return this.db.updateTable("ticket").set({
+			paused: paused ? 1 : 0,
+			updatedAt
+		}).where("id", "=", id).where("status", "not in", ["done", "cancelled"]).returningAll().executeTakeFirst();
+	}
+};
+// src/database/models/ticket-link.ts
+var TicketLink = class {
+	db;
+	constructor(db) {
+		this.db = db;
+	}
+	async listByTicket(ticketId) {
+		return this.db.selectFrom("ticket_link").selectAll().where("ticketId", "=", ticketId).orderBy("kind").orderBy("relatedId").execute();
+	}
+	async listByRelated(relatedId) {
+		return this.db.selectFrom("ticket_link").selectAll().where("relatedId", "=", relatedId).orderBy("kind").orderBy("ticketId").execute();
+	}
+	async listDependsOn(ticketId) {
+		return this.db.selectFrom("ticket_link").selectAll().where("ticketId", "=", ticketId).where("kind", "=", "depends").execute();
+	}
+	async link(ticketId, relatedId, kind, createdAt) {
+		await this.db.insertInto("ticket_link").values({
+			ticketId,
+			relatedId,
+			kind,
+			createdAt
+		}).onConflict((oc) => oc.columns([
+			"ticketId",
+			"relatedId",
+			"kind"
+		]).doNothing()).execute();
+	}
+	async unlink(ticketId, relatedId, kind) {
+		await this.db.deleteFrom("ticket_link").where("ticketId", "=", ticketId).where("relatedId", "=", relatedId).where("kind", "=", kind).execute();
+	}
+	async listAll() {
+		return this.db.selectFrom("ticket_link").selectAll().orderBy("createdAt").execute();
+	}
+};
+// src/database/models/ticket-thread.ts
+var TicketThread = class {
+	db;
+	constructor(db) {
+		this.db = db;
+	}
+	async listByTicket(ticketId) {
+		return this.db.selectFrom("ticket_thread").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt").execute();
+	}
+	async listByThread(threadId) {
+		return this.db.selectFrom("ticket_thread").selectAll().where("threadId", "=", threadId).orderBy("createdAt").execute();
+	}
+	async listTicketIds(threadId) {
+		return (await this.db.selectFrom("ticket_thread").select("ticketId").where("threadId", "=", threadId).orderBy("createdAt").execute()).map((row) => row.ticketId);
+	}
+	async link(ticketId, threadId, createdAt) {
+		const result = await this.db.insertInto("ticket_thread").values({
+			ticketId,
+			threadId,
+			createdAt
+		}).onConflict((oc) => oc.columns(["ticketId", "threadId"]).doNothing()).executeTakeFirst();
+		return Number(result.numInsertedOrUpdatedRows) > 0;
+	}
+	async unlink(ticketId, threadId) {
+		await this.db.deleteFrom("ticket_thread").where("ticketId", "=", ticketId).where("threadId", "=", threadId).execute();
+	}
+	async listAll() {
+		return this.db.selectFrom("ticket_thread").selectAll().orderBy("createdAt").execute();
+	}
+};
+// src/database/models/trigger.ts
+var Trigger = class extends Model {
+	constructor(db) {
+		super(db, "trigger", "id");
+	}
+	async listByThread(threadId, limit = 50) {
+		return this.db.selectFrom("trigger").selectAll().where("threadId", "=", threadId).orderBy("at", "desc").orderBy("id", "desc").limit(limit).execute();
+	}
+	async lastByThread(threadId) {
+		return this.db.selectFrom("trigger").selectAll().where("threadId", "=", threadId).orderBy("at", "desc").orderBy("id", "desc").executeTakeFirst();
+	}
+	async listByChannelSince(channelId, since) {
+		return this.db.selectFrom("trigger").selectAll().where("channelId", "=", channelId).where("at", ">", since).orderBy("at").execute();
+	}
+	async listByRef(channelId, ref) {
+		return this.db.selectFrom("trigger").selectAll().where("channelId", "=", channelId).where("ref", "=", ref).orderBy("at", "desc").execute();
+	}
+	async exists(id) {
+		return await this.db.selectFrom("trigger").select("id").where("id", "=", id).executeTakeFirst() !== void 0;
+	}
+	async findById(id) {
+		return this.db.selectFrom("trigger").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async listRecent(limit = 100) {
+		return this.db.selectFrom("trigger").selectAll().orderBy("at", "desc").orderBy("id").limit(Math.max(1, Math.min(1e3, limit))).execute();
+	}
+	async ingest(value) {
+		await this.db.insertInto("trigger").values(value).onConflict((oc) => oc.column("id").doNothing()).execute();
+		return await this.findById(value.id);
+	}
+};
+// src/database/models/worker.ts
+var Worker = class Worker extends Model {
+	constructor(db) {
+		super(db, "worker", "id");
+	}
+	async listByTicket(ticketId) {
+		return this.db.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt").execute();
+	}
+	async listRunning() {
+		return this.db.selectFrom("worker").selectAll().where("status", "=", "running").orderBy("startedAt").execute();
+	}
+	async findRunningByBranch(branch) {
+		return this.db.selectFrom("worker").selectAll().where("branch", "=", branch).where("status", "=", "running").executeTakeFirst();
+	}
+	async start(id, startedAt) {
+		await this.db.updateTable("worker").set({
+			status: "running",
+			startedAt
+		}).where("id", "=", id).execute();
+	}
+	async end(id, endedReason, endedAt) {
+		await this.db.updateTable("worker").set({
+			status: "ended",
+			endedReason,
+			endedAt
+		}).where("id", "=", id).execute();
+	}
+	async setReport(id, reportState, report, reportAt) {
+		await this.db.updateTable("worker").set({
+			reportState,
+			report,
+			reportAt
+		}).where("id", "=", id).execute();
+	}
+	async setBackgroundUntil(id, backgroundUntil) {
+		await this.db.updateTable("worker").set({ backgroundUntil }).where("id", "=", id).execute();
+	}
+	async setRecoveryNote(id, recoveryNote) {
+		await this.db.updateTable("worker").set({ recoveryNote }).where("id", "=", id).execute();
+	}
+	async findById(id) {
+		return this.db.selectFrom("worker").selectAll().where("id", "=", id).executeTakeFirst();
+	}
+	async listRecent(limit = 100) {
+		return this.db.selectFrom("worker").selectAll().orderBy("createdAt", "desc").orderBy("id").limit(Math.max(1, Math.min(1e3, limit))).execute();
+	}
+	async listQueued() {
+		return this.db.selectFrom("worker").selectAll().where("status", "=", "queued").orderBy("createdAt").execute();
+	}
+	async queue(ticketId, projectId, branch) {
+		if (branch && branch.split("/").at(-1) !== ticketId) throw new Error("分支末段必须是任务号");
+		return this.db.transaction().execute(async (trx) => {
+			const ticket = await trx.selectFrom("ticket").selectAll().where("id", "=", ticketId).where("projectId", "=", projectId).executeTakeFirst();
+			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单不存在、已结束或不属于当前项目");
+			if (ticket.paused) throw new Error("工单已暂停");
+			if (!(await trx.selectFrom("project").selectAll().where("id", "=", projectId).executeTakeFirst())?.enabled) throw new Error("项目未启用");
+			const existing = await trx.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).where("status", "!=", "ended").executeTakeFirst();
+			if (existing) return existing;
+			const id = randomUUID();
+			const now = (/* @__PURE__ */ new Date()).toISOString();
+			await trx.insertInto("worker").values({
+				id,
+				ticketId,
+				status: "queued",
+				createdAt: now,
+				startedAt: null,
+				endedAt: null,
+				title: ticket.title,
+				endedReason: null,
+				branch: branch ?? `nexus/${ticketId}`,
+				worktree: null,
+				reportState: null,
+				report: null,
+				reportAt: null,
+				backgroundUntil: null,
+				recoveryNote: null
+			}).execute();
+			await trx.updateTable("ticket").set({
+				status: "queued",
+				updatedAt: now
+			}).where("id", "=", ticketId).execute();
+			return await new Worker(trx).findById(id);
+		});
+	}
+	async reportProgress(id, reportState, report) {
+		return this.db.transaction().execute(async (trx) => {
+			const worker = await new Worker(trx).findById(id);
+			if (!worker || worker.status === "ended") throw new Error("Worker 已结束或不存在");
+			const ticket = await trx.selectFrom("ticket").selectAll().where("id", "=", worker.ticketId).executeTakeFirst();
+			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单已结束或不存在");
+			const now = (/* @__PURE__ */ new Date()).toISOString();
+			await new Worker(trx).setReport(id, reportState, report, now);
+			return new Inbox(trx).enqueue({
+				type: "project",
+				projectId: ticket.projectId,
+				origin: "worker",
+				kind: "ticket",
+				ticketId: ticket.id,
+				workerId: id,
+				title: reportState,
+				message: report
+			});
+		});
+	}
+};
+// src/database/utils/migration.ts
+/**
+* 把 SQL 文本包成 Kysely 迁移。
+*
+* 两个坑都在这里绕开：
+* 1. Kysely 的 SQLite 适配器用 `prepare()` 执行，多语句**不报错、只跑第一条**，
+*    所以改用 `DatabaseSync.exec()`，让 SQLite 自己解析整段脚本。
+* 2. 适配器的 `supportsTransactionalDdl` 为 false，迁移不会被自动包进事务，
+*    所以这里手动 BEGIN/COMMIT，一个迁移文件要么整篇生效、要么整篇回滚。
+*
+* 没有用 `kysely-migrate-sql`：它 0.2.0 从 `kysely` 根导入 `Migrator`，
+* 而 Kysely 0.29 起该导出只在 `kysely/migration`，模块加载即抛
+* `SyntaxError: does not provide an export named 'Migrator'`。
+*/
+var MigrationProvider = class {
+	database;
+	migrations;
+	/**
+	* @param database - 执行迁移的连接；必须与实际使用的同一个实例。
+	* @param migrations - 迁移名到 SQL 全文的映射，按名字排序执行。
+	*/
+	constructor(database, migrations) {
+		this.database = database;
+		this.migrations = migrations;
+	}
+	async getMigrations() {
+		return Object.fromEntries(Object.entries(this.migrations).map(([name, sql]) => [name, { up: async () => {
+			const foreignKeys = this.database.prepare("PRAGMA foreign_keys").get()?.foreign_keys;
+			this.database.exec("PRAGMA foreign_keys=OFF");
+			this.database.exec("BEGIN");
+			try {
+				this.database.exec(sql);
+				if (this.database.prepare("PRAGMA foreign_key_check").all().length) throw new Error(`Migration violates foreign key constraints: ${name}`);
+				this.database.exec("COMMIT");
+			} catch (error) {
+				this.database.exec("ROLLBACK");
+				throw error;
+			} finally {
+				this.database.exec(foreignKeys ? "PRAGMA foreign_keys=ON" : "PRAGMA foreign_keys=OFF");
+			}
+		} }]));
+	}
+};
+// src/database/index.ts
+const database = new DatabaseSync("data.db");
+const connection = new Kysely({ dialect: new NodeSqliteDialect({ database }) });
+const db = Object.assign(connection, {
+	channel: new Channel(connection),
+	channelAccount: new ChannelAccount(connection),
+	ciWatch: new CiWatch(connection),
+	inbox: new Inbox(connection),
+	project: new Project(connection),
+	sourceState: new SourceState(connection),
+	supervisor: new Supervisor(connection),
+	supervisorTicket: new SupervisorTicket(connection),
+	thread: new Thread(connection),
+	ticket: new Ticket(connection),
+	ticketLink: new TicketLink(connection),
+	ticketThread: new TicketThread(connection),
+	trigger: new Trigger(connection),
+	worker: new Worker(connection)
+});
+const { error } = await new Migrator({
+	db,
+	provider: new MigrationProvider(database, migrations)
+}).migrateToLatest();
+if (error) throw error;
+const DSH_PLUGIN_HOME = `${process.env.DSH_HOME ?? join(homedir(), ".dsh")}/.nexus`;
+// src/storage/index.ts
+const storage = createStorage({ driver: fs({
+	atomic: true,
+	base: `${DSH_PLUGIN_HOME}/storage.json`
+}) });
+// src/utils/service.ts
+function defineService(service) {
+	return service;
+}
+// src/service/setting.ts
+const defaults = {
+	administrators: [],
+	maxWorkers: 10,
+	backgroundLimitMinutes: 30,
+	autoMerge: false,
+	autoMergeMaxLines: 200,
+	deliveryMaxAttempts: 3,
+	deliveryRetryCeilingSeconds: 60,
+	updatedAt: ""
+};
+const limits = {
+	maxWorkers: [1, 16],
+	backgroundLimitMinutes: [1, 1440],
+	autoMergeMaxLines: [1, 1e4],
+	deliveryMaxAttempts: [1, 20],
+	deliveryRetryCeilingSeconds: [2, 3600]
+};
+let writing$2 = Promise.resolve();
+const setting = defineService({
+	async load() {
+		const value = await storage.getItem("setting");
+		if (value === null) return {
+			...defaults,
+			administrators: []
+		};
+		if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_stored_settings");
+		const { updatedAt, ...patch } = value;
+		if (updatedAt !== void 0 && typeof updatedAt !== "string" || !valid(patch, true)) throw new Error("invalid_stored_settings");
+		return {
+			...defaults,
+			...patch,
+			administrators: normalizeAdministrators(patch.administrators ?? []),
+			...updatedAt === void 0 ? {} : { updatedAt }
+		};
+	},
+	save(patch) {
+		if (!valid(patch)) return Promise.reject(/* @__PURE__ */ new TypeError("invalid_config"));
+		const updates = {
+			...patch,
+			...patch.administrators === void 0 ? {} : { administrators: normalizeAdministrators(patch.administrators) }
+		};
+		const operation = writing$2.then(async () => {
+			const next = {
+				...await setting.load(),
+				...updates,
+				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+			};
+			await storage.setItem("setting", next);
+			return next;
+		});
+		writing$2 = operation.then(() => void 0, () => void 0);
+		return operation;
+	}
+});
+function valid(value, allowEmpty = false) {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+	const entries = Object.entries(value);
+	if (!allowEmpty && entries.length === 0) return false;
+	return entries.every(([key, entry]) => {
+		if (key === "administrators") return Array.isArray(entry) && entry.length <= 100 && entry.every((name) => typeof name === "string" && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim()));
+		if (key === "autoMerge") return typeof entry === "boolean";
+		if (!Object.hasOwn(limits, key)) return false;
+		const [min, max] = limits[key];
+		return typeof entry === "number" && Number.isInteger(entry) && entry >= min && entry <= max;
+	});
+}
+function normalizeAdministrators(names) {
+	const unique = /* @__PURE__ */ new Map();
+	for (const entry of names) {
+		const name = entry.trim();
+		if (!unique.has(name.toLowerCase())) unique.set(name.toLowerCase(), name);
+	}
+	return [...unique.values()];
+}
+// src/channel/proxy.ts
+async function channelProxyEnvironment(url, inherited) {
+	const env = { ...inherited };
+	const overlay = proxyEnvironmentForChild();
+	const explicit = Object.entries(inherited).some(([name, value]) => /^(?:https?|all)_proxy$/i.test(name) && Boolean(value?.trim()));
+	for (const [name, value] of Object.entries(overlay)) if (value === void 0) delete env[name];
+	else env[name] = value;
+	if (process.platform !== "win32" || explicit || Object.keys(overlay).length) return env;
+	const settings = await new Promise((resolve) => {
+		execFile("reg.exe", ["query", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings"], {
+			windowsHide: true,
+			timeout: 3e3,
+			maxBuffer: 65536
+		}, (error, stdout) => resolve(error ? "" : stdout));
+	});
+	if (!/^\s*ProxyEnable\s+REG_DWORD\s+0x0*1\s*$/im.test(settings)) return env;
+	if ((/^\s*ProxyOverride\s+REG_SZ\s+(\S.*)$/im.exec(settings)?.[1].trim())?.split(";").some((pattern) => bypasses(url.hostname, pattern.trim()))) return env;
+	const raw = /^\s*ProxyServer\s+REG_SZ\s+(\S.*)$/im.exec(settings)?.[1].trim();
+	if (!raw) return env;
+	const selected = raw.includes("=") ? raw.split(";").map((part) => part.trim()).find((part) => part.toLowerCase().startsWith(`${url.protocol.slice(0, -1)}=`))?.slice(url.protocol.length) : raw;
+	if (!selected) return env;
+	try {
+		const proxy = new URL(selected.includes("://") ? selected : `http://${selected}`);
+		if (!["http:", "https:"].includes(proxy.protocol) || !proxy.hostname || proxy.pathname !== "/" || proxy.search || proxy.hash) return env;
+		env.HTTP_PROXY = proxy.href;
+		env.HTTPS_PROXY = proxy.href;
+		delete env.http_proxy;
+		delete env.https_proxy;
+	} catch {}
+	return env;
+}
+function bypasses(hostname, pattern) {
+	if (!pattern) return false;
+	if (pattern.toLowerCase() === "<local>") return !hostname.includes(".") && !hostname.includes(":");
+	const escaped = pattern.replace(/[|\\{}()[\]^$+?.]/g, "\\$&").replaceAll("*", ".*");
+	return new RegExp(`^${escaped}$`, "i").test(hostname);
+}
+// src/service/session.ts
+const presets$1 = {
+	main: "orchestrator",
+	project: "manager",
+	supervisor: "supervisor",
+	worker: "worker"
+};
+const registered = /* @__PURE__ */ new Set();
+const operations$2 = /* @__PURE__ */ new Map();
+let controller$2 = new AbortController();
+let stopped$3 = false;
+const session = defineService({
+	register(id) {
+		registered.add(id);
+		return () => {
+			registered.delete(id);
+		};
+	},
+	async attach(agent) {
+		const ctx = getServerContext(server);
+		const preset = ctx.agentPresets.composedPreset(agent.ctx);
+		if (!preset || !registered.has(preset) || agent.session.header.origin === "subagent" || agent.session.header.parentSession || ctx.workspaceRegistry.archivedSessionIds.includes(agent.session.id)) return null;
+		const role = Object.keys(presets$1).find((role) => presets$1[role] === preset);
+		if (!role) return null;
+		if (role === "main") {
+			const current = await session.findMain();
+			if (current && current !== agent.session.id) throw new Error("ambiguous_main_session");
+		}
+		if (role !== "worker") await bindWorkspace(agent.session.id, agent.session.header.cwd);
+		if (role === "main") await storage.setItem("mainSessionId", agent.session.id);
+		return role;
+	},
+	start() {
+		if (operations$2.size) throw new Error("session_busy");
+		controller$2 = new AbortController();
+		stopped$3 = false;
+		return async () => {
+			stopped$3 = true;
+			controller$2.abort(/* @__PURE__ */ new Error("session_stopped"));
+			await Promise.allSettled([...operations$2.values()]);
+		};
+	},
+	async resolve(id) {
+		const ctx = getServerContext(server);
+		const sid = SessionId(id);
+		if (ctx.workspaceRegistry.archivedSessionIds.includes(sid)) return null;
+		let header;
+		let preset;
+		try {
+			const snapshot = await ctx.sessionQuery.readSession(sid);
+			header = snapshot.session;
+			preset = ctx.agentPresets.presetForSession(Session.create(sid, snapshot.events, snapshot.session));
+		} catch (error) {
+			if (error instanceof Error && "code" in error && error.code === "SESSION_QUERY_SESSION_NOT_FOUND") return null;
+			throw error;
+		}
+		if (!preset || !registered.has(preset) || header.origin === "subagent" || header.parentSession) return null;
+		const [worker, project, supervisor] = await Promise.all([
+			db.worker.findById(id),
+			db.project.findBySession(id),
+			db.supervisor.findBySession(id)
+		]);
+		if ([
+			worker,
+			project,
+			supervisor
+		].filter(Boolean).length > 1) throw new Error("session_binding_conflict");
+		if (worker) {
+			const agent = ctx.agents.get(sid);
+			if (preset !== presets$1.worker || !agent || ctx.agentPresets.composedPreset(agent.ctx) !== presets$1.worker) return null;
+			const ticket = await db.ticket.findById(worker.ticketId);
+			return ticket ? {
+				role: "worker",
+				projectId: ticket.projectId,
+				ticketId: ticket.id,
+				workerId: worker.id
+			} : null;
+		}
+		if (project) return preset === presets$1.project ? {
+			role: "project",
+			projectId: project.id
+		} : null;
+		if (supervisor) return preset === presets$1.supervisor && supervisor.status === "active" ? {
+			role: "supervisor",
+			supervisorId: supervisor.id
+		} : null;
+		return preset === presets$1.main && await storage.getItem("mainSessionId") === id ? { role: "main" } : null;
+	},
+	async findMain() {
+		const id = await storage.getItem("mainSessionId");
+		return id && (await session.resolve(id))?.role === "main" ? id : null;
+	},
+	async create(role, options) {
+		if (stopped$3) throw new Error("runtime_stopping");
+		return run$2(`session:create:${role}:${role === "worker" ? options.sessionId : role === "project" ? options.projectId : role === "supervisor" ? options.supervisorId : "main"}`, async () => {
+			const ctx = getServerContext(server);
+			const project = options.projectId ? await db.project.findById(options.projectId) : void 0;
+			const supervisor = options.supervisorId ? await db.supervisor.findById(options.supervisorId) : void 0;
+			if (role === "project" && !project) throw new Error("project_not_found");
+			if (role === "supervisor" && (!supervisor || supervisor.status !== "active")) throw new Error("supervisor_not_active");
+			if (role === "main") {
+				const existing = await session.findMain();
+				if (existing) {
+					await bindWorkspace(existing);
+					return existing;
+				}
+			}
+			if (role === "project" && project?.orchestratorSessionId) {
+				const identity = await session.resolve(project.orchestratorSessionId);
+				if (identity?.role === "project" && identity.projectId === project.id) {
+					await bindWorkspace(project.orchestratorSessionId);
+					return project.orchestratorSessionId;
+				}
+				if (identity) throw new Error("session_binding_conflict");
+			}
+			if (role === "supervisor" && supervisor?.sessionId) {
+				const identity = await session.resolve(supervisor.sessionId);
+				if (identity?.role === "supervisor" && identity.supervisorId === supervisor.id) {
+					await bindWorkspace(supervisor.sessionId);
+					return supervisor.sessionId;
+				}
+				if (identity) throw new Error("session_binding_conflict");
+			}
+			const requestedId = options.sessionId ?? randomUUID();
+			if (role === "worker") {
+				const worker = await db.worker.findById(requestedId);
+				if (!worker || worker.ticketId !== options.ticketId || worker.status === "ended") throw new Error("worker_binding_required");
+				if (!options.directory) throw new Error("worker_directory_required");
+			}
+			const location = role === "worker" ? { cwd: options.directory } : { workspaceId: (await session.workspace()).id };
+			const id = (await ctx.sessionController.create({
+				sessionId: SessionId(requestedId),
+				...location,
+				agentPreset: presets$1[role]
+			})).sessionId;
+			if (id !== requestedId) throw new Error("session_identity_conflict");
+			if (role === "main") await storage.setItem("mainSessionId", id);
+			if (project && role === "project") await db.project.setOrchestrator(project.id, id, (/* @__PURE__ */ new Date()).toISOString());
+			if (supervisor && role === "supervisor") await db.supervisor.attachSession(supervisor.id, id);
+			const title = role === "main" ? "[路由] 主编排" : role === "project" ? `[路由] ${project.name}` : role === "supervisor" ? `[协调] ${supervisor.title}` : options.title;
+			if (title) await ctx.sessionController.rename({
+				sessionId: id,
+				title
+			});
+			if (role !== "worker") await inbox.notify(await resolveAgent(id), true);
+			if (options.prompt) await session.send(id, options.prompt);
+			return id;
+		});
+	},
+	async send(id, text, mode = "queue", requestId = randomUUID()) {
+		if (!text.trim()) throw new Error("empty_message");
+		if (stopped$3) throw new Error("runtime_stopping");
+		return run$2(`session:send:${id}:${requestId}`, async () => {
+			const identity = await session.resolve(id);
+			if (!identity) {
+				const worker = await db.worker.findById(id);
+				throw new Error(worker ? worker.status === "ended" ? "worker_ended" : "worker_not_live_or_archived" : "unknown_session");
+			}
+			if (identity.workerId && (await db.worker.findById(id))?.status === "ended") throw new Error("worker_ended");
+			const ctx = getServerContext(server);
+			if (mode === "interrupt") await session.cancel(id, true);
+			await ctx.sessionController.prompt({
+				sessionId: SessionId(id),
+				requestId,
+				mode: identity.role !== "worker" && mode === "queue" ? "queue" : "steer",
+				content: [{
+					type: "text",
+					text
+				}]
+			}, controller$2.signal);
+		});
+	},
+	async cancel(id, keepInbox = false) {
+		(await resolveAgent(id)).cancel({
+			kind: "hook",
+			reason: "nexus_cancel"
+		}, { keepInbox });
+	},
+	async rename(id, title) {
+		if (!await session.resolve(id)) throw new Error("unknown_session");
+		await getServerContext(server).sessionController.rename({
+			sessionId: SessionId(id),
+			title
+		});
+	},
+	async view(id, offset = 0, limit = 12e3) {
+		if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 5e4) throw new Error("invalid_page");
+		if (!await session.resolve(id)) throw new Error("unknown_session");
+		const { events } = await getServerContext(server).sessionQuery.readSession(SessionId(id));
+		const text = events.flatMap((event) => {
+			if (event.type !== "user/message" && event.type !== "assistant/message") return [];
+			return (event.type === "assistant/message" ? event.data.message : event.data).content.flatMap((part) => part.type === "text" ? [part.text] : []);
+		}).join(String.fromCharCode(10, 10));
+		const end = Math.min(text.length, offset + limit);
+		return {
+			text: text.slice(offset, end),
+			next_offset: end < text.length ? end : null
+		};
+	},
+	workspace() {
+		return run$2("workspace:create", async () => {
+			await mkdir(DSH_PLUGIN_HOME, { recursive: true });
+			return getServerContext(server).workspaceRegistry.create(DSH_PLUGIN_HOME, "代理工作区");
+		});
+	},
+	activate(id) {
+		return run$2(`session:activate:${id}`, () => resolveAgent(id));
+	},
+	async lookup(id) {
+		if (!await session.resolve(id)) return null;
+		return getServerContext(server).agents.get(SessionId(id)) ?? null;
+	},
+	async history(id) {
+		return getServerContext(server).sessionQuery.readSession(SessionId(id));
+	},
+	async receipts(id) {
+		const { events } = await getServerContext(server).sessionQuery.readSession(SessionId(id));
+		const receipts = [];
+		let pending = [];
+		for (const event of events) {
+			if (event.type === "turn/start") pending = [];
+			if (event.type === "user/message" && "rpcId" in event.data.source && typeof event.data.source.rpcId === "string") pending.push(event.data.source.rpcId);
+			if (event.type === "turn/end" && event.data.reason.kind === "completed") {
+				receipts.push(...pending.map((requestId) => ({
+					requestId,
+					consumedAt: new Date(event.time).toISOString()
+				})));
+				pending = [];
+			}
+		}
+		return receipts;
+	},
+	async activity(id) {
+		const ctx = getServerContext(server);
+		const activities = await ctx.waterfall("workspace/session-activity", { sessionId: SessionId(id) }, () => Promise.resolve([]));
+		const state = await ctx.sessionController.state({ sessionId: SessionId(id) }, controller$2.signal);
+		return {
+			running: state.running,
+			background: activities.some((item) => String(item.kind) !== "turn"),
+			queued: Boolean(state.queue?.length)
+		};
+	},
+	async stop(id) {
+		const ctx = getServerContext(server);
+		await ctx.parallel("workspace/session-stop", { sessionId: SessionId(id) });
+		const result = await ctx.sessionController.resolveAgent(SessionId(id));
+		if ("agent" in result) {
+			result.agent.cancel({
+				kind: "hook",
+				reason: "nexus_stop"
+			}, { keepInbox: true });
+			await result.agent.whenIdle();
+		}
+		if ((await session.activity(id)).background) throw new Error("background_stop_pending");
+	}
+});
+async function bindWorkspace(id, cwd) {
+	const ctx = getServerContext(server);
+	const workspace = await session.workspace();
+	const sid = SessionId(id);
+	if (workspace.sessionIds.includes(sid)) return;
+	const directory = cwd ?? (await ctx.sessionQuery.readSession(sid)).session.cwd;
+	if (!directory || await realpathNormalize(directory) !== workspace.path) return;
+	await workspace.attachSession(sid);
+}
+async function resolveAgent(id) {
+	if (!await session.resolve(id)) throw new Error("unknown_session");
+	const result = await getServerContext(server).sessionController.resolveAgent(SessionId(id));
+	if ("error" in result) throw result.error;
+	return result.agent;
+}
+function run$2(key, action) {
+	if (stopped$3) return Promise.reject(/* @__PURE__ */ new Error("runtime_stopping"));
+	const current = operations$2.get(key);
+	if (current) return current;
+	const task = Promise.resolve().then(action).finally(() => operations$2.delete(key));
+	operations$2.set(key, task);
+	return task;
+}
+// src/service/inbox.ts
+const operations$1 = /* @__PURE__ */ new Map();
+const deliveredAnswers = /* @__PURE__ */ new Set();
+let stopped$2 = false;
+const inbox = defineService({
+	async notify(agent, restore = false) {
+		return run$1(`notify:${agent.session.id}`, async () => {
+			if (agent.status !== "idle" && !restore) return;
+			const mailbox = await inbox.peek(agent.session.id);
+			if (!mailbox) return;
+			const revision = mailbox.messages.map((message) => [message.id, message.escalations]).sort().map((parts) => parts.join(":")).join("|");
+			if (!revision && !restore) return;
+			const { events } = await session.history(agent.session.id);
+			if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((message) => message.source.kind === (restore ? "nexus-mailbox-context" : "nexus-mailbox") && message.source.revision === revision)) return;
+			if (events.some((event) => (event.type === "user/message" ? [event.data] : event.type === "agent/inbox/spliced" ? event.data.inserted : []).some((message) => message.source.kind === (restore ? "nexus-mailbox-context" : "nexus-mailbox") && message.source.revision === revision))) return;
+			const text = `你有${mailbox.pendingCount}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`;
+			const message = createUserMessage({
+				content: [{
+					type: "text",
+					text
+				}],
+				source: {
+					kind: restore ? "nexus-mailbox-context" : "nexus-mailbox",
+					form: "notice",
+					summary: text,
+					revision
+				}
+			});
+			if (stopped$2 || !await session.resolve(agent.session.id)) return;
+			if (restore) agent.inject(message);
+			else if (agent.status === "idle") agent.followup(message);
+		});
+	},
+	async peek(id, includeChannel = false) {
+		const identity = await session.resolve(id);
+		if (!identity) return null;
+		const scope = scopeOf(identity);
+		if (!scope) return null;
+		const messages = await db.inbox.listScoped(scope, includeChannel);
+		const projects = (await db.project.listAll()).filter((project) => project.enabled && (identity.role === "main" || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({
+			id,
+			name,
+			directory,
+			remoteUrl
+		}));
+		return {
+			sessionId: id,
+			role: scope.type,
+			projects,
+			pendingCount: messages.length,
+			messages
+		};
+	},
+	async read(id, includeChannel = false) {
+		const mailbox = await inbox.peek(id, includeChannel);
+		if (!mailbox) throw new Error("unknown_session");
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		await db.inbox.markRead(mailbox.messages.filter((message) => !message.readAt).map((message) => message.id), now);
+		return mailbox;
+	},
+	async complete(id, ids, includeChannel = false) {
+		const identity = await session.resolve(id);
+		if (!identity) throw new Error("unknown_session");
+		const scope = scopeOf(identity);
+		if (!scope) throw new Error("unknown_session");
+		return db.inbox.completeScoped(ids, scope, (/* @__PURE__ */ new Date()).toISOString(), includeChannel);
+	},
+	start() {
+		if (operations$1.size) throw new Error("inbox_busy");
+		stopped$2 = false;
+		deliveredAnswers.clear();
+		return async () => {
+			stopped$2 = true;
+			await Promise.allSettled([...operations$1.values()]);
+			deliveredAnswers.clear();
+		};
+	},
+	deliver() {
+		return run$1("delivery", async () => {
+			const settings = await setting.load();
+			const blocked = /* @__PURE__ */ new Set();
+			const notified = /* @__PURE__ */ new Set();
+			const receipts = /* @__PURE__ */ new Map();
+			for (const message of await db.inbox.listDelivery()) {
+				if (stopped$2) break;
+				const key = [
+					message.type,
+					message.projectId,
+					message.supervisorId,
+					message.ticketId
+				].join(":");
+				if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
+				if (message.type === "project" && message.projectId && !(await db.project.findById(message.projectId))?.enabled) continue;
+				if (message.type === "supervisor" && message.supervisorId && (await db.supervisor.findById(message.supervisorId))?.status !== "active") continue;
+				if (message.origin === "channel") {
+					if (blocked.has(key) || message.readAt) continue;
+					blocked.add(key);
+				} else if (notified.has(key)) continue;
+				if (message.status === "stalled" || message.nextRetryAt && message.nextRetryAt > (/* @__PURE__ */ new Date()).toISOString()) continue;
+				try {
+					const id = await recipient(message);
+					if (!id) throw new Error("recipient_session_unavailable");
+					if (message.origin !== "channel") {
+						const agent = await session.activate(id);
+						if (stopped$2) break;
+						if (agent.status === "idle") await inbox.notify(agent);
+						notified.add(key);
+						await db.inbox.resetDelivery(message.id);
+						continue;
+					}
+					let consumed = receipts.get(id);
+					if (!consumed) {
+						consumed = await session.receipts(id);
+						receipts.set(id, consumed);
+					}
+					const requestId = `nexus:inbox:${message.id}:${message.escalations}`;
+					const receipt = consumed.find((item) => item.requestId === requestId);
+					if (receipt) {
+						await db.inbox.markRead([message.id], receipt.consumedAt);
+						blocked.delete(key);
+						continue;
+					}
+					if ((await session.activity(id)).running || stopped$2) continue;
+					await session.send(id, [
+						message.title ?? "",
+						`[Inbox ${message.id}]`,
+						message.triggerId ? `triggerId: ${message.triggerId}` : "",
+						message.threadId ? `threadId: ${message.threadId}` : "",
+						message.message
+					].filter(Boolean).join(String.fromCharCode(10)), "queue", requestId);
+					await db.inbox.resetDelivery(message.id);
+					blocked.delete(key);
+				} catch (error) {
+					if (stopped$2) break;
+					const reason = error instanceof Error ? error.message : String(error);
+					const attempts = message.deliveryAttempts + 1;
+					const delay = Math.min(2 ** Math.min(attempts, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
+					await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delay).toISOString());
+					if (attempts >= settings.deliveryMaxAttempts) await db.inbox.markStalled(message.id, reason);
+				}
+			}
+		});
+	},
+	deliverAnswers() {
+		return run$1("answers", async () => {
+			for (const message of await db.inbox.listAnswered()) {
+				if (stopped$2) break;
+				if (!message.answer || message.nextRetryAt && message.nextRetryAt > (/* @__PURE__ */ new Date()).toISOString()) continue;
+				try {
+					if (message.answeredBy !== "user" && message.origin !== "worker") {
+						await db.inbox.enqueueAnswer(message);
+						continue;
+					}
+					let id = null;
+					if (message.origin === "worker") {
+						const worker = message.workerId ? await db.worker.findById(message.workerId) : void 0;
+						if (!worker) throw new Error("worker_not_found");
+						if (worker.status === "ended") throw new Error("worker_ended");
+						id = worker.id;
+					} else if (message.origin === "project" && message.projectId) {
+						const project = await db.project.findById(message.projectId);
+						if (project?.enabled) id = project.orchestratorSessionId;
+					} else if (message.origin === "supervisor" && message.supervisorId) {
+						const supervisor = await db.supervisor.findById(message.supervisorId);
+						if (supervisor?.status === "active") id = supervisor.sessionId;
+					} else if (message.origin === "main") id = await session.findMain();
+					if (!id || deliveredAnswers.has(`${message.id}:${id}`) || stopped$2) continue;
+					if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
+					await session.send(id, `[Answer ${message.id}] ${message.answer}`, "reply", `nexus:answer:${message.id}`);
+					deliveredAnswers.add(`${message.id}:${id}`);
+					await db.inbox.resetDelivery(message.id);
+				} catch (error) {
+					if (stopped$2) break;
+					await db.inbox.recordDeliveryFailure(message.id, error instanceof Error ? error.message : String(error), new Date(Date.now() + 2e3).toISOString());
+				}
+			}
+		});
+	}
+});
+function run$1(key, action) {
+	if (stopped$2) return Promise.reject(/* @__PURE__ */ new Error("inbox_stopped"));
+	const current = operations$1.get(key);
+	if (current) return current;
+	const task = Promise.resolve().then(action).finally(() => operations$1.delete(key));
+	operations$1.set(key, task);
+	return task;
+}
+async function recipient(message) {
+	if (message.type === "main") return session.create("main", {});
+	if (message.type === "project" && message.projectId) return session.create("project", { projectId: message.projectId });
+	if (message.type === "supervisor" && message.supervisorId) return session.create("supervisor", { supervisorId: message.supervisorId });
+	throw new Error("invalid_inbox_recipient");
+}
+function scopeOf(identity) {
+	if (identity.role === "main") return { type: "main" };
+	if (identity.role === "project" && identity.projectId) return {
+		type: "project",
+		projectId: identity.projectId
+	};
+	if (identity.role === "supervisor" && identity.supervisorId) return {
+		type: "supervisor",
+		supervisorId: identity.supervisorId
+	};
+	return null;
+}
+// src/server/routes/ask.answers.post.ts
+const postAnswer = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	const body = await readBody(event);
+	if (!id?.trim() || !body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "answer") || typeof body.answer !== "string" || !body.answer.trim()) throw new HTTPError({
+		status: 400,
+		message: "answer_required"
+	});
+	const current = await db.inbox.findById(id);
+	if (!current) throw new HTTPError({
+		status: 404,
+		message: "not_found"
+	});
+	if (current.type !== "user" || current.kind !== "ask") throw new HTTPError({
+		status: 403,
+		message: "scope_denied"
+	});
+	if (![
+		"worker",
+		"project",
+		"supervisor",
+		"main"
+	].includes(current.origin)) throw new HTTPError({
+		status: 409,
+		message: "unsupported_reply_target"
+	});
+	const answer = await db.inbox.answerByUser(id, body.answer.trim(), (/* @__PURE__ */ new Date()).toISOString());
+	if (!answer) throw new HTTPError({
+		status: 409,
+		message: "already_answered"
+	});
+	await inbox.deliverAnswers();
+	return answer;
+});
+// src/service/shell.ts
+const directory = join(DSH_PLUGIN_HOME, "cli");
+const bin = join(directory, "bin");
+const gitconfig = join(directory, "gitconfig");
+const removed = [
+	"GH_TOKEN",
+	"GITHUB_TOKEN",
+	"GH_ENTERPRISE_TOKEN",
+	"GITHUB_ENTERPRISE_TOKEN",
+	"GITLAB_TOKEN",
+	"GLAB_TOKEN",
+	"OAUTH_TOKEN",
+	"CI_JOB_TOKEN",
+	"GIT_DIR",
+	"GIT_WORK_TREE",
+	"GIT_INDEX_FILE",
+	"GIT_PREFIX",
+	"GIT_COMMON_DIR",
+	"GIT_OBJECT_DIRECTORY",
+	"GIT_ALTERNATE_OBJECT_DIRECTORIES",
+	"GIT_NAMESPACE",
+	"GIT_CONFIG_COUNT",
+	"GIT_CONFIG_PARAMETERS",
+	"GIT_AUTHOR_NAME",
+	"GIT_AUTHOR_EMAIL",
+	"GIT_COMMITTER_NAME",
+	"GIT_COMMITTER_EMAIL",
+	"SSH_ASKPASS"
+];
+let restore;
+let writing$1 = Promise.resolve();
+let basePath = "";
+const shell = defineService({
+	async start() {
+		if (restore) throw new Error("shell_already_started");
+		basePath = (process.env.PATH ?? "").split(delimiter).filter((path) => resolve(path).toLowerCase() !== resolve(bin).toLowerCase()).join(delimiter);
+		await refresh();
+		const values = {
+			...Object.fromEntries(removed.map((key) => [key, void 0])),
+			PATH: [bin, basePath].join(delimiter),
+			GIT_CONFIG_GLOBAL: gitconfig,
+			GIT_CONFIG_NOSYSTEM: "1",
+			GIT_ASKPASS: "",
+			GIT_TERMINAL_PROMPT: "0"
+		};
+		const previous = Object.fromEntries(Object.keys(values).map((key) => [key, process.env[key]]));
+		const apply = (entries) => {
+			for (const [key, value] of Object.entries(entries)) if (value === void 0) delete process.env[key];
+			else process.env[key] = value;
+		};
+		apply(values);
+		restore = () => apply(previous);
+		return async () => {
+			const release = restore;
+			restore = void 0;
+			release?.();
+			await writing$1;
+		};
+	},
+	commandEnvironment() {
+		return {
+			...process.env,
+			...restore ? { PATH: basePath } : {}
+		};
+	},
+	refresh() {
+		if (!restore) return Promise.resolve();
+		const next = writing$1.then(refresh);
+		writing$1 = next.catch(() => void 0);
+		return next;
+	}
+});
+async function refresh() {
+	const [github, gitlab, views, projects] = await Promise.all([
+		channel.connection("github"),
+		channel.connection("gitlab"),
+		channel.list(),
+		db.project.listAll()
+	]);
+	await Promise.all([
+		bin,
+		join(directory, "gh"),
+		join(directory, "glab")
+	].map((path) => mkdir(path, {
+		recursive: true,
+		mode: 448
+	})));
+	const gitlabHost = new URL(gitlab.host ?? "https://gitlab.com").host;
+	const bot = (kind) => views.find((view) => view.id === kind)?.accounts.find((account) => account.role === "bot")?.name ?? "";
+	await own(join(directory, "gh", "hosts.yml"), JSON.stringify(github.enabled && github.token ? { "github.com": {
+		oauth_token: github.token,
+		user: bot("github"),
+		git_protocol: "https"
+	} } : {}));
+	await own(join(directory, "glab", "config.yml"), JSON.stringify({
+		git_protocol: "https",
+		hosts: gitlab.enabled && gitlab.token ? { [gitlabHost]: {
+			token: gitlab.token,
+			user: bot("gitlab"),
+			api_protocol: "https",
+			git_protocol: "https"
+		} } : {}
+	}));
+	for (const cli of ["gh", "glab"]) {
+		const executable = await nativeCli(cli);
+		const configKey = cli === "gh" ? "GH_CONFIG_DIR" : "GLAB_CONFIG_DIR";
+		const hostKey = cli === "gh" ? "GH_HOST" : "GITLAB_HOST";
+		const host = cli === "gh" ? "github.com" : gitlabHost;
+		const shellPath = shellPathOf(basePath);
+		await own(join(bin, cli), [
+			"#!/bin/sh",
+			`unset ${removed.filter((key) => /TOKEN/.test(key)).join(" ")}`,
+			`export PATH=${quote(shellPath)}`,
+			`export ${configKey}=${quote(join(directory, cli).replaceAll("\\", "/"))}`,
+			`export ${hostKey}=${quote(host)}`,
+			executable ? `exec ${quote(executable.replaceAll("\\", "/"))} "$@"` : `echo '${cli} is not installed' >&2; exit 127`,
+			""
+		].join("\n"), 448);
+		const cmd = (value) => value.replaceAll("%", "%%");
+		await own(join(bin, `${cli}.cmd`), [
+			"@echo off",
+			"setlocal",
+			...removed.filter((key) => /TOKEN/.test(key)).map((key) => `set "${key}="`),
+			`set "PATH=${cmd(basePath)}"`,
+			`set "${configKey}=${cmd(join(directory, cli))}"`,
+			`set "${hostKey}=${host}"`,
+			executable ? `"${cmd(executable)}" %*` : `echo ${cli} is not installed 1>&2 & exit /b 127`,
+			"exit /b %errorlevel%",
+			""
+		].join("\r\n"), 448);
+	}
+	const nativeGh = await nativeCli("gh");
+	const escaping = [
+		"GH_CONFIG_DIR",
+		"GH_HOST",
+		...removed.filter((key) => /TOKEN/.test(key))
+	];
+	await own(join(bin, "gh-default"), [
+		"#!/bin/sh",
+		`unset ${escaping.join(" ")}`,
+		`export PATH=${quote(shellPathOf(basePath))}`,
+		nativeGh ? `exec ${quote(nativeGh.replaceAll("\\", "/"))} "$@"` : "echo gh is not installed >&2; exit 127",
+		""
+	].join("\n"), 448);
+	await own(join(bin, "gh-default.cmd"), [
+		"@echo off",
+		"setlocal",
+		...escaping.map((key) => `set "${key}="`),
+		`set "PATH=${basePath.replaceAll("%", "%%")}"`,
+		nativeGh ? `"${nativeGh.replaceAll("%", "%%")}" %*` : "echo gh is not installed 1>&2 & exit /b 127",
+		"exit /b %errorlevel%",
+		""
+	].join("\r\n"), 448);
+	const gitQuote = (value) => JSON.stringify(value);
+	const cliPath = (cli) => quote(join(bin, cli).replaceAll("\\", "/"));
+	const lines = [
+		"[user]",
+		"	useConfigOnly = true",
+		"[credential]",
+		"	helper =",
+		"[credential \"https://github.com\"]",
+		`\thelper = ${gitQuote(`!${cliPath("gh")} auth git-credential`)}`,
+		`[credential "https://${gitlabHost}"]`,
+		`\thelper = ${gitQuote(`!f() { if test "$1" = get; then token=$( ${cliPath("glab")} config get token --host ${quote(gitlabHost)} ) || exit; test -n "$token" || exit; printf 'username=oauth2\\npassword=%s\\n' "$token"; fi; }; f`)}`,
+		"[url \"https://github.com/\"]",
+		"	insteadOf = git@github.com:",
+		"	insteadOf = ssh://git@github.com/",
+		`[url "https://${gitlabHost}/"]`,
+		`\tinsteadOf = git@${gitlabHost}:`,
+		`\tinsteadOf = ssh://git@${gitlabHost}/`,
+		"[filter \"lfs\"]",
+		"	clean = git-lfs clean -- %f",
+		"	smudge = git-lfs smudge -- %f",
+		"	process = git-lfs filter-process",
+		"	required = true"
+	];
+	for (const project of projects) {
+		if (!project.remoteUrl) continue;
+		const metadata = views.find((view) => view.id === (/github\.com[:/]/i.test(project.remoteUrl) ? "github" : "gitlab"));
+		if (!metadata?.commitName || !metadata.commitEmail) continue;
+		const identity = join(directory, `${project.id}.gitconfig`);
+		await own(identity, `[user]\n\tname = ${gitQuote(metadata.commitName)}\n\temail = ${gitQuote(metadata.commitEmail)}\n`);
+		const repositoryGitdir = join(project.directory, ".git").replaceAll("\\", "/");
+		for (const pattern of [repositoryGitdir, `${repositoryGitdir}/`]) lines.push(`[includeIf ${gitQuote(`gitdir/i:${pattern}`)}]`, `\tpath = ${gitQuote(identity)}`);
+	}
+	await own(gitconfig, `${lines.join("\n")}\n`);
+}
+function shellPathOf(value) {
+	if (process.platform !== "win32") return value;
+	return value.split(delimiter).map((path) => path.replaceAll("\\", "/").replace(/^([a-z]):/i, (_, drive) => `/${drive.toLowerCase()}`)).join(":");
+}
+async function nativeCli(cli) {
+	for (const folder of basePath.split(delimiter)) {
+		if (!folder) continue;
+		const executable = join(folder, process.platform === "win32" ? `${cli}.exe` : cli);
+		try {
+			await access(executable);
+			return executable;
+		} catch (error) {
+			if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+		}
+	}
+}
+async function own(path, content, mode = 384) {
+	const temporary = `${path}.${process.pid}.tmp`;
+	await writeFile(temporary, content, { mode });
+	await rename(temporary, path);
+}
+function quote(value) {
+	return `'${value.replaceAll("'", "'\\''")}'`;
+}
+// src/service/channel-auth.ts
+const authentications = /* @__PURE__ */ new Map();
+const active = /* @__PURE__ */ new Map();
+const lifetime = 6e5;
+const channelAuth = defineService({
+	async start(channelId, host) {
+		if (channelId !== "github" && channelId !== "gitlab") throw new TypeError("channel_unsupported");
+		const origin = host !== void 0 ? site(channelId, host) : channelId === "github" ? "https://github.com" : void 0;
+		const pending = active.get(channelId);
+		if (pending) {
+			if (origin && pending.origin && origin !== pending.origin) throw new Error("channel_auth_in_progress");
+			return snapshot(pending);
+		}
+		prune();
+		const task = {
+			view: {
+				id: randomUUID(),
+				channelId,
+				status: "pending",
+				output: channelId === "github" ? "Waiting for GitHub authorization." : "Waiting for GitLab device authorization (GitLab 17.9+)."
+			},
+			origin,
+			controller: new AbortController(),
+			done: Promise.resolve()
+		};
+		const dispose = getServerContext(server).effect(() => () => cancel(task), "nexus:channel-auth");
+		authentications.set(task.view.id, task);
+		active.set(channelId, task);
+		task.done = Promise.resolve().then(() => authenticate(task)).finally(() => {
+			active.delete(channelId);
+			task.finishedAt = Date.now();
+		});
+		task.done.then(() => dispose());
+		return snapshot(task);
+	},
+	lookup(channelId, authenticationId) {
+		prune();
+		const task = authentications.get(authenticationId);
+		return task?.view.channelId === channelId ? snapshot(task) : null;
+	},
+	async cancel(channelId) {
+		if (channelId !== "github" && channelId !== "gitlab") throw new TypeError("channel_unsupported");
+		const pending = active.get(channelId);
+		if (pending) await cancel(pending);
+	},
+	async cleanup() {
+		await Promise.all([...active.values()].map(cancel));
+	}
+});
+function snapshot(task) {
+	return {
+		...task.view,
+		...task.view.account ? { account: { ...task.view.account } } : {}
+	};
+}
+function prune() {
+	for (const [id, task] of authentications) if (task.finishedAt && (Date.now() - task.finishedAt > lifetime || authentications.size >= 32)) authentications.delete(id);
+}
+async function cancel(task) {
+	if (!task.finishedAt) task.controller.abort();
+	await task.done;
+}
+async function authenticate(task) {
+	const directory = join(DSH_PLUGIN_HOME, `${task.view.channelId}-auth`, task.view.id);
+	let env = Object.fromEntries(Object.entries(shell.commandEnvironment()).filter(([key]) => key === "GITLAB_CLIENT_ID" || !/^(?:GH_|GITHUB_|GLAB_|GITLAB_|OAUTH_TOKEN$|CI_JOB_TOKEN$|GL_HOST$|BROWSER$|API_PROTOCOL$|SKIP_TLS_VERIFY$|NO_PROMPT$|PROMPT_DISABLED$)/i.test(key)));
+	env.GH_CONFIG_DIR = directory;
+	env.GLAB_CONFIG_DIR = directory;
+	env.GH_HOST = "github.com";
+	env.GH_BROWSER = `"${process.execPath.replaceAll("\\", "/")}" -e "process.exit(0)"`;
+	env.ELECTRON_RUN_AS_NODE = "1";
+	env.GLAB_BROWSER = env.GH_BROWSER;
+	env.GLAB_CHECK_UPDATE = "false";
+	env.GLAB_SKIP_TLS_VERIFY = "false";
+	env.GLAB_API_PROTOCOL = "https";
+	env.GH_PAGER = "cat";
+	env.NO_COLOR = "1";
+	const timeout = setTimeout(() => task.controller.abort(), lifetime);
+	timeout.unref();
+	try {
+		task.controller.signal.throwIfAborted();
+		await mkdir(directory, {
+			recursive: true,
+			mode: 448
+		});
+		if (!task.origin) task.origin = site(task.view.channelId, (await channel.list()).find((item) => item.id === task.view.channelId)?.host ?? "https://gitlab.com");
+		env = await channelProxyEnvironment(new URL(task.origin), env);
+		const hostname = new URL(task.origin).host;
+		await command(task, task.view.channelId === "github" ? [
+			"auth",
+			"login",
+			"--hostname",
+			hostname,
+			"--git-protocol",
+			"https",
+			"--web",
+			"--insecure-storage"
+		] : [
+			"auth",
+			"login",
+			"--hostname",
+			hostname,
+			"--git-protocol",
+			"https",
+			"--api-protocol",
+			"https",
+			"--device",
+			"--insecure-storage"
+		], env, true);
+		task.controller.signal.throwIfAborted();
+		const token = (await command(task, task.view.channelId === "github" ? [
+			"auth",
+			"token",
+			"--hostname",
+			hostname
+		] : [
+			"config",
+			"get",
+			"token",
+			"--host",
+			hostname
+		], env, false)).trim();
+		if (!token || token.length > 8192 || /[\r\n]/.test(token)) throw new Error("channel_auth_token_failed");
+		task.controller.signal.throwIfAborted();
+		const account = (await channel.save(task.view.channelId, {
+			token,
+			...task.view.channelId === "gitlab" ? { host: task.origin } : {}
+		})).accounts.find((account) => account.role === "bot");
+		if (!account) throw new Error("channel_auth_verification_failed");
+		task.view.account = { login: account.name };
+		task.view.status = "succeeded";
+	} catch (error) {
+		task.view.status = "failed";
+		const missing = error instanceof Error && error.code === "ENOENT";
+		task.view.error = task.controller.signal.aborted ? "channel_auth_cancelled" : missing ? task.view.channelId === "github" ? "gh_missing" : "glab_missing" : task.networkTimeout ? "channel_auth_network_timeout" : "channel_auth_failed";
+		publish(task.view, missing ? `Required CLI is not installed: ${task.view.channelId === "github" ? "gh" : "glab"}.` : task.controller.signal.aborted ? "Authentication cancelled." : task.networkTimeout ? `连接授权服务器超时，尚未完成登录。${env.HTTPS_PROXY || env.https_proxy || env.HTTP_PROXY || env.http_proxy ? "CLI已继承代理配置（宿主或Windows已启用配置），请检查代理连通性及绕过规则。" : "CLI未收到HTTP(S)代理配置，当前使用直连；请检查宿主或Windows系统代理设置。"}终端可登录不代表宿主子进程使用相同网络路径。` : "Authentication failed. Review the CLI output above.");
+	} finally {
+		clearTimeout(timeout);
+		try {
+			await rm(directory, {
+				recursive: true,
+				force: true
+			});
+		} catch {
+			if (task.view.status !== "succeeded") task.view.status = "failed";
+			task.view.error = "channel_auth_cleanup_failed";
+		}
+	}
+}
+function command(task, args, env, login) {
+	return new Promise((resolve, reject) => {
+		task.controller.signal.throwIfAborted();
+		const child = spawn(task.view.channelId === "github" ? "gh" : "glab", args, {
+			env,
+			cwd: env.GH_CONFIG_DIR,
+			windowsHide: true,
+			stdio: [
+				"pipe",
+				"pipe",
+				"pipe"
+			],
+			signal: task.controller.signal
+		});
+		let output = "";
+		const stdout = lines(task);
+		const stderr = lines(task);
+		let failure;
+		let force;
+		const abort = () => {
+			force = setTimeout(() => child.kill("SIGKILL"), 1e3);
+			force.unref();
+		};
+		task.controller.signal.addEventListener("abort", abort, { once: true });
+		child.on("error", (error) => {
+			failure = error;
+		});
+		child.stdin.on("error", () => {});
+		child.stdout.on("data", (chunk) => {
+			if (login) stdout.write(chunk);
+			else {
+				output = (output + chunk.toString("utf8")).slice(0, 8193);
+				if (output.length > 8192) {
+					failure = /* @__PURE__ */ new Error("channel_auth_output_limit");
+					task.controller.abort();
+				}
+			}
+		});
+		child.stderr.on("data", (chunk) => {
+			if (login) stderr.write(chunk);
+		});
+		child.once("close", (code) => {
+			clearTimeout(force);
+			task.controller.signal.removeEventListener("abort", abort);
+			if (login) {
+				stdout.end();
+				stderr.end();
+			}
+			if (failure || code !== 0 || task.controller.signal.aborted) {
+				if (login && code !== 0 && !task.controller.signal.aborted && !failure) publish(task.view, `CLI exited with status ${code ?? "unknown"}.`);
+				reject(failure ?? /* @__PURE__ */ new Error("channel_auth_process_failed"));
+			} else resolve(output);
+		});
+		child.stdin.end(login ? "\n" : void 0);
+	});
+}
+function authorize$1(task, raw) {
+	const view = task.view;
+	const text = stripVTControlCharacters(raw);
+	const code = /(?:one[- ]time|device|user) code[:\s]+([A-Z0-9]{4}-[A-Z0-9]{4})\b/i.exec(text);
+	if (code) view.userCode = code[1].toUpperCase();
+	for (const match of text.matchAll(/https:\/\/[^\s'"<>]+/gi)) try {
+		const url = new URL(match[0]);
+		const allowed = view.channelId === "github" ? ["/login/device"] : ["/oauth/device", "/-/oauth/device"];
+		if (url.origin === task.origin && !url.username && !url.password && !url.search && !url.hash && allowed.includes(url.pathname)) view.verificationUri = url.href;
+	} catch {}
+	publish(view, text);
+}
+function site(channelId, host) {
+	try {
+		const url = new URL(host);
+		if (url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash && url.pathname === "/" && (channelId !== "github" || url.origin === "https://github.com")) return url.origin;
+	} catch {}
+	throw new TypeError("invalid_channel_host");
+}
+function publish(view, line) {
+	view.output = [view.output, line].filter(Boolean).join("\n").slice(-1024);
+}
+function lines(task) {
+	const decoder = new StringDecoder("utf8");
+	let pending = "";
+	let discarded = false;
+	const complete = () => {
+		const text = [...stripVTControlCharacters(pending)].filter((char) => char.charCodeAt(0) >= 32 || char === "	").join("").trim();
+		if (!discarded && /(?:dial tcp|connectex|connection|connect|i\/o|TLS handshake|request|context deadline).*(?:timed? out|timeout|deadline exceeded)|(?:timed? out|timeout).*(?:connect|request)/i.test(text)) task.networkTimeout = true;
+		if (!discarded && text && !/token|password|authorization|secret|gh[pousr]_|github_pat_|glpat[-_]|Bearer\s|\b[\w=-]{40,}\b/i.test(text)) authorize$1(task, text.replace(/https?:\/\/[^\s'"<>]+/gi, (raw) => {
+			try {
+				const url = new URL(raw);
+				const paths = task.view.channelId === "github" ? [
+					"/login/device",
+					"/login/device/code",
+					"/login/oauth/access_token"
+				] : [
+					"/oauth/device",
+					"/-/oauth/device",
+					"/oauth/device/code",
+					"/oauth/token"
+				];
+				if (url.origin === task.origin && !url.username && !url.password && paths.includes(url.pathname)) return `${url.origin}${url.pathname}`;
+			} catch {}
+			return "[URL omitted]";
+		}));
+		pending = "";
+		discarded = false;
+	};
+	return {
+		write(chunk) {
+			const parts = decoder.write(chunk).split("\n");
+			for (let index = 0; index < parts.length; index++) {
+				if (!discarded) {
+					if (pending.length + parts[index].length > 4096) {
+						pending = "";
+						discarded = true;
+					} else pending += parts[index];
+				}
+				if (index < parts.length - 1) complete();
+			}
+		},
+		end() {
+			pending += decoder.end();
+			complete();
+		}
+	};
+}
+// src/server/routes/channel.authentication.get.ts
+const getChannelAuthentication = defineHandler((event) => {
+	const id = getRouterParam(event, "id");
+	const authenticationId = getRouterParam(event, "authenticationId");
+	if (!id || !authenticationId) throw new HTTPError({
+		status: 400,
+		message: "invalid_authentication"
+	});
+	const authentication = channelAuth.lookup(id, authenticationId);
+	if (!authentication) throw new HTTPError({
+		status: 404,
+		message: "channel_auth_not_found"
+	});
+	return authentication;
+});
+// src/server/routes/channel.authentication.post.ts
+const postChannelAuthentication = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id");
+	if (!id) throw new HTTPError({
+		status: 400,
+		message: "invalid_channel"
+	});
+	const body = await readBody(event);
+	if (body !== void 0 && (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "host") || body.host !== void 0 && typeof body.host !== "string")) throw new HTTPError({
+		status: 400,
+		message: "invalid_authentication"
+	});
+	try {
+		return await channelAuth.start(id, body?.host);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "";
+		if (message === "channel_unsupported" || message === "invalid_channel_host") throw new HTTPError({
+			status: 400,
+			message
+		});
+		if (message === "channel_auth_in_progress") throw new HTTPError({
+			status: 409,
+			message
+		});
+		throw new HTTPError({
+			status: 503,
+			message: "channel_auth_unavailable"
+		});
+	}
+});
+// src/server/routes/channel.configuration.ts
+const putChannelConfiguration = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id");
+	const body = await readBody(event);
+	if (!id || !body) throw new HTTPError({
+		status: 400,
+		message: "invalid_channel_config"
+	});
+	try {
+		return { channel: await channel.save(id, body) };
+	} catch (error) {
+		const message = error instanceof Error && [
+			"channel_unsupported",
+			"invalid_channel_config",
+			"invalid_channel_token",
+			"invalid_commit_identity",
+			"invalid_channel_host",
+			"invalid_expected_account",
+			"channel_identity_mismatch",
+			"channel_account_required",
+			"channel_auth_failed",
+			"channel_verification_failed"
+		].includes(error.message) ? error.message : "channel_save_failed";
+		throw new HTTPError({
+			status: error instanceof TypeError ? 400 : message === "channel_auth_failed" ? 422 : 502,
+			message
+		});
+	}
+});
+// src/server/routes/channel.credentials.delete.ts
+const deleteChannelCredentials = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id");
+	if (!id) throw new HTTPError({
+		status: 400,
+		message: "channel_unsupported"
+	});
+	try {
+		await channelAuth.cancel(id);
+		return { channel: await channel.removeCredentials(id) };
+	} catch (error) {
+		const unsupported = error instanceof TypeError && error.message === "channel_unsupported";
+		throw new HTTPError({
+			status: unsupported ? 400 : 502,
+			message: unsupported ? "channel_unsupported" : "channel_credentials_delete_failed"
+		});
+	}
+});
+// src/utils/repository.ts
+function parseGitRemote(value) {
+	const invalid = () => /* @__PURE__ */ new Error("invalid_repository_remote");
+	if (typeof value !== "string" || !value || value !== value.trim() || /[\s\\%]/.test(value)) throw invalid();
+	const scp = /^git@([^/:]+):(.+)$/.exec(value);
+	let url;
+	try {
+		url = new URL(scp ? `ssh://git@${scp[1]}/${scp[2]}` : value);
+	} catch {
+		throw invalid();
+	}
+	if (!["https:", "ssh:"].includes(url.protocol) || !url.hostname || url.password || url.search || url.hash || (url.protocol === "https:" ? Boolean(url.username) : url.username !== "git" || Boolean(url.port))) throw invalid();
+	const segments = (scp ? scp[2] : value.slice(value.indexOf("://") + 3).replace(/^[^/]+\//, "")).replace(/\/$/, "").replace(/\.git$/, "").split("/");
+	if (segments.length < 2 || !segments.every((segment) => /^\w[\w.-]*$/.test(segment) && !segment.endsWith(".") && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(segment))) throw invalid();
+	const owner = segments.slice(0, -1).join("/");
+	const name = segments.at(-1);
+	const webUrl = `https://${url.host}/${segments.join("/")}`;
+	return {
+		host: url.host,
+		owner,
+		name,
+		remoteUrl: url.protocol === "https:" ? `${webUrl}.git` : `git@${url.hostname}:${segments.join("/")}.git`,
+		webUrl
+	};
+}
+function parseRepositoryRemote(value, gitlabHost = "https://gitlab.com") {
+	const invalid = () => /* @__PURE__ */ new Error("invalid_repository_remote");
+	let configured;
+	try {
+		configured = new URL(gitlabHost);
+	} catch {
+		throw invalid();
+	}
+	if (configured.protocol !== "https:" || configured.username || configured.password || configured.pathname !== "/" || configured.search || configured.hash) throw invalid();
+	const remote = parseGitRemote(value);
+	const platform = remote.host === "github.com" ? "github" : remote.host === configured.host ? "gitlab" : null;
+	if (!platform || platform === "github" && remote.owner.includes("/")) throw invalid();
+	return {
+		...remote,
+		platform,
+		defaultName: `${platform}/${remote.name}`
+	};
+}
+// src/service/worktree.ts
+const execute = promisify(execFile);
+const operations = /* @__PURE__ */ new Map();
+let controller$1 = new AbortController();
+let stopped$1 = false;
+const worktree = defineService({
+	start() {
+		if (operations.size) throw new Error("worktree_busy");
+		controller$1 = new AbortController();
+		stopped$1 = false;
+		return async () => {
+			stopped$1 = true;
+			controller$1.abort(/* @__PURE__ */ new Error("worktree_stopped"));
+			await Promise.allSettled([...operations.values()]);
+		};
+	},
+	peek(directory) {
+		return run(`peek:${resolve(directory)}`, async () => {
+			const root = await realpath(directory);
+			let gitRoot;
+			try {
+				gitRoot = await git(root, ["rev-parse", "--show-toplevel"]);
+			} catch (error) {
+				if (error instanceof Error && "code" in error && error.code === 128 && "stderr" in error && typeof error.stderr === "string" && error.stderr.includes("not a git repository")) return null;
+				throw error;
+			}
+			if (!samePath$1(gitRoot, root)) return null;
+			return {
+				directory: root,
+				remoteUrl: (await git(root, ["remote"])).split(String.fromCharCode(10)).includes("origin") ? await git(root, [
+					"config",
+					"--get",
+					"remote.origin.url"
+				]) : null
+			};
+		});
+	},
+	async clone(remoteUrl, target, gitlabHost, signal) {
+		signal?.throwIfAborted();
+		const repository = parseRepositoryRemote(remoteUrl, gitlabHost);
+		const result = await run(`clone:${process.platform === "win32" ? resolve(target).toLowerCase() : resolve(target)}`, async () => {
+			if (!isAbsolute(target)) throw new Error("invalid_repository_path");
+			const existing = await existingRepository(target, repository.webUrl, gitlabHost);
+			if (existing) return existing;
+			await mkdir(dirname(target), { recursive: true });
+			if (!samePath$1(await realpath(dirname(target)), dirname(target))) throw new Error("repository_path_conflict");
+			const temporary = await mkdtemp(join(dirname(target), ".nexus-clone-"));
+			try {
+				await git(temporary, [
+					"-c",
+					"http.followRedirects=false",
+					"-c",
+					"protocol.file.allow=never",
+					"clone",
+					"--",
+					repository.remoteUrl,
+					temporary
+				], signal, 12e4);
+				const facts = await worktree.peek(temporary);
+				if (!facts?.remoteUrl || parseRepositoryRemote(facts.remoteUrl, gitlabHost).webUrl !== repository.webUrl) throw new Error("repository_remote_mismatch");
+				signal?.throwIfAborted();
+				controller$1.signal.throwIfAborted();
+				const raced = await existingRepository(target, repository.webUrl, gitlabHost);
+				if (raced) return raced;
+				await rename(temporary, target);
+				return {
+					directory: await realpath(target),
+					remoteUrl: repository.remoteUrl
+				};
+			} finally {
+				await rm(temporary, {
+					recursive: true,
+					force: true
+				});
+			}
+		});
+		if (parseRepositoryRemote(result.remoteUrl, gitlabHost).webUrl !== repository.webUrl) throw new Error("repository_path_conflict");
+		return result;
+	},
+	async create(directory, ticketId, branch = "nexus/") {
+		return run(`create:${resolve(directory)}:${ticketId}`, async () => {
+			if (!isAbsolute(directory) || !/^[a-z0-9][\w-]*$/i.test(ticketId)) throw new Error("invalid_worktree_identity");
+			branch ||= "nexus/";
+			if (branch === "nexus/") branch += ticketId;
+			if (branch.split("/").at(-1) !== ticketId) throw new Error("branch_ticket_mismatch");
+			const root = await realpath(directory);
+			if (!samePath$1(await git(root, ["rev-parse", "--show-toplevel"]), root)) throw new Error("repository_root_required");
+			await git(root, [
+				"check-ref-format",
+				"--branch",
+				branch
+			]);
+			const target = join(dirname(root), ".nexus-worktrees", basename(root), ticketId);
+			try {
+				await lstat(target);
+			} catch (error) {
+				if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
+				await mkdir(dirname(target), { recursive: true });
+				if (!samePath$1(await realpath(dirname(target)), dirname(target))) throw new Error("worktree_parent_conflict");
+				await git(root, [
+					"worktree",
+					"add",
+					"-b",
+					branch,
+					target,
+					"HEAD"
+				]);
+				await worktree.verify(root, target, branch);
+				return {
+					branch,
+					worktree: target
+				};
+			}
+			await worktree.verify(root, target, branch);
+			return {
+				branch,
+				worktree: target
+			};
+		});
+	},
+	async verify(directory, target, branch) {
+		return run(`verify:${resolve(target)}`, async () => {
+			const root = await realpath(directory);
+			const actual = await realpath(target);
+			if (samePath$1(root, actual) || !samePath$1(target, actual)) throw new Error("worktree_path_conflict");
+			const registered = (await git(root, [
+				"worktree",
+				"list",
+				"--porcelain",
+				"-z"
+			])).split("\0\0").map((entry) => entry.split("\0")).find((fields) => fields.some((field) => field.startsWith("worktree ") && samePath$1(field.slice(9), actual)));
+			if (!registered || registered.some((field) => field === "locked" || field.startsWith("locked "))) throw new Error("worktree_registration_conflict");
+			if (!samePath$1(resolve(root, await git(root, ["rev-parse", "--git-common-dir"])), resolve(actual, await git(actual, ["rev-parse", "--git-common-dir"]))) || await git(actual, ["branch", "--show-current"]) !== branch) throw new Error("worktree_branch_conflict");
+		});
+	}
+});
+async function existingRepository(target, webUrl, gitlabHost) {
+	try {
+		const entry = await lstat(target);
+		if (!entry.isDirectory() || entry.isSymbolicLink() || !samePath$1(target, await realpath(target))) throw new Error("repository_path_conflict");
+	} catch (error) {
+		if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
+		throw error;
+	}
+	const facts = await worktree.peek(target);
+	if (!facts?.remoteUrl) throw new Error("repository_path_conflict");
+	let remote;
+	try {
+		remote = parseRepositoryRemote(facts.remoteUrl, gitlabHost);
+	} catch {
+		throw new Error("repository_path_conflict");
+	}
+	if (remote.webUrl !== webUrl) throw new Error("repository_path_conflict");
+	return {
+		directory: facts.directory,
+		remoteUrl: remote.remoteUrl
+	};
+}
+async function git(cwd, args, signal, timeout = 15e3) {
+	const operationSignal = signal ? AbortSignal.any([controller$1.signal, signal]) : controller$1.signal;
+	operationSignal.throwIfAborted();
+	return (await execute("git", args, {
+		cwd,
+		signal: operationSignal,
+		timeout,
+		maxBuffer: 4194304,
+		windowsHide: true,
+		env: {
+			...process.env,
+			LC_ALL: "C",
+			GIT_TERMINAL_PROMPT: "0",
+			GCM_INTERACTIVE: "never",
+			GIT_SSH_COMMAND: "ssh -oBatchMode=yes -oStrictHostKeyChecking=yes -oConnectTimeout=15"
+		}
+	})).stdout.trim();
+}
+function samePath$1(left, right) {
+	return process.platform === "win32" ? resolve(left).toLowerCase() === resolve(right).toLowerCase() : resolve(left) === resolve(right);
+}
+function run(key, action) {
+	if (stopped$1) return Promise.reject(/* @__PURE__ */ new Error("worktree_stopped"));
+	const current = operations.get(key);
+	if (current) return current;
+	const task = Promise.resolve().then(action).finally(() => operations.delete(key));
+	operations.set(key, task);
+	return task;
+}
+// src/service/project.ts
+let syncing;
+let controller = new AbortController();
+let stopped = false;
+const repositories = /* @__PURE__ */ new Map();
+const project = defineService({
+	start() {
+		if (repositories.size || syncing) throw new Error("project_busy");
+		controller = new AbortController();
+		stopped = false;
+		return async () => {
+			stopped = true;
+			controller.abort(/* @__PURE__ */ new Error("project_stopped"));
+			await Promise.allSettled([...repositories.values(), ...syncing ? [syncing] : []]);
+		};
+	},
+	async list() {
+		const rows = await db.project.listAll();
+		const workspaces = getServerContext(server).workspaceRegistry.list();
+		return Promise.all(rows.map(async (current) => {
+			const workspace = workspaces.find((workspace) => workspace.id === current.workspaceId);
+			const facts = workspace && await workspace.status() === "ok" ? await repositoryFacts(workspace.path) : null;
+			return {
+				...current,
+				available: Boolean(facts?.remoteUrl && samePath(facts.directory, current.directory) && facts.remoteUrl === current.remoteUrl)
+			};
+		}));
+	},
+	addRepository(remoteUrl, name, signal) {
+		return addRepository(remoteUrl, name, signal);
+	},
+	async open(id, signal) {
+		const current = await db.project.findById(id);
+		if (!current) throw new Error("project_not_found");
+		const ctx = getServerContext(server);
+		if (!ctx.sessionController.canOpenWorkspacePath()) throw new Error("native_open_unavailable");
+		return ctx.sessionController.openWorkspacePath({ path: current.directory }, signal);
+	},
+	sync() {
+		if (stopped) return Promise.reject(/* @__PURE__ */ new Error("project_stopped"));
+		return queueSync();
+	}
+});
+async function addRepository(remoteUrl, name, requestSignal) {
+	if (stopped) throw new Error("project_stopped");
+	const signal = requestSignal ? AbortSignal.any([controller.signal, requestSignal]) : controller.signal;
+	const remote = parseGitRemote(remoteUrl);
+	const platform = remote.host === "github.com" ? "github" : remote.host;
+	if (name !== void 0 && (typeof name !== "string" || !name.trim() || name.trim().length > 200 || [...name].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127))) throw new Error("invalid_workspace_name");
+	const active = repositories.get(remote.webUrl);
+	if (active) return active;
+	const task = (async () => {
+		signal?.throwIfAborted();
+		const registry = getServerContext(server).workspaceRegistry;
+		let directory;
+		for (const workspace of registry.list()) {
+			if (await workspace.status() !== "ok") continue;
+			const facts = await repositoryFacts(workspace.path);
+			if (facts?.remoteUrl === remote.webUrl) {
+				directory = facts.directory;
+				break;
+			}
+		}
+		if (!directory) {
+			const target = join(DSH_PLUGIN_HOME, "repositories", platform, remote.host.replace(":", "_"), remote.owner, remote.name);
+			try {
+				directory = (await worktree.clone(remote.remoteUrl, resolve(target), void 0, signal)).directory;
+			} catch (error) {
+				if (signal?.aborted || error instanceof Error && error.name === "AbortError") throw new Error("repository_clone_cancelled");
+				if (error instanceof Error && [
+					"repository_path_conflict",
+					"repository_remote_mismatch",
+					"worktree_stopped"
+				].includes(error.message)) throw error;
+				if (error instanceof Error && "killed" in error && error.killed) throw new Error("repository_clone_timeout");
+				throw new Error("repository_clone_failed");
+			}
+		}
+		signal.throwIfAborted();
+		if (parseGitRemote(remoteUrl).webUrl !== remote.webUrl || (await repositoryFacts(directory))?.remoteUrl !== remote.webUrl) throw new Error("repository_remote_mismatch");
+		signal.throwIfAborted();
+		const workspace = await registry.create(directory, name?.trim() ?? `${platform}/${remote.name}`);
+		await queueSync();
+		const current = await db.project.findByWorkspace(workspace.id);
+		if (!current) throw new Error("repository_registration_failed");
+		return {
+			project: current,
+			workspaceId: workspace.id
+		};
+	})().finally(() => repositories.delete(remote.webUrl));
+	repositories.set(remote.webUrl, task);
+	return task;
+}
+function queueSync() {
+	const task = (syncing ? syncing.then(synchronize, synchronize) : synchronize()).finally(() => {
+		if (syncing === task) syncing = void 0;
+	});
+	syncing = task;
+	return task;
+}
+async function synchronize() {
+	const registry = getServerContext(server).workspaceRegistry;
+	const available = [];
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	for (const workspace of registry.list()) {
+		if (await workspace.status() !== "ok") continue;
+		const facts = await repositoryFacts(workspace.path);
+		if (!facts) continue;
+		const current = await db.project.findByWorkspace(workspace.id);
+		if (!current && !facts.remoteUrl) continue;
+		if (facts.remoteUrl) available.push(workspace.id);
+		await db.project.upsertWorkspace({
+			id: current?.id ?? workspace.id,
+			workspaceId: workspace.id,
+			name: workspace.title,
+			directory: facts.directory,
+			remoteUrl: facts.remoteUrl
+		}, now);
+	}
+	await db.project.disableUnavailable(available, now);
+	return db.project.listAll();
+}
+async function repositoryFacts(directory) {
+	let facts;
+	try {
+		facts = await worktree.peek(directory);
+	} catch (error) {
+		if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
+		throw error;
+	}
+	if (!facts?.remoteUrl) return facts;
+	try {
+		return {
+			...facts,
+			remoteUrl: parseGitRemote(facts.remoteUrl).webUrl
+		};
+	} catch {
+		return {
+			...facts,
+			remoteUrl: null
+		};
+	}
+}
+function samePath(left, right) {
+	return process.platform === "win32" ? resolve(left).toLowerCase() === resolve(right).toLowerCase() : resolve(left) === resolve(right);
+}
+// src/server/routes/panel.get.ts
+const getPanel = defineHandler(async () => {
+	const [projects, tickets, runningWorkers, supervisors, scopes, links, threads, triggers, subscriptions, channelCatalog, messages, pending, settings, savedMainSessionId, openTickets, queuedWorkers] = await Promise.all([
+		project.list(),
+		db.ticket.listRecent(),
+		db.worker.listRunning(),
+		db.supervisor.listActive(),
+		db.supervisorTicket.listAll(),
+		db.ticketLink.listAll(),
+		db.thread.listRecent(1e3),
+		db.trigger.listRecent(),
+		db.ticketThread.listAll(),
+		channel.list(),
+		db.inbox.listRecent(),
+		db.inbox.listPending("user"),
+		setting.load(),
+		session.findMain(),
+		db.ticket.listOpen(),
+		db.worker.listQueued()
+	]);
+	async function binding(id, role, projectId) {
+		if (!id) return {
+			sessionId: null,
+			status: "not_created"
+		};
+		const identity = await session.resolve(id);
+		if (identity?.role !== role || role === "project" && identity.projectId !== projectId) return {
+			sessionId: null,
+			status: "not_created"
+		};
+		const activity = await session.activity(id);
+		return {
+			sessionId: id,
+			status: activity.running ? "running" : activity.background ? "background" : activity.queued ? "queued" : "idle"
+		};
+	}
+	const [mainBinding, projectBindings] = await Promise.all([binding(savedMainSessionId, "main"), Promise.all(projects.map(async (project) => ({
+		id: project.id,
+		...await binding(project.orchestratorSessionId ?? null, "project", project.id)
+	})))]);
+	const mainSessionId = mainBinding.sessionId;
+	const projectSessions = new Map(projectBindings.map((project) => [project.id, project]));
+	const activeWorkers = [...new Map([...queuedWorkers, ...runningWorkers].map((worker) => [worker.id, worker])).values()];
+	const runningTicketIds = new Set(runningWorkers.map((worker) => worker.ticketId));
+	const ticketMap = new Map(openTickets.map((ticket) => [ticket.id, ticket]));
+	const missingIds = [...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id));
+	for (const ticket of await Promise.all(missingIds.map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
+	const currentTickets = [...ticketMap.values()].filter((ticket) => ![
+		"closed",
+		"done",
+		"cancelled"
+	].includes(ticket.status) || runningTicketIds.has(ticket.id));
+	const currentTicketIds = new Set(currentTickets.map((ticket) => ticket.id));
+	const currentWorkers = activeWorkers.filter((worker) => currentTicketIds.has(worker.ticketId) && (worker.status === "running" || ![
+		"closed",
+		"done",
+		"cancelled"
+	].includes(ticketMap.get(worker.ticketId).status)));
+	const currentProjects = projects.filter((project) => [
+		"running",
+		"background",
+		"queued"
+	].includes(projectSessions.get(project.id).status));
+	const hasRuntime = currentTickets.length > 0 || currentProjects.length > 0 || [
+		"running",
+		"background",
+		"queued"
+	].includes(mainBinding.status);
+	const channels = channelCatalog.filter((channel) => channel.configured && channel.supported && currentTickets.some((ticket) => ticket.channelId === channel.id));
+	const nodes = [
+		...channels.length ? [{
+			id: "channel",
+			kind: "channel",
+			label: channels.map((channel) => channel.name).join(" · "),
+			status: "configured",
+			projectId: null,
+			ticketId: null,
+			sessionId: null
+		}] : [],
+		...hasRuntime ? [{
+			id: "orchestrator",
+			kind: "orchestrator",
+			label: mainSessionId ?? "",
+			status: mainBinding.status,
+			projectId: null,
+			ticketId: null,
+			sessionId: mainSessionId
+		}] : [],
+		...currentProjects.map((project) => ({
+			id: `project:${project.id}`,
+			kind: "project",
+			label: project.name,
+			status: projectSessions.get(project.id).status,
+			projectId: project.id,
+			ticketId: null,
+			sessionId: projectSessions.get(project.id).sessionId
+		})),
+		...currentTickets.map((ticket) => ({
+			id: `ticket:${ticket.id}`,
+			kind: "ticket",
+			label: ticket.title,
+			status: ticket.paused ? "paused" : ticket.prepareError ? "error" : ticket.status,
+			projectId: ticket.projectId,
+			ticketId: ticket.id,
+			sessionId: null
+		})),
+		...currentWorkers.map((worker) => ({
+			id: `worker:${worker.id}`,
+			kind: "worker",
+			label: worker.title,
+			status: worker.status,
+			projectId: ticketMap.get(worker.ticketId).projectId,
+			ticketId: worker.ticketId,
+			sessionId: worker.status === "running" ? worker.id : null
+		}))
+	];
+	const nodeIds = new Set(nodes.map((node) => node.id));
+	const edges = [
+		{
+			source: "channel",
+			target: "orchestrator",
+			kind: "flow"
+		},
+		...currentProjects.map((project) => ({
+			source: "orchestrator",
+			target: `project:${project.id}`,
+			kind: "flow"
+		})),
+		...currentTickets.map((ticket) => ({
+			source: `project:${ticket.projectId}`,
+			target: `ticket:${ticket.id}`,
+			kind: "flow"
+		})),
+		...currentWorkers.map((worker) => ({
+			source: `ticket:${worker.ticketId}`,
+			target: `worker:${worker.id}`,
+			kind: "flow"
+		})),
+		...links.map((link) => ({
+			source: `ticket:${link.ticketId}`,
+			target: `ticket:${link.relatedId}`,
+			kind: link.kind === "depends" ? "dependency" : "association"
+		}))
+	].filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
+	const groups = supervisors.map((supervisor) => ({
+		id: `supervisor:${supervisor.id}`,
+		label: supervisor.title,
+		sessionId: supervisor.sessionId,
+		nodeIds: [...new Set(scopes.filter((scope) => scope.supervisorId === supervisor.id).flatMap((scope) => {
+			const ticket = currentTickets.find((ticket) => ticket.id === scope.ticketId);
+			return ticket && nodeIds.has(`project:${ticket.projectId}`) ? [`project:${ticket.projectId}`] : [];
+		}))]
+	})).filter((group) => group.nodeIds.length);
+	const failed = messages.find((message) => message.status === "stalled" || message.status === "pending" && message.deliveryError);
+	const activities = [mainBinding, ...projectBindings];
+	const run = {
+		state: failed ? "delivery_failed" : runningWorkers.length || activities.some((activity) => activity.status === "running" || activity.status === "background") ? "running" : currentWorkers.some((worker) => worker.status === "queued") || activities.some((activity) => activity.status === "queued") ? "queued" : "idle",
+		reason: failed?.deliveryError ?? null
+	};
+	return {
+		projects,
+		tickets,
+		mainSessionId,
+		graph: {
+			nodes,
+			edges,
+			groups
+		},
+		run,
+		inbox: {
+			pending,
+			resolved: messages.filter((message) => message.type === "user" && message.status === "done"),
+			blocked: tickets.filter((ticket) => ticket.paused)
+		},
+		topics: {
+			threads,
+			triggers,
+			subscriptions
+		},
+		deliveries: messages,
+		channels: channelCatalog,
+		settings
+	};
+});
+// src/server/routes/project.opening.ts
+const postProjectOpening = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	if (!id?.trim()) throw new HTTPError({
+		status: 400,
+		message: "project_id_required"
+	});
+	try {
+		return await project.open(id, event.req.signal);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "repository_open_failed";
+		throw new HTTPError({
+			status: message === "project_not_found" ? 404 : message === "native_open_unavailable" ? 503 : 502,
+			message
+		});
+	}
+});
+// src/server/routes/project.patch.ts
+const patchProject = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	const body = await readBody(event);
+	if (!id?.trim() || !body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "enabled") || typeof body.enabled !== "boolean") throw new HTTPError({
+		status: 400,
+		message: "invalid_enabled"
+	});
+	const current = await db.project.findById(id);
+	if (!current) throw new HTTPError({
+		status: 404,
+		message: "not_found"
+	});
+	if (body.enabled && !current.remoteUrl?.trim()) throw new HTTPError({
+		status: 409,
+		message: "repository_identity_unverified"
+	});
+	const project = await db.project.setEnabled(id, body.enabled, (/* @__PURE__ */ new Date()).toISOString());
+	if (!project) throw new HTTPError({
+		status: 409,
+		message: "project_unavailable"
+	});
+	return project;
+});
+// src/server/routes/project.post.ts
+const postProjects = defineHandler(async () => project.sync());
+// src/server/routes/project.repository.post.ts
+const postRepository = defineHandler(async (event) => {
+	const body = await readBody(event);
+	if (!body || typeof body.remoteUrl !== "string" || body.name !== void 0 && typeof body.name !== "string") throw new HTTPError({
+		status: 400,
+		message: "invalid_repository_request"
+	});
+	try {
+		return await project.addRepository(body.remoteUrl, body.name, event.req.signal);
+	} catch (error) {
+		const reason = error instanceof Error ? error.message : "";
+		const invalid = ["invalid_repository_remote", "invalid_workspace_name"].includes(reason);
+		const conflict = ["repository_path_conflict", "repository_remote_mismatch"].includes(reason);
+		const cancelled = reason === "repository_clone_cancelled";
+		const message = invalid || conflict || cancelled || [
+			"repository_clone_timeout",
+			"repository_clone_failed",
+			"repository_registration_failed"
+		].includes(reason) ? reason : "repository_registration_failed";
+		throw new HTTPError({
+			status: invalid ? 400 : conflict ? 409 : cancelled ? 408 : message === "repository_clone_timeout" ? 504 : 502,
+			message
+		});
+	}
+});
+// src/server/routes/project.session.ts
+const putProjectSession = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	if (!id?.trim()) throw new HTTPError({
+		status: 400,
+		message: "project_id_required"
+	});
+	try {
+		return { sessionId: await session.create("project", { projectId: id }) };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "session_open_failed";
+		throw new HTTPError({
+			status: message === "project_not_found" ? 404 : message === "session_binding_conflict" ? 409 : message === "runtime_stopping" ? 503 : 502,
+			message
+		});
+	}
+});
+// src/server/routes/session.context.get.ts
+const getContext = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	if (!id?.trim()) throw new HTTPError({
+		status: 400,
+		message: "invalid_session"
+	});
+	const identity = await session.resolve(id);
+	if (!identity) throw new HTTPError({
+		status: 404,
+		message: "unknown_session"
+	});
+	const context = await session.view(id, 0, 12e3);
+	return {
+		sessionId: id,
+		role: identity.role,
+		pendingCount: (await inbox.peek(id)).pendingCount,
+		...context
+	};
+});
+// src/server/routes/session.mailbox.get.ts
+const getMailbox = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	if (!id?.trim()) throw new HTTPError({
+		status: 400,
+		message: "invalid_session"
+	});
+	return { mailbox: await inbox.peek(id) };
+});
+// src/server/routes/session.mailbox.patch.ts
+const patchMail = defineHandler(async (event) => {
+	const body = await readBody(event);
+	if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "status") || body.status !== "done") throw new HTTPError({
+		status: 400,
+		message: "invalid_mail_patch"
+	});
+	const id = getRouterParam(event, "id", { decode: true });
+	const messageId = getRouterParam(event, "messageId", { decode: true });
+	if (!id?.trim() || !messageId?.trim()) throw new HTTPError({
+		status: 400,
+		message: "invalid_parameters"
+	});
+	const mailbox = await inbox.peek(id);
+	if (!mailbox) throw new HTTPError({
+		status: 404,
+		message: "unknown_session"
+	});
+	const message = mailbox.messages.find((message) => message.id === messageId);
+	if (!message) throw new HTTPError({
+		status: 403,
+		message: "scope_denied"
+	});
+	if (message.kind === "ask") throw new HTTPError({
+		status: 409,
+		message: "answer_required"
+	});
+	return { completed: await inbox.complete(id, [messageId]) };
+});
+// src/server/routes/session.open.post.ts
+const putMainSession = defineHandler(async () => {
+	try {
+		return { sessionId: await session.create("main", {}) };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "session_open_failed";
+		throw new HTTPError({
+			status: message === "ambiguous_main_session" ? 409 : message === "runtime_stopping" ? 503 : 502,
+			message
+		});
+	}
+});
+// src/server/routes/setting.patch.ts
+const patchSettings = defineHandler(async (event) => {
+	const body = await readBody(event);
+	if (!body) throw new HTTPError({
+		status: 400,
+		message: "invalid_config"
+	});
+	try {
+		return await setting.save(body);
+	} catch (error) {
+		if (error instanceof TypeError && error.message === "invalid_config") throw new HTTPError({
+			status: 400,
+			message: "invalid_config"
+		});
+		throw error;
+	}
+});
+// src/server/routes/ticket.get.ts
+const getTicket = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	if (!id?.trim()) throw new HTTPError({
+		status: 400,
+		message: "invalid_ticket"
+	});
+	const ticket = await db.ticket.findById(id);
+	if (!ticket) throw new HTTPError({
+		status: 404,
+		message: "not_found"
+	});
+	const [project, executions, outgoing, incoming, subscriptions, inbox] = await Promise.all([
+		db.project.findById(ticket.projectId),
+		db.worker.listByTicket(id),
+		db.ticketLink.listByTicket(id),
+		db.ticketLink.listByRelated(id),
+		db.ticketThread.listByTicket(id),
+		db.inbox.listByTicket(id)
+	]);
+	const topics = (await Promise.all(subscriptions.map((link) => db.thread.findById(link.threadId)))).filter((topic) => topic !== void 0);
+	const triggers = (await Promise.all(topics.map((topic) => db.trigger.listByThread(topic.id)))).flat();
+	const dependencies = [...outgoing, ...incoming.filter((link) => !outgoing.some((other) => other.ticketId === link.ticketId && other.relatedId === link.relatedId && other.kind === link.kind))];
+	return {
+		ticket,
+		project: project ?? null,
+		executions,
+		dependencies,
+		subscriptions,
+		topics,
+		triggers,
+		inbox
+	};
+});
+// src/server/routes/ticket.patch.ts
+const patchTicket = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	const body = await readBody(event);
+	if (!id?.trim() || !body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "reason" && key !== "paused") || typeof body.paused !== "boolean" || typeof body.reason !== "string" || !body.reason.trim()) throw new HTTPError({
+		status: 400,
+		message: "invalid_ticket_patch"
+	});
+	const ticket = await db.ticket.findById(id);
+	if (!ticket) throw new HTTPError({
+		status: 404,
+		message: "not_found"
+	});
+	if (ticket.status === "done" || ticket.status === "cancelled") throw new HTTPError({
+		status: 409,
+		message: "ticket_closed"
+	});
+	const updated = await db.ticket.setPausedIfOpen(id, body.paused, (/* @__PURE__ */ new Date()).toISOString());
+	if (!updated) throw new HTTPError({
+		status: 409,
+		message: "ticket_closed"
+	});
+	return updated;
+});
+// src/server/index.ts
+const authorize = defineHandler(async (event) => {
+	const options = getServerOptions(event);
+	event.res.headers.set("cache-control", "no-store");
+	const origin = event.req.headers.get("origin");
+	const host = event.req.headers.get("host");
+	if (origin && origin !== options.origin || host && host !== new URL(options.origin).host) throw new HTTPError({
+		status: 403,
+		message: "origin_denied"
+	});
+	if (!options.owner || !await options.owner(event)) throw new HTTPError({
+		status: 401,
+		message: "owner_required"
+	});
+});
+const server = defineWebServer((app) => {
+	app.use(authorize);
+	app.get("/api/nexus/panel", getPanel);
+	app.get("/api/nexus/tickets/:id", getTicket);
+	app.patch("/api/nexus/tickets/:id", patchTicket);
+	app.put("/api/nexus/channels/:id/configuration", putChannelConfiguration);
+	app.delete("/api/nexus/channels/:id/credentials", deleteChannelCredentials);
+	app.post("/api/nexus/channels/:id/authentications", postChannelAuthentication);
+	app.get("/api/nexus/channels/:id/authentications/:authenticationId", getChannelAuthentication);
+	app.patch("/api/nexus/projects/:id", patchProject);
+	app.post("/api/nexus/projects", postProjects);
+	app.post("/api/nexus/repositories", postRepository);
+	app.put("/api/nexus/projects/:id/session", putProjectSession);
+	app.post("/api/nexus/projects/:id/openings", postProjectOpening);
+	app.put("/api/nexus/sessions/main", putMainSession);
+	app.patch("/api/nexus/settings", patchSettings);
+	app.post("/api/nexus/asks/:id/answers", postAnswer);
+	app.get("/api/nexus/sessions/:id/context", getContext);
+	app.get("/api/nexus/sessions/:id/mailbox", getMailbox);
+	app.patch("/api/nexus/sessions/:id/mailbox/:messageId", patchMail);
+});
+// src/service/channel.ts
+const presets = [
+	{
+		id: "github",
+		name: "GitHub"
+	},
+	{
+		id: "gitlab",
+		name: "GitLab"
+	},
+	{
+		id: "feishu",
+		name: "飞书"
+	}
+];
+let writing = Promise.resolve();
+const channel = defineService({
+	async list() {
+		const [rows, accounts] = await Promise.all([db.channel.listAll(), db.channelAccount.listAll()]);
+		return Promise.all(presets.map(async (preset) => {
+			const row = rows.find((row) => row.id === preset.id);
+			const members = accounts.filter((account) => account.channelId === preset.id).map(({ id, channelId, role, name, avatar, status, createdAt }) => ({
+				id,
+				channelId,
+				role,
+				name,
+				avatar,
+				status,
+				createdAt
+			}));
+			const supported = preset.id !== "feishu";
+			const hasCredential = preset.id !== "feishu" && (await credentials().describe(ref(preset.id))).configured;
+			const enabled = supported && Boolean(row?.enabled);
+			const stored = await db.sourceState.find(preset.id, "configuration");
+			const configured = hasCredential || members.length > 0 || Boolean(stored);
+			const metadata = readMetadata(stored?.value, preset.id);
+			return {
+				id: preset.id,
+				kind: preset.id,
+				name: row?.name ?? preset.name,
+				host: row?.host ?? (preset.id === "gitlab" ? "https://gitlab.com" : null),
+				enabled,
+				createdAt: row?.createdAt ?? "",
+				accounts: members,
+				configured,
+				supported,
+				hasCredential,
+				status: !supported ? "unsupported" : !configured ? "unconfigured" : !enabled ? "disabled" : members.some((account) => account.role === "bot" && account.status === "online") ? "online" : "offline",
+				...metadata
+			};
+		}));
+	},
+	connection(kind) {
+		const operation = writing.then(async () => {
+			const row = await db.channel.findById(kind);
+			const token = kind === "feishu" ? void 0 : (await credentials().resolve(ref(kind)))?.value;
+			return Object.freeze({
+				host: row?.host ?? (kind === "gitlab" ? "https://gitlab.com" : null),
+				token,
+				enabled: kind !== "feishu" && Boolean(row?.enabled)
+			});
+		});
+		writing = operation.then(() => void 0, () => void 0);
+		return operation;
+	},
+	async resolveCredential(kind) {
+		if (kind === "feishu") return void 0;
+		return (await credentials().resolve(ref(kind)))?.value;
+	},
+	removeCredentials(kind) {
+		const operation = writing.then(() => removeCredentials(kind));
+		writing = operation.catch(() => void 0);
+		return operation.then(async (view) => {
+			const { shell } = await import("./shell-BnCscs0s.js");
+			await shell.refresh();
+			return view;
+		});
+	},
+	save(kind, patch) {
+		const operation = writing.then(() => save(kind, patch));
+		writing = operation.catch(() => void 0);
+		return operation.then(async (view) => {
+			const { shell } = await import("./shell-BnCscs0s.js");
+			await shell.refresh();
+			return view;
+		});
+	}
+});
+function credentials() {
+	return getServerContext(server).credentials;
+}
+function ref(kind) {
+	return credentialRef(kind === "github" ? "NEXUS_GITHUB_TOKEN" : "NEXUS_GITLAB_TOKEN");
+}
+function readMetadata(raw, kind) {
+	if (!raw) return {
+		commitName: "",
+		commitEmail: ""
+	};
+	const value = JSON.parse(raw);
+	if (!value || typeof value !== "object" || !("commitName" in value) || !("commitEmail" in value) || typeof value.commitName !== "string" || typeof value.commitEmail !== "string") throw new Error("invalid_channel_metadata");
+	if (kind === "gitlab" && "expectedAccount" in value && typeof value.expectedAccount !== "string") throw new Error("invalid_channel_metadata");
+	return {
+		commitName: value.commitName,
+		commitEmail: value.commitEmail,
+		...kind === "gitlab" && "expectedAccount" in value && value.expectedAccount ? { expectedAccount: value.expectedAccount } : {}
+	};
+}
+async function removeCredentials(kind) {
+	if (kind !== "github" && kind !== "gitlab") throw new TypeError("channel_unsupported");
+	const previous = await credentials().resolve(ref(kind));
+	await credentials().unset(ref(kind));
+	try {
+		await db.channel.removeCredentials(kind);
+	} catch {
+		if (previous) await credentials().set(ref(kind), previous.value);
+		throw new Error("channel_credentials_delete_failed");
+	}
+	return (await channel.list()).find((item) => item.kind === kind);
+}
+async function save(kind, patch) {
+	if (kind !== "github" && kind !== "gitlab") throw new TypeError("channel_unsupported");
+	if (!patch || typeof patch !== "object" || Array.isArray(patch) || Object.keys(patch).some((key) => ![
+		"host",
+		"enabled",
+		"expectedAccount",
+		"commitName",
+		"commitEmail",
+		"token"
+	].includes(key)) || patch.enabled !== void 0 && typeof patch.enabled !== "boolean" || [
+		"host",
+		"commitName",
+		"commitEmail",
+		"token"
+	].some((key) => patch[key] !== void 0 && typeof patch[key] !== "string")) throw new TypeError("invalid_channel_config");
+	if (patch.token !== void 0 && (!patch.token.trim() || patch.token.length > 8192 || /[\r\n]/.test(patch.token))) throw new TypeError("invalid_channel_token");
+	if ((patch.commitName?.length ?? 0) > 200 || (patch.commitEmail?.length ?? 0) > 254 || /[\r\n]/.test((patch.commitName ?? "") + (patch.commitEmail ?? "")) || patch.commitEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(patch.commitEmail.trim())) throw new TypeError("invalid_commit_identity");
+	if (kind === "gitlab" && patch.expectedAccount !== void 0 && (typeof patch.expectedAccount !== "string" || patch.expectedAccount.length > 100 || patch.expectedAccount.trim() && !/^[a-z0-9][\w.-]*$/i.test(patch.expectedAccount.trim()))) throw new TypeError("invalid_expected_account");
+	const current = (await channel.list()).find((item) => item.kind === kind);
+	const expectedAccount = kind === "gitlab" ? patch.expectedAccount?.trim() ?? current.expectedAccount : void 0;
+	let url;
+	try {
+		url = new URL(patch.host ?? current.host ?? (kind === "github" ? "https://github.com" : "https://gitlab.com"));
+	} catch {
+		throw new TypeError("invalid_channel_host");
+	}
+	if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.pathname !== "/" || kind === "github" && url.origin !== "https://github.com") throw new TypeError("invalid_channel_host");
+	const hostChanged = kind === "gitlab" && url.origin !== new URL(current.host ?? "https://gitlab.com").origin;
+	const token = patch.token?.trim();
+	let account;
+	if (hostChanged && (current.hasCredential || current.accounts.length > 0) && !token) throw new TypeError("channel_account_required");
+	if (token) {
+		const endpoint = kind === "github" ? "https://api.github.com/user" : `${url.origin}/api/v4/user`;
+		const env = await channelProxyEnvironment(new URL(endpoint), process.env);
+		const dispatcher = await createRouteDispatcher({ get: (name) => env[name] === void 0 ? void 0 : { value: env[name] } }, { allowH2: false });
+		try {
+			let response;
+			try {
+				response = await fetch(endpoint, {
+					dispatcher,
+					headers: {
+						authorization: `Bearer ${token}`,
+						accept: kind === "github" ? "application/vnd.github+json" : "application/json"
+					},
+					signal: AbortSignal.timeout(15e3),
+					redirect: "error"
+				});
+			} catch {
+				throw new Error("channel_verification_failed");
+			}
+			if (!response.ok) {
+				await response.body?.cancel();
+				throw new Error("channel_auth_failed");
+			}
+			let identity;
+			try {
+				identity = await response.json();
+			} catch {
+				throw new Error("channel_auth_failed");
+			}
+			if (!identity || typeof identity !== "object" || Array.isArray(identity)) throw new Error("channel_auth_failed");
+			const user = identity;
+			const login = kind === "github" ? user.login : user.username ?? user.name;
+			if (typeof login !== "string" || !login.trim() || login.length > 200 || /[\r\n]/.test(login)) throw new Error("channel_auth_failed");
+			if (expectedAccount && (typeof user.username !== "string" || user.username.toLowerCase() !== expectedAccount.toLowerCase())) throw new TypeError("channel_identity_mismatch");
+			account = {
+				name: login.trim(),
+				avatar: null
+			};
+		} finally {
+			await dispatcher.close();
+		}
+	}
+	if (kind === "gitlab" && !token && expectedAccount && current.accounts.some((account) => account.role === "bot" && account.name.toLowerCase() !== expectedAccount.toLowerCase())) throw new TypeError("channel_identity_mismatch");
+	const enabled = patch.enabled ?? (Boolean(account) || current.enabled);
+	if (enabled && !account && !current.accounts.some((account) => account.role === "bot" && account.status === "online")) throw new TypeError("channel_account_required");
+	const previous = token ? await credentials().resolve(ref(kind)) : void 0;
+	if (token) await credentials().set(ref(kind), token);
+	try {
+		await db.channel.saveConfiguration(kind, current.name, kind === "gitlab" ? url.origin : null, enabled, {
+			commitName: patch.commitName?.trim() ?? current.commitName,
+			commitEmail: patch.commitEmail?.trim() ?? current.commitEmail,
+			...expectedAccount ? { expectedAccount } : {}
+		}, account, ...hostChanged ? [true] : []);
+	} catch {
+		if (token) {
+			if (previous) await credentials().set(ref(kind), previous.value);
+			else await credentials().unset(ref(kind));
+		}
+		throw new Error("channel_save_failed");
+	}
+	return (await channel.list()).find((item) => item.kind === kind);
+}
+export { channelAuth as a, session as c, defineService as d, DSH_PLUGIN_HOME as f, worktree as i, channelProxyEnvironment as l, server as n, shell as o, db as p, project as r, inbox as s, channel as t, setting as u };

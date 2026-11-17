@@ -35,6 +35,44 @@ describe('渠道配置模型', () => {
     expect(await model.findById('gitlab')).toMatchObject({ host: 'https://gitlab.example.com', enabled: 0 })
   })
 
+  it('启用提交确立观察起点且普通保存不刷新', async () => {
+    const states = new SourceState(connection)
+    const before = new Date().toISOString()
+    await model.saveConfiguration('github', 'GitHub', null, true, { commitName: '', commitEmail: '' })
+    const activation = (await states.find('github', 'activation'))!
+    expect(JSON.parse(activation.value) >= before).toBe(true)
+    expect(JSON.parse(activation.value) <= new Date().toISOString()).toBe(true)
+    await model.saveConfiguration('github', 'GitHub', null, true, { commitName: 'Changed', commitEmail: '' })
+    expect(await states.find('github', 'activation')).toEqual(activation)
+  })
+
+  it('gitLab换站保存保留旧管理员历史，但不新增或改写名单', async () => {
+    const accounts = new ChannelAccount(connection)
+    await model.saveConfiguration('gitlab', 'GitLab', 'https://old.example.com', true, { commitName: '', commitEmail: '' }, { name: 'bot', avatar: null })
+    await connection.insertInto('channel_account').values({ id: 'legacy-admin', channelId: 'gitlab', role: 'admin', name: 'old-owner', avatar: null, createdAt: 'admin-time' }).execute()
+    await model.saveConfiguration('gitlab', 'GitLab', 'https://new.example.com', true, { commitName: '', commitEmail: '' }, { name: 'bot', avatar: null }, true)
+    expect((await accounts.findByRole('gitlab', 'admin')).map(row => [row.id, row.name, row.createdAt])).toEqual([['legacy-admin', 'old-owner', 'admin-time']])
+  })
+
+  it('重新启用可更新渠道观察起点但不重置已采集仓库baseline或cursor', async () => {
+    const states = new SourceState(connection)
+    await model.saveConfiguration('github', 'GitHub', null, false, { commitName: '', commitEmail: '' })
+    await states.set('github', 'activation', JSON.stringify('2025-01-01T00:00:00.000Z'), '2025-01-01T00:00:00.000Z')
+    await states.set('github', 'owner/repo:baseline', JSON.stringify('2025-02-01T00:00:00.000Z'), 'baseline-time')
+    await states.set('github', 'owner/repo:cursor:comments', JSON.stringify({ since: '2025-03-01T00:00:00.000Z' }), 'cursor-time')
+    const before = new Date().toISOString()
+    await model.saveConfiguration('github', 'GitHub', null, true, { commitName: '', commitEmail: '' })
+    expect(JSON.parse((await states.find('github', 'activation'))!.value) >= before).toBe(true)
+    expect(await states.find('github', 'owner/repo:baseline')).toMatchObject({ value: JSON.stringify('2025-02-01T00:00:00.000Z'), updatedAt: 'baseline-time' })
+    expect(await states.find('github', 'owner/repo:cursor:comments')).toMatchObject({ value: JSON.stringify({ since: '2025-03-01T00:00:00.000Z' }), updatedAt: 'cursor-time' })
+  })
+
+  it('已启用的旧渠道补存观察起点使用createdAt而非配置保存时刻', async () => {
+    await connection.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 1, host: null, createdAt: '2025-01-01T00:00:00.000Z' }).execute()
+    await model.saveConfiguration('github', 'GitHub', null, true, { commitName: '', commitEmail: '' })
+    expect(JSON.parse((await new SourceState(connection).find('github', 'activation'))!.value)).toBe('2025-01-01T00:00:00.000Z')
+  })
+
   it('账户写入失败时回滚渠道开关、metadata及原bot', async () => {
     await model.saveConfiguration('github', 'GitHub', null, false, { commitName: 'Before', commitEmail: '' }, { name: 'before', avatar: null })
     native.exec('CREATE TRIGGER reject_account BEFORE INSERT ON channel_account BEGIN SELECT RAISE(ABORT, \'test_failure\'); END')

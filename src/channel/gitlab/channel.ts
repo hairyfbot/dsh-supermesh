@@ -242,7 +242,7 @@ export class GitLabChannel {
     await db.trigger.ingest({ id, channelId: 'gitlab', threadId: thread.id, kind, actorName, human: Number(human), mentioned: Number(mentioned), text: body, url, at, ref: typeof row.source_branch === 'string' ? row.source_branch : null })
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)
     const historical = timestamp(row.created_at) < baseline
-    const admin = accounts.some(account => account.role === 'admin' && account.name.toLowerCase() === actorName.toLowerCase())
+    const admin = (await setting.load()).administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
     if (!human || (historical && !subscriptions.length))
       return
     if (!subscriptions.length && (!admin || (kind !== 'open' && !mentioned) || (thread.triage === 'ignored' && !mentioned)))
@@ -263,7 +263,7 @@ export class GitLabChannel {
     const author = record(row.author)
     const login = text(author.username)
     const accounts = await db.channelAccount.findByChannel('gitlab')
-    if (author.bot === true || row.system === true || accounts.some(account => account.role === 'bot' && account.name.toLowerCase() === login.toLowerCase()) || !accounts.some(account => account.role === 'admin' && account.name.toLowerCase() === login.toLowerCase()))
+    if (author.bot === true || row.system === true || accounts.some(account => account.role === 'bot' && account.name.toLowerCase() === login.toLowerCase()) || !(await setting.load()).administrators.some(name => name.toLowerCase() === login.toLowerCase()))
       return
     const body = typeof row.body === 'string' ? row.body : ''
     const answers = new Map<string, string>()

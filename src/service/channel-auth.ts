@@ -14,6 +14,7 @@ import { DSH_PLUGIN_HOME } from '../config/paths'
 import { server } from '../server'
 import { defineService } from '../utils/service'
 import { channel } from './channel'
+import { shell } from './shell'
 
 interface Authentication {
   view: ChannelAuthentication
@@ -93,7 +94,7 @@ async function cancel(task: Authentication): Promise<void> {
 
 async function authenticate(task: Authentication): Promise<void> {
   const directory = join(DSH_PLUGIN_HOME, `${task.view.channelId}-auth`, task.view.id)
-  let env = Object.fromEntries(Object.entries(process.env).filter(([key]) => key === 'GITLAB_CLIENT_ID' || !/^(?:GH_|GITHUB_|GLAB_|GITLAB_|OAUTH_TOKEN$|CI_JOB_TOKEN$|GL_HOST$|BROWSER$|API_PROTOCOL$|SKIP_TLS_VERIFY$|NO_PROMPT$|PROMPT_DISABLED$)/i.test(key)))
+  let env = Object.fromEntries(Object.entries(shell.commandEnvironment()).filter(([key]) => key === 'GITLAB_CLIENT_ID' || !/^(?:GH_|GITHUB_|GLAB_|GITLAB_|OAUTH_TOKEN$|CI_JOB_TOKEN$|GL_HOST$|BROWSER$|API_PROTOCOL$|SKIP_TLS_VERIFY$|NO_PROMPT$|PROMPT_DISABLED$)/i.test(key)))
   env.GH_CONFIG_DIR = directory
   env.GLAB_CONFIG_DIR = directory
   env.GH_HOST = 'github.com'

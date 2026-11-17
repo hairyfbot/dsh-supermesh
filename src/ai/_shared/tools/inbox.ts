@@ -14,10 +14,10 @@ export const inbox_list = defineTool({
 
 export const read_mailbox = defineTool({
   name: 'read_mailbox',
-  description: '主动读取当前角色全部未处理邮件和来源上下文，标为已读；处理完后用 inbox_kill 标为 done，ask 必须用 answer 回答。',
+  description: '读取当前角色未处理邮件，以及可用项目的 id、仓库地址和本地路径。主编排先用它确定分诊目标；读取标为已读，处理完用 inbox_kill，ask 必须用 answer。',
   parameters: {},
   output: { schema: { type: 'string', description: '完整角色邮箱。' }, render: (_args, value) => [{ type: 'text', text: value }] },
-  execute: async (_args, exec) => JSON.stringify(await inbox.read(exec.agent?.session.id ?? '')),
+  execute: async (_args, exec) => JSON.stringify(await inbox.read(exec.agent?.session.id ?? '', true)),
 })
 
 export const inbox_kill = defineTool({

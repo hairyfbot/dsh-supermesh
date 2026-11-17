@@ -4,19 +4,19 @@ import type { OverviewChannelKind, OverviewView } from '../types'
 import type { RuntimeSettings, Section } from './setting'
 import { defineStore } from '@deepseek-ai/dsh-client-store'
 import { AGENT_GRAPH } from '../config/constants'
-import { GROUPS, validSettings } from './setting'
+import { administratorSignature, GROUPS, validSettings } from './setting'
 
 export type TabKind = 'overview' | 'ticket' | 'trigger' | 'channel' | 'setting'
 export type Page = TabKind | 'channel/detail' | 'ticket/detail' | 'trigger/detail'
 
 export const store = defineStore({
   init: () => {
-    const saved: RuntimeSettings = { maxWorkers: 10, backgroundLimitMinutes: 30, autoMerge: false, autoMergeMaxLines: 200, deliveryMaxAttempts: 3, deliveryRetryCeilingSeconds: 60 }
+    const saved: RuntimeSettings = { administrators: [], maxWorkers: 10, backgroundLimitMinutes: 30, autoMerge: false, autoMergeMaxLines: 200, deliveryMaxAttempts: 3, deliveryRetryCeilingSeconds: 60 }
     return ({
       navigation: { page: 'overview' as Page, ticketId: null as string | null, returnTo: 'overview' as 'overview' | 'ticket' | 'trigger' | 'trigger/detail' },
       channel: { selected: null as OverviewChannelKind | null },
       overview: { view: 'recent' as OverviewView },
-      setting: { section: 'projects' as Section, saved, draft: { ...saved }, refreshedAt: null as string | null, notice: null as 'saved' | 'refreshed' | 'project' | null, invalid: false },
+      setting: { section: 'general' as Section, saved, draft: { ...saved }, refreshedAt: null as string | null, notice: null as 'saved' | 'refreshed' | 'project' | null, invalid: false },
       data: { panel: null as Omit<GetApiNexusPanelResponse, 'settings'> | null, ticket: null as GetApiNexusTicketsidResponse | null, loading: false, error: null as string | null },
       trigger: { selectedId: null as string | null, openFilter: null as 'channel' | 'kind' | 'status' | null, filters: { query: '', channel: 'all', status: 'all', kind: 'all', mentionedOnly: false } as Filters },
       graph: { zoom: 1, x: 0, y: 0, selectedId: null as string | null },
@@ -33,14 +33,17 @@ export const store = defineStore({
     },
     receivePanel: (draft, value: GetApiNexusPanelResponse) => {
       const { settings, ...panel } = value
-      const dirty = Object.keys(draft.setting.saved).some(key => draft.setting.draft[key as keyof RuntimeSettings] !== draft.setting.saved[key as keyof RuntimeSettings])
+      const administratorsDirty = administratorSignature(draft.setting.draft.administrators) !== administratorSignature(draft.setting.saved.administrators)
+      const dirty = [...GROUPS.execution, ...GROUPS.delivery].some(key => draft.setting.draft[key] !== draft.setting.saved[key])
       draft.data.panel = panel
       draft.data.loading = false
       draft.data.error = null
-      const { maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings
-      draft.setting.saved = { maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
-      if (!dirty)
+      const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings
+      draft.setting.saved = { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
+      if (!dirty && !administratorsDirty)
         draft.setting.draft = { ...draft.setting.saved }
+      else if (!administratorsDirty)
+        draft.setting.draft.administrators = [...administrators]
       draft.setting.refreshedAt = new Date().toISOString()
     },
     receiveProject: (draft, project: GetApiNexusPanelResponse['projects'][number]) => {
@@ -52,9 +55,19 @@ export const store = defineStore({
       if (ticket.ticket.id === draft.navigation.ticketId)
         draft.data.ticket = ticket
     },
-    receiveSettings: (draft, value: RuntimeSettings) => {
+    receiveGeneralSettings: (draft, administrators: string[]) => {
+      draft.setting.saved.administrators = [...administrators]
+      draft.setting.draft.administrators = [...administrators]
+      draft.setting.invalid = false
+      draft.setting.notice = 'saved'
+    },
+    receiveSettings: (draft, value: RuntimeSettings, section: 'execution' | 'delivery') => {
+      const administratorsDirty = administratorSignature(draft.setting.draft.administrators) !== administratorSignature(draft.setting.saved.administrators)
       draft.setting.saved = value
-      draft.setting.draft = { ...value }
+      for (const key of GROUPS[section])
+        Object.assign(draft.setting.draft, { [key]: value[key] })
+      if (!administratorsDirty)
+        draft.setting.draft.administrators = [...value.administrators]
       draft.setting.invalid = false
       draft.setting.notice = 'saved'
     },
@@ -95,6 +108,9 @@ export const store = defineStore({
     resetTriggerFilters: (draft) => {
       draft.trigger.openFilter = null
       draft.trigger.filters = { query: '', channel: 'all', status: 'all', kind: 'all', mentionedOnly: false }
+    },
+    clearSettingNotice: (draft) => {
+      draft.setting.notice = null
     },
     setSettingSection: (draft, section: Section) => {
       draft.setting.section = section

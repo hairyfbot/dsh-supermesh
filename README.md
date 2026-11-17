@@ -45,9 +45,11 @@ dsh plugin --profile <name> add github:omdsh-dev/dsh-nexus
 
 ## 🚀 快速开始
 
-1. 打开 **Nexus** 面板，在设置页勾选要参与的 Git 工作区。
-2. 在渠道页配置 GitHub / GitLab 账号与提交身份。
-3. 点「打开主会话」进入主编排，在 issue 或 PR 中 @ 机器人开始分诊。
+1. 打开 **Nexus → 设置 → 通用设置**，填写全渠道共用的管理员登录名白名单。只有名单中的人类账号可以发起新任务，空名单不接受首次派工。
+2. 在 **项目范围** 勾选要参与的 Git 工作区，或通过「新增仓库」输入 GitHub / GitLab remote 克隆并创建工作区；默认名称为 `[平台]/[仓库名称]`。「打开仓库」进入远程网页。
+3. 在渠道页配置 GitHub / GitLab 机器人账号、Token 和提交身份，然后用管理员账号在 issue 或 PR 中 @ 机器人开始分诊。新话题先由主编排判断归属，已订阅的话题和分支 CI 通知按已有归属投递。
+
+主编排、项目编排与临时协调者统一归入固定的「代理工作区」（`$DSH_HOME/.nexus`），不跟随当前选中的代码工作区，因此无需再次选择工作区。项目仓库仍独立保留，只有 Worker 在专属 worktree 内改代码；旧会话历史不自动迁移。首次观察从渠道启用与项目接入的较晚时刻开始，已有采集游标不重置，也不会因补管理员名单而自动重放历史评论。
 
 ## 📚 文档
 
@@ -65,13 +67,13 @@ pnpm run test -- --run
 pnpm run test:e2e
 ```
 
-改 `prisma/schema/` 后跑 `pnpm run prisma:generate`，迁移由 `pnpm run prisma:migrate` 生成。E2E 需 Playwright Chromium，并把 `DSH_E2E_CLI` 指向 `@deepseek-ai/dsh/lib/bin.js`。
+改 `prisma/schema/` 后跑 `pnpm run prisma:generate`，迁移由 `pnpm run prisma:migrate` 生成。真实宿主集成测试与 E2E 均需把 `DSH_E2E_CLI` 指向已安装的 `@deepseek-ai/dsh/lib/bin.js`；Desktop 环境也可使用 `DSH_NODE_EXECUTABLE` 与 `DSH_INSTALL_DIR`。宿主集成测试在独立临时目录内组合官方库，不监听端口、不请求模型；E2E 另需 Playwright Chromium。
 
 ## 🚧 当前限制
 
-- 自动合并 PR 未完成授权，暂不可开启。
+- GitHub 自动合并默认关闭，由 Worker 按交付提示词及任务、仓库指令判断，不由宿主服务编排。仅对当前票分支已 ready、改动行数低于配置上限且所需审批覆盖当前 HEAD 的 PR，使用默认 gh 登录账号执行原生 `pr merge --auto --merge --match-head-commit`；发布仍用渠道机器人身份。条件不满足时由人工合并，条件失效或 push 前先撤销自动合并。GitLab 使用原生 glab 发布 MR，当前不启用自动合并。
+- 工作区每五秒同步，失联或移除 remote 的项目停用并保留历史，手动禁用不会被刷新重新开启。
 - 收件箱无超时自动升级，需代理显式 `escalate`。
-- PR 合并后只回写状态并通知编排，不会自动结单。
 - 飞书仅有配置入口。
 - 版本 `0.0.0`，接口与提示词仍可能变动。
 

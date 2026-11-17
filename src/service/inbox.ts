@@ -28,9 +28,9 @@ export const inbox = defineService({
       const { events } = await session.history(agent.session.id)
       if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some(message => message.source.kind === (restore ? 'nexus-mailbox-context' : 'nexus-mailbox') && message.source.revision === revision))
         return
-      if (events.some(event => event.type === 'user/message' && event.data.source.kind === (restore ? 'nexus-mailbox-context' : 'nexus-mailbox') && event.data.source.revision === revision))
+      if (events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === (restore ? 'nexus-mailbox-context' : 'nexus-mailbox') && message.source.revision === revision)))
         return
-      const text = `你有${mailbox.pendingCount}个未读邮件，请及时处理。`
+      const text = `你有${mailbox.pendingCount}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`
       const message = createUserMessage({ content: [{ type: 'text', text }], source: { kind: restore ? 'nexus-mailbox-context' : 'nexus-mailbox', form: 'notice', summary: text, revision } })
       if (stopped || !(await session.resolve(agent.session.id)))
         return
@@ -48,7 +48,8 @@ export const inbox = defineService({
     if (!scope)
       return null
     const messages = await db.inbox.listScoped(scope, includeChannel)
-    return { sessionId: id, role: scope.type, pendingCount: messages.length, messages }
+    const projects = (await db.project.listAll()).filter(project => project.enabled && (identity.role === 'main' || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({ id, name, directory, remoteUrl }))
+    return { sessionId: id, role: scope.type, projects, pendingCount: messages.length, messages }
   },
   async read(id: string, includeChannel = false) {
     const mailbox = await inbox.peek(id, includeChannel)
@@ -82,34 +83,42 @@ export const inbox = defineService({
     return run('delivery', async () => {
       const settings = await setting.load()
       const blocked = new Set<string>()
+      const notified = new Set<string>()
       const receipts = new Map<string, Awaited<ReturnType<typeof session.receipts>>>()
       for (const message of await db.inbox.listDelivery()) {
         if (stopped)
           break
         const key = [message.type, message.projectId, message.supervisorId, message.ticketId].join(':')
-        if (message.origin !== 'channel') {
-          if (!blocked.has(key)) {
-            blocked.add(key)
-            const id = await recipient(message, false)
-            const agent = id ? await session.lookup(id) : null
-            if (agent?.status === 'idle')
-              await inbox.notify(agent)
-          }
-          continue
-        }
-        if (blocked.has(key) || message.readAt)
-          continue
-        blocked.add(key)
-        if (message.status === 'stalled' || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
-          continue
         if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused)
           continue
         if (message.type === 'project' && message.projectId && !(await db.project.findById(message.projectId))?.enabled)
+          continue
+        if (message.type === 'supervisor' && message.supervisorId && (await db.supervisor.findById(message.supervisorId))?.status !== 'active')
+          continue
+        if (message.origin === 'channel') {
+          if (blocked.has(key) || message.readAt)
+            continue
+          blocked.add(key)
+        }
+        else if (notified.has(key)) {
+          continue
+        }
+        if (message.status === 'stalled' || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
           continue
         try {
           const id = await recipient(message)
           if (!id)
             throw new Error('recipient_session_unavailable')
+          if (message.origin !== 'channel') {
+            const agent = await session.activate(id)
+            if (stopped)
+              break
+            if (agent.status === 'idle')
+              await inbox.notify(agent)
+            notified.add(key)
+            await db.inbox.resetDelivery(message.id)
+            continue
+          }
           let consumed = receipts.get(id)
           if (!consumed) {
             consumed = await session.receipts(id)
@@ -124,7 +133,7 @@ export const inbox = defineService({
           }
           if ((await session.activity(id)).running || stopped)
             continue
-          await session.send(id, [message.title ?? '', `[Inbox ${message.id}] ${message.message}`].filter(Boolean).join(String.fromCharCode(10)), 'queue', requestId)
+          await session.send(id, [message.title ?? '', `[Inbox ${message.id}]`, message.triggerId ? `triggerId: ${message.triggerId}` : '', message.threadId ? `threadId: ${message.threadId}` : '', message.message].filter(Boolean).join(String.fromCharCode(10)), 'queue', requestId)
           await db.inbox.resetDelivery(message.id)
           blocked.delete(key)
         }
@@ -204,21 +213,13 @@ function run(key: string, action: () => Promise<void>): Promise<void> {
   return task
 }
 
-async function recipient(message: Message, create = true): Promise<string | null> {
+async function recipient(message: Message): Promise<string> {
   if (message.type === 'main')
-    return session.findMain()
-  if (message.type === 'project' && message.projectId) {
-    const project = await db.project.findById(message.projectId)
-    if (!project)
-      throw new Error('project_not_found')
-    return project.orchestratorSessionId ?? (create ? session.create('project', { projectId: project.id, directory: project.directory, title: project.name }) : null)
-  }
-  if (message.type === 'supervisor' && message.supervisorId) {
-    const supervisor = await db.supervisor.findById(message.supervisorId)
-    if (!supervisor || supervisor.status !== 'active')
-      throw new Error('supervisor_not_active')
-    return supervisor.sessionId ?? (create ? session.create('supervisor', { supervisorId: supervisor.id, title: supervisor.title }) : null)
-  }
+    return session.create('main', {})
+  if (message.type === 'project' && message.projectId)
+    return session.create('project', { projectId: message.projectId })
+  if (message.type === 'supervisor' && message.supervisorId)
+    return session.create('supervisor', { supervisorId: message.supervisorId })
   throw new Error('invalid_inbox_recipient')
 }
 

@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
 import { useId } from 'react'
+import { Case, Switch } from 'react-if-lite'
 import { ActivityIcon, GitBranchIcon, TasksIcon } from '../../components/icons'
 import { useActions, useStore } from '../../hooks/use-store'
 import { useTranslation } from '../../hooks/use-translation'
-import { GROUPS } from '../../store/setting'
+import { administratorSignature, GROUPS } from '../../store/setting'
+import { General } from './components/general'
 import { Projects } from './components/projects'
 import { Runtime } from './components/runtime'
 
@@ -12,17 +14,19 @@ export function Setting(): ReactNode {
   const activeSection = useStore(state => state.setting.section)
   const notice = useStore(state => state.setting.notice)
   const invalid = useStore(state => state.setting.invalid)
+  const generalDirty = useStore(({ setting: { draft, saved } }) => administratorSignature(draft.administrators) !== administratorSignature(saved.administrators))
   const executionDirty = useStore(({ setting: { draft, saved } }) => GROUPS.execution.some(key => draft[key] !== saved[key]))
   const deliveryDirty = useStore(({ setting: { draft, saved } }) => GROUPS.delivery.some(key => draft[key] !== saved[key]))
   const { setSettingSection } = useActions()
   const id = useId()
   const notices = { saved: 'settingSaved', refreshed: 'settingRefreshed', project: 'settingProjectSaved' } as const
   const sections = [
+    { value: 'general', label: 'settingGeneral', icon: TasksIcon },
     { value: 'projects', label: 'settingProjects', icon: GitBranchIcon },
     { value: 'execution', label: 'settingExecution', icon: TasksIcon },
     { value: 'delivery', label: 'settingDelivery', icon: ActivityIcon },
   ] as const
-  const dirty = { projects: false, execution: executionDirty, delivery: deliveryDirty }
+  const dirty = { general: generalDirty, projects: false, execution: executionDirty, delivery: deliveryDirty }
   return (
     <section className="@container flex min-w-0 flex-col gap-4 pb-8" aria-label={t('tabSettings')}>
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -44,11 +48,16 @@ export function Setting(): ReactNode {
           </nav>
         </aside>
         <div id={`${id}-content`} role="region" aria-labelledby={`${id}-${activeSection}`} className="flex min-w-0 flex-col gap-4">
-          {activeSection === 'projects' ? <Projects /> : <Runtime />}
+          <Switch value={activeSection}>
+            <Case cond="general"><General /></Case>
+            <Case cond="projects"><Projects /></Case>
+            <Case cond="execution"><Runtime key="execution" /></Case>
+            <Case cond="delivery"><Runtime key="delivery" /></Case>
+          </Switch>
           {invalid ? <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p> : notice && <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(notices[notice])}</p>}
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">
             {t('settingPreview')}
-            {(executionDirty || deliveryDirty) && <span className="ml-1">{t('settingUnsaved')}</span>}
+            {(generalDirty || executionDirty || deliveryDirty) && <span className="ml-1">{t('settingUnsaved')}</span>}
           </p>
         </div>
       </div>

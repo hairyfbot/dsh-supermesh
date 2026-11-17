@@ -49,7 +49,15 @@ export class Project extends Model<DB, 'project'> {
     return query.returningAll().executeTakeFirst()
   }
 
+  async disableUnavailable(workspaceIds: string[], updatedAt: string): Promise<void> {
+    let query = this.db.updateTable('project').set({ enabled: 0, updatedAt }).where('enabled', '=', 1)
+    if (workspaceIds.length)
+      query = query.where('workspaceId', 'not in', workspaceIds)
+    await query.execute()
+  }
+
   async upsertWorkspace(value: Pick<DB['project'], 'id' | 'workspaceId' | 'name' | 'directory' | 'remoteUrl'>, updatedAt: string): Promise<Selectable<DB['project']>> {
-    return this.db.insertInto('project').values({ ...value, enabled: value.remoteUrl?.trim() ? 1 : 0, orchestratorSessionId: null, createdAt: updatedAt, updatedAt }).onConflict(oc => oc.column('workspaceId').doUpdateSet({ name: value.name, directory: value.directory, remoteUrl: value.remoteUrl, updatedAt })).returningAll().executeTakeFirstOrThrow()
+    const hasRemote = Boolean(value.remoteUrl?.trim())
+    return this.db.insertInto('project').values({ ...value, enabled: hasRemote ? 1 : 0, orchestratorSessionId: null, createdAt: updatedAt, updatedAt }).onConflict(oc => oc.column('workspaceId').doUpdateSet({ name: value.name, directory: value.directory, remoteUrl: value.remoteUrl, ...(!hasRemote ? { enabled: 0 } : {}), updatedAt })).returningAll().executeTakeFirstOrThrow()
   }
 }

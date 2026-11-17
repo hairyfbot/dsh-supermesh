@@ -8,7 +8,14 @@ export default defineConfig({
   preset: pipeline(
     fetch.ts.config,
     original,
-    fetch.ts.parser,
+    async (config) => {
+      const parsed = await fetch.ts.parser(config)
+      for (const scope of Object.values(parsed.graphs.scopes)) {
+        for (const method of scope.functions)
+          method.body = method.body?.map(statement => statement.replace(/(["']?method["']?\s*:\s*["'])(get|head|post|put|patch|delete|options)(["'])/g, (_match, prefix: string, verb: string, suffix: string) => `${prefix}${verb.toUpperCase()}${suffix}`))
+      }
+      return parsed
+    },
     fetch.ts.compiler,
     fetch.ts.generate,
     fetch.ts.dest,

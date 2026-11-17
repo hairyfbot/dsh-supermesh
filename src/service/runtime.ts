@@ -6,6 +6,7 @@ import { channelAuth } from './channel-auth'
 import { inbox } from './inbox'
 import { project } from './project'
 import { session } from './session'
+import { shell } from './shell'
 import { worker } from './worker'
 import { worktree } from './worktree'
 
@@ -30,6 +31,7 @@ async function activate(): Promise<() => Promise<void>> {
   const pending = new Set<Promise<unknown>>()
   const unregister: (() => boolean)[] = []
   const stops: (() => Promise<void>)[] = []
+  let restoreShell: (() => Promise<void>) | undefined
   let closing: Promise<void> | null = null
   const close = (): Promise<void> => {
     if (closing)
@@ -40,6 +42,7 @@ async function activate(): Promise<() => Promise<void>> {
         remove()
       await Promise.allSettled(stops.map(stop => stop()))
       await Promise.allSettled([...pending])
+      await restoreShell?.()
       dispose = null
     })()
     return closing
@@ -53,9 +56,12 @@ async function activate(): Promise<() => Promise<void>> {
   }
   try {
     stops.push(() => channelAuth.cleanup())
-    stops.push(session.start(), worktree.start(), inbox.start(), worker.start())
+    stops.push(session.start(), worktree.start(), project.start(), inbox.start(), worker.start())
     await scheduler.ready()
+    await session.workspace()
+    await session.create('main', {})
     await project.sync()
+    restoreShell = await shell.start()
     await worker.recover()
     unregister.push(scheduler.use({ id: 'nexus:runtime', cron: '* * * * * *' }, () => track(async () => {
       await worker.reconcileBackground()
@@ -63,7 +69,12 @@ async function activate(): Promise<() => Promise<void>> {
       await inbox.deliver()
       await worker.reconcile()
     })))
+    unregister.push(scheduler.use({ id: 'nexus:projects', cron: '*/5 * * * * *' }, () => track(async () => {
+      await project.sync()
+      await shell.refresh()
+    })))
     unregister.push(scheduler.use({ id: 'nexus:github', cron: '*/30 * * * * *' }, () => track(async () => {
+      await project.sync()
       const collected = await github.collectAll(controller.signal)
       const flushed = await github.flush(controller.signal)
       const failures = [...collected, ...flushed].filter(result => !result.ok)

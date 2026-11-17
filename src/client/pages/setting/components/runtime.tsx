@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react'
 import type { DshNexusKey } from '../../../locale'
 import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useAsyncFn } from '@reause/core'
-import { useId } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { patchApiNexusSettings } from '../../../apis'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
@@ -15,17 +14,43 @@ export function Runtime(): ReactNode {
   const saved = useStore(state => state.setting.saved)
   const ready = useStore(state => state.data.panel !== null)
   const { editSettings, receiveSettings, resetSettings } = useActions()
-  const [saving, save] = useAsyncFn(async () => {
-    if (section === 'projects')
+  const [saving, setSaving] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const request = useRef<AbortController | null>(null)
+  // keep:effect Cancel saving and ignore old responses after the section changes or is disposed.
+  useEffect(() => () => {
+    request.current?.abort()
+    request.current = null
+  }, [section])
+  async function save(): Promise<void> {
+    if (!ready || request.current || section === 'projects' || section === 'general')
       return
     const patch = Object.fromEntries(GROUPS[section].map(key => [key, draft[key]]))
-    const settings = await patchApiNexusSettings(patch)
-    if (!settings || !validSettings(settings))
-      throw new Error('设置保存失败')
-    receiveSettings(settings)
-  })
+    const controller = new AbortController()
+    request.current = controller
+    setSaving(true)
+    setFailed(false)
+    try {
+      const settings = await patchApiNexusSettings(patch, { signal: controller.signal })
+      if (controller.signal.aborted || request.current !== controller)
+        return
+      if (!settings || !validSettings(settings))
+        throw new Error('invalid_settings')
+      receiveSettings(settings, section)
+    }
+    catch {
+      if (!controller.signal.aborted && request.current === controller)
+        setFailed(true)
+    }
+    finally {
+      if (request.current === controller) {
+        request.current = null
+        setSaving(false)
+      }
+    }
+  }
   const prefix = useId()
-  if (section === 'projects')
+  if (section === 'projects' || section === 'general')
     return null
   const dirty = GROUPS[section].some(key => draft[key] !== saved[key])
   const candidate = { ...saved, ...Object.fromEntries(GROUPS[section].map(key => [key, draft[key]])) }
@@ -54,7 +79,7 @@ export function Runtime(): ReactNode {
       {fields.filter(field => (GROUPS[section] as readonly string[]).includes(field.key)).map((field) => {
         const limits = LIMITS[field.key]
         const value = draft[field.key]
-        const disabled = field.key === 'autoMergeMaxLines'
+        const disabled = !ready || saving || (field.key === 'autoMergeMaxLines' && !draft.autoMerge)
         const invalid = !Number.isInteger(value) || value < limits.min || value > limits.max
         const id = `${prefix}-${field.key}`
         return (
@@ -79,18 +104,18 @@ export function Runtime(): ReactNode {
             <h4 className="m-0 text-xs font-medium">{t('settingAutoMerge')}</h4>
             <p className="m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAutoMergeHelp')}</p>
           </div>
-          <Switch disabled checked={draft.autoMerge} label={t('settingAutoMerge')} onChange={autoMerge => editSettings({ autoMerge })} />
+          <Switch disabled={!ready || saving} checked={draft.autoMerge} label={t('settingAutoMerge')} onChange={autoMerge => editSettings({ autoMerge })} />
         </div>
       )}
-      {saving.error && <p role="alert" className="px-4">{saving.error.message}</p>}
+      {failed && <p role="alert" className="px-4">{t('settingSaveFailed')}</p>}
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5">
         <div className="min-w-0 flex-1 basis-60">
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('settingPersistenceOnly')}</p>
           {dirty && !valid && <p role="status" className="m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant="ghost" disabled={!dirty} onClick={() => resetSettings(section)}>{t('settingDiscard')}</Button>
-          <Button type="submit" size="sm" variant="primary" disabled={!ready || saving.loading || !dirty || !valid}>{t('settingSave')}</Button>
+          <Button type="button" size="sm" variant="ghost" disabled={saving || !dirty} onClick={() => resetSettings(section)}>{t('settingDiscard')}</Button>
+          <Button type="submit" size="sm" variant="primary" disabled={!ready || saving || !dirty || !valid}>{t('settingSave')}</Button>
         </div>
       </footer>
     </form>

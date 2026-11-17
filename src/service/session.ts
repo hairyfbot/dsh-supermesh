@@ -6,8 +6,8 @@ import type {} from '@deepseek-ai/dsh-session-query'
 import type {} from '@deepseek-ai/dsh-workspace'
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import { realpathNormalize } from '@deepseek-ai/dsh-workspace'
 import { getServerContext } from 'dsh-h3/utils'
 import { DSH_PLUGIN_HOME } from '../config/paths'
 import { db } from '../database'
@@ -44,8 +44,11 @@ export const session = defineService({
       const current = await session.findMain()
       if (current && current !== agent.session.id)
         throw new Error('ambiguous_main_session')
-      await storage.setItem('mainSessionId', agent.session.id)
     }
+    if (role !== 'worker')
+      await bindWorkspace(agent.session.id, agent.session.header.cwd)
+    if (role === 'main')
+      await storage.setItem('mainSessionId', agent.session.id)
     return role
   },
   start(): () => Promise<void> {
@@ -115,13 +118,26 @@ export const session = defineService({
         throw new Error('supervisor_not_active')
       if (role === 'main') {
         const existing = await session.findMain()
-        if (existing)
+        if (existing) {
+          await bindWorkspace(existing)
           return existing
+        }
       }
       if (role === 'project' && project?.orchestratorSessionId) {
         const identity = await session.resolve(project.orchestratorSessionId)
-        if (identity?.role === 'project' && identity.projectId === project.id)
+        if (identity?.role === 'project' && identity.projectId === project.id) {
+          await bindWorkspace(project.orchestratorSessionId)
           return project.orchestratorSessionId
+        }
+        if (identity)
+          throw new Error('session_binding_conflict')
+      }
+      if (role === 'supervisor' && supervisor?.sessionId) {
+        const identity = await session.resolve(supervisor.sessionId)
+        if (identity?.role === 'supervisor' && identity.supervisorId === supervisor.id) {
+          await bindWorkspace(supervisor.sessionId)
+          return supervisor.sessionId
+        }
         if (identity)
           throw new Error('session_binding_conflict')
       }
@@ -130,10 +146,13 @@ export const session = defineService({
         const worker = await db.worker.findById(requestedId)
         if (!worker || worker.ticketId !== options.ticketId || worker.status === 'ended')
           throw new Error('worker_binding_required')
+        if (!options.directory)
+          throw new Error('worker_directory_required')
       }
-      const directory = options.directory ?? project?.directory ?? join(DSH_PLUGIN_HOME, 'sessions', requestedId)
-      await mkdir(directory, { recursive: true })
-      const created = await ctx.sessionController.create({ sessionId: SessionId(requestedId), cwd: directory, agentPreset: presets[role] })
+      const location = role === 'worker'
+        ? { cwd: options.directory! }
+        : { workspaceId: (await session.workspace()).id }
+      const created = await ctx.sessionController.create({ sessionId: SessionId(requestedId), ...location, agentPreset: presets[role] })
       const id = created.sessionId
       if (id !== requestedId)
         throw new Error('session_identity_conflict')
@@ -143,8 +162,9 @@ export const session = defineService({
         await db.project.setOrchestrator(project.id, id, new Date().toISOString())
       if (supervisor && role === 'supervisor')
         await db.supervisor.attachSession(supervisor.id, id)
-      if (options.title)
-        await ctx.sessionController.rename({ sessionId: id, title: options.title })
+      const title = role === 'main' ? '[路由] 主编排' : role === 'project' ? `[路由] ${project!.name}` : role === 'supervisor' ? `[协调] ${supervisor!.title}` : options.title
+      if (title)
+        await ctx.sessionController.rename({ sessionId: id, title })
       if (role !== 'worker')
         await inbox.notify(await resolveAgent(id), true)
       if (options.prompt)
@@ -200,6 +220,15 @@ export const session = defineService({
     const end = Math.min(text.length, offset + limit)
     return { text: text.slice(offset, end), next_offset: end < text.length ? end : null }
   },
+  workspace() {
+    return run('workspace:create', async () => {
+      await mkdir(DSH_PLUGIN_HOME, { recursive: true })
+      return getServerContext<Context>(server).workspaceRegistry.create(DSH_PLUGIN_HOME, '代理工作区')
+    })
+  },
+  activate(id: string): Promise<Agent> {
+    return run(`session:activate:${id}`, () => resolveAgent(id))
+  },
   async lookup(id: string): Promise<Agent | null> {
     if (!(await session.resolve(id)))
       return null
@@ -242,6 +271,18 @@ export const session = defineService({
       throw new Error('background_stop_pending')
   },
 })
+
+async function bindWorkspace(id: string, cwd?: string): Promise<void> {
+  const ctx = getServerContext<Context>(server)
+  const workspace = await session.workspace()
+  const sid = SessionId(id)
+  if (workspace.sessionIds.includes(sid))
+    return
+  const directory = cwd ?? (await ctx.sessionQuery.readSession(sid)).session.cwd
+  if (!directory || await realpathNormalize(directory) !== workspace.path)
+    return
+  await workspace.attachSession(sid)
+}
 
 async function resolveAgent(id: string): Promise<Agent> {
   if (!(await session.resolve(id)))

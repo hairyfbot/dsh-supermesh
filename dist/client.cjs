@@ -1356,22 +1356,40 @@ const dicts = {
 		tabTriggers: "触发",
 		tabChannels: "渠道",
 		tabSettings: "设置",
-		settingDescription: "管理 Nexus 可参与的 Git 项目与运行参数。",
+		settingDescription: "管理全渠道管理员、Git 项目与运行参数。",
 		settingNavigation: "设置分类",
+		settingGeneral: "通用设置",
+		settingGeneralDescription: "统一管理所有渠道共用的管理员白名单。",
+		settingAdministrators: "管理员登录名",
+		settingAdministratorsHelp: "填写人类管理员的平台登录名，以逗号或空格分隔，最多 100 个。此白名单全渠道共用，只需配置一次；不要填写 bot 账号、显示名称或 URL，也不需要 Token。只有白名单中的人类可以通过新话题或 @bot 评论首次派工；留空阻止新派工，已有任务仍接收人类跟进。",
+		settingAdministratorsInvalid: "请填写有效的平台登录名，不要填写 @、显示名称或 URL；最多 100 个。",
+		settingGeneralSaveFailed: "通用设置保存失败，请重试。",
+		settingSaveFailed: "设置保存失败，请重试。",
+		settingAddRepository: "新增仓库",
+		settingRemoteUrl: "Git remote 地址",
+		settingWorkspaceName: "工作区名称",
+		settingAddRepositoryHelp: "输入 GitHub 或 GitLab remote，将克隆仓库并创建工作区。",
+		settingAddingRepository: "正在新增…",
+		settingRepositoryCreated: "仓库和工作区已创建",
+		settingRepositoryRefreshFailed: "仓库和工作区已创建，列表刷新失败，请点击刷新项目列表。",
+		settingRepositoryRemoteHelp: "支持 HTTPS 与 SSH 地址，不接受本地路径或内嵌凭据。",
+		settingRepositoryNameHelp: "默认使用 [平台]/[仓库名称]，可自定义。",
+		settingRepositoryAddFailed: "新增仓库失败，请检查地址和访问权限。",
+		settingCancel: "取消",
 		settingExecution: "执行与合并",
 		settingExecutionDescription: "配置 Worker 并发、后台时限与 PR 自动合并条件。",
 		settingDelivery: "消息投递",
 		settingDeliveryDescription: "配置投递失败阈值与重试退避，不将受阻消息混入待处理。",
 		settingUnsaved: "有未保存的修改",
 		settingProjects: "项目范围",
-		settingPreview: "项目列表来自宿主工作区，保存的参数会用于后续运行。",
-		settingProjectsDescription: "仅显示已配置 remote 的可用 Git 工作区。",
+		settingPreview: "保存的参数会用于后续运行。",
+		settingProjectsDescription: "管理已关联 Git remote 的工作区及项目启停。",
 		settingSelectProject: "选择项目 {name}",
 		settingOpenSession: "打开会话",
 		settingOpenRepository: "打开仓库",
 		settingEnabledCount: "已启用 {enabled} / {total}",
 		settingRefresh: "刷新项目列表",
-		settingSearchProjects: "搜索项目或目录",
+		settingSearchProjects: "搜索名称或远程仓库",
 		settingLastSynced: "最近刷新",
 		settingNoMatchingProjects: "没有匹配的项目",
 		settingNoMatchingProjectsHelp: "尝试其他关键词，或清除搜索。",
@@ -1379,13 +1397,13 @@ const dicts = {
 		settingNoProjectsHelp: "添加已配置 remote 的 Git 工作区后，刷新以发现项目。",
 		settingClearSearch: "清除搜索",
 		settingAutoMerge: "自动合并 PR",
-		settingAutoMergeHelp: "默认关闭，真实授权尚未完成，暂不可开启。后续仍须满足任务 ready、批准覆盖当前 head，以及改动行数上限；不是跳过审核直接合并。",
+		settingAutoMergeHelp: "默认关闭。开启后遵守任务和仓库指令，针对当前 HEAD 在平台开启自动合并；新增与删除行数总和须严格小于上限。条件失效时撤销自动合并。合并使用你默认登录的 gh 账号，发布仍使用渠道机器人身份。",
 		settingMaxWorkers: "Worker 并发上限",
 		settingMaxWorkersHelp: "默认 10 个，超出时排队。另留一个槽位处理人工消息与状态查询。",
 		settingBackgroundLimit: "后台工作时限",
 		settingBackgroundLimitHelp: "后台工作到达时限后应停止，并将任务退回等待状态。",
 		settingAutoMergeLines: "自动合并改动上限",
-		settingAutoMergeLinesHelp: "新增与删除行数合计不超过此值；仅在自动合并开启时适用。",
+		settingAutoMergeLinesHelp: "新增与删除行数合计须严格小于此值；仅在自动合并开启时适用。",
 		settingDeliveryAttempts: "投递失败次数上限",
 		settingDeliveryAttemptsHelp: "连续失败达到此次数后标记为投递受阻，与待处理消息分开统计。",
 		settingRetryCeiling: "投递重试间隔上限",
@@ -1429,6 +1447,10 @@ const dicts = {
 		channelSettings: "渠道设置",
 		channelBack: "返回渠道",
 		channelMissing: "请先选择一个渠道",
+		channelUninstalled: "渠道插件未安装或已停用",
+		channelDetailsUnavailable: "渠道详情不可用，请安装并启用对应插件。",
+		channelEmpty: "尚未安装渠道插件",
+		channelEmptyDescription: "安装 GitHub、GitLab 或其他 Nexus 渠道插件后，在这里配置连接。",
 		channelFeishuUnavailable: "飞书渠道尚未开放配置，请先使用 GitHub 或 GitLab。",
 		channelPreview: "配置预览",
 		channelUnavailable: "登录与保存服务尚未接入。此页面不会保存配置或接收真实 Token，也不会改变系统 CLI 的登录状态。",
@@ -1721,22 +1743,40 @@ const dicts = {
 		tabTriggers: "Triggers",
 		tabChannels: "Channels",
 		tabSettings: "Settings",
-		settingDescription: "Manage the Git projects Nexus can work on and its runtime parameters.",
+		settingDescription: "Manage shared channel administrators, Git projects, and runtime parameters.",
 		settingNavigation: "Settings categories",
+		settingGeneral: "General settings",
+		settingGeneralDescription: "Manage one administrator allowlist shared by all channels.",
+		settingAdministrators: "Administrator usernames",
+		settingAdministratorsHelp: "Enter human administrator platform usernames separated by commas or spaces, up to 100. Configure this shared allowlist once for all channels. Do not enter bot accounts, display names, or URLs; no token is required. Only listed humans can start tasks through new topics or @bot comments. An empty list blocks new tasks; existing tasks still receive human follow-ups.",
+		settingAdministratorsInvalid: "Enter valid platform usernames, not @mentions, display names, or URLs; up to 100.",
+		settingGeneralSaveFailed: "Could not save general settings. Try again.",
+		settingSaveFailed: "Could not save settings. Try again.",
+		settingAddRepository: "Add repository",
+		settingRemoteUrl: "Git remote URL",
+		settingWorkspaceName: "Workspace name",
+		settingAddRepositoryHelp: "Enter a GitHub or GitLab remote to clone and create a workspace.",
+		settingAddingRepository: "Adding…",
+		settingRepositoryCreated: "Repository and workspace created",
+		settingRepositoryRefreshFailed: "Repository and workspace created. Refresh failed; use Refresh projects.",
+		settingRepositoryRemoteHelp: "HTTPS and SSH remotes are supported; local paths and embedded credentials are not.",
+		settingRepositoryNameHelp: "Defaults to [platform]/[repository]; you can rename it.",
+		settingRepositoryAddFailed: "Could not add repository; check the remote and access.",
+		settingCancel: "Cancel",
 		settingExecution: "Execution & merging",
 		settingExecutionDescription: "Configure Worker concurrency, background limits, and PR auto-merge conditions.",
 		settingDelivery: "Message delivery",
 		settingDeliveryDescription: "Configure failure thresholds and retry backoff. Stalled messages remain separate from pending.",
 		settingUnsaved: "Unsaved changes",
 		settingProjects: "Project scope",
-		settingPreview: "Projects come from host workspaces; saved settings apply to subsequent runs.",
-		settingProjectsDescription: "Only available Git workspaces with a configured remote are shown.",
+		settingPreview: "Saved settings apply to subsequent runs.",
+		settingProjectsDescription: "Manage Git workspaces with remotes and enable or disable projects.",
 		settingSelectProject: "Select project {name}",
 		settingOpenSession: "Open session",
 		settingOpenRepository: "Open repository",
 		settingEnabledCount: "{enabled} / {total} enabled",
 		settingRefresh: "Refresh projects",
-		settingSearchProjects: "Search projects or directories",
+		settingSearchProjects: "Search names or remote repositories",
 		settingLastSynced: "Last refreshed",
 		settingNoMatchingProjects: "No matching projects",
 		settingNoMatchingProjectsHelp: "Try another keyword or clear the search.",
@@ -1744,13 +1784,13 @@ const dicts = {
 		settingNoProjectsHelp: "Add a Git workspace with a configured remote, then refresh to discover it.",
 		settingClearSearch: "Clear search",
 		settingAutoMerge: "Automatically merge PRs",
-		settingAutoMergeHelp: "Off by default and unavailable until real authorization is complete. Merging will still require a ready task, approval covering the current head, and the change-size limit; it will not bypass review.",
+		settingAutoMergeHelp: "Off by default. Follow task and repository instructions and enable platform auto-merge for the current HEAD only when total added and removed lines are strictly below the limit. Cancel auto-merge if conditions stop holding. Merging uses your default gh login; publishing still uses the channel bot identity.",
 		settingMaxWorkers: "Concurrent Workers",
 		settingMaxWorkersHelp: "Defaults to 10 Workers; additional work queues. One extra slot remains for human messages and status queries.",
 		settingBackgroundLimit: "Background work limit",
 		settingBackgroundLimitHelp: "Background work should stop at this limit and return the task to waiting.",
 		settingAutoMergeLines: "Automatic merge change limit",
-		settingAutoMergeLinesHelp: "Maximum total added and removed lines. Applies only when automatic merging is enabled.",
+		settingAutoMergeLinesHelp: "Total added and removed lines must be strictly below this limit. Applies only when automatic merging is enabled.",
 		settingDeliveryAttempts: "Delivery failure limit",
 		settingDeliveryAttemptsHelp: "After this many consecutive failures, mark delivery as stalled, separately from pending messages.",
 		settingRetryCeiling: "Maximum retry interval",
@@ -1794,6 +1834,10 @@ const dicts = {
 		channelSettings: "Channel settings",
 		channelBack: "Back to channels",
 		channelMissing: "Select a channel first",
+		channelUninstalled: "Channel plugin is not installed or is disabled",
+		channelDetailsUnavailable: "Channel details are unavailable. Install and enable its plugin.",
+		channelEmpty: "No channel plugins installed",
+		channelEmptyDescription: "Install a GitHub, GitLab, or another Nexus channel plugin to configure its connection here.",
 		channelFeishuUnavailable: "Feishu configuration is not available yet. Use GitHub or GitLab for now.",
 		channelPreview: "Configuration preview",
 		channelUnavailable: "Sign-in and saving are not connected yet. This page does not save configuration, accept real tokens, or change your system CLI login.",
@@ -2112,7 +2156,7 @@ async function getApiNexusTicketsId(paths, config) {
 async function putApiNexusChannelsIdConfiguration(paths, body, config) {
 	return (await fetch(`/api/nexus/channels/${paths.id}/configuration`, {
 		headers: { "Content-Type": "application/json" },
-		method: "put",
+		method: "PUT",
 		body: JSON.stringify(body),
 		...config
 	})).json();
@@ -2120,7 +2164,7 @@ async function putApiNexusChannelsIdConfiguration(paths, body, config) {
 /** @method delete */
 async function deleteApiNexusChannelsIdCredentials(paths, config) {
 	return (await fetch(`/api/nexus/channels/${paths.id}/credentials`, {
-		method: "delete",
+		method: "DELETE",
 		...config
 	})).json();
 }
@@ -2128,7 +2172,7 @@ async function deleteApiNexusChannelsIdCredentials(paths, config) {
 async function postApiNexusChannelsIdAuthentications(paths, body, config) {
 	return (await fetch(`/api/nexus/channels/${paths.id}/authentications`, {
 		headers: { "Content-Type": "application/json" },
-		method: "post",
+		method: "POST",
 		body: JSON.stringify(body),
 		...config
 	})).json();
@@ -2141,7 +2185,7 @@ async function getApiNexusChannelsIdAuthenticationsAuthenticationId(paths, confi
 async function patchApiNexusProjectsId(paths, body, config) {
 	return (await fetch(`/api/nexus/projects/${paths.id}`, {
 		headers: { "Content-Type": "application/json" },
-		method: "patch",
+		method: "PATCH",
 		body: JSON.stringify(body),
 		...config
 	})).json();
@@ -2149,28 +2193,23 @@ async function patchApiNexusProjectsId(paths, body, config) {
 /** @method post */
 async function postApiNexusProjects(config) {
 	return (await fetch("/api/nexus/projects", {
-		method: "post",
-		...config
-	})).json();
-}
-/** @method put */
-async function putApiNexusProjectsIdSession(paths, config) {
-	return (await fetch(`/api/nexus/projects/${paths.id}/session`, {
-		method: "put",
+		method: "POST",
 		...config
 	})).json();
 }
 /** @method post */
-async function postApiNexusProjectsIdOpenings(paths, config) {
-	return (await fetch(`/api/nexus/projects/${paths.id}/openings`, {
-		method: "post",
+async function postApiNexusRepositories(body, config) {
+	return (await fetch("/api/nexus/repositories", {
+		headers: { "Content-Type": "application/json" },
+		method: "POST",
+		body: JSON.stringify(body),
 		...config
 	})).json();
 }
 /** @method put */
 async function putApiNexusSessionsMain(config) {
 	return (await fetch("/api/nexus/sessions/main", {
-		method: "put",
+		method: "PUT",
 		...config
 	})).json();
 }
@@ -2178,7 +2217,7 @@ async function putApiNexusSessionsMain(config) {
 async function patchApiNexusSettings(body, config) {
 	return (await fetch("/api/nexus/settings", {
 		headers: { "Content-Type": "application/json" },
-		method: "patch",
+		method: "PATCH",
 		body: JSON.stringify(body),
 		...config
 	})).json();
@@ -2187,7 +2226,7 @@ async function patchApiNexusSettings(body, config) {
 async function postApiNexusAsksIdAnswers(paths, body, config) {
 	return (await fetch(`/api/nexus/asks/${paths.id}/answers`, {
 		headers: { "Content-Type": "application/json" },
-		method: "post",
+		method: "POST",
 		body: JSON.stringify(body),
 		...config
 	})).json();
@@ -2294,7 +2333,7 @@ function DetailHeader({ name, icon, supported = true, actions }) {
 function FeishuDetail() {
 	const $ = (0, import_dist.c)(13);
 	const { t } = useTranslation();
-	const t0 = useStore(_temp2$15) ?? "飞书";
+	const t0 = useStore(_temp2$14) ?? "飞书";
 	let t1;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeishuIcon, {
@@ -2346,10 +2385,10 @@ function FeishuDetail() {
 	} else t6 = $[12];
 	return t6;
 }
-function _temp2$15(state) {
-	return state.data.panel?.channels.find(_temp$20)?.name;
+function _temp2$14(state) {
+	return state.data.panel?.channels.find(_temp$19)?.name;
 }
-function _temp$20(channel) {
+function _temp$19(channel) {
 	return channel.id === "feishu";
 }
 // src/client/pages/channel/detail/components/section.tsx
@@ -3442,7 +3481,7 @@ function ChannelDetail() {
 	const $ = (0, import_dist.c)(21);
 	const { t } = useTranslation();
 	const { go } = useActions();
-	const kind = useStore(_temp$19);
+	const kind = useStore(_temp$18);
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
@@ -3545,7 +3584,7 @@ function ChannelDetail() {
 	} else t10 = $[20];
 	return t10;
 }
-function _temp$19(state) {
+function _temp$18(state) {
 	return state.channel.selected;
 }
 // src/client/pages/channel/components/card.tsx
@@ -3847,12 +3886,12 @@ function Row$1(t0) {
 	const { t } = useTranslation();
 	const { openTicket } = useActions();
 	const ctx = useDshContext();
-	const panel = useStore(_temp$18);
-	const refreshedAt = useStore(_temp2$14);
+	const panel = useStore(_temp$17);
+	const refreshedAt = useStore(_temp2$13);
 	let t1;
 	if ($[0] !== panel?.graph.nodes || $[1] !== task.id) {
 		const sessions = panel?.graph.nodes.filter((node) => node.ticketId === task.id && node.sessionId);
-		t1 = sessions?.find(_temp3$9) ?? sessions?.at(-1);
+		t1 = sessions?.find(_temp3$8) ?? sessions?.at(-1);
 		$[0] = panel?.graph.nodes;
 		$[1] = task.id;
 		$[2] = t1;
@@ -3910,7 +3949,7 @@ function Row$1(t0) {
 		let t11;
 		if ($[32] !== panel?.topics.subscriptions || $[33] !== panel?.topics.triggers || $[34] !== task.id) {
 			const subscriptions = panel?.topics.subscriptions.filter((subscription) => subscription.ticketId === task.id);
-			t11 = panel?.topics.triggers.filter((trigger) => subscriptions?.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp4$7)[0];
+			t11 = panel?.topics.triggers.filter((trigger) => subscriptions?.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp4$6)[0];
 			$[32] = panel?.topics.subscriptions;
 			$[33] = panel?.topics.triggers;
 			$[34] = task.id;
@@ -4179,16 +4218,16 @@ function Row$1(t0) {
 	} else t24 = $[101];
 	return t24;
 }
-function _temp4$7(a, b) {
+function _temp4$6(a, b) {
 	return b.at.localeCompare(a.at);
 }
-function _temp3$9(node_0) {
+function _temp3$8(node_0) {
 	return node_0.status === "running";
 }
-function _temp2$14(state_0) {
+function _temp2$13(state_0) {
 	return state_0.setting.refreshedAt;
 }
-function _temp$18(state) {
+function _temp$17(state) {
 	return state.data.panel;
 }
 // node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.js
@@ -54531,7 +54570,7 @@ function ActivityChart() {
 	} else t1 = $[1];
 	const id = t1;
 	const now = Date.now();
-	const t2 = useStore(_temp$17);
+	const t2 = useStore(_temp$16);
 	let t3;
 	if ($[2] !== t2) {
 		let t4;
@@ -54638,7 +54677,7 @@ function ActivityChart() {
 	} else t11 = $[16];
 	return t11;
 }
-function _temp$17(state) {
+function _temp$16(state) {
 	return state.data.panel?.topics.triggers ?? [];
 }
 // src/client/pages/overview/components/channel-tile.tsx
@@ -55130,7 +55169,7 @@ function GraphCanvas(t0) {
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { zoomGraph, panGraph, resetGraph, selectAgent, openTicket } = useActions();
-	const { zoom, x, y, selectedId } = useStore(_temp$16);
+	const { zoom, x, y, selectedId } = useStore(_temp$15);
 	const drag = (0, react.useRef)(null);
 	const [fit, setFit] = (0, react.useState)(false);
 	let t1;
@@ -55178,14 +55217,14 @@ function GraphCanvas(t0) {
 					const members = nodes.filter((node_0) => group.nodeIds.includes(node_0.id));
 					if (!members.length) return [];
 					const inset = 16 + index * 6;
-					const x_0 = Math.min(...members.map(_temp2$13)) - inset;
-					const y_0 = Math.min(...members.map(_temp3$8)) - 12 - index * 6;
+					const x_0 = Math.min(...members.map(_temp2$12)) - inset;
+					const y_0 = Math.min(...members.map(_temp3$7)) - 12 - index * 6;
 					return [{
 						...group,
 						x: x_0,
 						y: y_0,
-						width: Math.max(...members.map(_temp4$6)) + AGENT_GRAPH.nodeWidth + inset - x_0,
-						height: Math.max(...members.map(_temp5$3)) + AGENT_GRAPH.nodeHeight + 16 + index * 6 - y_0
+						width: Math.max(...members.map(_temp4$5)) + AGENT_GRAPH.nodeWidth + inset - x_0,
+						height: Math.max(...members.map(_temp5$4)) + AGENT_GRAPH.nodeHeight + 16 + index * 6 - y_0
 					}];
 				};
 				$[50] = nodes;
@@ -55681,26 +55720,26 @@ function GraphCanvas(t0) {
 	} else t2 = $[22];
 	return t2;
 }
-function _temp5$3(node_4) {
+function _temp5$4(node_4) {
 	return node_4.y;
 }
-function _temp4$6(node_3) {
+function _temp4$5(node_3) {
 	return node_3.x;
 }
-function _temp3$8(node_2) {
+function _temp3$7(node_2) {
 	return node_2.y;
 }
-function _temp2$13(node_1) {
+function _temp2$12(node_1) {
 	return node_1.x;
 }
-function _temp$16(state) {
+function _temp$15(state) {
 	return state.graph;
 }
 // src/client/pages/overview/components/graph.tsx
 function Graph() {
 	const $ = (0, import_dist.c)(27);
 	const { t } = useTranslation();
-	const { panel, loading, error } = useStore(_temp$15);
+	const { panel, loading, error } = useStore(_temp$14);
 	const graph = panel?.graph;
 	let t0;
 	if ($[0] !== graph) {
@@ -55717,7 +55756,7 @@ function Graph() {
 	} else t1 = $[3];
 	let t2;
 	if ($[4] !== t1) {
-		t2 = t1.map(_temp2$12);
+		t2 = t1.map(_temp2$11);
 		$[4] = t1;
 		$[5] = t2;
 	} else t2 = $[5];
@@ -55797,13 +55836,13 @@ function Graph() {
 	} else t9 = $[26];
 	return t9;
 }
-function _temp2$12(edge) {
+function _temp2$11(edge) {
 	return {
 		...edge,
 		kind: edge.kind === "dependency" ? "dependency" : edge.kind === "association" ? "association" : "flow"
 	};
 }
-function _temp$15(state) {
+function _temp$14(state) {
 	return state.data;
 }
 // src/client/pages/overview/components/summary-card.tsx
@@ -55918,7 +55957,7 @@ function TaskChart(t0) {
 	} else t1 = $[2];
 	let t2;
 	if ($[5] !== segments) {
-		t2 = segments.some(_temp$14) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
+		t2 = segments.some(_temp$13) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
 			width: "100%",
 			height: "100%",
 			minWidth: 0,
@@ -55939,7 +55978,7 @@ function TaskChart(t0) {
 					cornerRadius: 4,
 					stroke: "none",
 					isAnimationActive: false,
-					children: segments.map(_temp2$11)
+					children: segments.map(_temp2$10)
 				})
 			})
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
@@ -55973,10 +56012,10 @@ function TaskChart(t0) {
 	} else t3 = $[9];
 	return t3;
 }
-function _temp2$11(segment_0) {
+function _temp2$10(segment_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment_0.color }, segment_0.name);
 }
-function _temp$14(segment_1) {
+function _temp$13(segment_1) {
 	return segment_1.value > 0;
 }
 // src/client/pages/overview/page.tsx
@@ -56014,8 +56053,8 @@ function Overview() {
 		$[1] = t0;
 	} else t0 = $[1];
 	const [answerState, answer] = useAsyncFn(t0);
-	const view = useStore(_temp$13);
-	const panel = useStore(_temp2$10);
+	const view = useStore(_temp$12);
+	const panel = useStore(_temp2$9);
 	let t1;
 	if ($[2] !== panel?.tickets) {
 		t1 = panel?.tickets ?? [];
@@ -56023,7 +56062,7 @@ function Overview() {
 		$[3] = t1;
 	} else t1 = $[3];
 	const tickets = t1;
-	const channels = (panel?.channels ?? []).map(_temp3$7);
+	const channels = (panel?.channels ?? []).map(_temp3$6);
 	const now = Date.now();
 	let t2;
 	let t3;
@@ -56036,7 +56075,7 @@ function Overview() {
 		} else t5 = $[8];
 		const triggers = (panel?.topics.triggers ?? []).filter(t5);
 		t2 = triggers.length;
-		t3 = triggers.filter(_temp4$5).length;
+		t3 = triggers.filter(_temp4$4).length;
 		let t6;
 		if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
 			t6 = (trigger_1) => Date.parse(trigger_1.at) >= now - 36e5;
@@ -56159,7 +56198,7 @@ function Overview() {
 		$[37] = t;
 		$[38] = t22;
 	} else t22 = $[38];
-	const t23 = `${channels.filter(_temp5$2).length}/${channels.length}`;
+	const t23 = `${channels.filter(_temp5$3).length}/${channels.length}`;
 	let t24;
 	if ($[39] === Symbol.for("react.memo_cache_sentinel")) {
 		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
@@ -56183,7 +56222,7 @@ function Overview() {
 	} else t26 = $[43];
 	const t27 = !panel || channels.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 		className: "mt-auto grid min-h-[83px] grid-cols-3 gap-2.5",
-		children: channels.slice(0, 3).map(_temp6$1)
+		children: channels.slice(0, 3).map(_temp6$3)
 	}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 		title: t("overviewChannelsEmpty"),
 		description: t("overviewChannelsEmptyDescription"),
@@ -56573,7 +56612,7 @@ function Overview() {
 	} else t79 = $[149];
 	let t80;
 	if ($[150] !== answer || $[151] !== answerState || $[152] !== panel?.inbox.pending) {
-		t80 = (panel?.inbox.pending.some(_temp7$1) || answerState.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
+		t80 = (panel?.inbox.pending.some(_temp7$2) || answerState.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 			className: "flex flex-col gap-3 rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5",
 			"aria-label": "待答问题",
 			children: [
@@ -56753,29 +56792,29 @@ function _temp9$1(task) {
 function _temp8$1(message) {
 	return message.kind === "ask";
 }
-function _temp7$1(message_1) {
+function _temp7$2(message_1) {
 	return message_1.kind === "ask";
 }
-function _temp6$1(channel_1) {
+function _temp6$3(channel_1) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelTile, { channel: channel_1 }, channel_1.name);
 }
-function _temp5$2(channel_0) {
+function _temp5$3(channel_0) {
 	return channel_0.connected;
 }
-function _temp4$5(trigger_0) {
+function _temp4$4(trigger_0) {
 	return !trigger_0.mentioned;
 }
-function _temp3$7(channel) {
+function _temp3$6(channel) {
 	return {
 		kind: channel.kind,
 		name: channel.name,
 		connected: channel.status === "online"
 	};
 }
-function _temp2$10(state_0) {
+function _temp2$9(state_0) {
 	return state_0.data.panel;
 }
-function _temp$13(state) {
+function _temp$12(state) {
 	return state.overview.view;
 }
 // src/client/store/setting.ts
@@ -56810,90 +56849,446 @@ const LIMITS = {
 		max: 3600
 	}
 };
+function administratorSignature(administrators) {
+	return [...new Set(administrators.join(",").split(/[,\s]+/).filter(Boolean).map((name) => name.toLowerCase()))].sort().join(",");
+}
 function validSettings(settings) {
-	return typeof settings.autoMerge === "boolean" && Object.entries(LIMITS).every(([key, limits]) => {
+	return Array.isArray(settings.administrators) && settings.administrators.length <= 100 && settings.administrators.every((name) => typeof name === "string" && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim())) && typeof settings.autoMerge === "boolean" && Object.entries(LIMITS).every(([key, limits]) => {
 		const value = settings[key];
 		return Number.isInteger(value) && value >= limits.min && value <= limits.max;
 	});
 }
+// src/client/pages/setting/components/general.tsx
+function General() {
+	const { t } = useTranslation();
+	const saved = useStore((state) => state.setting.saved.administrators);
+	const draft = useStore((state_0) => state_0.setting.draft.administrators);
+	const ready = useStore((state_1) => state_1.data.panel !== null);
+	const { editSettings, receiveGeneralSettings, clearSettingNotice } = useActions();
+	const [saving, setSaving] = (0, react.useState)(false);
+	const [failed, setFailed] = (0, react.useState)(false);
+	const request = (0, react.useRef)(null);
+	const id = (0, react.useId)();
+	(0, react.useEffect)(() => () => {
+		request.current?.abort();
+		request.current = null;
+	}, []);
+	const value = draft.join(",");
+	const names = value.split(/[,\s]+/).filter(Boolean);
+	const valid = names.length <= 100 && names.every((name) => /^[a-z0-9][\w.-]{0,254}$/i.test(name));
+	const dirty = administratorSignature(draft) !== administratorSignature(saved);
+	async function save() {
+		if (!ready || !dirty || !valid || request.current) return;
+		const controller = new AbortController();
+		request.current = controller;
+		setSaving(true);
+		setFailed(false);
+		clearSettingNotice();
+		try {
+			const settings = await patchApiNexusSettings({ administrators: names }, { signal: controller.signal });
+			if (controller.signal.aborted || request.current !== controller) return;
+			if (!settings || !Array.isArray(settings.administrators)) throw new Error("invalid_settings");
+			receiveGeneralSettings(settings.administrators);
+		} catch {
+			if (!controller.signal.aborted && request.current === controller) setFailed(true);
+		} finally {
+			if (request.current === controller) {
+				request.current = null;
+				setSaving(false);
+			}
+		}
+	}
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+		"aria-labelledby": `${id}-title`,
+		onSubmit: (event) => {
+			event.preventDefault();
+			save();
+		},
+		children: [
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+				className: "px-4 py-3",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+					id: `${id}-title`,
+					className: "m-0 text-sm font-medium",
+					children: t("settingGeneral")
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					children: t("settingGeneralDescription")
+				})]
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+						htmlFor: `${id}-administrators`,
+						className: "text-xs font-medium",
+						children: t("settingAdministrators")
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+						id: `${id}-administrators`,
+						value,
+						onChange: (event_0) => {
+							editSettings({ administrators: event_0.target.value.split(",") });
+							setFailed(false);
+						},
+						disabled: !ready || saving,
+						autoComplete: "off",
+						spellCheck: false,
+						"aria-invalid": !valid,
+						"aria-describedby": `${id}-help`
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						id: `${id}-help`,
+						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: t("settingAdministratorsHelp")
+					}),
+					!valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "alert",
+						className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+						children: t("settingAdministratorsInvalid")
+					}),
+					failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "alert",
+						className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+						children: t("settingGeneralSaveFailed")
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
+				className: "flex flex-wrap items-center justify-end gap-2 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					type: "button",
+					size: "sm",
+					variant: "ghost",
+					disabled: saving || !dirty,
+					onClick: () => {
+						editSettings({ administrators: [...saved] });
+						setFailed(false);
+					},
+					children: t("settingDiscard")
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					type: "submit",
+					size: "sm",
+					variant: "primary",
+					disabled: !ready || saving || !dirty || !valid,
+					children: t(saving ? "channelSaving" : "settingSave")
+				})]
+			})
+		]
+	});
+}
+// src/utils/repository.ts
+function parseGitRemote(value) {
+	const invalid = () => /* @__PURE__ */ new Error("invalid_repository_remote");
+	if (typeof value !== "string" || !value || value !== value.trim() || /[\s\\%]/.test(value)) throw invalid();
+	const scp = /^git@([^/:]+):(.+)$/.exec(value);
+	let url;
+	try {
+		url = new URL(scp ? `ssh://git@${scp[1]}/${scp[2]}` : value);
+	} catch {
+		throw invalid();
+	}
+	if (!["https:", "ssh:"].includes(url.protocol) || !url.hostname || url.password || url.search || url.hash || (url.protocol === "https:" ? Boolean(url.username) : url.username !== "git" || Boolean(url.port))) throw invalid();
+	const segments = (scp ? scp[2] : value.slice(value.indexOf("://") + 3).replace(/^[^/]+\//, "")).replace(/\/$/, "").replace(/\.git$/, "").split("/");
+	if (segments.length < 2 || !segments.every((segment) => /^\w[\w.-]*$/.test(segment) && !segment.endsWith(".") && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(segment))) throw invalid();
+	const owner = segments.slice(0, -1).join("/");
+	const name = segments.at(-1);
+	const webUrl = `https://${url.host}/${segments.join("/")}`;
+	return {
+		host: url.host,
+		owner,
+		name,
+		remoteUrl: url.protocol === "https:" ? `${webUrl}.git` : `git@${url.hostname}:${segments.join("/")}.git`,
+		webUrl
+	};
+}
+function parseRepositoryRemote(value, gitlabHost = "https://gitlab.com") {
+	const invalid = () => /* @__PURE__ */ new Error("invalid_repository_remote");
+	let configured;
+	try {
+		configured = new URL(gitlabHost);
+	} catch {
+		throw invalid();
+	}
+	if (configured.protocol !== "https:" || configured.username || configured.password || configured.pathname !== "/" || configured.search || configured.hash) throw invalid();
+	const remote = parseGitRemote(value);
+	const platform = remote.host === "github.com" ? "github" : remote.host === configured.host ? "gitlab" : null;
+	if (!platform || platform === "github" && remote.owner.includes("/")) throw invalid();
+	return {
+		...remote,
+		platform,
+		defaultName: `${platform}/${remote.name}`
+	};
+}
+// src/client/pages/setting/components/add-repository.tsx
+function AddRepository() {
+	const { t } = useTranslation();
+	const { receivePanel } = useActions();
+	const gitlabHost = useStore((state) => state.data.panel?.channels.find((channel) => channel.id === "gitlab")?.host ?? "https://gitlab.com");
+	const [open, setOpen] = (0, react.useState)(false);
+	const [remote, setRemote] = (0, react.useState)("");
+	const [name, setName] = (0, react.useState)(null);
+	const [saving, setSaving] = (0, react.useState)(false);
+	const [error, setError] = (0, react.useState)("");
+	const [notice, setNotice] = (0, react.useState)("");
+	const pending = (0, react.useRef)(false);
+	const lifetime = (0, react.useRef)(new AbortController());
+	const id = (0, react.useId)();
+	(0, react.useEffect)(() => {
+		const controller = new AbortController();
+		lifetime.current = controller;
+		return () => controller.abort();
+	}, []);
+	let repository = null;
+	try {
+		if (remote.trim()) repository = parseRepositoryRemote(remote.trim(), gitlabHost);
+	} catch {}
+	const workspaceName = name ?? repository?.defaultName ?? "";
+	function close() {
+		if (!pending.current) setOpen(false);
+	}
+	async function save() {
+		if (!repository || !workspaceName.trim() || pending.current) return;
+		pending.current = true;
+		setSaving(true);
+		setError("");
+		try {
+			const result = await postApiNexusRepositories({
+				remoteUrl: remote.trim(),
+				name: workspaceName.trim()
+			}, { signal: lifetime.current.signal });
+			if (lifetime.current.signal.aborted) return;
+			if (!result || !("project" in result)) throw new Error(t("settingRepositoryAddFailed"));
+			setOpen(false);
+			setRemote("");
+			setName(null);
+			setNotice(t("settingRepositoryCreated"));
+			try {
+				const panel = await getApiNexusPanel({ signal: lifetime.current.signal });
+				if (lifetime.current.signal.aborted) return;
+				if (!panel || !("projects" in panel)) throw new Error("invalid_panel");
+				receivePanel(panel);
+			} catch {
+				if (!lifetime.current.signal.aborted) setNotice(t("settingRepositoryRefreshFailed"));
+			}
+		} catch (reason) {
+			if (!lifetime.current.signal.aborted) setError(reason instanceof Error ? reason.message : t("settingRepositoryAddFailed"));
+		} finally {
+			pending.current = false;
+			if (!lifetime.current.signal.aborted) setSaving(false);
+		}
+	}
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "primary",
+			onClick: () => {
+				setNotice("");
+				setError("");
+				setOpen(true);
+			},
+			children: t("settingAddRepository")
+		}),
+		notice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			role: "status",
+			className: "text-xs text-[var(--dsw-alias-label-secondary)]",
+			children: notice
+		}),
+		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+			open,
+			onClose: close,
+			title: t("settingAddRepository"),
+			closeLabel: t("channelCancel"),
+			description: t("settingAddRepositoryHelp"),
+			footer: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				disabled: saving,
+				onClick: close,
+				children: t("channelCancel")
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				disabled: saving || !repository || !workspaceName.trim(),
+				onClick: () => void save(),
+				children: t(saving ? "settingAddingRepository" : "settingAddRepository")
+			})] }),
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex min-w-0 flex-col gap-4",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "flex flex-col gap-2",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+								htmlFor: `${id}-remote`,
+								className: "text-xs font-medium",
+								children: t("settingRemoteUrl")
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+								id: `${id}-remote`,
+								value: remote,
+								onChange: (event) => {
+									setRemote(event.currentTarget.value);
+									setError("");
+								},
+								disabled: saving,
+								placeholder: "https://github.com/owner/repository.git",
+								autoComplete: "off",
+								spellCheck: false,
+								"aria-invalid": Boolean(remote.trim()) && !repository,
+								"aria-describedby": `${id}-remote-help`
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								id: `${id}-remote-help`,
+								className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+								children: t("settingRepositoryRemoteHelp")
+							})
+						]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "flex flex-col gap-2",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+								htmlFor: `${id}-name`,
+								className: "text-xs font-medium",
+								children: t("settingWorkspaceName")
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+								id: `${id}-name`,
+								value: workspaceName,
+								onChange: (event_0) => {
+									setName(event_0.currentTarget.value);
+									setError("");
+								},
+								disabled: saving,
+								maxLength: 120,
+								"aria-describedby": `${id}-name-help`
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+								id: `${id}-name-help`,
+								className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+								children: t("settingRepositoryNameHelp")
+							})
+						]
+					}),
+					error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "alert",
+						className: "m-0 break-words text-xs text-[var(--dsw-alias-state-error-primary)]",
+						children: error
+					})
+				]
+			})
+		})
+	] });
+}
 // src/client/pages/setting/components/projects.tsx
 function Projects() {
-	const $ = (0, import_dist.c)(62);
+	const $ = (0, import_dist.c)(66);
 	const { t } = useTranslation();
-	const ctx = useDshContext();
 	let t0;
-	if ($[0] !== ctx) {
-		t0 = async (action, projectId) => {
-			const paths = { id: encodeURIComponent(projectId) };
-			if (action === "repository") {
-				const result = await postApiNexusProjectsIdOpenings(paths);
-				if (result?.opened !== true) throw new Error(result && "message" in result && typeof result.message === "string" ? result.message : "打开仓库失败");
-				return;
-			}
-			const navigation = ctx.layout.beginNavigation();
-			const result_0 = await putApiNexusProjectsIdSession(paths);
-			if (!result_0 || typeof result_0.sessionId !== "string" || !result_0.sessionId.trim()) throw new Error(result_0 && "message" in result_0 && typeof result_0.message === "string" ? result_0.message : "打开项目会话失败");
-			if (!navigation.aborted) ctx.uiWorkspace.openSession(result_0.sessionId);
-		};
-		$[0] = ctx;
-		$[1] = t0;
-	} else t0 = $[1];
-	const [opening, open] = useAsyncFn(t0);
-	const projects = useStore(_temp$12);
-	const refreshedAt = useStore(_temp2$9);
-	const { receiveProject, receivePanel } = useActions();
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = new AbortController();
+		$[0] = t0;
+	} else t0 = $[0];
+	const lifetime = (0, react.useRef)(t0);
 	let t1;
-	if ($[2] !== receiveProject) {
-		t1 = async (projectId_0, enabled) => {
-			const project = await patchApiNexusProjectsId({ id: encodeURIComponent(projectId_0) }, { enabled });
-			if (!project || project.id !== projectId_0) throw new Error("项目设置保存失败");
+	let t2;
+	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = () => {
+			const controller = new AbortController();
+			lifetime.current = controller;
+			return () => controller.abort();
+		};
+		t2 = [];
+		$[1] = t1;
+		$[2] = t2;
+	} else {
+		t1 = $[1];
+		t2 = $[2];
+	}
+	(0, react.useEffect)(t1, t2);
+	const projects = useStore(_temp$11);
+	const gitlabHost = useStore(_temp3$5);
+	const refreshedAt = useStore(_temp4$3);
+	const { receiveProject, receivePanel, clearSettingNotice } = useActions();
+	let t3;
+	if ($[3] !== clearSettingNotice || $[4] !== receiveProject) {
+		t3 = async (projectId, enabled) => {
+			clearSettingNotice();
+			const project = await patchApiNexusProjectsId({ id: encodeURIComponent(projectId) }, { enabled }, { signal: lifetime.current.signal });
+			if (lifetime.current.signal.aborted) return;
+			if (!project || project.id !== projectId) throw new Error(project && "message" in project && typeof project.message === "string" ? project.message : "项目设置保存失败");
 			receiveProject(project);
 		};
-		$[2] = receiveProject;
-		$[3] = t1;
-	} else t1 = $[3];
-	const [saving, toggle] = useAsyncFn(t1);
-	let t2;
-	if ($[4] !== receivePanel) {
-		t2 = async () => {
-			const projects_0 = await postApiNexusProjects();
+		$[3] = clearSettingNotice;
+		$[4] = receiveProject;
+		$[5] = t3;
+	} else t3 = $[5];
+	const [saving, toggle] = useAsyncFn(t3);
+	let t4;
+	if ($[6] !== clearSettingNotice || $[7] !== receivePanel) {
+		t4 = async () => {
+			clearSettingNotice();
+			const projects_0 = await postApiNexusProjects({ signal: lifetime.current.signal });
+			if (lifetime.current.signal.aborted) return;
 			if (!Array.isArray(projects_0)) throw new Error("项目发现失败");
-			const panel = await getApiNexusPanel();
+			const panel = await getApiNexusPanel({ signal: lifetime.current.signal });
+			if (lifetime.current.signal.aborted) return;
 			if (!panel?.projects || !panel.settings) throw new Error("项目列表加载失败");
 			receivePanel(panel);
 		};
-		$[4] = receivePanel;
-		$[5] = t2;
-	} else t2 = $[5];
-	const [refreshing, refresh] = useAsyncFn(t2);
+		$[6] = clearSettingNotice;
+		$[7] = receivePanel;
+		$[8] = t4;
+	} else t4 = $[8];
+	const [refreshing, refresh] = useAsyncFn(t4);
 	const id = (0, react.useId)();
 	const [query, setQuery] = (0, react.useState)("");
-	let t3;
-	if ($[6] !== id || $[7] !== open || $[8] !== opening || $[9] !== projects || $[10] !== query || $[11] !== refresh || $[12] !== refreshedAt || $[13] !== refreshing.error || $[14] !== refreshing.loading || $[15] !== saving.error || $[16] !== saving.loading || $[17] !== t || $[18] !== toggle) {
+	let t5;
+	if ($[9] !== gitlabHost || $[10] !== id || $[11] !== projects || $[12] !== query || $[13] !== refresh || $[14] !== refreshedAt || $[15] !== refreshing.error || $[16] !== refreshing.loading || $[17] !== saving.error || $[18] !== saving.loading || $[19] !== t || $[20] !== toggle) {
 		const normalized = query.trim().toLocaleLowerCase();
-		const candidates = projects.filter(_temp3$6);
-		const visible = candidates.filter((project_1) => !normalized || [project_1.name, project_1.directory].join(" ").toLocaleLowerCase().includes(normalized));
-		const enabled_0 = candidates.filter(_temp4$4).length;
-		let t4;
-		if ($[20] !== t) {
-			t4 = t("settingProjects");
-			$[20] = t;
-			$[21] = t4;
-		} else t4 = $[21];
-		let t5;
-		if ($[22] !== id || $[23] !== t4) {
-			t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+		let t6;
+		if ($[22] !== gitlabHost) {
+			t6 = (project_1) => {
+				let repository = null;
+				try {
+					repository = parseRepositoryRemote(project_1.remoteUrl, gitlabHost);
+				} catch {}
+				return {
+					...project_1,
+					repository
+				};
+			};
+			$[22] = gitlabHost;
+			$[23] = t6;
+		} else t6 = $[23];
+		const candidates = projects.filter(_temp5$2).map(t6).filter(_temp6$2);
+		const visible = candidates.filter((project_3) => !normalized || [
+			project_3.name,
+			project_3.repository.platform,
+			project_3.repository.owner,
+			project_3.repository.name
+		].join(" ").toLocaleLowerCase().includes(normalized));
+		const enabled_0 = candidates.filter(_temp7$1).length;
+		let t7;
+		if ($[24] !== t) {
+			t7 = t("settingProjects");
+			$[24] = t;
+			$[25] = t7;
+		} else t7 = $[25];
+		let t8;
+		if ($[26] !== id || $[27] !== t7) {
+			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 				id,
 				className: "m-0 text-sm font-medium",
-				children: t4
+				children: t7
 			});
-			$[22] = id;
-			$[23] = t4;
-			$[24] = t5;
-		} else t5 = $[24];
-		const t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			$[26] = id;
+			$[27] = t7;
+			$[28] = t8;
+		} else t8 = $[28];
+		const t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: "flex flex-wrap items-center gap-2",
-			children: [t5, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+			children: [t8, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
 				tone: "quiet",
 				children: t("settingEnabledCount", {
 					enabled: enabled_0,
@@ -56901,103 +57296,111 @@ function Projects() {
 				})
 			})]
 		});
-		let t7;
-		if ($[25] !== t) {
-			t7 = t("settingProjectsDescription");
-			$[25] = t;
-			$[26] = t7;
-		} else t7 = $[26];
-		let t8;
-		if ($[27] !== t7) {
-			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t7
-			});
-			$[27] = t7;
-			$[28] = t8;
-		} else t8 = $[28];
-		let t9;
-		if ($[29] !== t6 || $[30] !== t8) {
-			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "min-w-0",
-				children: [t6, t8]
-			});
-			$[29] = t6;
-			$[30] = t8;
-			$[31] = t9;
-		} else t9 = $[31];
-		const t10 = refreshing.loading || saving.loading;
+		let t10;
+		if ($[29] !== t) {
+			t10 = t("settingProjectsDescription");
+			$[29] = t;
+			$[30] = t10;
+		} else t10 = $[30];
 		let t11;
-		if ($[32] !== refresh) {
-			t11 = () => void refresh();
-			$[32] = refresh;
-			$[33] = t11;
-		} else t11 = $[33];
+		if ($[31] !== t10) {
+			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				children: t10
+			});
+			$[31] = t10;
+			$[32] = t11;
+		} else t11 = $[32];
 		let t12;
-		if ($[34] !== t) {
-			t12 = t("settingRefresh");
-			$[34] = t;
+		if ($[33] !== t11 || $[34] !== t9) {
+			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "min-w-0",
+				children: [t9, t11]
+			});
+			$[33] = t11;
+			$[34] = t9;
 			$[35] = t12;
 		} else t12 = $[35];
 		let t13;
-		if ($[36] !== t10 || $[37] !== t11 || $[38] !== t12) {
-			t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "outline",
-				disabled: t10,
-				onClick: t11,
-				children: t12
-			});
-			$[36] = t10;
-			$[37] = t11;
-			$[38] = t12;
-			$[39] = t13;
-		} else t13 = $[39];
-		let t14;
-		if ($[40] !== t13 || $[41] !== t9) {
-			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-				className: "flex flex-wrap items-start justify-between gap-3 p-5 pb-4",
-				children: [t9, t13]
-			});
-			$[40] = t13;
-			$[41] = t9;
-			$[42] = t14;
-		} else t14 = $[42];
+		if ($[36] === Symbol.for("react.memo_cache_sentinel")) {
+			t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AddRepository, {});
+			$[36] = t13;
+		} else t13 = $[36];
+		const t14 = refreshing.loading || saving.loading;
 		let t15;
-		if ($[43] !== t) {
-			t15 = t("settingSearchProjects");
-			$[43] = t;
-			$[44] = t15;
-		} else t15 = $[44];
+		if ($[37] !== refresh) {
+			t15 = () => void refresh();
+			$[37] = refresh;
+			$[38] = t15;
+		} else t15 = $[38];
 		let t16;
-		if ($[45] !== t) {
-			t16 = t("settingSearchProjects");
-			$[45] = t;
-			$[46] = t16;
-		} else t16 = $[46];
+		if ($[39] !== t) {
+			t16 = t("settingRefresh");
+			$[39] = t;
+			$[40] = t16;
+		} else t16 = $[40];
 		let t17;
-		if ($[47] === Symbol.for("react.memo_cache_sentinel")) {
-			t17 = (event) => setQuery(event.currentTarget.value);
-			$[47] = t17;
-		} else t17 = $[47];
+		if ($[41] !== t14 || $[42] !== t15 || $[43] !== t16) {
+			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-center gap-2",
+				children: [t13, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "outline",
+					disabled: t14,
+					onClick: t15,
+					children: t16
+				})]
+			});
+			$[41] = t14;
+			$[42] = t15;
+			$[43] = t16;
+			$[44] = t17;
+		} else t17 = $[44];
 		let t18;
-		if ($[48] !== query || $[49] !== t15 || $[50] !== t16) {
-			t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+		if ($[45] !== t12 || $[46] !== t17) {
+			t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+				className: "flex flex-wrap items-start justify-between gap-3 p-5 pb-4",
+				children: [t12, t17]
+			});
+			$[45] = t12;
+			$[46] = t17;
+			$[47] = t18;
+		} else t18 = $[47];
+		let t19;
+		if ($[48] !== t) {
+			t19 = t("settingSearchProjects");
+			$[48] = t;
+			$[49] = t19;
+		} else t19 = $[49];
+		let t20;
+		if ($[50] !== t) {
+			t20 = t("settingSearchProjects");
+			$[50] = t;
+			$[51] = t20;
+		} else t20 = $[51];
+		let t21;
+		if ($[52] === Symbol.for("react.memo_cache_sentinel")) {
+			t21 = (event) => setQuery(event.currentTarget.value);
+			$[52] = t21;
+		} else t21 = $[52];
+		let t22;
+		if ($[53] !== query || $[54] !== t19 || $[55] !== t20) {
+			t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				type: "search",
-				"aria-label": t15,
-				placeholder: t16,
+				"aria-label": t19,
+				placeholder: t20,
 				value: query,
-				onChange: t17,
+				onChange: t21,
 				className: "min-w-40 flex-1 !text-xs @min-[620px]:max-w-xs"
 			});
-			$[48] = query;
-			$[49] = t15;
-			$[50] = t16;
-			$[51] = t18;
-		} else t18 = $[51];
-		let t19;
-		if ($[52] !== refreshedAt || $[53] !== t) {
-			t19 = refreshedAt && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
+			$[53] = query;
+			$[54] = t19;
+			$[55] = t20;
+			$[56] = t22;
+		} else t22 = $[56];
+		let t23;
+		if ($[57] !== refreshedAt || $[58] !== t) {
+			t23 = refreshedAt && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
 				dateTime: refreshedAt,
 				title: refreshedAt,
 				className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
@@ -57007,43 +57410,42 @@ function Projects() {
 					new Date(refreshedAt).toLocaleTimeString()
 				]
 			});
-			$[52] = refreshedAt;
-			$[53] = t;
-			$[54] = t19;
-		} else t19 = $[54];
-		let t20;
-		if ($[55] !== t18 || $[56] !== t19) {
-			t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			$[57] = refreshedAt;
+			$[58] = t;
+			$[59] = t23;
+		} else t23 = $[59];
+		let t24;
+		if ($[60] !== t22 || $[61] !== t23) {
+			t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "flex flex-wrap items-center justify-between gap-3 px-5 pb-4",
-				children: [t18, t19]
+				children: [t22, t23]
 			});
-			$[55] = t18;
-			$[56] = t19;
-			$[57] = t20;
-		} else t20 = $[57];
-		let t21;
-		if ($[58] !== opening || $[59] !== refreshing.error || $[60] !== saving.error) {
-			t21 = (saving.error || refreshing.error || opening.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			$[60] = t22;
+			$[61] = t23;
+			$[62] = t24;
+		} else t24 = $[62];
+		let t25;
+		if ($[63] !== refreshing.error || $[64] !== saving.error) {
+			t25 = (saving.error || refreshing.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "alert",
 				className: "px-5",
-				children: saving.error?.message ?? refreshing.error?.message ?? opening.error?.message
+				children: saving.error?.message ?? refreshing.error?.message
 			});
-			$[58] = opening;
-			$[59] = refreshing.error;
-			$[60] = saving.error;
-			$[61] = t21;
-		} else t21 = $[61];
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			$[63] = refreshing.error;
+			$[64] = saving.error;
+			$[65] = t25;
+		} else t25 = $[65];
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
 			"aria-labelledby": id,
 			children: [
-				t14,
-				t20,
-				t21,
+				t18,
+				t24,
+				t25,
 				visible.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 					className: "m-0 list-none p-0",
-					children: visible.map((project_3) => {
-						const pathId = `${id}-path-${project_3.id}`;
+					children: visible.map((project_5) => {
+						const pathId = `${id}-path-${project_5.id}`;
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 							className: "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4",
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -57052,44 +57454,36 @@ function Projects() {
 									className: "flex size-6 shrink-0 cursor-pointer items-center justify-center",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
 										type: "checkbox",
-										disabled: saving.loading || refreshing.loading || !project_3.remoteUrl && !project_3.enabled,
-										checked: Boolean(project_3.enabled),
-										"aria-label": t("settingSelectProject", { name: project_3.name }),
+										disabled: saving.loading || refreshing.loading || !project_5.remoteUrl && !project_5.enabled,
+										checked: Boolean(project_5.enabled),
+										"aria-label": t("settingSelectProject", { name: project_5.name }),
 										"aria-describedby": pathId,
-										onChange: (event_0) => void toggle(project_3.id, event_0.currentTarget.checked),
+										onChange: (event_0) => void toggle(project_5.id, event_0.currentTarget.checked),
 										className: "size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]"
 									})
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: "min-w-0 pt-0.5",
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 										className: "truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]",
-										children: project_3.name
+										children: project_5.name
 									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 										id: pathId,
 										className: "m-0 mt-1 truncate font-mono text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-										title: project_3.directory,
-										children: project_3.directory
+										title: project_5.repository.webUrl,
+										children: `${project_5.repository.platform}:${project_5.repository.owner}/${project_5.repository.name}`
 									})]
 								})]
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 								className: "ml-auto flex shrink-0 items-center gap-2",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									type: "button",
-									size: "sm",
-									variant: "outline",
-									disabled: opening.loading,
-									onClick: () => void open("session", project_3.id),
-									children: t("settingOpenSession")
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									type: "button",
-									size: "sm",
-									variant: "outline",
-									disabled: opening.loading,
-									onClick: () => void open("repository", project_3.id),
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+									href: project_5.repository.webUrl,
+									target: "_blank",
+									rel: "noopener noreferrer",
+									className: "inline-flex h-7 items-center rounded-lg border border-[var(--dsw-alias-border-l3)] px-3 text-xs text-[var(--dsw-alias-label-primary)] no-underline hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
 									children: t("settingOpenRepository")
-								})]
+								})
 							})]
-						}, project_3.id);
+						}, project_5.id);
 					})
 				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 					compact: true,
@@ -57105,451 +57499,253 @@ function Projects() {
 				})
 			]
 		});
-		$[6] = id;
-		$[7] = open;
-		$[8] = opening;
-		$[9] = projects;
-		$[10] = query;
-		$[11] = refresh;
-		$[12] = refreshedAt;
-		$[13] = refreshing.error;
-		$[14] = refreshing.loading;
-		$[15] = saving.error;
-		$[16] = saving.loading;
-		$[17] = t;
-		$[18] = toggle;
-		$[19] = t3;
-	} else t3 = $[19];
-	return t3;
+		$[9] = gitlabHost;
+		$[10] = id;
+		$[11] = projects;
+		$[12] = query;
+		$[13] = refresh;
+		$[14] = refreshedAt;
+		$[15] = refreshing.error;
+		$[16] = refreshing.loading;
+		$[17] = saving.error;
+		$[18] = saving.loading;
+		$[19] = t;
+		$[20] = toggle;
+		$[21] = t5;
+	} else t5 = $[21];
+	return t5;
 }
-function _temp4$4(project_2) {
-	return Boolean(project_2.enabled);
+function _temp7$1(project_4) {
+	return Boolean(project_4.enabled);
 }
-function _temp3$6(project_0) {
+function _temp6$2(project_2) {
+	return project_2.repository;
+}
+function _temp5$2(project_0) {
 	return project_0.remoteUrl && project_0.available !== false;
 }
-function _temp2$9(state_0) {
-	return state_0.setting.refreshedAt;
+function _temp4$3(state_1) {
+	return state_1.setting.refreshedAt;
 }
-function _temp$12(state) {
+function _temp3$5(state_0) {
+	return state_0.data.panel?.channels.find(_temp2$8)?.host ?? "https://gitlab.com";
+}
+function _temp2$8(channel) {
+	return channel.id === "gitlab";
+}
+function _temp$11(state) {
 	return state.data.panel?.projects ?? [];
 }
 // src/client/pages/setting/components/runtime.tsx
 function Runtime() {
-	const $ = (0, import_dist.c)(95);
 	const { t } = useTranslation();
-	const section = useStore(_temp$11);
-	const draft = useStore(_temp2$8);
-	const saved = useStore(_temp3$5);
-	const ready = useStore(_temp4$3);
+	const section = useStore((state) => state.setting.section);
+	const draft = useStore((state_0) => state_0.setting.draft);
+	const saved = useStore((state_1) => state_1.setting.saved);
+	const ready = useStore((state_2) => state_2.data.panel !== null);
 	const { editSettings, receiveSettings, resetSettings } = useActions();
-	let t0;
-	if ($[0] !== draft || $[1] !== receiveSettings || $[2] !== section) {
-		t0 = async () => {
-			if (section === "projects") return;
-			const settings = await patchApiNexusSettings(Object.fromEntries(GROUPS[section].map((key) => [key, draft[key]])));
-			if (!settings || !validSettings(settings)) throw new Error("设置保存失败");
-			receiveSettings(settings);
-		};
-		$[0] = draft;
-		$[1] = receiveSettings;
-		$[2] = section;
-		$[3] = t0;
-	} else t0 = $[3];
-	const [saving, save] = useAsyncFn(t0);
-	const prefix = (0, react.useId)();
-	if (section === "projects") return null;
-	const t1 = GROUPS[section];
-	let t2;
-	if ($[4] !== draft || $[5] !== saved || $[6] !== t1) {
-		let t3;
-		if ($[8] !== draft || $[9] !== saved) {
-			t3 = (key_0) => draft[key_0] !== saved[key_0];
-			$[8] = draft;
-			$[9] = saved;
-			$[10] = t3;
-		} else t3 = $[10];
-		t2 = t1.some(t3);
-		$[4] = draft;
-		$[5] = saved;
-		$[6] = t1;
-		$[7] = t2;
-	} else t2 = $[7];
-	const dirty = t2;
-	let t3;
-	if ($[11] !== draft || $[12] !== saved || $[13] !== section) {
-		let t4;
-		if ($[15] !== draft) {
-			t4 = (key_1) => [key_1, draft[key_1]];
-			$[15] = draft;
-			$[16] = t4;
-		} else t4 = $[16];
-		t3 = validSettings({
-			...saved,
-			...Object.fromEntries(GROUPS[section].map(t4))
-		});
-		$[11] = draft;
-		$[12] = saved;
-		$[13] = section;
-		$[14] = t3;
-	} else t3 = $[14];
-	const valid = t3;
-	let t4;
-	let t5;
-	let t6;
-	let t7;
-	let t8;
-	if ($[17] !== dirty || $[18] !== draft || $[19] !== editSettings || $[20] !== prefix || $[21] !== save || $[22] !== section || $[23] !== t || $[24] !== valid) {
-		const fields = [
-			{
-				key: "maxWorkers",
-				label: "settingMaxWorkers",
-				help: "settingMaxWorkersHelp",
-				unit: "settingWorkersUnit"
-			},
-			{
-				key: "backgroundLimitMinutes",
-				label: "settingBackgroundLimit",
-				help: "settingBackgroundLimitHelp",
-				unit: "settingMinutesUnit"
-			},
-			{
-				key: "autoMergeMaxLines",
-				label: "settingAutoMergeLines",
-				help: "settingAutoMergeLinesHelp",
-				unit: "settingLinesUnit"
-			},
-			{
-				key: "deliveryMaxAttempts",
-				label: "settingDeliveryAttempts",
-				help: "settingDeliveryAttemptsHelp",
-				unit: "settingAttemptsUnit"
-			},
-			{
-				key: "deliveryRetryCeilingSeconds",
-				label: "settingRetryCeiling",
-				help: "settingRetryCeilingHelp",
-				unit: "settingSecondsUnit"
+	const [saving, setSaving] = (0, react.useState)(false);
+	const [failed, setFailed] = (0, react.useState)(false);
+	const request = (0, react.useRef)(null);
+	(0, react.useEffect)(() => () => {
+		request.current?.abort();
+		request.current = null;
+	}, [section]);
+	async function save() {
+		if (!ready || request.current || section === "projects" || section === "general") return;
+		const patch = Object.fromEntries(GROUPS[section].map((key) => [key, draft[key]]));
+		const controller = new AbortController();
+		request.current = controller;
+		setSaving(true);
+		setFailed(false);
+		try {
+			const settings = await patchApiNexusSettings(patch, { signal: controller.signal });
+			if (controller.signal.aborted || request.current !== controller) return;
+			if (!settings || !validSettings(settings)) throw new Error("invalid_settings");
+			receiveSettings(settings, section);
+		} catch {
+			if (!controller.signal.aborted && request.current === controller) setFailed(true);
+		} finally {
+			if (request.current === controller) {
+				request.current = null;
+				setSaving(false);
 			}
-		];
-		t4 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
-		if ($[30] !== dirty || $[31] !== save || $[32] !== valid) {
-			t5 = (event) => {
-				event.preventDefault();
-				if (valid && dirty) save();
-			};
-			$[30] = dirty;
-			$[31] = save;
-			$[32] = valid;
-			$[33] = t5;
-		} else t5 = $[33];
-		t6 = `${prefix}-runtime`;
-		const t9 = `${prefix}-runtime`;
-		const t10 = section === "execution" ? "settingExecution" : "settingDelivery";
-		let t11;
-		if ($[34] !== t || $[35] !== t10) {
-			t11 = t(t10);
-			$[34] = t;
-			$[35] = t10;
-			$[36] = t11;
-		} else t11 = $[36];
-		let t12;
-		if ($[37] !== t11 || $[38] !== t9) {
-			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-				id: t9,
-				className: "m-0 text-sm font-medium",
-				children: t11
-			});
-			$[37] = t11;
-			$[38] = t9;
-			$[39] = t12;
-		} else t12 = $[39];
-		const t13 = section === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription";
-		let t14;
-		if ($[40] !== t || $[41] !== t13) {
-			t14 = t(t13);
-			$[40] = t;
-			$[41] = t13;
-			$[42] = t14;
-		} else t14 = $[42];
-		let t15;
-		if ($[43] !== t14) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t14
-			});
-			$[43] = t14;
-			$[44] = t15;
-		} else t15 = $[44];
-		if ($[45] !== t12 || $[46] !== t15) {
-			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+		}
+	}
+	const prefix = (0, react.useId)();
+	if (section === "projects" || section === "general") return null;
+	const dirty = GROUPS[section].some((key_0) => draft[key_0] !== saved[key_0]);
+	const valid = validSettings({
+		...saved,
+		...Object.fromEntries(GROUPS[section].map((key_1) => [key_1, draft[key_1]]))
+	});
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+		onSubmit: (event) => {
+			event.preventDefault();
+			if (valid && dirty) save();
+		},
+		"aria-labelledby": `${prefix}-runtime`,
+		children: [
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 				className: "px-4 py-3",
-				children: [t12, t15]
-			});
-			$[45] = t12;
-			$[46] = t15;
-			$[47] = t7;
-		} else t7 = $[47];
-		t8 = fields.filter((field) => GROUPS[section].includes(field.key)).map((field_0) => {
-			const limits = LIMITS[field_0.key];
-			const value = draft[field_0.key];
-			const disabled = field_0.key === "autoMergeMaxLines";
-			const invalid = !Number.isInteger(value) || value < limits.min || value > limits.max;
-			const id = `${prefix}-${field_0.key}`;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+					id: `${prefix}-runtime`,
+					className: "m-0 text-sm font-medium",
+					children: t(section === "execution" ? "settingExecution" : "settingDelivery")
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					children: t(section === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription")
+				})]
+			}),
+			[
+				{
+					key: "maxWorkers",
+					label: "settingMaxWorkers",
+					help: "settingMaxWorkersHelp",
+					unit: "settingWorkersUnit"
+				},
+				{
+					key: "backgroundLimitMinutes",
+					label: "settingBackgroundLimit",
+					help: "settingBackgroundLimitHelp",
+					unit: "settingMinutesUnit"
+				},
+				{
+					key: "autoMergeMaxLines",
+					label: "settingAutoMergeLines",
+					help: "settingAutoMergeLinesHelp",
+					unit: "settingLinesUnit"
+				},
+				{
+					key: "deliveryMaxAttempts",
+					label: "settingDeliveryAttempts",
+					help: "settingDeliveryAttemptsHelp",
+					unit: "settingAttemptsUnit"
+				},
+				{
+					key: "deliveryRetryCeilingSeconds",
+					label: "settingRetryCeiling",
+					help: "settingRetryCeilingHelp",
+					unit: "settingSecondsUnit"
+				}
+			].filter((field) => GROUPS[section].includes(field.key)).map((field_0) => {
+				const limits = LIMITS[field_0.key];
+				const value = draft[field_0.key];
+				const disabled = !ready || saving || field_0.key === "autoMergeMaxLines" && !draft.autoMerge;
+				const invalid = !Number.isInteger(value) || value < limits.min || value > limits.max;
+				const id = `${prefix}-${field_0.key}`;
+				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "min-w-0 flex-1 basis-52",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+							htmlFor: id,
+							className: "text-xs font-medium",
+							children: t(field_0.label)
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							id: `${id}-help`,
+							className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+							children: t(field_0.help)
+						})]
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "w-36 shrink-0",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: "flex items-center gap-2",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+								id,
+								type: "number",
+								min: limits.min,
+								max: limits.max,
+								step: 1,
+								required: true,
+								value: Number.isFinite(value) ? value : "",
+								"aria-describedby": `${id}-help ${id}-range`,
+								"aria-invalid": invalid && !disabled,
+								disabled,
+								onChange: (event_0) => editSettings({ [field_0.key]: event_0.currentTarget.value === "" ? NaN : Number(event_0.currentTarget.value) }),
+								className: "w-24 !text-xs"
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
+								children: t(field_0.unit)
+							})]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							id: `${id}-range`,
+							className: `mt-1.5 block text-[11px] ${invalid && !disabled ? "text-[var(--dsw-alias-state-error-primary)]" : "text-[var(--dsw-alias-label-tertiary)]"}`,
+							children: t("settingRange", {
+								min: limits.min,
+								max: limits.max
+							})
+						})]
+					})]
+				}, field_0.key);
+			}),
+			section === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "min-w-0 flex-1 basis-52",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-						htmlFor: id,
-						className: "text-xs font-medium",
-						children: t(field_0.label)
+					className: "min-w-0",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
+						className: "m-0 text-xs font-medium",
+						children: t("settingAutoMerge")
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						id: `${id}-help`,
 						className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-						children: t(field_0.help)
+						children: t("settingAutoMergeHelp")
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					disabled: !ready || saving,
+					checked: draft.autoMerge,
+					label: t("settingAutoMerge"),
+					onChange: (autoMerge) => editSettings({ autoMerge })
+				})]
+			}),
+			failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				className: "px-4",
+				children: t("settingSaveFailed")
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
+				className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "min-w-0 flex-1 basis-60",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+						children: t("settingPersistenceOnly")
+					}), dirty && !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "status",
+						className: "m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]",
+						children: t("settingInvalid")
 					})]
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "w-36 shrink-0",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: "flex items-center gap-2",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-							id,
-							type: "number",
-							min: limits.min,
-							max: limits.max,
-							step: 1,
-							required: true,
-							value: Number.isFinite(value) ? value : "",
-							"aria-describedby": `${id}-help ${id}-range`,
-							"aria-invalid": invalid && !disabled,
-							disabled,
-							onChange: (event_0) => editSettings({ [field_0.key]: event_0.currentTarget.value === "" ? NaN : Number(event_0.currentTarget.value) }),
-							className: "w-24 !text-xs"
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
-							children: t(field_0.unit)
-						})]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						id: `${id}-range`,
-						className: `mt-1.5 block text-[11px] ${invalid && !disabled ? "text-[var(--dsw-alias-state-error-primary)]" : "text-[var(--dsw-alias-label-tertiary)]"}`,
-						children: t("settingRange", {
-							min: limits.min,
-							max: limits.max
-						})
+					className: "flex items-center gap-2",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						type: "button",
+						size: "sm",
+						variant: "ghost",
+						disabled: saving || !dirty,
+						onClick: () => resetSettings(section),
+						children: t("settingDiscard")
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						type: "submit",
+						size: "sm",
+						variant: "primary",
+						disabled: !ready || saving || !dirty || !valid,
+						children: t("settingSave")
 					})]
 				})]
-			}, field_0.key);
-		});
-		$[17] = dirty;
-		$[18] = draft;
-		$[19] = editSettings;
-		$[20] = prefix;
-		$[21] = save;
-		$[22] = section;
-		$[23] = t;
-		$[24] = valid;
-		$[25] = t4;
-		$[26] = t5;
-		$[27] = t6;
-		$[28] = t7;
-		$[29] = t8;
-	} else {
-		t4 = $[25];
-		t5 = $[26];
-		t6 = $[27];
-		t7 = $[28];
-		t8 = $[29];
-	}
-	let t9;
-	if ($[48] !== draft || $[49] !== editSettings || $[50] !== section || $[51] !== t) {
-		t9 = section === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "min-w-0",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
-					className: "m-0 text-xs font-medium",
-					children: t("settingAutoMerge")
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-					children: t("settingAutoMergeHelp")
-				})]
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-				disabled: true,
-				checked: draft.autoMerge,
-				label: t("settingAutoMerge"),
-				onChange: (autoMerge) => editSettings({ autoMerge })
-			})]
-		});
-		$[48] = draft;
-		$[49] = editSettings;
-		$[50] = section;
-		$[51] = t;
-		$[52] = t9;
-	} else t9 = $[52];
-	let t10;
-	if ($[53] !== saving.error) {
-		t10 = saving.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			role: "alert",
-			className: "px-4",
-			children: saving.error.message
-		});
-		$[53] = saving.error;
-		$[54] = t10;
-	} else t10 = $[54];
-	let t11;
-	if ($[55] !== t) {
-		t11 = t("settingPersistenceOnly");
-		$[55] = t;
-		$[56] = t11;
-	} else t11 = $[56];
-	let t12;
-	if ($[57] !== t11) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t11
-		});
-		$[57] = t11;
-		$[58] = t12;
-	} else t12 = $[58];
-	let t13;
-	if ($[59] !== dirty || $[60] !== t || $[61] !== valid) {
-		t13 = dirty && !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			role: "status",
-			className: "m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]",
-			children: t("settingInvalid")
-		});
-		$[59] = dirty;
-		$[60] = t;
-		$[61] = valid;
-		$[62] = t13;
-	} else t13 = $[62];
-	let t14;
-	if ($[63] !== t12 || $[64] !== t13) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "min-w-0 flex-1 basis-60",
-			children: [t12, t13]
-		});
-		$[63] = t12;
-		$[64] = t13;
-		$[65] = t14;
-	} else t14 = $[65];
-	const t15 = !dirty;
-	let t16;
-	if ($[66] !== resetSettings || $[67] !== section) {
-		t16 = () => resetSettings(section);
-		$[66] = resetSettings;
-		$[67] = section;
-		$[68] = t16;
-	} else t16 = $[68];
-	let t17;
-	if ($[69] !== t) {
-		t17 = t("settingDiscard");
-		$[69] = t;
-		$[70] = t17;
-	} else t17 = $[70];
-	let t18;
-	if ($[71] !== t15 || $[72] !== t16 || $[73] !== t17) {
-		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			type: "button",
-			size: "sm",
-			variant: "ghost",
-			disabled: t15,
-			onClick: t16,
-			children: t17
-		});
-		$[71] = t15;
-		$[72] = t16;
-		$[73] = t17;
-		$[74] = t18;
-	} else t18 = $[74];
-	const t19 = !ready || saving.loading || !dirty || !valid;
-	let t20;
-	if ($[75] !== t) {
-		t20 = t("settingSave");
-		$[75] = t;
-		$[76] = t20;
-	} else t20 = $[76];
-	let t21;
-	if ($[77] !== t19 || $[78] !== t20) {
-		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			type: "submit",
-			size: "sm",
-			variant: "primary",
-			disabled: t19,
-			children: t20
-		});
-		$[77] = t19;
-		$[78] = t20;
-		$[79] = t21;
-	} else t21 = $[79];
-	let t22;
-	if ($[80] !== t18 || $[81] !== t21) {
-		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex items-center gap-2",
-			children: [t18, t21]
-		});
-		$[80] = t18;
-		$[81] = t21;
-		$[82] = t22;
-	} else t22 = $[82];
-	let t23;
-	if ($[83] !== t14 || $[84] !== t22) {
-		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
-			className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
-			children: [t14, t22]
-		});
-		$[83] = t14;
-		$[84] = t22;
-		$[85] = t23;
-	} else t23 = $[85];
-	let t24;
-	if ($[86] !== t10 || $[87] !== t23 || $[88] !== t4 || $[89] !== t5 || $[90] !== t6 || $[91] !== t7 || $[92] !== t8 || $[93] !== t9) {
-		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-			className: t4,
-			onSubmit: t5,
-			"aria-labelledby": t6,
-			children: [
-				t7,
-				t8,
-				t9,
-				t10,
-				t23
-			]
-		});
-		$[86] = t10;
-		$[87] = t23;
-		$[88] = t4;
-		$[89] = t5;
-		$[90] = t6;
-		$[91] = t7;
-		$[92] = t8;
-		$[93] = t9;
-		$[94] = t24;
-	} else t24 = $[94];
-	return t24;
-}
-function _temp4$3(state_2) {
-	return state_2.data.panel !== null;
-}
-function _temp3$5(state_1) {
-	return state_1.setting.saved;
-}
-function _temp2$8(state_0) {
-	return state_0.setting.draft;
-}
-function _temp$11(state) {
-	return state.setting.section;
+			})
+		]
+	});
 }
 // src/client/pages/setting/page.tsx
 function Setting() {
-	const $ = (0, import_dist.c)(83);
+	const $ = (0, import_dist.c)(90);
 	const { t } = useTranslation();
 	const activeSection = useStore(_temp$10);
 	const notice = useStore(_temp2$7);
 	const invalid = useStore(_temp3$4);
-	const executionDirty = useStore(_temp4$2);
-	const deliveryDirty = useStore(_temp5$1);
+	const generalDirty = useStore(_temp4$2);
+	const executionDirty = useStore(_temp5$1);
+	const deliveryDirty = useStore(_temp6$1);
 	const { setSettingSection } = useActions();
 	const id = (0, react.useId)();
 	let t0;
@@ -57563,7 +57759,7 @@ function Setting() {
 	let t7;
 	let t8;
 	let t9;
-	if ($[0] !== activeSection || $[1] !== deliveryDirty || $[2] !== executionDirty || $[3] !== id || $[4] !== invalid || $[5] !== notice || $[6] !== setSettingSection || $[7] !== t) {
+	if ($[0] !== activeSection || $[1] !== deliveryDirty || $[2] !== executionDirty || $[3] !== generalDirty || $[4] !== id || $[5] !== invalid || $[6] !== notice || $[7] !== setSettingSection || $[8] !== t) {
 		const notices = {
 			saved: "settingSaved",
 			refreshed: "settingRefreshed",
@@ -57573,8 +57769,13 @@ function Setting() {
 		let t12;
 		let t13;
 		let t14;
-		if ($[19] !== activeSection || $[20] !== deliveryDirty || $[21] !== executionDirty || $[22] !== id || $[23] !== setSettingSection || $[24] !== t) {
+		if ($[20] !== activeSection || $[21] !== deliveryDirty || $[22] !== executionDirty || $[23] !== generalDirty || $[24] !== id || $[25] !== setSettingSection || $[26] !== t) {
 			const sections = [
+				{
+					value: "general",
+					label: "settingGeneral",
+					icon: TasksIcon
+				},
 				{
 					value: "projects",
 					label: "settingProjects",
@@ -57592,62 +57793,63 @@ function Setting() {
 				}
 			];
 			const dirty = {
+				general: generalDirty,
 				projects: false,
 				execution: executionDirty,
 				delivery: deliveryDirty
 			};
 			t8 = "@container flex min-w-0 flex-col gap-4 pb-8";
-			if ($[33] !== t) {
-				t9 = t("tabSettings");
-				$[33] = t;
-				$[34] = t9;
-			} else t9 = $[34];
-			let t15;
 			if ($[35] !== t) {
-				t15 = t("tabSettings");
+				t9 = t("tabSettings");
 				$[35] = t;
-				$[36] = t15;
-			} else t15 = $[36];
+				$[36] = t9;
+			} else t9 = $[36];
+			let t15;
+			if ($[37] !== t) {
+				t15 = t("tabSettings");
+				$[37] = t;
+				$[38] = t15;
+			} else t15 = $[38];
 			let t16;
-			if ($[37] !== t15) {
+			if ($[39] !== t15) {
 				t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 					className: "m-0 text-base font-medium",
 					children: t15
 				});
-				$[37] = t15;
-				$[38] = t16;
-			} else t16 = $[38];
+				$[39] = t15;
+				$[40] = t16;
+			} else t16 = $[40];
 			let t17;
-			if ($[39] !== t) {
+			if ($[41] !== t) {
 				t17 = t("settingDescription");
-				$[39] = t;
-				$[40] = t17;
-			} else t17 = $[40];
+				$[41] = t;
+				$[42] = t17;
+			} else t17 = $[42];
 			let t18;
-			if ($[41] !== t17) {
+			if ($[43] !== t17) {
 				t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					className: "m-0 mt-1.5 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
 					children: t17
 				});
-				$[41] = t17;
-				$[42] = t18;
-			} else t18 = $[42];
-			if ($[43] !== t16 || $[44] !== t18) {
+				$[43] = t17;
+				$[44] = t18;
+			} else t18 = $[44];
+			if ($[45] !== t16 || $[46] !== t18) {
 				t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
 					className: "flex flex-wrap items-start justify-between gap-3",
 					children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t16, t18] })
 				});
-				$[43] = t16;
-				$[44] = t18;
-				$[45] = t10;
-			} else t10 = $[45];
+				$[45] = t16;
+				$[46] = t18;
+				$[47] = t10;
+			} else t10 = $[47];
 			t6 = "grid min-w-0 gap-4 @min-[740px]:grid-cols-[160px_minmax(0,1fr)] @min-[940px]:gap-5";
 			t14 = "self-start @min-[740px]:sticky @min-[740px]:top-4";
-			if ($[46] !== t) {
+			if ($[48] !== t) {
 				t11 = t("settingNavigation");
-				$[46] = t;
-				$[47] = t11;
-			} else t11 = $[47];
+				$[48] = t;
+				$[49] = t11;
+			} else t11 = $[49];
 			t12 = "flex flex-wrap gap-1 rounded-xl bg-[var(--dsw-alias-card-fill)] p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0";
 			t13 = sections.map((section) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				id: `${id}-${section.value}`,
@@ -57668,60 +57870,101 @@ function Setting() {
 					})
 				]
 			}, section.value));
-			$[19] = activeSection;
-			$[20] = deliveryDirty;
-			$[21] = executionDirty;
-			$[22] = id;
-			$[23] = setSettingSection;
-			$[24] = t;
-			$[25] = t10;
-			$[26] = t11;
-			$[27] = t12;
-			$[28] = t13;
-			$[29] = t14;
-			$[30] = t6;
-			$[31] = t8;
-			$[32] = t9;
+			$[20] = activeSection;
+			$[21] = deliveryDirty;
+			$[22] = executionDirty;
+			$[23] = generalDirty;
+			$[24] = id;
+			$[25] = setSettingSection;
+			$[26] = t;
+			$[27] = t10;
+			$[28] = t11;
+			$[29] = t12;
+			$[30] = t13;
+			$[31] = t14;
+			$[32] = t6;
+			$[33] = t8;
+			$[34] = t9;
 		} else {
-			t10 = $[25];
-			t11 = $[26];
-			t12 = $[27];
-			t13 = $[28];
-			t14 = $[29];
-			t6 = $[30];
-			t8 = $[31];
-			t9 = $[32];
+			t10 = $[27];
+			t11 = $[28];
+			t12 = $[29];
+			t13 = $[30];
+			t14 = $[31];
+			t6 = $[32];
+			t8 = $[33];
+			t9 = $[34];
 		}
 		let t15;
-		if ($[48] !== t11 || $[49] !== t12 || $[50] !== t13) {
+		if ($[50] !== t11 || $[51] !== t12 || $[52] !== t13) {
 			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("nav", {
 				"aria-label": t11,
 				className: t12,
 				children: t13
 			});
-			$[48] = t11;
-			$[49] = t12;
-			$[50] = t13;
-			$[51] = t15;
-		} else t15 = $[51];
-		if ($[52] !== t14 || $[53] !== t15) {
+			$[50] = t11;
+			$[51] = t12;
+			$[52] = t13;
+			$[53] = t15;
+		} else t15 = $[53];
+		if ($[54] !== t14 || $[55] !== t15) {
 			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("aside", {
 				className: t14,
 				children: t15
 			});
-			$[52] = t14;
-			$[53] = t15;
-			$[54] = t7;
-		} else t7 = $[54];
+			$[54] = t14;
+			$[55] = t15;
+			$[56] = t7;
+		} else t7 = $[56];
 		t0 = `${id}-content`;
 		t1 = "region";
 		t2 = `${id}-${activeSection}`;
 		t3 = "flex min-w-0 flex-col gap-4";
-		if ($[55] !== activeSection) {
-			t4 = activeSection === "projects" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Projects, {}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {});
-			$[55] = activeSection;
-			$[56] = t4;
-		} else t4 = $[56];
+		let t16;
+		if ($[57] === Symbol.for("react.memo_cache_sentinel")) {
+			t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+				cond: "general",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(General, {})
+			});
+			$[57] = t16;
+		} else t16 = $[57];
+		let t17;
+		if ($[58] === Symbol.for("react.memo_cache_sentinel")) {
+			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+				cond: "projects",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Projects, {})
+			});
+			$[58] = t17;
+		} else t17 = $[58];
+		let t18;
+		if ($[59] === Symbol.for("react.memo_cache_sentinel")) {
+			t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+				cond: "execution",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "execution")
+			});
+			$[59] = t18;
+		} else t18 = $[59];
+		let t19;
+		if ($[60] === Symbol.for("react.memo_cache_sentinel")) {
+			t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+				cond: "delivery",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "delivery")
+			});
+			$[60] = t19;
+		} else t19 = $[60];
+		if ($[61] !== activeSection) {
+			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$1, {
+				value: activeSection,
+				children: [
+					t16,
+					t17,
+					t18,
+					t19
+				]
+			});
+			$[61] = activeSection;
+			$[62] = t4;
+		} else t4 = $[62];
 		t5 = invalid ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
 			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
@@ -57734,64 +57977,66 @@ function Setting() {
 		$[0] = activeSection;
 		$[1] = deliveryDirty;
 		$[2] = executionDirty;
-		$[3] = id;
-		$[4] = invalid;
-		$[5] = notice;
-		$[6] = setSettingSection;
-		$[7] = t;
-		$[8] = t0;
-		$[9] = t1;
-		$[10] = t10;
-		$[11] = t2;
-		$[12] = t3;
-		$[13] = t4;
-		$[14] = t5;
-		$[15] = t6;
-		$[16] = t7;
-		$[17] = t8;
-		$[18] = t9;
+		$[3] = generalDirty;
+		$[4] = id;
+		$[5] = invalid;
+		$[6] = notice;
+		$[7] = setSettingSection;
+		$[8] = t;
+		$[9] = t0;
+		$[10] = t1;
+		$[11] = t10;
+		$[12] = t2;
+		$[13] = t3;
+		$[14] = t4;
+		$[15] = t5;
+		$[16] = t6;
+		$[17] = t7;
+		$[18] = t8;
+		$[19] = t9;
 	} else {
-		t0 = $[8];
-		t1 = $[9];
-		t10 = $[10];
-		t2 = $[11];
-		t3 = $[12];
-		t4 = $[13];
-		t5 = $[14];
-		t6 = $[15];
-		t7 = $[16];
-		t8 = $[17];
-		t9 = $[18];
+		t0 = $[9];
+		t1 = $[10];
+		t10 = $[11];
+		t2 = $[12];
+		t3 = $[13];
+		t4 = $[14];
+		t5 = $[15];
+		t6 = $[16];
+		t7 = $[17];
+		t8 = $[18];
+		t9 = $[19];
 	}
 	let t11;
-	if ($[57] !== t) {
+	if ($[63] !== t) {
 		t11 = t("settingPreview");
-		$[57] = t;
-		$[58] = t11;
-	} else t11 = $[58];
+		$[63] = t;
+		$[64] = t11;
+	} else t11 = $[64];
 	let t12;
-	if ($[59] !== deliveryDirty || $[60] !== executionDirty || $[61] !== t) {
-		t12 = (executionDirty || deliveryDirty) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+	if ($[65] !== deliveryDirty || $[66] !== executionDirty || $[67] !== generalDirty || $[68] !== t) {
+		t12 = (generalDirty || executionDirty || deliveryDirty) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "ml-1",
 			children: t("settingUnsaved")
 		});
-		$[59] = deliveryDirty;
-		$[60] = executionDirty;
-		$[61] = t;
-		$[62] = t12;
-	} else t12 = $[62];
+		$[65] = deliveryDirty;
+		$[66] = executionDirty;
+		$[67] = generalDirty;
+		$[68] = t;
+		$[69] = t12;
+	} else t12 = $[69];
 	let t13;
-	if ($[63] !== t11 || $[64] !== t12) {
+	if ($[70] !== t11 || $[71] !== t12) {
 		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
 			children: [t11, t12]
 		});
-		$[63] = t11;
-		$[64] = t12;
-		$[65] = t13;
-	} else t13 = $[65];
+		$[70] = t11;
+		$[71] = t12;
+		$[72] = t13;
+	} else t13 = $[72];
 	let t14;
-	if ($[66] !== t0 || $[67] !== t1 || $[68] !== t13 || $[69] !== t2 || $[70] !== t3 || $[71] !== t4 || $[72] !== t5) {
+	if ($[73] !== t0 || $[74] !== t1 || $[75] !== t13 || $[76] !== t2 || $[77] !== t3 || $[78] !== t4 || $[79] !== t5) {
 		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			id: t0,
 			role: t1,
@@ -57803,50 +58048,55 @@ function Setting() {
 				t13
 			]
 		});
-		$[66] = t0;
-		$[67] = t1;
-		$[68] = t13;
-		$[69] = t2;
-		$[70] = t3;
-		$[71] = t4;
-		$[72] = t5;
-		$[73] = t14;
-	} else t14 = $[73];
+		$[73] = t0;
+		$[74] = t1;
+		$[75] = t13;
+		$[76] = t2;
+		$[77] = t3;
+		$[78] = t4;
+		$[79] = t5;
+		$[80] = t14;
+	} else t14 = $[80];
 	let t15;
-	if ($[74] !== t14 || $[75] !== t6 || $[76] !== t7) {
+	if ($[81] !== t14 || $[82] !== t6 || $[83] !== t7) {
 		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: t6,
 			children: [t7, t14]
 		});
-		$[74] = t14;
-		$[75] = t6;
-		$[76] = t7;
-		$[77] = t15;
-	} else t15 = $[77];
+		$[81] = t14;
+		$[82] = t6;
+		$[83] = t7;
+		$[84] = t15;
+	} else t15 = $[84];
 	let t16;
-	if ($[78] !== t10 || $[79] !== t15 || $[80] !== t8 || $[81] !== t9) {
+	if ($[85] !== t10 || $[86] !== t15 || $[87] !== t8 || $[88] !== t9) {
 		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: t8,
 			"aria-label": t9,
 			children: [t10, t15]
 		});
-		$[78] = t10;
-		$[79] = t15;
-		$[80] = t8;
-		$[81] = t9;
-		$[82] = t16;
-	} else t16 = $[82];
+		$[85] = t10;
+		$[86] = t15;
+		$[87] = t8;
+		$[88] = t9;
+		$[89] = t16;
+	} else t16 = $[89];
 	return t16;
+}
+function _temp6$1(t0) {
+	const { setting: t1 } = t0;
+	const { draft: draft_1, saved: saved_1 } = t1;
+	return GROUPS.delivery.some((key_0) => draft_1[key_0] !== saved_1[key_0]);
 }
 function _temp5$1(t0) {
 	const { setting: t1 } = t0;
 	const { draft: draft_0, saved: saved_0 } = t1;
-	return GROUPS.delivery.some((key_0) => draft_0[key_0] !== saved_0[key_0]);
+	return GROUPS.execution.some((key) => draft_0[key] !== saved_0[key]);
 }
 function _temp4$2(t0) {
 	const { setting: t1 } = t0;
 	const { draft, saved } = t1;
-	return GROUPS.execution.some((key) => draft[key] !== saved[key]);
+	return administratorSignature(draft.administrators) !== administratorSignature(saved.administrators);
 }
 function _temp3$4(state_1) {
 	return state_1.setting.invalid;
@@ -60816,6 +61066,7 @@ function Panel$1() {
 const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 	init: () => {
 		const saved = {
+			administrators: [],
 			maxWorkers: 10,
 			backgroundLimitMinutes: 30,
 			autoMerge: false,
@@ -60832,7 +61083,7 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 			channel: { selected: null },
 			overview: { view: "recent" },
 			setting: {
-				section: "projects",
+				section: "general",
 				saved,
 				draft: { ...saved },
 				refreshedAt: null,
@@ -60875,12 +61126,14 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 		},
 		receivePanel: (draft, value) => {
 			const { settings, ...panel } = value;
-			const dirty = Object.keys(draft.setting.saved).some((key) => draft.setting.draft[key] !== draft.setting.saved[key]);
+			const administratorsDirty = administratorSignature(draft.setting.draft.administrators) !== administratorSignature(draft.setting.saved.administrators);
+			const dirty = [...GROUPS.execution, ...GROUPS.delivery].some((key) => draft.setting.draft[key] !== draft.setting.saved[key]);
 			draft.data.panel = panel;
 			draft.data.loading = false;
 			draft.data.error = null;
-			const { maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings;
+			const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings;
 			draft.setting.saved = {
+				administrators,
 				maxWorkers,
 				backgroundLimitMinutes,
 				autoMerge,
@@ -60888,7 +61141,8 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 				deliveryMaxAttempts,
 				deliveryRetryCeilingSeconds
 			};
-			if (!dirty) draft.setting.draft = { ...draft.setting.saved };
+			if (!dirty && !administratorsDirty) draft.setting.draft = { ...draft.setting.saved };
+			else if (!administratorsDirty) draft.setting.draft.administrators = [...administrators];
 			draft.setting.refreshedAt = (/* @__PURE__ */ new Date()).toISOString();
 		},
 		receiveProject: (draft, project) => {
@@ -60898,9 +61152,17 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 		receiveTicket: (draft, ticket) => {
 			if (ticket.ticket.id === draft.navigation.ticketId) draft.data.ticket = ticket;
 		},
-		receiveSettings: (draft, value) => {
+		receiveGeneralSettings: (draft, administrators) => {
+			draft.setting.saved.administrators = [...administrators];
+			draft.setting.draft.administrators = [...administrators];
+			draft.setting.invalid = false;
+			draft.setting.notice = "saved";
+		},
+		receiveSettings: (draft, value, section) => {
+			const administratorsDirty = administratorSignature(draft.setting.draft.administrators) !== administratorSignature(draft.setting.saved.administrators);
 			draft.setting.saved = value;
-			draft.setting.draft = { ...value };
+			for (const key of GROUPS[section]) Object.assign(draft.setting.draft, { [key]: value[key] });
+			if (!administratorsDirty) draft.setting.draft.administrators = [...value.administrators];
 			draft.setting.invalid = false;
 			draft.setting.notice = "saved";
 		},
@@ -60944,6 +61206,9 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 				kind: "all",
 				mentionedOnly: false
 			};
+		},
+		clearSettingNotice: (draft) => {
+			draft.setting.notice = null;
 		},
 		setSettingSection: (draft, section) => {
 			draft.setting.section = section;

@@ -65,7 +65,7 @@ export const worker = defineService({
           if (stopped)
             throw new Error('worker_stopped')
           const threads = await db.ticketThread.listByTicket(ticket.id)
-          const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', '来源话题：', ...threads.map(thread => thread.threadId), worker.recoveryNote ?? ''].filter(Boolean).join(String.fromCharCode(10))
+          const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', `执行配置：${JSON.stringify({ autoMerge: settings.autoMerge, autoMergeMaxLines: settings.autoMergeMaxLines })}`, '来源话题：', ...threads.map(thread => thread.threadId), worker.recoveryNote ?? ''].filter(Boolean).join(String.fromCharCode(10))
           await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory, title: worker.title ?? ticket.title })
           if (stopped)
             throw new Error('worker_stopped')

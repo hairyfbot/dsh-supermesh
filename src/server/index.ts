@@ -12,6 +12,7 @@ import { getPanel } from './routes/panel.get'
 import { postProjectOpening } from './routes/project.opening'
 import { patchProject } from './routes/project.patch'
 import { postProjects } from './routes/project.post'
+import { postRepository } from './routes/project.repository.post'
 import { putProjectSession } from './routes/project.session'
 import { getContext } from './routes/session.context.get'
 import { getMailbox } from './routes/session.mailbox.get'
@@ -48,6 +49,7 @@ export const server = defineWebServer<ServerOptions>((app) => {
   app.get('/api/nexus/channels/:id/authentications/:authenticationId', getChannelAuthentication)
   app.patch('/api/nexus/projects/:id', patchProject)
   app.post('/api/nexus/projects', postProjects)
+  app.post('/api/nexus/repositories', postRepository)
   app.put('/api/nexus/projects/:id/session', putProjectSession)
   app.post('/api/nexus/projects/:id/openings', postProjectOpening)
   app.put('/api/nexus/sessions/main', putMainSession)
