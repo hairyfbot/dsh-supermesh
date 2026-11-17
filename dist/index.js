@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-CcMJGd9Z.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-CZUD8lGZ.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -594,7 +594,7 @@ var GitHubChannel = class {
 				const ticket = await db.ticket.findById(ticketId);
 				if (ticket?.projectId === projectId && ticket.prUrl === thread.url) await db.ticket.setPullRequest(ticketId, thread.url, state, ciState);
 			}
-			if (state === "merged" || state === "closed") await this.threadClosed(projectId, thread, state, ciState);
+			if (state === "merged" || state === "closed") await this.threadClosed(projectId, thread, state, remote.merged === true ? timestamp$1(remote.merged_at ?? remote.closed_at ?? remote.updated_at) : timestamp$1(remote.closed_at ?? remote.updated_at), branch);
 			const fingerprint = digest$1({
 				head,
 				state,
@@ -649,27 +649,8 @@ var GitHubChannel = class {
 			};
 		});
 	}
-	async threadClosed(projectId, thread, outcome, ciState) {
-		const at = now$1();
-		const before = await db.ticketThread.listTicketIds(thread.id);
-		await db.ticket.closeThread(thread.id, outcome, at, null);
-		const ended = [];
-		for (const ticketId of before) {
-			const ticket = await db.ticket.findById(ticketId);
-			if (!ticket || ticket.status !== "done" || ticket.prUrl !== thread.url) continue;
-			ended.push(ticketId);
-			const message = `${ticketId} 的变更请求已${outcome === "merged" ? "合并" : "关闭"}：${thread.url}`;
-			for (const type of ["project", "main"]) await db.inbox.enqueue({
-				id: `nexus:merged:${ticketId}:${type}`,
-				type,
-				origin: "system",
-				kind: "notice",
-				projectId: ticket.projectId,
-				ticketId,
-				title: outcome === "merged" ? "PR merged" : "PR closed",
-				message
-			});
-		}
+	async threadClosed(projectId, thread, outcome, at, branch) {
+		const ended = await db.ticket.closeThread(thread.id, outcome, at, branch);
 		if (outcome !== "merged" || !ended.length) return;
 		for (const source of await db.thread.listByChannel("github")) {
 			if (source.kind !== "issue" || source.projectId !== projectId || !source.url) continue;
@@ -1251,6 +1232,7 @@ var GitLabChannel = class {
 						validateTopic(row, resource);
 						const thread = await this.ensureThread(resource, row);
 						await this.ingest(thread, row, row.state === "closed" || row.state === "merged" ? "close" : "open", baseline, kind);
+						if (kind === "pull") await this.observeMergeRequest(projectId, thread, row, signal);
 					}, signal);
 				} catch (error) {
 					if (signal?.aborted) throw error;
@@ -1266,6 +1248,7 @@ var GitLabChannel = class {
 							await this.acceptAnswers(thread, row);
 							await this.ingest(thread, row, "comment", baseline, "note");
 						}, signal);
+						if (thread.kind === "pull" && (await db.ticketThread.listTicketIds(thread.id)).length) await this.observeMergeRequest(projectId, thread, void 0, signal);
 					} catch (error) {
 						if (signal?.aborted) throw error;
 						errors.push(failure(error));
@@ -1386,6 +1369,38 @@ var GitLabChannel = class {
 			triggerId: id,
 			threadId: thread.id
 		});
+	}
+	async observeMergeRequest(projectId, thread, row, signal) {
+		const target = parseResource(thread.url, await this.site());
+		if (target.kind !== "pull") return;
+		const remote = row ?? record(await this.request(target.site, apiRoot(target), signal));
+		validateTopic(remote, target);
+		const state = remote.state === "merged" ? "merged" : remote.state === "closed" ? "closed" : remote.state === "opened" ? "open" : null;
+		if (!state) throw new GitLabError("invalid_response");
+		const branch = typeof remote.source_branch === "string" ? text(remote.source_branch) : null;
+		if (state === "open") return;
+		const at = timestamp(remote.merged_at ?? remote.closed_at ?? remote.updated_at);
+		for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
+			const ticket = await db.ticket.findById(ticketId);
+			if (ticket && ticket.projectId === projectId && !["done", "cancelled"].includes(ticket.status)) await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState);
+		}
+		await this.threadClosed(projectId, thread, state, at, branch);
+	}
+	async threadClosed(projectId, thread, outcome, at, branch) {
+		const ended = await db.ticket.closeThread(thread.id, outcome, at, branch);
+		if (outcome !== "merged" || !ended.length) return;
+		for (const source of await db.thread.listByChannel("gitlab")) {
+			if (source.kind !== "issue" || source.projectId !== projectId || !source.url) continue;
+			if (!(await db.ticketThread.listTicketIds(source.id)).some((id) => ended.includes(id))) continue;
+			let target;
+			try {
+				target = parseResource(source.url, await this.site());
+			} catch {
+				continue;
+			}
+			if (target.kind !== "issue") continue;
+			await this.request(target.site, apiRoot(target), void 0, "PUT", { state_event: "close" }).catch(() => void 0);
+		}
 	}
 	async acceptAnswers(thread, row) {
 		const author = record(row.author);

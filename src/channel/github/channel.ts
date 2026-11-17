@@ -378,7 +378,7 @@ export class GitHubChannel {
           await db.ticket.setPullRequest(ticketId, thread.url, state, ciState)
       }
       if (state === 'merged' || state === 'closed')
-        await this.threadClosed(projectId, thread, state, ciState)
+        await this.threadClosed(projectId, thread, state, remote.merged === true ? timestamp(remote.merged_at ?? remote.closed_at ?? remote.updated_at) : timestamp(remote.closed_at ?? remote.updated_at), branch)
       const fingerprint = digest({ head, state, ciState, ciError, checks: snapshot?.checks, statuses: snapshot?.statuses })
       const ref = `${target.repository}:${target.number}`
       const { row: watch } = await db.ciWatch.recordRevision({ id: `github:pull:${ref}`, channelId: 'github', kind: 'pull', ref, fingerprint, head, updatedAt: now() })
@@ -394,21 +394,8 @@ export class GitHubChannel {
     })
   }
 
-  private async threadClosed(projectId: string, thread: Thread, outcome: 'merged' | 'closed', ciState: CiSnapshot['state']): Promise<void> {
-    void ciState
-    const at = now()
-    const before = await db.ticketThread.listTicketIds(thread.id)
-    await db.ticket.closeThread(thread.id, outcome, at, null)
-    const ended: string[] = []
-    for (const ticketId of before) {
-      const ticket = await db.ticket.findById(ticketId)
-      if (!ticket || ticket.status !== 'done' || ticket.prUrl !== thread.url)
-        continue
-      ended.push(ticketId)
-      const message = `${ticketId} 的变更请求已${outcome === 'merged' ? '合并' : '关闭'}：${thread.url}`
-      for (const type of ['project', 'main'] as const)
-        await db.inbox.enqueue({ id: `nexus:merged:${ticketId}:${type}`, type, origin: 'system', kind: 'notice', projectId: ticket.projectId, ticketId, title: outcome === 'merged' ? 'PR merged' : 'PR closed', message })
-    }
+  private async threadClosed(projectId: string, thread: Thread, outcome: 'merged' | 'closed', at: string, branch: string | null): Promise<void> {
+    const ended = await db.ticket.closeThread(thread.id, outcome, at, branch)
     if (outcome !== 'merged' || !ended.length)
       return
     for (const source of await db.thread.listByChannel('github')) {

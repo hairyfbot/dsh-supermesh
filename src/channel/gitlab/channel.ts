@@ -45,7 +45,7 @@ export class GitLabChannel {
     catch { return false }
   }
 
-  private async request(site: string, path: string, signal?: AbortSignal, method: 'GET' | 'POST' = 'GET', body?: Record<string, unknown>): Promise<unknown> {
+  private async request(site: string, path: string, signal?: AbortSignal, method: 'GET' | 'POST' | 'PUT' = 'GET', body?: Record<string, unknown>): Promise<unknown> {
     signal?.throwIfAborted()
     return this.runner.request({ site, path, method, body, signal })
   }
@@ -161,6 +161,8 @@ export class GitLabChannel {
               validateTopic(row, resource)
               const thread = await this.ensureThread(resource, row)
               await this.ingest(thread, row, row.state === 'closed' || row.state === 'merged' ? 'close' : 'open', baseline, kind)
+              if (kind === 'pull')
+                await this.observeMergeRequest(projectId, thread, row, signal)
             }, signal)
           }
           catch (error) {
@@ -181,6 +183,8 @@ export class GitLabChannel {
               await this.acceptAnswers(thread, row)
               await this.ingest(thread, row, 'comment', baseline, 'note')
             }, signal)
+            if (thread.kind === 'pull' && (await db.ticketThread.listTicketIds(thread.id)).length)
+              await this.observeMergeRequest(projectId, thread, undefined, signal)
           }
           catch (error) {
             if (signal?.aborted)
@@ -267,6 +271,49 @@ export class GitLabChannel {
       targets.set(thread.projectId ?? 'main', { projectId: thread.triage === 'claimed' ? thread.projectId : null, ticketId: null })
     for (const [key, target] of targets)
       await db.inbox.enqueue({ id: `${id}:inbox:${key}`, type: target.projectId ? 'project' : 'main', origin: 'channel', kind: 'trigger', message: body, title: thread.title, projectId: target.projectId, ticketId: target.ticketId, triggerId: id, threadId: thread.id })
+  }
+
+  private async observeMergeRequest(projectId: string, thread: Thread, row: Record<string, unknown> | undefined, signal?: AbortSignal): Promise<void> {
+    const target = parseResource(thread.url!, await this.site())
+    if (target.kind !== 'pull')
+      return
+    const remote = row ?? record(await this.request(target.site, apiRoot(target), signal))
+    validateTopic(remote, target)
+    const state = remote.state === 'merged' ? 'merged' : remote.state === 'closed' ? 'closed' : remote.state === 'opened' ? 'open' : null
+    if (!state)
+      throw new GitLabError('invalid_response')
+    const branch = typeof remote.source_branch === 'string' ? text(remote.source_branch) : null
+    if (state === 'open')
+      return
+    const at = timestamp(remote.merged_at ?? remote.closed_at ?? remote.updated_at)
+    for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
+      const ticket = await db.ticket.findById(ticketId)
+      if (ticket && ticket.projectId === projectId && !['done', 'cancelled'].includes(ticket.status))
+        await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState)
+    }
+    await this.threadClosed(projectId, thread, state, at, branch)
+  }
+
+  private async threadClosed(projectId: string, thread: Thread, outcome: 'merged' | 'closed', at: string, branch: string | null): Promise<void> {
+    const ended = await db.ticket.closeThread(thread.id, outcome, at, branch)
+    if (outcome !== 'merged' || !ended.length)
+      return
+    for (const source of await db.thread.listByChannel('gitlab')) {
+      if (source.kind !== 'issue' || source.projectId !== projectId || !source.url)
+        continue
+      if (!(await db.ticketThread.listTicketIds(source.id)).some(id => ended.includes(id)))
+        continue
+      let target: Resource
+      try {
+        target = parseResource(source.url, await this.site())
+      }
+      catch {
+        continue
+      }
+      if (target.kind !== 'issue')
+        continue
+      await this.request(target.site, apiRoot(target), undefined, 'PUT', { state_event: 'close' }).catch(() => undefined)
+    }
   }
 
   private async acceptAnswers(thread: Thread, row: Record<string, unknown>): Promise<void> {

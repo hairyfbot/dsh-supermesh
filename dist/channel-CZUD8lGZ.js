@@ -950,6 +950,7 @@ var Thread = class extends Model {
 };
 // src/database/models/ticket.ts
 const CLOSED_STATUS = ["done", "cancelled"];
+const closedName = (threadId) => `thread_closed:${threadId}`;
 var Ticket = class Ticket extends Model {
 	constructor(db) {
 		super(db, "ticket", "id");
@@ -1087,35 +1088,78 @@ var Ticket = class Ticket extends Model {
 	async closeThread(threadId, outcome, at, branch) {
 		const thread = await this.db.selectFrom("thread").selectAll().where("id", "=", threadId).executeTakeFirst();
 		if (!thread?.url || thread.kind !== "pull") return [];
+		await this.recordClosed(thread, outcome, at);
 		const ended = [];
 		for (const { ticketId } of await this.db.selectFrom("ticket_thread").select("ticketId").where("threadId", "=", threadId).orderBy("createdAt").execute()) {
 			const row = await this.findById(ticketId);
 			if (!row || CLOSED_STATUS.includes(row.status)) continue;
 			const worker = await this.latestWorker(ticketId);
-			if (row.prUrl === thread.url || !!branch && worker?.branch === branch) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
-			else if (row.prUrl || !await this.onlyFollow(ticketId)) continue;
-			else await this.save(ticketId, { prState: outcome });
-			if (await this.unfinished(ticketId, at, worker)) continue;
-			const updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-			await this.finish(ticketId, "done", worker && Date.parse(worker.createdAt) > Date.parse(at) ? updatedAt : at, updatedAt);
+			if (row.prUrl === thread.url || row.prUrl === null && branch !== null && worker?.branch === branch) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
+			const done = await this.done(row);
+			if (!done || await this.unfinished(ticketId, at, worker)) continue;
+			const resumed = !!worker && (worker.startedAt ?? worker.createdAt) > at;
+			await this.end(row, done.outcome, resumed ? (/* @__PURE__ */ new Date()).toISOString() : done.at);
 			ended.push(ticketId);
 		}
 		return ended;
 	}
-	async latestWorker(ticketId) {
-		return this.db.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
+	async end(ticket, outcome, at) {
+		await this.finish(ticket.id, "done", at, (/* @__PURE__ */ new Date()).toISOString());
+		const message = `${ticket.id} 的变更请求已${outcome === "merged" ? "合并" : "关闭"}：${ticket.prUrl ?? ticket.id}`;
+		for (const type of ["project", "main"]) await new Inbox(this.db).enqueue({
+			id: `nexus:${outcome}:${ticket.id}:${type}`,
+			type,
+			origin: "system",
+			kind: "notice",
+			projectId: ticket.projectId,
+			ticketId: ticket.id,
+			title: outcome === "merged" ? "PR merged" : "PR closed",
+			message
+		});
 	}
-	async onlyFollow(ticketId) {
-		return (await this.db.selectFrom("ticket_thread").innerJoin("thread", "thread.id", "ticket_thread.threadId").select("thread.id").where("ticket_thread.ticketId", "=", ticketId).where("thread.kind", "=", "pull").execute()).length === 1;
+	async recordClosed(thread, outcome, at) {
+		const updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+		const value = JSON.stringify({
+			at,
+			outcome
+		});
+		await this.db.insertInto("source_state").values({
+			channelId: thread.channelId,
+			name: closedName(thread.id),
+			value,
+			updatedAt
+		}).onConflict((oc) => oc.columns(["channelId", "name"]).doUpdateSet({
+			value,
+			updatedAt
+		})).execute();
+	}
+	async done(row) {
+		const threads = await this.pullThreads(row.id);
+		const own = threads.filter((thread) => thread.url === row.prUrl);
+		const counted = own.length ? own : threads;
+		if (!counted.length) return void 0;
+		const closes = [];
+		for (const thread of counted) {
+			const closed = await this.threadClosedAt(thread);
+			if (!closed) return void 0;
+			closes.push(closed);
+		}
+		return closes.sort((left, right) => left.at.localeCompare(right.at)).at(-1);
 	}
 	async unfinished(ticketId, at, worker) {
 		if (!worker) return false;
-		if (await this.tookUpSince(ticketId, worker.reportAt ?? worker.createdAt)) return true;
-		if (!(Date.parse(worker.createdAt) > Date.parse(at))) return false;
-		return !["ready", "dropped"].includes(worker.reportState ?? "");
+		if (!["ready", "dropped"].includes(worker.reportState ?? "") && (worker.startedAt ?? worker.createdAt) > at) return true;
+		return !!await this.db.selectFrom("inbox").select("id").where("ticketId", "=", ticketId).where("origin", "=", "channel").where("kind", "=", "trigger").where("readAt", ">", worker.reportAt ?? worker.createdAt).executeTakeFirst();
 	}
-	async tookUpSince(ticketId, since) {
-		return !!await this.db.selectFrom("inbox").select("id").where("ticketId", "=", ticketId).where("origin", "=", "channel").where("kind", "=", "trigger").where("status", "!=", "done").where("readAt", "is not", null).where("createdAt", ">", since).executeTakeFirst();
+	async pullThreads(ticketId) {
+		return this.db.selectFrom("ticket_thread").innerJoin("thread", "thread.id", "ticket_thread.threadId").selectAll("thread").where("ticket_thread.ticketId", "=", ticketId).where("thread.kind", "=", "pull").orderBy("ticket_thread.createdAt").execute();
+	}
+	async threadClosedAt(thread) {
+		const row = await this.db.selectFrom("source_state").select("value").where("channelId", "=", thread.channelId).where("name", "=", closedName(thread.id)).executeTakeFirst();
+		return row ? JSON.parse(row.value) : void 0;
+	}
+	async latestWorker(ticketId) {
+		return this.db.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
 	}
 	async setPausedIfOpen(id, paused, updatedAt) {
 		return this.db.updateTable("ticket").set({
@@ -3675,7 +3719,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CxEclTUz.js");
+			const { shell } = await import("./shell-DHKf4QmX.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3684,7 +3728,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CxEclTUz.js");
+			const { shell } = await import("./shell-DHKf4QmX.js");
 			await shell.refresh();
 			return view;
 		});

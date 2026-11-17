@@ -1,6 +1,6 @@
 export interface GitLabRequest {
   site: string
-  method: 'GET' | 'POST'
+  method: 'GET' | 'POST' | 'PUT'
   path: string
   body?: Record<string, unknown>
   signal?: AbortSignal

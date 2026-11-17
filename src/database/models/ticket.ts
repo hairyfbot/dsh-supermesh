@@ -1,8 +1,10 @@
 import type { Insertable, Kysely, Selectable, Updateable } from 'kysely'
 import type { CiState, DB, PullRequestState, TicketStatus } from '../types'
 import { Model } from 'kysely-model'
+import { Inbox } from './inbox'
 
 const CLOSED_STATUS: readonly TicketStatus[] = ['done', 'cancelled']
+const closedName = (threadId: string): string => `thread_closed:${threadId}`
 
 export class Ticket extends Model<DB, 'ticket'> {
   constructor(db: Kysely<DB>) {
@@ -181,57 +183,92 @@ export class Ticket extends Model<DB, 'ticket'> {
     const thread = await this.db.selectFrom('thread').selectAll().where('id', '=', threadId).executeTakeFirst()
     if (!thread?.url || thread.kind !== 'pull')
       return []
+    await this.recordClosed(thread, outcome, at)
     const ended: string[] = []
     for (const { ticketId } of await this.db.selectFrom('ticket_thread').select('ticketId').where('threadId', '=', threadId).orderBy('createdAt').execute()) {
       const row = await this.findById(ticketId)
       if (!row || CLOSED_STATUS.includes(row.status))
         continue
       const worker = await this.latestWorker(ticketId)
-      const own = row.prUrl === thread.url || (!!branch && worker?.branch === branch)
+      const own = row.prUrl === thread.url || (row.prUrl === null && branch !== null && worker?.branch === branch)
       if (own)
         await this.setPullRequest(ticketId, thread.url, outcome, row.ciState)
-      else if (row.prUrl || !(await this.onlyFollow(ticketId)))
+      const done = await this.done(row)
+      if (!done || await this.unfinished(ticketId, at, worker))
         continue
-      else await this.save(ticketId, { prState: outcome })
-      if (await this.unfinished(ticketId, at, worker))
-        continue
-      const updatedAt = new Date().toISOString()
-      await this.finish(ticketId, 'done', worker && Date.parse(worker.createdAt) > Date.parse(at) ? updatedAt : at, updatedAt)
+      const resumed = !!worker && (worker.startedAt ?? worker.createdAt) > at
+      await this.end(row, done.outcome, resumed ? new Date().toISOString() : done.at)
       ended.push(ticketId)
     }
     return ended
   }
 
-  private async latestWorker(ticketId: string): Promise<Selectable<DB['worker']> | undefined> {
-    return this.db.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt', 'desc').orderBy('id', 'desc').executeTakeFirst()
+  private async end(ticket: Selectable<DB['ticket']>, outcome: 'merged' | 'closed', at: string): Promise<void> {
+    await this.finish(ticket.id, 'done', at, new Date().toISOString())
+    const message = `${ticket.id} 的变更请求已${outcome === 'merged' ? '合并' : '关闭'}：${ticket.prUrl ?? ticket.id}`
+    for (const type of ['project', 'main'] as const)
+      await new Inbox(this.db).enqueue({ id: `nexus:${outcome}:${ticket.id}:${type}`, type, origin: 'system', kind: 'notice', projectId: ticket.projectId, ticketId: ticket.id, title: outcome === 'merged' ? 'PR merged' : 'PR closed', message })
   }
 
-  private async onlyFollow(ticketId: string): Promise<boolean> {
-    const pulls = await this.db.selectFrom('ticket_thread').innerJoin('thread', 'thread.id', 'ticket_thread.threadId').select('thread.id').where('ticket_thread.ticketId', '=', ticketId).where('thread.kind', '=', 'pull').execute()
-    return pulls.length === 1
+  private async recordClosed(thread: Selectable<DB['thread']>, outcome: 'merged' | 'closed', at: string): Promise<void> {
+    const updatedAt = new Date().toISOString()
+    const value = JSON.stringify({ at, outcome })
+    await this.db
+      .insertInto('source_state')
+      .values({ channelId: thread.channelId, name: closedName(thread.id), value, updatedAt })
+      .onConflict(oc => oc.columns(['channelId', 'name']).doUpdateSet({ value, updatedAt }))
+      .execute()
+  }
+
+  private async done(row: Selectable<DB['ticket']>): Promise<{ at: string, outcome: 'merged' | 'closed' } | undefined> {
+    const threads = await this.pullThreads(row.id)
+    const own = threads.filter(thread => thread.url === row.prUrl)
+    const counted = own.length ? own : threads
+    if (!counted.length)
+      return undefined
+    const closes: { at: string, outcome: 'merged' | 'closed' }[] = []
+    for (const thread of counted) {
+      const closed = await this.threadClosedAt(thread)
+      if (!closed)
+        return undefined
+      closes.push(closed)
+    }
+    return closes.sort((left, right) => left.at.localeCompare(right.at)).at(-1)
   }
 
   private async unfinished(ticketId: string, at: string, worker: Selectable<DB['worker']> | undefined): Promise<boolean> {
     if (!worker)
       return false
-    if (await this.tookUpSince(ticketId, worker.reportAt ?? worker.createdAt))
+    if (!['ready', 'dropped'].includes(worker.reportState ?? '') && (worker.startedAt ?? worker.createdAt) > at)
       return true
-    if (!(Date.parse(worker.createdAt) > Date.parse(at)))
-      return false
-    return !['ready', 'dropped'].includes(worker.reportState ?? '')
-  }
-
-  private async tookUpSince(ticketId: string, since: string): Promise<boolean> {
     return !!(await this.db
       .selectFrom('inbox')
       .select('id')
       .where('ticketId', '=', ticketId)
       .where('origin', '=', 'channel')
       .where('kind', '=', 'trigger')
-      .where('status', '!=', 'done')
-      .where('readAt', 'is not', null)
-      .where('createdAt', '>', since)
+      .where('readAt', '>', worker.reportAt ?? worker.createdAt)
       .executeTakeFirst())
+  }
+
+  private async pullThreads(ticketId: string): Promise<Selectable<DB['thread']>[]> {
+    return this.db
+      .selectFrom('ticket_thread')
+      .innerJoin('thread', 'thread.id', 'ticket_thread.threadId')
+      .selectAll('thread')
+      .where('ticket_thread.ticketId', '=', ticketId)
+      .where('thread.kind', '=', 'pull')
+      .orderBy('ticket_thread.createdAt')
+      .execute()
+  }
+
+  private async threadClosedAt(thread: Selectable<DB['thread']>): Promise<{ at: string, outcome: 'merged' | 'closed' } | undefined> {
+    const row = await this.db.selectFrom('source_state').select('value').where('channelId', '=', thread.channelId).where('name', '=', closedName(thread.id)).executeTakeFirst()
+    return row ? JSON.parse(row.value) as { at: string, outcome: 'merged' | 'closed' } : undefined
+  }
+
+  private async latestWorker(ticketId: string): Promise<Selectable<DB['worker']> | undefined> {
+    return this.db.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt', 'desc').orderBy('id', 'desc').executeTakeFirst()
   }
 
   async setPausedIfOpen(id: string, paused: boolean, updatedAt: string): Promise<Selectable<DB['ticket']> | undefined> {
