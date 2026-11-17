@@ -1,4 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
 export const triage_thread = defineTool({
   name: 'triage_thread',
@@ -24,10 +26,28 @@ export const triage_thread = defineTool({
     schema: { type: 'string', description: '写入后的 triage 结论。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 写 Thread.triage + triagedAt；action=claim 时 projectId 必填，缺了要报错
-    // TODO: claim 之后这条话题的后续触发直接投给该项目编排，不再进主编排收件箱
-    throw new Error('triage_thread 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const thread = await db.thread.findById(args.threadId)
+    if (!thread)
+      throw new Error('话题不存在')
+    if ((await db.ticketThread.listByThread(thread.id)).length)
+      throw new Error('已有工单订阅的话题不能分诊')
+    if (thread.triage !== 'pending')
+      throw new Error('话题已分诊')
+    if (args.action === 'claim') {
+      if (!args.projectId || !(await db.project.findById(args.projectId)))
+        throw new Error('claim 必须指定存在的 projectId')
+      await db.thread.claim(thread.id, args.projectId, new Date().toISOString())
+    }
+    else {
+      await db.thread.ignore(thread.id, new Date().toISOString())
+    }
+    return JSON.stringify(await db.thread.findById(thread.id))
   },
 })
 
@@ -54,12 +74,25 @@ export const attach_thread_to_ticket = defineTool({
     schema: { type: 'string', description: '挂载结果。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建 TicketThread(ticketId, threadId)；已存在则幂等返回
-    // TODO: 投递：写 Inbox(type=project, kind=ticket, ticketId)，让项目编排把它 send 给 Worker
-    // TODO: 不写 Thread.triage —— 归属和订阅是两件事，写它会让 attach / unlink 不对称
-    // TODO: 票已 cancelled 时拒绝挂载
-    throw new Error('attach_thread_to_ticket 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const ticket = await db.ticket.findById(args.ticketId)
+    if (!ticket || ticket.status === 'cancelled')
+      throw new Error('工单不存在或已 cancelled')
+    const thread = await db.thread.findById(args.threadId)
+    if (!thread)
+      throw new Error('话题不存在')
+    const links = await db.ticketThread.listByTicket(ticket.id)
+    if (links.some(row => row.threadId === thread.id))
+      return JSON.stringify({ linked: true, existing: true })
+    if (!await db.ticketThread.link(ticket.id, thread.id, new Date().toISOString()))
+      return JSON.stringify({ linked: true, existing: true })
+    await db.inbox.enqueue({ type: 'project', projectId: ticket.projectId, origin: 'main', kind: 'ticket', ticketId: ticket.id, threadId: thread.id, message: args.note ?? thread.title })
+    return JSON.stringify({ linked: true })
   },
 })
 
@@ -87,10 +120,22 @@ export const unlink_thread = defineTool({
     schema: { type: 'string', description: '摘除结果。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 删 TicketThread(ticketId, threadId) 一行
-    // TODO: 触发来源（该票 TicketThread 里 createdAt 最早那条）不许摘，要明确报错
-    // TODO: 不碰 Thread.triage —— 摘掉订阅后路由自然回到话题原本的归属
-    throw new Error('unlink_thread 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    if (!(await db.ticket.findById(args.ticketId)))
+      throw new Error('工单不存在')
+    const links = await db.ticketThread.listByTicket(args.ticketId)
+    if (links[0]?.threadId === args.threadId)
+      throw new Error('不能摘掉触发来源话题')
+    if (!links.some(row => row.threadId === args.threadId))
+      throw new Error('订阅不存在')
+    await db.ticketThread.unlink(args.ticketId, args.threadId)
+    const ticket = (await db.ticket.findById(args.ticketId))!
+    await db.inbox.enqueue({ type: 'project', projectId: ticket.projectId, origin: 'main', kind: 'notice', ticketId: ticket.id, threadId: args.threadId, message: args.reason })
+    return JSON.stringify({ unlinked: true })
   },
 })

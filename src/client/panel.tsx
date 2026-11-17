@@ -2,9 +2,12 @@ import type { SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactNode } from 'react'
 import type { TabKind } from './store'
 import { Button, SegmentedTabs } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useAsyncState } from '@reause/core'
 import { useId } from 'react'
 import { Case, Switch } from 'react-if-lite'
+import { getApiNexusPanel } from './apis'
 import { useNavigate, usePage } from './hooks/use-navigation'
+import { useActions, useStore } from './hooks/use-store'
 import { useTranslation } from './hooks/use-translation'
 import { ChannelDetail } from './pages/channel/detail/page'
 import { Channel } from './pages/channel/page'
@@ -18,6 +21,22 @@ import { tabOf, TABS } from './store'
 
 export function Panel(): ReactNode {
   const { t } = useTranslation()
+  const { receivePanel, setLoadError, setLoading } = useActions()
+  const loading = useStore(state => state.data.loading)
+  const error = useStore(state => state.data.error)
+  const { execute } = useAsyncState(async () => {
+    setLoading(true)
+    try {
+      const panel = await getApiNexusPanel()
+      if (!panel || !Array.isArray(panel.tickets) || !panel.settings)
+        throw new Error('面板数据加载失败')
+      receivePanel(panel)
+    }
+    catch (error) {
+      setLoadError(error instanceof Error ? error.message : '面板数据加载失败')
+    }
+  }, undefined)
+  const selectedTicketId = useStore(state => state.navigation.ticketId)
   const page = usePage()
   const navigate = useNavigate()
   const tabsId = useId().replaceAll(':', '')
@@ -31,15 +50,16 @@ export function Panel(): ReactNode {
             <h1 className="text-xl leading-7 font-semibold">{t('title')}</h1>
             <p className="mt-1 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]">{t('desc')}</p>
           </div>
-          <Button variant="outline" size="sm" disabled title={t('overviewUnavailable')}>{t('openMainSession')}</Button>
+          <Button variant="outline" size="sm" disabled={loading} onClick={() => void execute()}>{loading ? '加载中…' : '刷新'}</Button>
         </div>
         <div className="w-full min-w-0 overflow-x-auto"><SegmentedTabs size="sm" items={items} value={tab} onChange={navigate} label={t('tabsLabel')} className="w-fit" /></div>
       </header>
       <div id={`${tabsId}-${tab}-panel`} role="tabpanel" aria-labelledby={`${tabsId}-${tab}`} className="mt-6 flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-6">
+        {error && <p role="alert">{error}</p>}
         <Switch value={page}>
           <Case cond="overview"><Overview /></Case>
           <Case cond="ticket"><Ticket /></Case>
-          <Case cond="ticket/detail"><TicketDetail /></Case>
+          <Case cond="ticket/detail"><TicketDetail key={selectedTicketId ?? 'none'} /></Case>
           <Case cond="trigger"><Trigger /></Case>
           <Case cond="trigger/detail"><TriggerDetail /></Case>
           <Case cond="channel"><Channel /></Case>

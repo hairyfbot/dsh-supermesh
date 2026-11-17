@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react'
 import { useId } from 'react'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
-import { OVERVIEW_ACTIVITY } from '../../../constants'
+import { useStore } from '../../../hooks/use-store'
 
 export function ActivityChart(): ReactNode {
   const id = useId().replaceAll(':', '')
+  const triggers = useStore(state => state.data.panel?.topics.triggers ?? [])
+  const activity = [...new Set(triggers.map(trigger => trigger.at.slice(0, 13)))].sort().map(time => ({ time, messages: triggers.filter(trigger => trigger.at.startsWith(time)).length }))
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-37 opacity-60" aria-hidden="true" style={{ maskImage: 'linear-gradient(to right, transparent 5%, black 70%)' }}>
       <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-        <AreaChart data={OVERVIEW_ACTIVITY} margin={{ top: 8, right: 0, bottom: 0, left: 0 }} accessibilityLayer={false}>
+        <AreaChart data={activity} margin={{ top: 8, right: 0, bottom: 0, left: 0 }} accessibilityLayer={false}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--dsw-alias-state-business-primary)" stopOpacity={0.2} />

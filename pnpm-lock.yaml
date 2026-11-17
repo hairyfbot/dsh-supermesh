@@ -76,6 +76,13 @@ catalogs:
     prisma-kysely:
       specifier: ^3.2.1
       version: 3.2.1
+  default:
+    h3:
+      specifier: ^2.0.8
+      version: 2.0.8
+    unstorage:
+      specifier: 2.0.0-beta.0
+      version: 2.0.0-beta.0
   dsh:
     '@deepseek-ai/cordis':
       specifier: 4.0.5
@@ -270,6 +277,9 @@ importers:
       dsh-taiwind:
         specifier: catalog:utils
         version: 0.3.3
+      h3:
+        specifier: 'catalog:'
+        version: 2.0.8
       kysely:
         specifier: catalog:database
         version: 0.29.8
@@ -282,6 +292,9 @@ importers:
       recharts:
         specifier: catalog:react
         version: 3.10.1(@types/react@19.3.0)(react-dom@18.3.1(react@18.3.1))(react-is@19.3.1)(react@18.3.1)(redux@5.0.1)
+      unstorage:
+        specifier: 'catalog:'
+        version: 2.0.0-beta.0
     devDependencies:
       '@antfu/eslint-config':
         specifier: catalog:cli
@@ -4522,6 +4535,9 @@ packages:
   universalify@2.0.1:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
     engines: {node: '>= 10.0.0'}
+
+  unstorage@2.0.0-beta.0:
+    resolution: {integrity: sha512-VeTY+zQ3ozrNtIFBRQRuSwanHdpuRH+4t/ZzchZIVQO8/oKq2xl7fJ9c+z76tWJDW/BEXSEuzpHOxqoAl6B64A==}
 
   update-browserslist-db@1.2.3:
     resolution: {integrity: sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==}
@@ -8888,6 +8904,8 @@ snapshots:
       unist-util-visit-parents: 6.0.1
 
   universalify@2.0.1: {}
+
+  unstorage@2.0.0-beta.0: {}
 
   update-browserslist-db@1.2.3(browserslist@4.28.2):
     dependencies:

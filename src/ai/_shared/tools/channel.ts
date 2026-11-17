@@ -1,4 +1,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { github } from '../../../channel/github/channel'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
 export const read_channel = defineTool({
   name: 'read_channel',
@@ -22,11 +25,65 @@ export const read_channel = defineTool({
     schema: { type: 'string', description: '本条资源的正文分片，末尾附 next_offset / next_resource。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 按 resource 前缀分发到对应渠道读取器，统一返回 { items, next_offset, next_resource }
-    // TODO: Worker 只能读本任务来源的资源；其余角色不限，越权直接报错
-    // TODO: 分支 CI 这类没有地址的话题（ThreadKind=ci）不产生可回复地址，读可以，回复要报错
-    throw new Error('read_channel 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    const offset = args.offset ?? 0
+    const limit = args.limit ?? 50
+    if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 100)
+      throw new Error('offset 必须非负，limit 必须在 1–100')
+    const resource = args.resource.startsWith('github/') ? `https://github.com/${args.resource.slice(7)}` : args.resource
+    const links = identity.role === 'worker' && identity.ticketId ? await db.ticketThread.listByTicket(identity.ticketId) : []
+    const allowedThreads = new Set(links.map(link => link.threadId))
+    let items: unknown[]
+    let nextResource: string | null = null
+    if (resource.startsWith('trigger/')) {
+      const trigger = await db.trigger.findById(resource.slice(8))
+      if (!trigger)
+        throw new Error('触发不存在')
+      if (identity.role === 'worker' && !allowedThreads.has(trigger.threadId))
+        throw new Error('Worker 只能读取本任务来源')
+      items = [trigger]
+    }
+    else if (resource.startsWith('thread/')) {
+      const thread = await db.thread.findById(resource.slice(7))
+      if (!thread)
+        throw new Error('话题不存在')
+      if (identity.role === 'worker' && !allowedThreads.has(thread.id))
+        throw new Error('Worker 只能读取本任务来源')
+      items = [thread]
+      nextResource = thread.kind !== 'ci' ? thread.url : null
+    }
+    else if (resource.startsWith('ticket/')) {
+      const ticket = await db.ticket.findById(resource.slice(7))
+      if (!ticket)
+        throw new Error('工单不存在')
+      if (identity.role === 'worker' && ticket.id !== identity.ticketId)
+        throw new Error('Worker 只能读取本任务来源')
+      const threads = await db.ticketThread.listByTicket(ticket.id)
+      items = [ticket, ...threads.map(link => ({ resource: `thread/${link.threadId}` }))]
+    }
+    else {
+      if (identity.role === 'worker') {
+        const threads = await Promise.all(links.map(link => db.thread.findById(link.threadId)))
+        const canonical = (value: string) => {
+          try {
+            const url = new URL(value)
+            return url.origin + url.pathname.replace(/\/$/, '')
+          }
+          catch {
+            const match = /^github:([^:]+):(issue|pull):(\d+)$/.exec(value)
+            return match ? `https://github.com/${match[1]}/${match[2] === 'issue' ? 'issues' : 'pull'}/${match[3]}` : value
+          }
+        }
+        if (!threads.some(thread => thread?.url && canonical(thread.url) === canonical(resource)))
+          throw new Error('Worker 只能读取本任务来源')
+      }
+      return JSON.stringify(await github.read(resource, offset, limit))
+    }
+    const page = items.slice(offset, offset + limit)
+    return JSON.stringify({ items: page, next_offset: offset + page.length < items.length ? offset + page.length : null, next_resource: nextResource })
   },
 })
 
@@ -49,10 +106,28 @@ export const reply_channel = defineTool({
     schema: { type: 'string', description: '入队结果，例如 queued 或具体状态。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 由 triggerId 解析渠道地址，写 Outbox / 投递队列，返回排队状态
-    // TODO: 触发没有回复地址（ThreadKind=ci）时必须明确报错，不能猜一个地方发
-    // TODO: 同一票对同一地址按 seq 保序：前一条没发出去，后一条等着
-    throw new Error('reply_channel 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    const trigger = await db.trigger.findById(args.triggerId)
+    if (!trigger)
+      throw new Error('触发不存在')
+    const thread = await db.thread.findById(trigger.threadId)
+    if (!thread || thread.kind === 'ci' || !thread.url)
+      throw new Error('该触发没有可回复地址')
+    if (identity.role === 'worker') {
+      if (!identity.ticketId || !(await db.ticketThread.listByTicket(identity.ticketId)).some(row => row.threadId === thread.id))
+        throw new Error('Worker 只能回复本任务来源')
+      await db.ticket.requireOpen(identity.ticketId)
+    }
+    if (identity.role === 'project' && thread.projectId !== identity.projectId) {
+      const tickets = await Promise.all((await db.ticketThread.listByThread(thread.id)).map(link => db.ticket.findById(link.ticketId)))
+      if (!tickets.some(ticket => ticket?.projectId === identity.projectId))
+        throw new Error('触发不属于当前项目')
+    }
+    const ticketId = identity.ticketId ?? null
+    const row = await db.inbox.enqueue({ type: 'user', origin: identity.role, kind: 'notice', projectId: identity.projectId ?? thread.projectId, supervisorId: identity.supervisorId ?? null, workerId: identity.workerId ?? null, triggerId: trigger.id, threadId: thread.id, ticketId, message: args.text })
+    return JSON.stringify({ id: row.id, status: 'queued' })
   },
 })

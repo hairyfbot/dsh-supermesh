@@ -51,13 +51,13 @@ export interface OverviewTaskSegment {
 export interface AgentGraphNode {
   id: string
   kind: 'channel' | 'orchestrator' | 'route' | 'task' | 'session'
-  label: DshNexusKey
+  label: string
   subtitle?: string
   x: number
   y: number
   waiting?: boolean
   group?: 'supervisor'
-  taskId?: OverviewTask['id']
+  taskId?: string
 }
 
 export interface AgentGraphEdge {

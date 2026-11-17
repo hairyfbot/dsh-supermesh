@@ -1,9 +1,8 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
+import { worker as workerService } from '../../../service/worker'
 
-/**
- * 项目编排的版本：范围锁死在本项目。
- * 没有 projectId 参数 —— 你只能看自己的票，这和主编排的全局 `list_ticket` 是两个工具。
- */
 export const list_ticket = defineTool({
   name: 'list_ticket',
   description: '列本项目的任务。判重时必看。',
@@ -22,9 +21,13 @@ export const list_ticket = defineTool({
     schema: { type: 'string', description: '本项目任务列表：id、标题、状态、PR 状态、有无 pending ask。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 只查本项目的 Ticket（projectId 由会话身份决定，不接受入参），叠加 status / attentionOnly
-    throw new Error('list_ticket 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'project' || !identity.projectId)
+      throw new Error('仅项目编排可调用')
+    return JSON.stringify(await db.ticket.listFiltered({ ...args, projectId: identity.projectId }))
   },
 })
 
@@ -53,11 +56,20 @@ export const link_ticket = defineTool({
     schema: { type: 'string', description: '关联结果。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建 TicketLink(ticketId, relatedId, kind)，方向是 ticketId 指向 relatedId
-    // TODO: ticketId 不属于本项目时拒绝；depends 时若 relatedId 未到终态则把 ticketId 停在 waiting
-    // TODO: depends 的 relatedId 到终态时，插件给该票所属的 Supervisor 投一条 notice（保险，不是常规）
-    throw new Error('link_ticket 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (identity?.role !== 'project' || !identity.projectId)
+      throw new Error('仅项目编排可调用')
+    const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId)
+    const related = await db.ticket.findById(args.relatedId)
+    if (!related || related.projectId !== identity.projectId)
+      throw new Error('跨项目关联应由 Supervisor 处理')
+    if (ticket.id === related.id)
+      throw new Error('工单不能关联自己')
+    await db.ticketLink.link(ticket.id, related.id, args.kind, new Date().toISOString())
+    if (args.kind === 'depends' && related.status !== 'done' && related.status !== 'cancelled')
+      await db.ticket.save(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
+    return JSON.stringify({ linked: true })
   },
 })
 
@@ -84,11 +96,28 @@ export const stop_ticket = defineTool({
     schema: { type: 'string', description: '结单结果。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 校验 triggerId 存在且 human=true，否则报错
-    // TODO: 写 status=cancelled + endedAt；中止在跑的 Worker 回合；残留的 pending 消息退回
-    // TODO: 工单在某个 Supervisor 下时，必须顺带 report 一次带 supervisorId
-    throw new Error('stop_ticket 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (identity?.role !== 'project' || !identity.projectId)
+      throw new Error('仅项目编排可调用')
+    const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId)
+    const trigger = await db.trigger.findById(args.triggerId)
+    if (!trigger || trigger.human !== 1)
+      throw new Error('停止工单必须绑定 human=true 的触发')
+    if (!(await db.ticketThread.listByTicket(ticket.id)).some(row => row.threadId === trigger.threadId))
+      throw new Error('停止触发不属于当前工单来源')
+    for (const worker of await db.worker.listByTicket(ticket.id)) {
+      if (worker.status === 'ended')
+        continue
+      if (worker.status === 'running')
+        await session.cancel(worker.id)
+      await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+    }
+    const now = new Date().toISOString()
+    await db.ticket.finish(ticket.id, 'cancelled', now, now)
+    await db.inbox.returnPendingTicket(ticket.id, args.reason ?? '人类要求停止', now)
+    for (const link of await db.supervisorTicket.listByTicket(ticket.id)) await db.inbox.enqueue({ type: 'supervisor', supervisorId: link.supervisorId, projectId: ticket.projectId, origin: 'project', kind: 'ticket', ticketId: ticket.id, title: 'dropped', message: args.reason ?? '人类要求停止' })
+    return JSON.stringify({ id: ticket.id, status: 'cancelled' })
   },
 })
 
@@ -106,9 +135,23 @@ export const retry_ticket = defineTool({
     schema: { type: 'string', description: '重开结果。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 校验票未到终态且 Worker 卡在 failed；否则拒绝
-    // TODO: 结束旧 Worker，按并发上限开新的；旧 Worker 的 branch / worktree 保留不删
-    throw new Error('retry_ticket 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (identity?.role !== 'project' || !identity.projectId)
+      throw new Error('仅项目编排可调用')
+    const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId)
+    const workers = await db.worker.listByTicket(ticket.id)
+    const old = workers.at(-1)
+    if (!old || old.reportState !== 'failed')
+      throw new Error('只允许重试 failed Worker')
+    if (old.status === 'running')
+      await session.cancel(old.id)
+    await db.worker.end(old.id, 'restarted', new Date().toISOString())
+    const worker = await db.worker.queue(ticket.id, identity.projectId, old.branch ?? undefined)
+    if (old.branch && old.worktree)
+      await db.worker.update(worker.id, { branch: old.branch, worktree: old.worktree })
+    await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
+    await workerService.reconcile()
+    return JSON.stringify(await db.worker.findById(worker.id))
   },
 })

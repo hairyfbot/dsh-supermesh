@@ -2,14 +2,17 @@ import type { ReactNode } from 'react'
 import { Button, Input, SegmentedTabs } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId, useState } from 'react'
 import { OVERVIEW_CHANNEL_LABELS } from '../../../../constants'
+import { useStore } from '../../../../hooks/use-store'
 import { useTranslation } from '../../../../hooks/use-translation'
 import { Section } from './section'
 
 export function Configuration({ kind }: { kind: 'github' | 'gitlab' }): ReactNode {
   const { t } = useTranslation()
+  const channel = useStore(state => state.data.panel?.channels.find(channel => channel.id === kind))
+  const account = channel?.accounts.find(account => account.role === 'bot')
   const id = useId()
   const [method, setMethod] = useState<'authorize' | 'token'>('authorize')
-  const [host, setHost] = useState('https://gitlab.com')
+  const [host, setHost] = useState(channel?.host ?? 'https://gitlab.com')
   const [hostInvalid, setHostInvalid] = useState(false)
   const validateHost = (): void => {
     try {
@@ -58,17 +61,17 @@ export function Configuration({ kind }: { kind: 'github' | 'gitlab' }): ReactNod
         <Section title={t('channelAccount')} description={t('channelAccountDescription')}>
           <div className="flex flex-col gap-2">
             <label htmlFor={`${id}-username`} className="text-xs font-medium">{t('channelLoginName')}</label>
-            <Input id={`${id}-username`} placeholder="nexus-bot" autoComplete="off" spellCheck={false} aria-describedby={`${id}-username-help`} />
+            <Input id={`${id}-username`} readOnly value={account?.name ?? ''} autoComplete="off" spellCheck={false} aria-describedby={`${id}-username-help`} />
             <p id={`${id}-username-help`} className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelLoginNameHelp')}</p>
           </div>
           <div className="grid gap-3 @min-[540px]:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label htmlFor={`${id}-commit-name`} className="text-xs font-medium">{t('channelCommitName')}</label>
-              <Input id={`${id}-commit-name`} placeholder="Nexus Bot" autoComplete="off" />
+              <Input id={`${id}-commit-name`} disabled autoComplete="off" />
             </div>
             <div className="flex flex-col gap-2">
               <label htmlFor={`${id}-commit-email`} className="text-xs font-medium">{t('channelCommitEmail')}</label>
-              <Input id={`${id}-commit-email`} type="email" placeholder="bot@example.com" autoComplete="off" spellCheck={false} />
+              <Input id={`${id}-commit-email`} type="email" disabled autoComplete="off" spellCheck={false} />
             </div>
           </div>
           <p className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelCommitHelp')}</p>
@@ -99,7 +102,7 @@ export function Configuration({ kind }: { kind: 'github' | 'gitlab' }): ReactNod
         <Section title={t('channelIdentity')}>
           <dl className="m-0 flex flex-col gap-2">
             <dt className="text-xs text-[var(--dsw-alias-label-secondary)]">{t('channelCredentialLocation')}</dt>
-            <dd className="m-0 break-all rounded-lg bg-[var(--dsw-alias-card-fill)] px-3 py-2 font-mono text-xs">{`~/.nexus/credentials/${kind}/`}</dd>
+            <dd className="m-0 break-all rounded-lg bg-[var(--dsw-alias-card-fill)] px-3 py-2 font-mono text-xs">由宿主管理</dd>
           </dl>
           <p className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelCredentialProtection')}</p>
           <p className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelWorkerIdentity')}</p>

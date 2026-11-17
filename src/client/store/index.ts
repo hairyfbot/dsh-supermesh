@@ -1,9 +1,10 @@
+import type { GetApiNexusPanelResponse, GetApiNexusTicketsidResponse } from '../apis/index.type'
 import type { RuntimeSettings, Section } from '../pages/setting/model'
 import type { Filters } from '../pages/trigger/model'
 import type { OverviewChannelKind, OverviewView } from '../types'
 import { defineStore } from '@deepseek-ai/dsh-client-store'
 import { AGENT_GRAPH } from '../constants'
-import { GROUPS, initialSettings, refreshProjects, validSettings } from '../pages/setting/model'
+import { GROUPS, initialSettings, validSettings } from '../pages/setting/model'
 
 export type TabKind = 'overview' | 'ticket' | 'trigger' | 'channel' | 'setting'
 export type Page = TabKind | 'channel/detail' | 'ticket/detail' | 'trigger/detail'
@@ -26,10 +27,48 @@ export const store = defineStore({
     channel: { selected: null as OverviewChannelKind | null },
     overview: { view: 'recent' as OverviewView },
     setting: initialSettings(),
+    data: { panel: null as Omit<GetApiNexusPanelResponse, 'settings'> | null, ticket: null as GetApiNexusTicketsidResponse | null, loading: false, error: null as string | null },
     trigger: { selectedId: null as string | null, openFilter: null as 'channel' | 'kind' | 'status' | null, filters: { query: '', channel: 'all', status: 'all', kind: 'all', mentionedOnly: false } as Filters },
     graph: { zoom: 1, x: 0, y: 0, selectedId: null as string | null },
   }),
   actions: {
+    setLoading: (draft, loading: boolean) => {
+      draft.data.loading = loading
+      draft.data.error = null
+    },
+    setLoadError: (draft, error: string) => {
+      draft.data.loading = false
+      draft.data.error = error
+    },
+    receivePanel: (draft, value: GetApiNexusPanelResponse) => {
+      const { settings, ...panel } = value
+      const dirty = Object.keys(draft.setting.saved).some(key => draft.setting.draft[key as keyof RuntimeSettings] !== draft.setting.saved[key as keyof RuntimeSettings])
+      draft.data.panel = panel
+      draft.data.loading = false
+      draft.data.error = null
+      const { maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings
+      draft.setting.saved = { maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
+      if (!dirty)
+        draft.setting.draft = { ...draft.setting.saved }
+      draft.setting.projects = value.projects
+      draft.setting.refreshedAt = new Date().toISOString()
+    },
+    receiveProject: (draft, project: GetApiNexusPanelResponse['projects'][number]) => {
+      draft.setting.projects = draft.setting.projects.map(item => item.id === project.id ? project : item)
+      if (draft.data.panel)
+        draft.data.panel.projects = draft.data.panel.projects.map(item => item.id === project.id ? project : item)
+      draft.setting.notice = 'project'
+    },
+    receiveTicket: (draft, ticket: GetApiNexusTicketsidResponse) => {
+      if (ticket.ticket.id === draft.navigation.ticketId)
+        draft.data.ticket = ticket
+    },
+    receiveSettings: (draft, value: RuntimeSettings) => {
+      draft.setting.saved = value
+      draft.setting.draft = { ...value }
+      draft.setting.invalid = false
+      draft.setting.notice = 'saved'
+    },
     go: (draft, page: Page) => {
       draft.navigation.page = page
       draft.trigger.openFilter = null
@@ -47,6 +86,7 @@ export const store = defineStore({
       if (draft.navigation.page !== 'ticket/detail')
         draft.navigation.returnTo = draft.navigation.page === 'overview' || draft.navigation.page === 'trigger' || draft.navigation.page === 'trigger/detail' ? draft.navigation.page : 'ticket'
       draft.navigation.ticketId = id
+      draft.data.ticket = null
       draft.channel.selected = null
       draft.navigation.page = 'ticket/detail'
     },
@@ -72,18 +112,6 @@ export const store = defineStore({
       draft.setting.invalid = false
       draft.setting.notice = null
     },
-    refreshSettingProjects: (draft, at: string) => {
-      draft.setting.projects = refreshProjects(draft.setting.projects)
-      draft.setting.refreshedAt = at
-      draft.setting.notice = 'refreshed'
-    },
-    toggleSettingProject: (draft, id: string, enabled: boolean) => {
-      const project = draft.setting.projects.find(project => project.id === id)
-      if (!project || (enabled && !project.available))
-        return
-      project.enabled = enabled
-      draft.setting.notice = 'project'
-    },
     editSettings: (draft, patch: Partial<RuntimeSettings>) => {
       Object.assign(draft.setting.draft, patch)
       if (patch.autoMerge === false && !validSettings({ ...draft.setting.saved, autoMergeMaxLines: draft.setting.draft.autoMergeMaxLines }))
@@ -96,19 +124,6 @@ export const store = defineStore({
         Object.assign(draft.setting.draft, { [key]: draft.setting.saved[key] })
       draft.setting.invalid = false
       draft.setting.notice = null
-    },
-    saveSettings: (draft, section: 'execution' | 'delivery') => {
-      const next = { ...draft.setting.saved }
-      for (const key of GROUPS[section])
-        Object.assign(next, { [key]: draft.setting.draft[key] })
-      if (!validSettings(next)) {
-        draft.setting.invalid = true
-        draft.setting.notice = null
-        return
-      }
-      draft.setting.saved = next
-      draft.setting.invalid = false
-      draft.setting.notice = 'saved'
     },
     setOverviewView: (draft, view: OverviewView) => {
       draft.overview.view = view

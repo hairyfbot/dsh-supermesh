@@ -1,4 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
 export const create_ticket = defineTool({
   name: 'create_ticket',
@@ -29,17 +31,16 @@ export const create_ticket = defineTool({
     schema: { type: 'string', description: '新票的 id 和状态。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建 Ticket(status=waiting) + 每条 threadId 建一行 TicketThread
-    // TODO: 同一话题重复建票要拒绝或幂等，避免一个改动两个 Worker 各改一遍
-    throw new Error('create_ticket 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    return JSON.stringify(await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description))
   },
 })
 
-/**
- * 主编排的版本：全局可见，可以按项目过滤。
- * 项目编排的 `list_ticket` 是另一个工具（没有 projectId，只看自己项目），不要合并。
- */
 export const list_ticket = defineTool({
   name: 'list_ticket',
   description: '列全部任务，可跨项目筛选。判重、找某张票的现状都靠它。',
@@ -62,9 +63,12 @@ export const list_ticket = defineTool({
     schema: { type: 'string', description: '任务列表，每张票一行：id、项目、标题、状态、PR 状态、有无 pending ask。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 全局查 Ticket，叠加 status / projectId / attentionOnly 过滤
-    // TODO: attentionOnly 用「存在指向它、kind=ask、status=pending 的 Inbox」派生，不读 status 字段
-    throw new Error('list_ticket 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    return JSON.stringify(await db.ticket.listFiltered(args))
   },
 })

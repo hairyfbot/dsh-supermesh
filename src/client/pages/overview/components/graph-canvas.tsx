@@ -115,10 +115,10 @@ export function GraphCanvas({ nodes, edges }: { nodes: readonly AgentGraphNode[]
         <div className="flex flex-wrap items-center gap-3 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-xs">
           <AgentIcon width={16} height={16} />
           <span>
-            {t(selected.label)}
+            {selected.label}
             {selected.subtitle ? ` · ${selected.subtitle}` : ''}
           </span>
-          <span className="text-[var(--dsw-alias-label-tertiary)]">{t(selected.waiting ? 'graphWaiting' : 'overviewDemo')}</span>
+          <span className="text-[var(--dsw-alias-label-tertiary)]">{selected.waiting ? t('graphWaiting') : ''}</span>
           {selected.taskId && (
             <Button
               size="sm"

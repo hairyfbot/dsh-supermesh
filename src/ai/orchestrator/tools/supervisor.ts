@@ -1,9 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
-/**
- * 主编排的版本：全部字段可见。
- * 项目编排的 `supervisor_list` 是另一个工具（本项目那张给明细、别人的只给数量），不要合并。
- */
 export const supervisor_list = defineTool({
   name: 'supervisor_list',
   description: '列全部 Supervisor，字段完整：标题、原因、状态、关联工单、各自进度。',
@@ -18,9 +17,14 @@ export const supervisor_list = defineTool({
     schema: { type: 'string', description: 'Supervisor 列表，含 title / reason / status / 关联工单。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 查全部 Supervisor，按 status 过滤，返回完整字段与关联工单
-    throw new Error('supervisor_list 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const rows = await db.supervisor.listByStatus(args.status ?? 'active')
+    return JSON.stringify(await Promise.all(rows.map(async row => ({ ...row, tickets: await Promise.all((await db.supervisorTicket.listBySupervisor(row.id)).map(link => db.ticket.findById(link.ticketId))) }))))
   },
 })
 
@@ -49,10 +53,24 @@ export const create_supervisor = defineTool({
     schema: { type: 'string', description: '新 Supervisor 的 id 与关联工单。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建 Supervisor(status=active) + SupervisorTicket 行，并起它的会话
-    // TODO: 开场 prompt 里要带双方上下文，否则它醒来只能看到收件箱那一条转述
-    throw new Error('create_supervisor 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const ticketIds = [...new Set(args.ticketIds)]
+    if (!ticketIds.length)
+      throw new Error('至少需要一张工单')
+    const tickets = await Promise.all(ticketIds.map(id => db.ticket.requireOpen(id)))
+    const id = randomUUID()
+    const now = new Date().toISOString()
+    await db.supervisor.create({ id, title: args.title, reason: args.reason, status: 'active', sessionId: null, createdAt: now, closedAt: null })
+    for (const ticketId of ticketIds) await db.supervisorTicket.link(id, ticketId, now)
+    const sessionId = await session.create('supervisor', { supervisorId: id, title: args.title })
+    await db.supervisor.attachSession(id, sessionId)
+    await session.send(sessionId, JSON.stringify({ title: args.title, reason: args.reason, tickets }), 'queue')
+    return JSON.stringify({ id, sessionId, ticketIds })
   },
 })
 
@@ -75,15 +93,22 @@ export const close_supervisor = defineTool({
     schema: { type: 'string', description: '关闭结果，含通知到哪几个项目编排。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 写 status=closed + closedAt；行不删 —— 那几张票还指着它说明自己当初为什么存在
-    // TODO: 按关联工单去重出项目清单，给每个项目编排各写一条 Inbox(type=project, kind=notice)：
-    //       title 用 Supervisor 标题，message 用 reason 原文 + 该 Supervisor 名下属于本项目的票 id
-    //       同一项目有多张票时只投一条，不要按票数重复
-    // TODO: reason 落在 Inbox.message，不给 Supervisor 加字段 —— 表里只有 reason（创建原因），
-    //       和 Ticket 只记 endedAt 不记结束原因一样，收尾原因归收件箱那份记录
-    // TODO: 只动 Supervisor 与通知，不改任何票的 status —— 那几张票接下来怎么办是各项目编排自己的事
-    throw new Error('close_supervisor 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const row = await db.supervisor.findById(args.supervisorId)
+    if (!row)
+      throw new Error('Supervisor 不存在')
+    if (row.status === 'closed')
+      return JSON.stringify({ id: row.id, status: 'closed', notified: [] })
+    const tickets = await Promise.all((await db.supervisorTicket.listBySupervisor(row.id)).map(link => db.ticket.findById(link.ticketId)))
+    const projects = [...new Set(tickets.flatMap(ticket => ticket ? [ticket.projectId] : []))]
+    for (const projectId of projects) await db.inbox.enqueue({ id: `supervisor-close:${row.id}:${projectId}`, type: 'project', projectId, supervisorId: row.id, origin: 'main', kind: 'notice', title: row.title, message: `${args.reason}\n${tickets.filter(ticket => ticket?.projectId === projectId).map(ticket => ticket!.id).join(', ')}` })
+    await db.supervisor.close(row.id, new Date().toISOString())
+    return JSON.stringify({ id: row.id, status: 'closed', notified: projects })
   },
 })
 
@@ -107,10 +132,21 @@ export const attach_tickets_to_supervisor = defineTool({
     schema: { type: 'string', description: '扩范围结果。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建 SupervisorTicket 行；已存在则幂等
-    // TODO: 自动写一条 Inbox(type=project) 通知该项目编排，调用方不用另外发
-    throw new Error('attach_tickets_to_supervisor 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const row = await db.supervisor.findById(args.supervisorId)
+    if (!row || row.status !== 'active')
+      throw new Error('Supervisor 不存在或已关闭')
+    const tickets = await Promise.all([...new Set(args.ticketIds)].map(id => db.ticket.requireOpen(id)))
+    const existing = await db.supervisorTicket.listBySupervisor(row.id)
+    const added = tickets.filter(ticket => !existing.some(link => link.ticketId === ticket.id))
+    for (const ticket of added) await db.supervisorTicket.link(row.id, ticket.id, new Date().toISOString())
+    for (const projectId of new Set(added.map(ticket => ticket.projectId))) await db.inbox.enqueue({ type: 'project', projectId, supervisorId: row.id, origin: 'main', kind: 'notice', title: row.title, message: `加入 Supervisor ${row.id}: ${added.filter(ticket => ticket.projectId === projectId).map(ticket => ticket.id).join(', ')}` })
+    return JSON.stringify({ attached: added.map(ticket => ticket.id) })
   },
 })
 
@@ -139,10 +175,20 @@ export const detach_tickets_from_supervisor = defineTool({
     schema: { type: 'string', description: '缩范围结果，含通知到哪几个项目编排。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 删 SupervisorTicket 行，工单退回原项目编排
-    // TODO: 按项目去重，各写一条 Inbox(type=project, kind=notice)，message 用 reason 原文 + 受影响的票 id
-    // TODO: 只动关联关系，不改票的 status
-    throw new Error('detach_tickets_from_supervisor 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const row = await db.supervisor.findById(args.supervisorId)
+    if (!row)
+      throw new Error('Supervisor 不存在')
+    const existing = await db.supervisorTicket.listBySupervisor(row.id)
+    const ids = [...new Set(args.ticketIds)].filter(id => existing.some(link => link.ticketId === id))
+    const tickets = await Promise.all(ids.map(id => db.ticket.findById(id)))
+    for (const ticketId of ids) await db.supervisorTicket.unlink(row.id, ticketId)
+    for (const projectId of new Set(tickets.flatMap(ticket => ticket ? [ticket.projectId] : []))) await db.inbox.enqueue({ type: 'project', projectId, supervisorId: row.id, origin: 'main', kind: 'notice', title: row.title, message: `${args.reason}\n${tickets.filter(ticket => ticket?.projectId === projectId).map(ticket => ticket!.id).join(', ')}` })
+    return JSON.stringify({ detached: ids })
   },
 })

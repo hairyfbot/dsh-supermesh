@@ -33,14 +33,21 @@ export class MigrationProvider implements MigrationProviderContract {
         name,
         {
           up: async (): Promise<void> => {
+            const foreignKeys = this.database.prepare('PRAGMA foreign_keys').get()?.foreign_keys
+            this.database.exec('PRAGMA foreign_keys=OFF')
             this.database.exec('BEGIN')
             try {
               this.database.exec(sql)
+              if (this.database.prepare('PRAGMA foreign_key_check').all().length)
+                throw new Error(`Migration violates foreign key constraints: ${name}`)
               this.database.exec('COMMIT')
             }
             catch (error) {
               this.database.exec('ROLLBACK')
               throw error
+            }
+            finally {
+              this.database.exec(foreignKeys ? 'PRAGMA foreign_keys=ON' : 'PRAGMA foreign_keys=OFF')
             }
           },
         },

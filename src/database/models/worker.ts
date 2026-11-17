@@ -1,18 +1,14 @@
 import type { Kysely, Selectable } from 'kysely'
 import type { DB, ReportState, WorkerEndReason } from '../types'
+import { randomUUID } from 'node:crypto'
 import { Model } from 'kysely-model'
+import { Inbox } from './inbox'
 
-/**
- * Worker（执行会话）：任务在某个 DSH 会话里真正干活的那一段。
- *
- * 一个任务可以先后有好几个（重试、换人）。`id` 就是 DSH 会话 id。
- */
 export class Worker extends Model<DB, 'worker'> {
   constructor(db: Kysely<DB>) {
     super(db, 'worker', 'id')
   }
 
-  /** 这张任务的所有会话，按创建时间排；详情页显示执行历史用。 */
   async listByTicket(ticketId: string): Promise<Selectable<DB['worker']>[]> {
     return this.db
       .selectFrom('worker')
@@ -22,7 +18,6 @@ export class Worker extends Model<DB, 'worker'> {
       .execute()
   }
 
-  /** 正在跑的会话；槽位计数与实际占用以它为准。 */
   async listRunning(): Promise<Selectable<DB['worker']>[]> {
     return this.db
       .selectFrom('worker')
@@ -32,7 +27,6 @@ export class Worker extends Model<DB, 'worker'> {
       .execute()
   }
 
-  /** 按 worktree 分支找正在跑的会话；PR 归哪张工单靠这个确定性比较。 */
   async findRunningByBranch(branch: string): Promise<Selectable<DB['worker']> | undefined> {
     return this.db
       .selectFrom('worker')
@@ -42,7 +36,6 @@ export class Worker extends Model<DB, 'worker'> {
       .executeTakeFirst()
   }
 
-  /** 会话真正开始跑：从 `queued` 进 `running`。 */
   async start(id: string, startedAt: string): Promise<void> {
     await this.db
       .updateTable('worker')
@@ -51,7 +44,6 @@ export class Worker extends Model<DB, 'worker'> {
       .execute()
   }
 
-  /** 结束会话并记下原因；`endedReason` 为空表示还开着。 */
   async end(id: string, endedReason: WorkerEndReason, endedAt: string): Promise<void> {
     await this.db
       .updateTable('worker')
@@ -60,7 +52,6 @@ export class Worker extends Model<DB, 'worker'> {
       .execute()
   }
 
-  /** 最近一次汇报：状态 + 一句话摘要，详情页直接显示。 */
   async setReport(id: string, reportState: ReportState, report: string, reportAt: string): Promise<void> {
     await this.db
       .updateTable('worker')
@@ -69,11 +60,6 @@ export class Worker extends Model<DB, 'worker'> {
       .execute()
   }
 
-  /**
-   * 后台工作还能跑到什么时候。
-   *
-   * 回合结束时如果还有后台在跑，票继续占着槽位；为空表示正常释放。
-   */
   async setBackgroundUntil(id: string, backgroundUntil: string | null): Promise<void> {
     await this.db
       .updateTable('worker')
@@ -82,12 +68,60 @@ export class Worker extends Model<DB, 'worker'> {
       .execute()
   }
 
-  /** 重启后重开时写的一句话，避免重复做外部动作（重复开 PR、重复发评论）。 */
   async setRecoveryNote(id: string, recoveryNote: string | null): Promise<void> {
     await this.db
       .updateTable('worker')
       .set({ recoveryNote })
       .where('id', '=', id)
       .execute()
+  }
+
+  async findById(id: string): Promise<Selectable<DB['worker']> | undefined> {
+    return this.db.selectFrom('worker').selectAll().where('id', '=', id).executeTakeFirst()
+  }
+
+  async listRecent(limit = 100): Promise<Selectable<DB['worker']>[]> {
+    return this.db.selectFrom('worker').selectAll().orderBy('createdAt', 'desc').orderBy('id').limit(Math.max(1, Math.min(1000, limit))).execute()
+  }
+
+  async listQueued(): Promise<Selectable<DB['worker']>[]> {
+    return this.db.selectFrom('worker').selectAll().where('status', '=', 'queued').orderBy('createdAt').execute()
+  }
+
+  async queue(ticketId: string, projectId: string, branch?: string): Promise<Selectable<DB['worker']>> {
+    if (branch && branch.split('/').at(-1) !== ticketId)
+      throw new Error('分支末段必须是任务号')
+    return this.db.transaction().execute(async (trx) => {
+      const ticket = await trx.selectFrom('ticket').selectAll().where('id', '=', ticketId).where('projectId', '=', projectId).executeTakeFirst()
+      if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+        throw new Error('工单不存在、已结束或不属于当前项目')
+      if (ticket.paused)
+        throw new Error('工单已暂停')
+      const project = await trx.selectFrom('project').selectAll().where('id', '=', projectId).executeTakeFirst()
+      if (!project?.enabled)
+        throw new Error('项目未启用')
+      const existing = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).where('status', '!=', 'ended').executeTakeFirst()
+      if (existing)
+        return existing
+      const id = randomUUID()
+      const now = new Date().toISOString()
+      await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? `nexus/${ticketId}`, worktree: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
+      await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
+      return (await new Worker(trx).findById(id))!
+    })
+  }
+
+  async reportProgress(id: string, reportState: ReportState, report: string): Promise<Selectable<DB['inbox']>> {
+    return this.db.transaction().execute(async (trx) => {
+      const worker = await new Worker(trx).findById(id)
+      if (!worker || worker.status === 'ended')
+        throw new Error('Worker 已结束或不存在')
+      const ticket = await trx.selectFrom('ticket').selectAll().where('id', '=', worker.ticketId).executeTakeFirst()
+      if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+        throw new Error('工单已结束或不存在')
+      const now = new Date().toISOString()
+      await new Worker(trx).setReport(id, reportState, report, now)
+      return new Inbox(trx).enqueue({ type: 'project', projectId: ticket.projectId, origin: 'worker', kind: 'ticket', ticketId: ticket.id, workerId: id, title: reportState, message: report })
+    })
   }
 }

@@ -1,21 +1,37 @@
 import type { ReactNode } from 'react'
 import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useAsyncFn } from '@reause/core'
 import { useId, useState } from 'react'
+import { getApiNexusPanel, patchApiNexusProjectsId, postApiNexusProjectsRefresh } from '../../../apis'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
-import { eligibleProjects } from '../model'
 
 export function Projects(): ReactNode {
   const { t } = useTranslation()
   const projects = useStore(state => state.setting.projects)
   const refreshedAt = useStore(state => state.setting.refreshedAt)
-  const { refreshSettingProjects, toggleSettingProject } = useActions()
+  const { receiveProject, receivePanel } = useActions()
+  const [saving, toggle] = useAsyncFn(async (projectId: string, enabled: boolean) => {
+    const project = await patchApiNexusProjectsId({ id: encodeURIComponent(projectId) }, { enabled })
+    if (!project || project.id !== projectId)
+      throw new Error('项目设置保存失败')
+    receiveProject(project)
+  })
+  const [refreshing, refresh] = useAsyncFn(async () => {
+    const projects = await postApiNexusProjectsRefresh()
+    if (!Array.isArray(projects))
+      throw new Error('项目发现失败')
+    const panel = await getApiNexusPanel()
+    if (!panel?.projects || !panel.settings)
+      throw new Error('项目列表加载失败')
+    receivePanel(panel)
+  })
   const id = useId()
   const [query, setQuery] = useState('')
   const normalized = query.trim().toLocaleLowerCase()
-  const candidates = eligibleProjects(projects)
+  const candidates = projects
   const visible = candidates.filter(project => !normalized || [project.name, project.directory].join(' ').toLocaleLowerCase().includes(normalized))
-  const enabled = candidates.filter(project => project.enabled).length
+  const enabled = candidates.filter(project => Boolean(project.enabled)).length
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]" aria-labelledby={id}>
       <header className="flex flex-wrap items-start justify-between gap-3 p-5 pb-4">
@@ -26,7 +42,7 @@ export function Projects(): ReactNode {
           </div>
           <p className="m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingProjectsDescription')}</p>
         </div>
-        <Button size="sm" variant="outline" onClick={() => refreshSettingProjects(new Date().toISOString())}>{t('settingRefresh')}</Button>
+        <Button size="sm" variant="outline" disabled={refreshing.loading || saving.loading} onClick={() => void refresh()}>{t('settingRefresh')}</Button>
       </header>
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-4">
         <Input type="search" aria-label={t('settingSearchProjects')} placeholder={t('settingSearchProjects')} value={query} onChange={event => setQuery(event.currentTarget.value)} className="min-w-40 flex-1 !text-xs @min-[620px]:max-w-xs" />
@@ -38,6 +54,7 @@ export function Projects(): ReactNode {
           </time>
         )}
       </div>
+      {(saving.error || refreshing.error) && <p role="alert" className="px-5">{saving.error?.message ?? refreshing.error?.message}</p>}
       {visible.length
         ? (
             <ul className="m-0 list-none p-0">
@@ -47,7 +64,7 @@ export function Projects(): ReactNode {
                   <li key={project.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4">
                     <div className="flex min-w-0 flex-1 basis-48 items-start gap-2">
                       <label className="flex size-6 shrink-0 cursor-pointer items-center justify-center">
-                        <input type="checkbox" checked={project.enabled} aria-label={t('settingSelectProject', { name: project.name })} aria-describedby={pathId} onChange={event => toggleSettingProject(project.id, event.currentTarget.checked)} className="size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]" />
+                        <input type="checkbox" disabled={saving.loading || refreshing.loading || (!project.remoteUrl && !project.enabled)} checked={Boolean(project.enabled)} aria-label={t('settingSelectProject', { name: project.name })} aria-describedby={pathId} onChange={event => void toggle(project.id, event.currentTarget.checked)} className="size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]" />
                       </label>
                       <div className="min-w-0 pt-0.5">
                         <div className="truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]">{project.name}</div>

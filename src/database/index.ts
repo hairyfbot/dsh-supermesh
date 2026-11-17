@@ -1,4 +1,3 @@
-/* eslint-disable antfu/no-top-level-await */
 import type { DB } from './types'
 import { DatabaseSync } from 'node:sqlite'
 import { NodeSqliteDialect } from '@fileshed/kysely-node-sqlite'
@@ -10,7 +9,6 @@ import { ChannelAccount } from './models/channel-account'
 import { CiWatch } from './models/ci-watch'
 import { Inbox } from './models/inbox'
 import { Project } from './models/project'
-import { Setting } from './models/setting'
 import { SourceState } from './models/source-state'
 import { Supervisor } from './models/supervisor'
 import { SupervisorTicket } from './models/supervisor-ticket'
@@ -35,7 +33,6 @@ export const db = Object.assign(connection, {
   ciWatch: new CiWatch(connection),
   inbox: new Inbox(connection),
   project: new Project(connection),
-  setting: new Setting(connection),
   sourceState: new SourceState(connection),
   supervisor: new Supervisor(connection),
   supervisorTicket: new SupervisorTicket(connection),

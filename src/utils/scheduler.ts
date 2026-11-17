@@ -1,4 +1,3 @@
-/* eslint-disable ts/explicit-function-return-type */
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import process from 'node:process'

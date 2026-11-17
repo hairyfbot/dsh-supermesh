@@ -1,4 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
 export const answer = defineTool({
   name: 'answer',
@@ -19,9 +21,16 @@ export const answer = defineTool({
     schema: { type: 'string', description: '是否已回送。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 写 Inbox.answer / answeredBy=当前身份 / status=done，并把答案 prompt 回发起方会话
-    // TODO: 只能答指向自己的 ask，不能越级代答
-    throw new Error('answer 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role === 'worker')
+      throw new Error('Worker 没有收件箱')
+    const scope = identity.role === 'project' && identity.projectId ? { type: 'project' as const, projectId: identity.projectId } : identity.role === 'supervisor' && identity.supervisorId ? { type: 'supervisor' as const, supervisorId: identity.supervisorId } : identity.role === 'main' ? { type: 'main' as const } : null
+    if (!scope)
+      throw new Error('会话身份不完整')
+    await db.inbox.answerScoped(args.askId, args.text, scope, new Date().toISOString())
+    return JSON.stringify({ id: args.askId, status: 'done', delivery: 'queued' })
   },
 })

@@ -1,24 +1,15 @@
-import type { Kysely, Selectable } from 'kysely'
+import type { Insertable, Kysely, Selectable } from 'kysely'
 import type { DB, InboxAnsweredBy, InboxTarget } from '../types'
+import { randomUUID } from 'node:crypto'
 import { Model } from 'kysely-model'
 
-/**
- * 收件箱：一条投给某个代理、或者人类的消息。
- *
- * 代理在跑的时候消息不打断它，先落进队列；代理自己取、自己标记处理完。
- * 升级不新建行，就地改 `type` —— 一个问题从头到尾只有一个身份。
- */
+export type InboxScope = { type: 'main' } | { type: 'project', projectId: string } | { type: 'supervisor', supervisorId: string }
+
 export class Inbox extends Model<DB, 'inbox'> {
   constructor(db: Kysely<DB>) {
     super(db, 'inbox', 'id')
   }
 
-  /**
-   * 下一个入队序号。
-   *
-   * 同一票对同一地址按 `seq` 顺序发：前一条没成功，后一条等着，
-   * 避免「结果」比「确认」先到。
-   */
   async nextSeq(): Promise<number> {
     const row = await this.db
       .selectFrom('inbox')
@@ -27,7 +18,6 @@ export class Inbox extends Model<DB, 'inbox'> {
     return Number(row?.max ?? 0) + 1
   }
 
-  /** 某个收件人的未读消息；`projectId` 省略表示该类型下全部范围。 */
   async listPending(type: InboxTarget, projectId?: string | null): Promise<Selectable<DB['inbox']>[]> {
     const query = this.db
       .selectFrom('inbox')
@@ -38,11 +28,6 @@ export class Inbox extends Model<DB, 'inbox'> {
     return scoped.orderBy('seq').execute()
   }
 
-  /**
-   * 「你有 N 条消息未处理」的计数。
-   *
-   * 只有 `pending` 进这个数；`stalled` 是送不到，不算未读。
-   */
   async countPending(type: InboxTarget, projectId?: string | null): Promise<number> {
     const query = this.db
       .selectFrom('inbox')
@@ -54,7 +39,6 @@ export class Inbox extends Model<DB, 'inbox'> {
     return Number(row?.count ?? 0)
   }
 
-  /** 人类欠着的问题；面板用 `createdAt` 排。 */
   async listPendingAsk(): Promise<Selectable<DB['inbox']>[]> {
     return this.db
       .selectFrom('inbox')
@@ -66,7 +50,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 标为已读：取进了上下文，但还没处理完。 */
   async markRead(ids: string[], readAt: string): Promise<void> {
     if (ids.length === 0)
       return
@@ -77,7 +60,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 标记处理完。 */
   async markDone(id: string, doneAt: string): Promise<void> {
     await this.db
       .updateTable('inbox')
@@ -86,7 +68,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 回答问题：填上答案即视为处理完，答案顺着 `workerId` 送回发起方。 */
   async answer(id: string, answer: string, answeredBy: InboxAnsweredBy, answeredAt: string): Promise<void> {
     await this.db
       .updateTable('inbox')
@@ -95,7 +76,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 投递失败：累加尝试次数，记下原因并安排下次重试。 */
   async recordDeliveryFailure(id: string, deliveryError: string, nextRetryAt: string): Promise<void> {
     await this.db
       .updateTable('inbox')
@@ -104,7 +84,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 投递成功：清零尝试次数与错误，取消重试。 */
   async resetDelivery(id: string): Promise<void> {
     await this.db
       .updateTable('inbox')
@@ -113,7 +92,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 连续重试失败，转 `stalled` 等人看；不是「没轮到」，是「送不到」。 */
   async markStalled(id: string, deliveryError: string): Promise<void> {
     await this.db
       .updateTable('inbox')
@@ -122,7 +100,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 到点该重试的投递。 */
   async listRetryable(now: string): Promise<Selectable<DB['inbox']>[]> {
     return this.db
       .selectFrom('inbox')
@@ -134,11 +111,6 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /**
-   * 升级：递一层，`escalations` 加一。
-   *
-   * ask 没有超时 —— 它只往上问，问到谁谁就得答，提问方那条工作线停着。
-   */
   async escalate(id: string, lastEscalatedAt: string): Promise<void> {
     await this.db
       .updateTable('inbox')
@@ -147,12 +119,150 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
-  /** 改投给另一个收件人；升级不新建行。 */
   async reassign(id: string, type: InboxTarget, refs: { projectId?: string | null, supervisorId?: string | null } = {}): Promise<void> {
     await this.db
       .updateTable('inbox')
       .set({ type, ...refs })
       .where('id', '=', id)
       .execute()
+  }
+
+  async findById(id: string): Promise<Selectable<DB['inbox']> | undefined> {
+    return this.db.selectFrom('inbox').selectAll().where('id', '=', id).executeTakeFirst()
+  }
+
+  async listRecent(limit = 100): Promise<Selectable<DB['inbox']>[]> {
+    return this.db.selectFrom('inbox').selectAll().orderBy('createdAt', 'desc').orderBy('id').limit(Math.max(1, Math.min(1000, limit))).execute()
+  }
+
+  async enqueue(value: Pick<Insertable<DB['inbox']>, 'type' | 'origin' | 'kind' | 'message'> & Partial<Insertable<DB['inbox']>>): Promise<Selectable<DB['inbox']>> {
+    const insert = async (trx: Kysely<DB>) => {
+      const model = new Inbox(trx)
+      if (value.id) {
+        const existing = await model.findById(value.id)
+        if (existing)
+          return existing
+      }
+      const id = value.id ?? randomUUID()
+      await model.create({
+        id,
+        seq: await model.nextSeq(),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        projectId: null,
+        supervisorId: null,
+        title: null,
+        doneAt: null,
+        deliveryError: null,
+        nextRetryAt: null,
+        readAt: null,
+        lastEscalatedAt: null,
+        answer: null,
+        answeredBy: null,
+        answeredAt: null,
+        triggerId: null,
+        threadId: null,
+        ticketId: null,
+        workerId: null,
+        ...value,
+      })
+      return (await model.findById(id))!
+    }
+    return this.db.isTransaction ? insert(this.db) : this.db.transaction().execute(insert)
+  }
+
+  async listByTicket(ticketId: string): Promise<Selectable<DB['inbox']>[]> {
+    return this.db.selectFrom('inbox').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt').orderBy('seq').execute()
+  }
+
+  async listScoped(scope: InboxScope): Promise<Selectable<DB['inbox']>[]> {
+    let query = this.db.selectFrom('inbox').selectAll().where('type', '=', scope.type).where('status', '=', 'pending')
+    if (scope.type === 'project')
+      query = query.where('projectId', '=', scope.projectId)
+    if (scope.type === 'supervisor')
+      query = query.where('supervisorId', '=', scope.supervisorId)
+    return query.orderBy('createdAt').orderBy('seq').execute()
+  }
+
+  owns(row: Selectable<DB['inbox']>, scope: InboxScope): boolean {
+    return row.type === scope.type && (scope.type !== 'project' || row.projectId === scope.projectId) && (scope.type !== 'supervisor' || row.supervisorId === scope.supervisorId)
+  }
+
+  async completeScoped(ids: string[], scope: InboxScope, now: string): Promise<number> {
+    if (!ids.length)
+      return 0
+    return this.db.transaction().execute(async (trx) => {
+      const model = new Inbox(trx)
+      const rows = await trx.selectFrom('inbox').selectAll().where('id', 'in', [...new Set(ids)]).execute()
+      if (rows.length !== new Set(ids).size || rows.some(row => !model.owns(row, scope)))
+        throw new Error('收件箱不存在或不属于当前身份')
+      const result = await trx.updateTable('inbox').set({ status: 'done', doneAt: now }).where('id', 'in', ids).where('status', '=', 'pending').executeTakeFirst()
+      return Number(result.numUpdatedRows)
+    })
+  }
+
+  async answerScoped(id: string, text: string, scope: InboxScope, now: string): Promise<Selectable<DB['inbox']>> {
+    return this.db.transaction().execute(async (trx) => {
+      const model = new Inbox(trx)
+      const row = await model.findById(id)
+      if (!row || !model.owns(row, scope) || row.kind !== 'ask' || row.status !== 'pending')
+        throw new Error('只能回答指向当前身份的 pending ask')
+      await model.answer(id, text, scope.type, now)
+      return row
+    })
+  }
+
+  async escalateScoped(id: string, scope: InboxScope, now: string): Promise<Selectable<DB['inbox']>> {
+    return this.db.transaction().execute(async (trx) => {
+      const model = new Inbox(trx)
+      const row = await model.findById(id)
+      if (!row || !model.owns(row, scope) || row.kind !== 'ask' || row.status !== 'pending')
+        throw new Error('只能升级指向当前身份的 pending ask')
+      if (scope.type === 'main')
+        throw new Error('主编排应通过 ask_user 询问人，不能自动升级')
+      const supervisor = scope.type === 'project' && row.ticketId
+        ? await trx.selectFrom('supervisor_ticket').innerJoin('supervisor', 'supervisor.id', 'supervisor_ticket.supervisorId').select('supervisor.id').where('ticketId', '=', row.ticketId).where('supervisor.status', '=', 'active').orderBy('supervisor.createdAt').executeTakeFirst()
+        : undefined
+      await trx.updateTable('inbox').set(eb => ({ type: supervisor ? 'supervisor' : 'main', supervisorId: supervisor?.id ?? (row.origin === 'supervisor' ? row.supervisorId : null), escalations: eb('escalations', '+', 1), lastEscalatedAt: now, readAt: null })).where('id', '=', id).execute()
+      return (await model.findById(id))!
+    })
+  }
+
+  async answerByUser(id: string, answer: string, answeredAt: string): Promise<Selectable<DB['inbox']> | undefined> {
+    return this.db.updateTable('inbox').set({ answer, answeredBy: 'user', answeredAt, status: 'done', doneAt: answeredAt }).where('id', '=', id).where('type', '=', 'user').where('kind', '=', 'ask').where('status', '=', 'pending').returningAll().executeTakeFirst()
+  }
+
+  async listAnswered(): Promise<Selectable<DB['inbox']>[]> {
+    return this.db.selectFrom('inbox').selectAll().where('kind', '=', 'ask').where('status', '=', 'done').where('answer', 'is not', null).orderBy('seq').execute()
+  }
+
+  async returnPendingTicket(ticketId: string, reason: string, now: string): Promise<void> {
+    await this.db.updateTable('inbox').set({ status: 'stalled', deliveryError: reason, nextRetryAt: null, doneAt: now }).where('ticketId', '=', ticketId).where('status', '=', 'pending').execute()
+  }
+
+  async listDelivery(): Promise<Selectable<DB['inbox']>[]> {
+    return this.db.selectFrom('inbox').selectAll().where('type', '!=', 'user').where('status', 'in', ['pending', 'stalled']).orderBy('seq').execute()
+  }
+
+  async listOutgoing(): Promise<Selectable<DB['inbox']>[]> {
+    return this.db.selectFrom('inbox').selectAll().where('type', '=', 'user').where('triggerId', 'is not', null).where('kind', 'in', ['notice', 'ask']).where('status', 'in', ['pending', 'stalled']).orderBy('seq').execute()
+  }
+
+  async enqueueAsk(value: Pick<Insertable<DB['inbox']>, 'type' | 'origin' | 'message'> & Partial<Insertable<DB['inbox']>>): Promise<Selectable<DB['inbox']>> {
+    return this.db.transaction().execute(async (trx) => {
+      let query = trx.selectFrom('inbox').selectAll().where('kind', '=', 'ask').where('status', '=', 'pending').where('origin', '=', value.origin)
+      if (value.workerId)
+        query = query.where('workerId', '=', value.workerId)
+      else if (value.origin === 'project' && value.ticketId)
+        query = query.where('projectId', value.projectId ? '=' : 'is', value.projectId ?? null).where('ticketId', '=', value.ticketId)
+      else query = query.where('projectId', value.projectId ? '=' : 'is', value.projectId ?? null).where('supervisorId', value.supervisorId ? '=' : 'is', value.supervisorId ?? null).where('triggerId', value.triggerId ? '=' : 'is', value.triggerId ?? null).where('message', '=', value.message)
+      const pending = await query.executeTakeFirst()
+      if (pending) {
+        if (pending.message !== value.message)
+          throw new Error(`当前工作线已有 pending ask：${pending.id}`)
+        return pending
+      }
+      return new Inbox(trx).enqueue({ ...value, kind: 'ask' })
+    })
   }
 }

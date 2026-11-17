@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId } from 'react'
 import { ActivityIcon, GitBranchIcon, TasksIcon } from '../../components/icons'
 import { useActions, useStore } from '../../hooks/use-store'
@@ -31,7 +30,6 @@ export function Setting(): ReactNode {
           <h2 className="m-0 text-base font-medium">{t('tabSettings')}</h2>
           <p className="m-0 mt-1.5 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingDescription')}</p>
         </div>
-        <Tag tone="quiet">{t('overviewDemo')}</Tag>
       </header>
       <div className="grid min-w-0 gap-4 @min-[740px]:grid-cols-[160px_minmax(0,1fr)] @min-[940px]:gap-5">
         <aside className="self-start @min-[740px]:sticky @min-[740px]:top-4">
@@ -49,7 +47,7 @@ export function Setting(): ReactNode {
           {activeSection === 'projects' ? <Projects /> : <Runtime />}
           {invalid ? <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p> : notice && <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(notices[notice])}</p>}
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">
-            {t('settingPreview')}
+            保存后由宿主持久化。
             {(executionDirty || deliveryDirty) && <span className="ml-1">{t('settingUnsaved')}</span>}
           </p>
         </div>

@@ -36,6 +36,7 @@ var __copyProps$1 = (to, from, except, desc) => {
 var __toCommonJS$1 = (mod) => __hasOwnProp$1.call(mod, "module.exports") ? mod["module.exports"] : __copyProps$1(__defProp$1({}, "__esModule", { value: true }), mod);
 let react = require("react");
 let react_jsx_runtime = require("react/jsx-runtime");
+require("react-dom");
 let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 // src/config/constants.ts
@@ -823,156 +824,6 @@ function FitViewIcon(props) {
 	} else t4 = $[5];
 	return t4;
 }
-function PullRequestIcon(props) {
-	const $ = (0, import_dist.c)(3);
-	let t0;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z" });
-		$[0] = t0;
-	} else t0 = $[0];
-	let t1;
-	if ($[1] !== props) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-			width: 16,
-			height: 16,
-			viewBox: "0 0 16 16",
-			fill: "currentColor",
-			"aria-hidden": "true",
-			...props,
-			children: t0
-		});
-		$[1] = props;
-		$[2] = t1;
-	} else t1 = $[2];
-	return t1;
-}
-function PullRequestDraftIcon(props) {
-	const $ = (0, import_dist.c)(3);
-	let t0;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Zm9.5 14a2.25 2.25 0 1 1 0-4.5 2.25 2.25 0 0 1 0 4.5ZM2.5 3.25a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0ZM3.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm9.5 0a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5ZM14 7.5a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Zm0-4.25a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z" });
-		$[0] = t0;
-	} else t0 = $[0];
-	let t1;
-	if ($[1] !== props) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-			width: 16,
-			height: 16,
-			viewBox: "0 0 16 16",
-			fill: "currentColor",
-			"aria-hidden": "true",
-			...props,
-			children: t0
-		});
-		$[1] = props;
-		$[2] = t1;
-	} else t1 = $[2];
-	return t1;
-}
-function PullRequestMergedIcon(props) {
-	const $ = (0, import_dist.c)(3);
-	let t0;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5.45 5.154A4.25 4.25 0 0 0 9.25 7.5h1.378a2.251 2.251 0 1 1 0 1.5H9.25A5.734 5.734 0 0 1 5 7.123v3.505a2.25 2.25 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.95-.218ZM4.25 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm8.5-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM5 3.25a.75.75 0 1 0 0 .005V3.25Z" });
-		$[0] = t0;
-	} else t0 = $[0];
-	let t1;
-	if ($[1] !== props) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-			width: 16,
-			height: 16,
-			viewBox: "0 0 16 16",
-			fill: "currentColor",
-			"aria-hidden": "true",
-			...props,
-			children: t0
-		});
-		$[1] = props;
-		$[2] = t1;
-	} else t1 = $[2];
-	return t1;
-}
-function PullRequestClosedIcon(props) {
-	const $ = (0, import_dist.c)(3);
-	let t0;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Zm9.5 5.5a.75.75 0 0 1 .75.75v3.378a2.251 2.251 0 1 1-1.5 0V7.25a.75.75 0 0 1 .75-.75Zm-2.03-5.273a.75.75 0 0 1 1.06 0l.97.97.97-.97a.748.748 0 0 1 1.265.332.75.75 0 0 1-.205.729l-.97.97.97.97a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018l-.97-.97-.97.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l.97-.97-.97-.97a.75.75 0 0 1 0-1.06ZM2.5 3.25a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0ZM3.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm9.5 0a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z" });
-		$[0] = t0;
-	} else t0 = $[0];
-	let t1;
-	if ($[1] !== props) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-			width: 16,
-			height: 16,
-			viewBox: "0 0 16 16",
-			fill: "currentColor",
-			"aria-hidden": "true",
-			...props,
-			children: t0
-		});
-		$[1] = props;
-		$[2] = t1;
-	} else t1 = $[2];
-	return t1;
-}
-function IssueOpenIcon(props) {
-	const $ = (0, import_dist.c)(4);
-	let t0;
-	let t1;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" });
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z" });
-		$[0] = t0;
-		$[1] = t1;
-	} else {
-		t0 = $[0];
-		t1 = $[1];
-	}
-	let t2;
-	if ($[2] !== props) {
-		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-			width: 16,
-			height: 16,
-			viewBox: "0 0 16 16",
-			fill: "currentColor",
-			"aria-hidden": "true",
-			...props,
-			children: [t0, t1]
-		});
-		$[2] = props;
-		$[3] = t2;
-	} else t2 = $[3];
-	return t2;
-}
-function IssueClosedIcon(props) {
-	const $ = (0, import_dist.c)(4);
-	let t0;
-	let t1;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z" });
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0Zm-1.5 0a6.5 6.5 0 1 0-13 0 6.5 6.5 0 0 0 13 0Z" });
-		$[0] = t0;
-		$[1] = t1;
-	} else {
-		t0 = $[0];
-		t1 = $[1];
-	}
-	let t2;
-	if ($[2] !== props) {
-		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-			width: 16,
-			height: 16,
-			viewBox: "0 0 16 16",
-			fill: "currentColor",
-			"aria-hidden": "true",
-			...props,
-			children: [t0, t1]
-		});
-		$[2] = props;
-		$[3] = t2;
-	} else t2 = $[3];
-	return t2;
-}
 function GitBranchIcon(props) {
 	const $ = (0, import_dist.c)(5);
 	let t0;
@@ -1077,9 +928,255 @@ function NexusIcon(props) {
 	} else t3 = $[4];
 	return t3;
 }
+// node_modules/.pnpm/@reause+shared@0.1.9_react@18.3.1/node_modules/@reause/shared/dist/index.js
+function promiseTimeout(ms, throwOnTimeout = false, reason = "Timeout") {
+	return new Promise((resolve, reject) => {
+		if (throwOnTimeout) setTimeout(reject, ms, reason);
+		else setTimeout(resolve, ms);
+	});
+}
+/**
+* Map from react-use `useLatest`.
+*
+* @example
+* const latest = useLatest(value)
+*
+* // scheduled now, reads whatever `value` is when the timer fires
+* setTimeout(() => console.log(latest.current), 1000)
+*
+* @param value The value to track. Stored as-is on every render, so
+* `undefined` and other falsy values are kept faithfully.
+* @returns The ref object itself — the same identity across renders.
+* @see https://github.com/streamich/react-use/blob/master/docs/useLatest.md
+*/
+function useLatest(value) {
+	const ref = (0, react.useRef)(value);
+	ref.current = value;
+	return ref;
+}
 Map.prototype;
 Set.prototype;
 function noop$2() {}
+// node_modules/.pnpm/@reause+core@0.1.9_react@18.3.1/node_modules/@reause/core/dist/index.js
+/**
+* Map from @vueuse/core `useMounted`
+* (`source/vueuse/packages/core/useMounted/`).
+*
+* @example
+* const isMounted = useMounted()
+*/
+function useMounted() {
+	const [isMounted, setIsMounted] = (0, react.useState)(false);
+	(0, react.useEffect)(() => {
+		setIsMounted(true);
+	}, []);
+	return isMounted;
+}
+/**
+* Map from react-use `useAsyncFn`
+* (`source/react-use/src/useAsyncFn.ts`).
+*
+* Deviation from upstream: `deps` is not supported, and the reause-only
+* `options.deep` extension that once replaced it is gone as well — the hook
+* takes only `fn` and an optional `initialState`. The callback is therefore a
+* fresh function on every render rather than a memoised one: it always reads
+* the latest `fn` and state, at the cost of a new identity per render, so it
+* must not be used as a dependency of `useMemo` / `useCallback` / `useEffect`.
+*
+* @example
+* const [state, doFetch] = useAsyncFn(async (id: string) => {
+*   const response = await fetch(`/api/item/${id}`)
+*   return response.json()
+* })
+*
+* // state: { loading: true } | { loading: false, value } | { loading: false, error }
+* const value = await doFetch('42') // the raw promise is returned
+*
+* @example
+* // the state before the first call can be seeded
+* const [state, search] = useAsyncFn(async () => query(filters), { loading: false })
+*
+* @param fn The async function (or promise-returning function) to wrap.
+* @param initialState The state before the first call. Defaults to
+* `{ loading: false }` (upstream default).
+* @returns The `[state, callback]` tuple — `state` is the `AsyncState` union
+* and `callback` the async wrapper that also returns the raw promise.
+* @see https://github.com/streamich/react-use/blob/master/docs/useAsyncFn.md
+*/
+function useAsyncFn(fn, initialState = { loading: false }) {
+	const lastCallId = (0, react.useRef)(0);
+	const isMountedRef = useLatest(useMounted());
+	const [state, set] = (0, react.useState)(initialState);
+	const callback = (...args) => {
+		const callId = ++lastCallId.current;
+		if (!state.loading) set((prevState) => ({
+			...prevState,
+			loading: true
+		}));
+		return fn(...args).then((value) => {
+			if (isMountedRef.current && callId === lastCallId.current) set({
+				value,
+				loading: false
+			});
+			return value;
+		}, (error) => {
+			if (isMountedRef.current && callId === lastCallId.current) set({
+				error,
+				loading: false
+			});
+			return error;
+		});
+	};
+	return [state, callback];
+}
+/**
+* Default `onError` — mirrors upstream's `globalThis.reportError` fallback. `reportError` must be
+* invoked with the global object as `this`, otherwise Chromium throws "Illegal invocation" for a
+* detached call.
+*/
+function defaultOnError$2(e) {
+	if (typeof globalThis.reportError === "function") globalThis.reportError(e);
+}
+/**
+* Map from @vueuse/core `useAsyncState`
+* (`source/vueuse/packages/core/useAsyncState/`).
+*
+* @example
+* const { state, setState, isReady, isLoading, error, execute } = useAsyncState(
+*   fetchData,
+*   initialData,
+* )
+* // pass `immediate: false` and call `execute()` manually instead
+* setState(nextData) // write `state` without re-executing
+*
+* @see https://vueuse.org/core/useAsyncState/
+*/
+function useAsyncState(promise, initialState, options) {
+	const { immediate = true, delay = 0, onError = defaultOnError$2, onSuccess = noop$2, resetOnExecute = true, throwError } = options || {};
+	const [state, setStateInternal] = (0, react.useState)(() => initialState);
+	const [isReady, setIsReady] = (0, react.useState)(false);
+	const [isLoading, setIsLoading] = (0, react.useState)(false);
+	const [error, setError] = (0, react.useState)(void 0);
+	const promiseRef = (0, react.useRef)(promise);
+	promiseRef.current = promise;
+	const initialStateRef = (0, react.useRef)(initialState);
+	initialStateRef.current = initialState;
+	const delayRef = (0, react.useRef)(delay);
+	delayRef.current = delay;
+	const immediateRef = (0, react.useRef)(immediate);
+	immediateRef.current = immediate;
+	const resetOnExecuteRef = (0, react.useRef)(resetOnExecute);
+	resetOnExecuteRef.current = resetOnExecute;
+	const throwErrorRef = (0, react.useRef)(!!throwError);
+	throwErrorRef.current = !!throwError;
+	const onSuccessRef = (0, react.useRef)(onSuccess);
+	onSuccessRef.current = onSuccess;
+	const onErrorRef = (0, react.useRef)(onError);
+	onErrorRef.current = onError;
+	const liveRef = (0, react.useRef)({
+		state,
+		isReady,
+		isLoading,
+		error
+	});
+	const executionsCountRef = (0, react.useRef)(0);
+	const loadingRef = (0, react.useRef)(false);
+	const waitersRef = (0, react.useRef)([]);
+	const setState = (0, react.useCallback)((action) => {
+		const prev = liveRef.current.state;
+		const next = typeof action === "function" ? action(prev) : action;
+		liveRef.current.state = next;
+		setStateInternal(next);
+	}, []);
+	const execute = (0, react.useCallback)((delay = 0, ...args) => {
+		const executionId = executionsCountRef.current += 1;
+		const nextState = resetOnExecuteRef.current ? initialStateRef.current : liveRef.current.state;
+		if (resetOnExecuteRef.current) setStateInternal(nextState);
+		liveRef.current = {
+			state: nextState,
+			isReady: false,
+			isLoading: true,
+			error: void 0
+		};
+		setError(void 0);
+		setIsReady(false);
+		loadingRef.current = true;
+		setIsLoading(true);
+		return (async () => {
+			if (delay > 0) await promiseTimeout(delay);
+			const pending = typeof promiseRef.current === "function" ? promiseRef.current(...args) : promiseRef.current;
+			try {
+				const data = await pending;
+				if (executionId === executionsCountRef.current) {
+					setStateInternal(data);
+					setIsReady(true);
+					liveRef.current.state = data;
+					liveRef.current.isReady = true;
+				}
+				onSuccessRef.current(data);
+				return data;
+			} catch (e) {
+				if (executionId === executionsCountRef.current) {
+					setError(e);
+					liveRef.current.error = e;
+				}
+				onErrorRef.current(e);
+				if (throwErrorRef.current) throw e;
+				return;
+			} finally {
+				if (executionId === executionsCountRef.current) {
+					loadingRef.current = false;
+					setIsLoading(false);
+					liveRef.current.isLoading = false;
+				}
+			}
+		})();
+	}, []);
+	const base = {
+		get state() {
+			return liveRef.current.state;
+		},
+		get isReady() {
+			return liveRef.current.isReady;
+		},
+		get isLoading() {
+			return liveRef.current.isLoading;
+		},
+		get error() {
+			return liveRef.current.error;
+		},
+		setState,
+		execute,
+		executeImmediate: (0, react.useCallback)((...args) => execute(0, ...args), [execute])
+	};
+	const baseRef = (0, react.useRef)(base);
+	baseRef.current = base;
+	const waitUntilIsLoaded = (0, react.useCallback)(() => {
+		return new Promise((resolve) => {
+			if (!loadingRef.current) {
+				resolve(baseRef.current);
+				return;
+			}
+			waitersRef.current.push({ resolve });
+		});
+	}, []);
+	(0, react.useEffect)(() => {
+		if (immediateRef.current) execute(delayRef.current);
+	}, [execute]);
+	(0, react.useEffect)(() => {
+		if (isLoading) return;
+		const waiters = waitersRef.current;
+		waitersRef.current = [];
+		waiters.forEach((waiter) => waiter.resolve(baseRef.current));
+	}, [isLoading]);
+	const shell = Object.create(base);
+	shell.then = function then(onFulfilled, onRejected) {
+		return waitUntilIsLoaded().then(onFulfilled, onRejected);
+	};
+	return shell;
+}
+(0, react.createContext)(void 0);
+/mac|iphone|ipod|ipad/i.test(typeof navigator === "undefined" ? "" : navigator.platform);
 // src/client/config/context.ts
 const PluginContext = (0, react.createContext)({
 	ctx: {},
@@ -1106,7 +1203,7 @@ const dicts = {
 		settingExecutionDescription: "配置 Worker 并发、后台时限与 PR 自动合并条件。",
 		settingDelivery: "消息投递",
 		settingDeliveryDescription: "配置投递失败阈值与重试退避，不将受阻消息混入待处理。",
-		settingUnsaved: "有未保存的示例修改",
+		settingUnsaved: "有未保存的修改",
 		settingProjects: "项目范围",
 		settingPreview: "示例界面，修改仅保留在当前面板，尚未接入真实扫描与保存。",
 		settingProjectsDescription: "仅显示已配置 remote 的可用 Git 工作区。",
@@ -1114,16 +1211,16 @@ const dicts = {
 		settingOpenSession: "打开会话",
 		settingOpenRepository: "打开仓库",
 		settingEnabledCount: "已启用 {enabled} / {total}",
-		settingRefresh: "刷新示例列表",
+		settingRefresh: "刷新项目列表",
 		settingSearchProjects: "搜索项目或目录",
 		settingLastSynced: "最近刷新",
 		settingNoMatchingProjects: "没有匹配的项目",
 		settingNoMatchingProjectsHelp: "尝试其他关键词，或清除搜索。",
 		settingNoProjects: "还没有 Git 项目",
-		settingNoProjectsHelp: "示例列表为空；真实 Git 工作区发现尚未接入，刷新只会重新载入示例。",
+		settingNoProjectsHelp: "添加已配置 remote 的 Git 工作区后，刷新以发现项目。",
 		settingClearSearch: "清除搜索",
 		settingAutoMerge: "自动合并 PR",
-		settingAutoMergeHelp: "默认关闭。开启后仍须满足任务 ready、批准覆盖当前 head，以及改动行数上限；不是跳过审核直接合并。",
+		settingAutoMergeHelp: "自动合并暂不可用，当前仅保留配置。",
 		settingMaxWorkers: "Worker 并发上限",
 		settingMaxWorkersHelp: "默认 10 个，超出时排队。另留一个槽位处理人工消息与状态查询。",
 		settingBackgroundLimit: "后台工作时限",
@@ -1140,13 +1237,13 @@ const dicts = {
 		settingAttemptsUnit: "次",
 		settingSecondsUnit: "秒",
 		settingRange: "范围 {min}–{max}",
-		settingPersistenceOnly: "仅保存当前分类的示例参数，不写入数据库，也不影响真实运行。",
+		settingPersistenceOnly: "保存当前分类的参数，后续调度与投递使用新配置。",
 		settingDiscard: "撤销修改",
 		settingSave: "保存参数",
 		settingInvalid: "请将所有数值填写为允许范围内的整数。",
-		settingSaved: "当前分类的示例参数已保留，未写入数据库。",
-		settingRefreshed: "示例列表已刷新，原有勾选已保留；未扫描真实工作区。",
-		settingProjectSaved: "示例项目选择已保留，未改变真实项目范围。",
+		settingSaved: "当前分类的参数已保存。",
+		settingRefreshed: "项目列表已刷新，原有启停选择已保留。",
+		settingProjectSaved: "项目范围已保存。",
 		channelDescription: "连接代码托管与协作平台，统一接收事件并派发任务。",
 		channelSingleAccount: "每个渠道仅配置一个全局账号，所有关联项目共用。",
 		channelGithubDescription: "接收 GitHub Issue、PR 与评论，通过专属 bot 账号协作。",
@@ -1405,7 +1502,7 @@ const dicts = {
 		settingExecutionDescription: "Configure Worker concurrency, background limits, and PR auto-merge conditions.",
 		settingDelivery: "Message delivery",
 		settingDeliveryDescription: "Configure failure thresholds and retry backoff. Stalled messages remain separate from pending.",
-		settingUnsaved: "Unsaved sample changes",
+		settingUnsaved: "Unsaved changes",
 		settingProjects: "Project scope",
 		settingPreview: "Sample UI. Changes stay in this panel; live scanning and persistence are not connected.",
 		settingProjectsDescription: "Only available Git workspaces with a configured remote are shown.",
@@ -1413,16 +1510,16 @@ const dicts = {
 		settingOpenSession: "Open session",
 		settingOpenRepository: "Open repository",
 		settingEnabledCount: "{enabled} / {total} enabled",
-		settingRefresh: "Refresh sample list",
+		settingRefresh: "Refresh projects",
 		settingSearchProjects: "Search projects or directories",
 		settingLastSynced: "Last refreshed",
 		settingNoMatchingProjects: "No matching projects",
 		settingNoMatchingProjectsHelp: "Try another keyword or clear the search.",
 		settingNoProjects: "No Git projects yet",
-		settingNoProjectsHelp: "The sample list is empty. Live Git workspace discovery is not connected; refresh only reloads the samples.",
+		settingNoProjectsHelp: "Add a Git workspace with a configured remote, then refresh to discover it.",
 		settingClearSearch: "Clear search",
 		settingAutoMerge: "Automatically merge PRs",
-		settingAutoMergeHelp: "Off by default. Merging still requires a ready task, approval covering the current head, and the change-size limit. This does not bypass review.",
+		settingAutoMergeHelp: "Automatic merging is unavailable. Its configuration is retained for now.",
 		settingMaxWorkers: "Concurrent Workers",
 		settingMaxWorkersHelp: "Defaults to 10 Workers; additional work queues. One extra slot remains for human messages and status queries.",
 		settingBackgroundLimit: "Background work limit",
@@ -1439,13 +1536,13 @@ const dicts = {
 		settingAttemptsUnit: "attempts",
 		settingSecondsUnit: "seconds",
 		settingRange: "Range {min}–{max}",
-		settingPersistenceOnly: "Saves sample parameters in this category only, without database writes or effects on live work.",
+		settingPersistenceOnly: "Save this category. Subsequent scheduling and delivery use the updated settings.",
 		settingDiscard: "Discard changes",
 		settingSave: "Save parameters",
 		settingInvalid: "Enter whole numbers within the allowed ranges for all numeric fields.",
-		settingSaved: "Sample parameters in this category retained. No database was updated.",
-		settingRefreshed: "Sample list refreshed and selections preserved. No live workspaces were scanned.",
-		settingProjectSaved: "Sample project choice retained. Live project scope is unchanged.",
+		settingSaved: "Settings in this category saved.",
+		settingRefreshed: "Projects refreshed. Existing enabled and disabled choices were preserved.",
+		settingProjectSaved: "Project scope saved.",
 		channelDescription: "Connect code hosting and collaboration platforms to receive events and dispatch tasks.",
 		channelSingleAccount: "Each channel has one global account shared by all linked projects.",
 		channelGithubDescription: "Receive GitHub issues, pull requests, and comments using a dedicated bot account.",
@@ -1718,6 +1815,62 @@ function Switch$1(props) {
 	});
 	return wrapper(as, rest, matchingCase ?? defaultCase ?? null);
 }
+// src/client/apis/index.ts
+/** @method get */
+async function getApiNexusPanel(config) {
+	return (await fetch("/api/nexus/panel", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusTicketsId(paths, config) {
+	return (await fetch(`/api/nexus/tickets/${paths.id}`, { ...config })).json();
+}
+/** @method post */
+async function postApiNexusTicketsIdAction(paths, body, config) {
+	return (await fetch(`/api/nexus/tickets/${paths.id}/${paths.action}`, {
+		headers: { "Content-Type": "application/json" },
+		method: "post",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method patch */
+async function patchApiNexusProjectsId(paths, body, config) {
+	return (await fetch(`/api/nexus/projects/${paths.id}`, {
+		headers: { "Content-Type": "application/json" },
+		method: "patch",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method post */
+async function postApiNexusProjectsRefresh(config) {
+	return (await fetch("/api/nexus/projects/refresh", {
+		method: "post",
+		...config
+	})).json();
+}
+/** @method patch */
+async function patchApiNexusSettings(body, config) {
+	return (await fetch("/api/nexus/settings", {
+		headers: { "Content-Type": "application/json" },
+		method: "patch",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method post */
+async function postApiNexusAsksIdAnswers(paths, body, config) {
+	return (await fetch(`/api/nexus/asks/${paths.id}/answers`, {
+		headers: { "Content-Type": "application/json" },
+		method: "post",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method get */
+async function getApiNexusSessionsIdContext(paths, config) {
+	return (await fetch(`/api/nexus/sessions/${paths.id}/context`, { ...config })).json();
+}
 // src/client/hooks/use-store.ts
 /**
 * 从面板 store 里选一片状态。
@@ -1736,9 +1889,9 @@ function useActions() {
 }
 // src/client/hooks/use-navigation.ts
 function usePage() {
-	return useStore(_temp$15);
+	return useStore(_temp$18);
 }
-function _temp$15(state) {
+function _temp$18(state) {
 	return state.navigation.page;
 }
 function useNavigate() {
@@ -1761,67 +1914,6 @@ function useTranslation() {
 	return t1;
 }
 // src/client/constants.ts
-const OVERVIEW_CHANNELS = [
-	{
-		kind: "github",
-		name: "GitHub",
-		connected: false
-	},
-	{
-		kind: "gitlab",
-		name: "GitLab",
-		connected: false
-	},
-	{
-		kind: "feishu",
-		name: "飞书",
-		connected: false
-	}
-];
-const OVERVIEW_ACTIVITY = [
-	{
-		time: "00:00",
-		messages: 5
-	},
-	{
-		time: "03:00",
-		messages: 14
-	},
-	{
-		time: "06:00",
-		messages: 11
-	},
-	{
-		time: "09:00",
-		messages: 15
-	},
-	{
-		time: "12:00",
-		messages: 6
-	},
-	{
-		time: "15:00",
-		messages: 8
-	},
-	{
-		time: "18:00",
-		messages: 10
-	},
-	{
-		time: "21:00",
-		messages: 20
-	},
-	{
-		time: "24:00",
-		messages: 12
-	}
-];
-const OVERVIEW_METRICS = {
-	received: 101,
-	filtered: 27,
-	rate: 12,
-	added: 4
-};
 const OVERVIEW_TASK_SEGMENTS = [
 	{
 		name: "overviewInProgress",
@@ -1839,114 +1931,6 @@ const OVERVIEW_TASK_SEGMENTS = [
 		color: "var(--dsw-alias-state-error-primary)"
 	}
 ];
-const OVERVIEW_TASKS = [
-	{
-		id: "T-104",
-		title: "overviewTaskRemote",
-		status: "review",
-		channel: "github",
-		event: "PR #81 open",
-		duration: "12m 45s",
-		action: "pr"
-	},
-	{
-		id: "T-105",
-		title: "overviewTaskLogin",
-		status: "running",
-		channel: "github",
-		duration: "42s",
-		action: "session"
-	},
-	{
-		id: "T-106",
-		title: "overviewTaskApi",
-		status: "waiting",
-		channel: "feishu",
-		duration: "42s"
-	},
-	{
-		id: "T-107",
-		title: "overviewTaskApi",
-		status: "intervention",
-		channel: "feishu",
-		duration: "1m 18s",
-		action: "session"
-	}
-];
-const TICKET_DETAIL_PREVIEWS = {
-	"T-104": {
-		repository: "hairyf/dsh-third-kernel",
-		branch: "nexus/T-104",
-		pullRequest: {
-			number: 81,
-			state: "draft"
-		},
-		execution: "linked",
-		arrivals: [{
-			message: "ticketArrivalPullRequest",
-			hoursAgo: 1
-		}]
-	},
-	"T-105": {
-		repository: "hairyf/dsh-third-kernel",
-		branch: "nexus/T-105",
-		pullRequest: {
-			number: 121,
-			state: "open"
-		},
-		execution: "linked",
-		issues: [{
-			title: "ticketIssueToken",
-			state: "open",
-			labels: ["app", "bug"]
-		}, {
-			title: "ticketIssueArchived",
-			state: "closed",
-			labels: ["bug", "linux"]
-		}],
-		arrivals: [
-			{
-				message: "ticketArrivalResearch",
-				hoursAgo: 3
-			},
-			{
-				message: "ticketArrivalLinkedIssue",
-				hoursAgo: 3
-			},
-			{
-				message: "ticketArrivalProject",
-				hoursAgo: 4
-			},
-			{
-				message: "ticketArrivalCreated",
-				hoursAgo: 4
-			}
-		]
-	},
-	"T-106": { execution: "not-created" },
-	"T-107": {
-		branch: "nexus/T-107",
-		execution: "linked"
-	}
-};
-const OVERVIEW_STATUS = {
-	review: {
-		label: "overviewStatusReview",
-		tone: "warning"
-	},
-	running: {
-		label: "overviewStatusRunning",
-		tone: "info"
-	},
-	waiting: {
-		label: "overviewStatusWaiting",
-		tone: "quiet"
-	},
-	intervention: {
-		label: "overviewStatusIntervention",
-		tone: "danger"
-	}
-};
 const OVERVIEW_CHANNEL_LABELS = {
 	github: "GitHub",
 	feishu: "飞书",
@@ -1960,160 +1944,6 @@ const AGENT_GRAPH = {
 	zoomMin: .5,
 	zoomMax: 2
 };
-const AGENT_GRAPH_NODES = [
-	{
-		id: "channel",
-		kind: "channel",
-		label: "graphChannel",
-		subtitle: "GitHub · 飞书",
-		x: 36,
-		y: 58
-	},
-	{
-		id: "orchestrator",
-		kind: "orchestrator",
-		label: "graphOrchestrator",
-		x: 36,
-		y: 244
-	},
-	{
-		id: "route-3",
-		kind: "route",
-		label: "graphRoute",
-		subtitle: "owner/project-3",
-		x: 300,
-		y: 36
-	},
-	{
-		id: "route-1",
-		kind: "route",
-		label: "graphRoute",
-		subtitle: "owner/project-1",
-		group: "supervisor",
-		x: 300,
-		y: 160
-	},
-	{
-		id: "route-2",
-		kind: "route",
-		label: "graphRoute",
-		subtitle: "owner/project-2",
-		group: "supervisor",
-		x: 300,
-		y: 286
-	},
-	{
-		id: "task-104",
-		kind: "task",
-		label: "graphTask",
-		subtitle: "T-104",
-		taskId: "T-104",
-		x: 620,
-		y: 36
-	},
-	{
-		id: "task-106",
-		kind: "task",
-		label: "graphTask",
-		subtitle: "T-106",
-		taskId: "T-106",
-		x: 620,
-		y: 160
-	},
-	{
-		id: "task-105",
-		kind: "task",
-		label: "graphTask",
-		subtitle: "T-105",
-		taskId: "T-105",
-		x: 620,
-		y: 286
-	},
-	{
-		id: "session-104",
-		kind: "session",
-		label: "graphSession",
-		x: 896,
-		y: 36
-	},
-	{
-		id: "session-106",
-		kind: "session",
-		label: "graphSession",
-		waiting: true,
-		x: 896,
-		y: 160
-	},
-	{
-		id: "session-105",
-		kind: "session",
-		label: "graphSession",
-		x: 896,
-		y: 286
-	}
-];
-const AGENT_GRAPH_EDGES = [
-	{
-		source: "channel",
-		target: "orchestrator",
-		kind: "flow"
-	},
-	{
-		source: "orchestrator",
-		target: "route-3",
-		kind: "flow"
-	},
-	{
-		source: "orchestrator",
-		target: "route-1",
-		kind: "flow"
-	},
-	{
-		source: "orchestrator",
-		target: "route-2",
-		kind: "flow"
-	},
-	{
-		source: "route-1",
-		target: "task-104",
-		kind: "flow"
-	},
-	{
-		source: "route-1",
-		target: "task-106",
-		kind: "flow"
-	},
-	{
-		source: "route-2",
-		target: "task-105",
-		kind: "flow"
-	},
-	{
-		source: "task-104",
-		target: "session-104",
-		kind: "flow"
-	},
-	{
-		source: "task-106",
-		target: "session-106",
-		kind: "flow"
-	},
-	{
-		source: "task-105",
-		target: "session-105",
-		kind: "flow"
-	},
-	{
-		source: "task-104",
-		target: "task-106",
-		kind: "association"
-	},
-	{
-		source: "task-106",
-		target: "task-105",
-		kind: "dependency"
-	}
-];
 const AGENT_GRAPH_EDGE_COLORS = {
 	flow: "var(--dsw-alias-label-tertiary)",
 	dispatch: "var(--dsw-alias-state-warn-primary)",
@@ -2167,9 +1997,11 @@ function Section$1(t0) {
 // src/client/pages/channel/detail/components/configuration.tsx
 function Configuration({ kind }) {
 	const { t } = useTranslation();
+	const channel_0 = useStore((state) => state.data.panel?.channels.find((channel) => channel.id === kind));
+	const account_0 = channel_0?.accounts.find((account) => account.role === "bot");
 	const id = (0, react.useId)();
 	const [method, setMethod] = (0, react.useState)("authorize");
-	const [host, setHost] = (0, react.useState)("https://gitlab.com");
+	const [host, setHost] = (0, react.useState)(channel_0?.host ?? "https://gitlab.com");
 	const [hostInvalid, setHostInvalid] = (0, react.useState)(false);
 	const validateHost = () => {
 		try {
@@ -2250,7 +2082,8 @@ function Configuration({ kind }) {
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 								id: `${id}-username`,
-								placeholder: "nexus-bot",
+								readOnly: true,
+								value: account_0?.name ?? "",
 								autoComplete: "off",
 								spellCheck: false,
 								"aria-describedby": `${id}-username-help`
@@ -2272,7 +2105,7 @@ function Configuration({ kind }) {
 								children: t("channelCommitName")
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 								id: `${id}-commit-name`,
-								placeholder: "Nexus Bot",
+								disabled: true,
 								autoComplete: "off"
 							})]
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -2284,7 +2117,7 @@ function Configuration({ kind }) {
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 								id: `${id}-commit-email`,
 								type: "email",
-								placeholder: "bot@example.com",
+								disabled: true,
 								autoComplete: "off",
 								spellCheck: false
 							})]
@@ -2369,7 +2202,7 @@ function Configuration({ kind }) {
 							children: t("channelCredentialLocation")
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 							className: "m-0 break-all rounded-lg bg-[var(--dsw-alias-card-fill)] px-3 py-2 font-mono text-xs",
-							children: `~/.nexus/credentials/${kind}/`
+							children: "由宿主管理"
 						})]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
@@ -2390,310 +2223,358 @@ function Configuration({ kind }) {
 }
 // src/client/pages/channel/detail/page.tsx
 function ChannelDetail() {
-	const $ = (0, import_dist.c)(17);
+	const $ = (0, import_dist.c)(20);
 	const { t } = useTranslation();
 	const { go } = useActions();
-	const kind = useStore(_temp$14);
+	const kind = useStore(_temp$17);
 	let t0;
 	if ($[0] !== kind) {
-		t0 = kind ? {
-			github: GitHubIcon,
-			gitlab: GitLabIcon,
-			feishu: FeishuIcon
-		}[kind] : null;
+		t0 = (state_0) => state_0.data.panel?.channels.find((channel) => channel.id === kind);
 		$[0] = kind;
 		$[1] = t0;
 	} else t0 = $[1];
-	const Icon = t0;
+	const channel_0 = useStore(t0);
 	let t1;
-	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
+	if ($[2] !== kind) {
+		t1 = kind ? {
+			github: GitHubIcon,
+			gitlab: GitLabIcon,
+			feishu: FeishuIcon
+		}[kind] ?? ChannelsIcon : null;
+		$[2] = kind;
+		$[3] = t1;
+	} else t1 = $[3];
+	const Icon = t1;
+	let t2;
+	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
 			width: 16,
 			height: 16
 		});
-		$[2] = t1;
-	} else t1 = $[2];
-	let t2;
-	if ($[3] !== go) {
-		t2 = () => go("channel");
-		$[3] = go;
 		$[4] = t2;
 	} else t2 = $[4];
 	let t3;
-	if ($[5] !== t) {
-		t3 = t("channelBack");
-		$[5] = t;
+	if ($[5] !== go) {
+		t3 = () => go("channel");
+		$[5] = go;
 		$[6] = t3;
 	} else t3 = $[6];
 	let t4;
-	if ($[7] !== t2 || $[8] !== t3) {
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+	if ($[7] !== t) {
+		t4 = t("channelBack");
+		$[7] = t;
+		$[8] = t4;
+	} else t4 = $[8];
+	let t5;
+	if ($[9] !== t3 || $[10] !== t4) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			size: "sm",
 			variant: "ghost",
-			icon: t1,
-			onClick: t2,
-			children: t3
+			icon: t2,
+			onClick: t3,
+			children: t4
 		}) });
-		$[7] = t2;
-		$[8] = t3;
-		$[9] = t4;
-	} else t4 = $[9];
-	let t5;
-	if ($[10] !== Icon || $[11] !== kind || $[12] !== t) {
-		t5 = !kind || !Icon ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		$[9] = t3;
+		$[10] = t4;
+		$[11] = t5;
+	} else t5 = $[11];
+	let t6;
+	if ($[12] !== Icon || $[13] !== channel_0 || $[14] !== kind || $[15] !== t) {
+		t6 = !kind || !Icon || !channel_0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			className: "text-sm text-[var(--dsw-alias-label-secondary)]",
 			children: t("channelMissing")
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-			className: "flex flex-wrap items-center gap-3",
-			children: [
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: "flex size-11 items-center justify-center rounded-xl bg-[var(--dsw-alias-card-fill)]",
-					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
-						width: 27,
-						height: 27
-					})
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "flex flex-col gap-1",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-						className: "m-0 text-base font-medium",
-						children: OVERVIEW_CHANNEL_LABELS[kind]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "m-0 text-xs text-[var(--dsw-alias-label-secondary)]",
-						children: t("channelSettings")
-					})]
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-					tone: kind === "feishu" ? "quiet" : "warning",
-					children: t(kind === "feishu" ? "channelUnsupported" : "channelPreview")
-				})
-			]
-		}), kind === "feishu" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-6",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-				className: "m-0 text-sm font-medium",
-				children: t("channelUnsupported")
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "mb-0 mt-2 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t("channelFeishuUnavailable")
-			})]
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-3 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t("channelUnavailable")
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+				className: "flex flex-wrap items-center gap-3",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: "flex size-11 items-center justify-center rounded-xl bg-[var(--dsw-alias-card-fill)]",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
+							width: 27,
+							height: 27
+						})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "flex flex-col gap-1",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+							className: "m-0 text-base font-medium",
+							children: channel_0.name ?? OVERVIEW_CHANNEL_LABELS[kind]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							className: "m-0 text-xs text-[var(--dsw-alias-label-secondary)]",
+							children: t("channelSettings")
+						})]
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+						tone: channel_0.enabled ? "info" : "quiet",
+						children: channel_0.enabled ? "已开启" : "已关闭"
+					})
+				]
 			}),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 text-xs text-[var(--dsw-alias-label-secondary)]",
-				children: t("channelSingleAccount")
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Section$1, {
+				title: "当前账户",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+					className: "m-0 list-none p-0",
+					children: channel_0.accounts.map(_temp2$13)
+				}), channel_0.host && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: channel_0.host })]
 			}),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Configuration, { kind }, kind)
-		] })] });
-		$[10] = Icon;
-		$[11] = kind;
-		$[12] = t;
-		$[13] = t5;
-	} else t5 = $[13];
-	let t6;
-	if ($[14] !== t4 || $[15] !== t5) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "@container flex min-w-0 flex-col gap-5 pb-10",
-			children: [t4, t5]
-		});
-		$[14] = t4;
-		$[15] = t5;
+			kind !== "github" && kind !== "gitlab" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-6",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+					className: "m-0 text-sm font-medium",
+					children: t("channelUnsupported")
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "mb-0 mt-2 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
+					children: t("channelFeishuUnavailable")
+				})]
+			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-3 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					children: t("channelUnavailable")
+				}),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 text-xs text-[var(--dsw-alias-label-secondary)]",
+					children: t("channelSingleAccount")
+				}),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Configuration, { kind }, kind)
+			] })
+		] });
+		$[12] = Icon;
+		$[13] = channel_0;
+		$[14] = kind;
+		$[15] = t;
 		$[16] = t6;
 	} else t6 = $[16];
-	return t6;
+	let t7;
+	if ($[17] !== t5 || $[18] !== t6) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "@container flex min-w-0 flex-col gap-5 pb-10",
+			children: [t5, t6]
+		});
+		$[17] = t5;
+		$[18] = t6;
+		$[19] = t7;
+	} else t7 = $[19];
+	return t7;
 }
-function _temp$14(state) {
+function _temp2$13(account) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+		className: "py-2",
+		children: [
+			account.name,
+			" ",
+			"·",
+			" ",
+			account.role,
+			" ",
+			"·",
+			" ",
+			account.status
+		]
+	}, account.id);
+}
+function _temp$17(state) {
 	return state.channel.selected;
 }
 // src/client/pages/channel/components/card.tsx
 function Card(t0) {
-	const $ = (0, import_dist.c)(51);
+	const $ = (0, import_dist.c)(56);
 	const { kind } = t0;
 	const { t } = useTranslation();
 	const { openChannel } = useActions();
 	let t1;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = {
+	if ($[0] !== kind) {
+		t1 = (state) => state.data.panel?.channels.find((channel) => channel.id === kind);
+		$[0] = kind;
+		$[1] = t1;
+	} else t1 = $[1];
+	const channel_0 = useStore(t1);
+	let t2;
+	if ($[2] !== channel_0) {
+		t2 = channel_0?.enabled && channel_0.accounts.some(_temp$16);
+		$[2] = channel_0;
+		$[3] = t2;
+	} else t2 = $[3];
+	const connected = t2;
+	const name = channel_0?.name ?? OVERVIEW_CHANNEL_LABELS[kind] ?? kind;
+	let t3;
+	if ($[4] !== kind) {
+		t3 = {
 			github: GitHubIcon,
 			gitlab: GitLabIcon,
 			feishu: FeishuIcon
-		};
-		$[0] = t1;
-	} else t1 = $[0];
-	const Icon = t1[kind];
+		}[kind] ?? ChannelsIcon;
+		$[4] = kind;
+		$[5] = t3;
+	} else t3 = $[5];
+	const Icon = t3;
 	let t10;
-	let t2;
-	let t3;
+	let t11;
+	let t12;
 	let t4;
 	let t5;
 	let t6;
 	let t7;
 	let t8;
 	let t9;
-	if ($[1] !== Icon || $[2] !== kind || $[3] !== openChannel || $[4] !== t) {
+	if ($[6] !== Icon || $[7] !== channel_0?.enabled || $[8] !== channel_0?.id || $[9] !== connected || $[10] !== kind || $[11] !== name || $[12] !== openChannel || $[13] !== t) {
 		const description = {
 			github: "channelGithubDescription",
 			gitlab: "channelGitlabDescription",
 			feishu: "channelFeishuDescription"
 		};
-		t6 = "button";
-		if ($[14] !== kind || $[15] !== openChannel) {
-			t7 = () => openChannel(kind);
-			$[14] = kind;
-			$[15] = openChannel;
-			$[16] = t7;
-		} else t7 = $[16];
-		let t11;
-		if ($[17] !== t) {
-			t11 = t("channelSettings");
-			$[17] = t;
-			$[18] = t11;
-		} else t11 = $[18];
-		t8 = `${OVERVIEW_CHANNEL_LABELS[kind]} · ${t11}`;
-		t9 = "group flex min-h-48 min-w-0 cursor-pointer flex-col gap-4 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-5 text-left font-[inherit] outline-none transition-colors hover:border-[var(--dsw-alias-border-l1)] hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]";
-		let t12;
-		if ($[19] !== Icon) {
-			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		t8 = "button";
+		if ($[23] !== kind || $[24] !== openChannel) {
+			t9 = () => openChannel(kind);
+			$[23] = kind;
+			$[24] = openChannel;
+			$[25] = t9;
+		} else t9 = $[25];
+		let t13;
+		if ($[26] !== t) {
+			t13 = t("channelSettings");
+			$[26] = t;
+			$[27] = t13;
+		} else t13 = $[27];
+		t10 = `${name} · ${t13}`;
+		t11 = "group flex min-h-48 min-w-0 cursor-pointer flex-col gap-4 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-5 text-left font-[inherit] outline-none transition-colors hover:border-[var(--dsw-alias-border-l1)] hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]";
+		let t14;
+		if ($[28] !== Icon) {
+			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				className: "flex size-11 items-center justify-center rounded-xl bg-[var(--dsw-alias-card-fill)]",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 					width: 27,
 					height: 27
 				})
 			});
-			$[19] = Icon;
-			$[20] = t12;
-		} else t12 = $[20];
-		const t13 = kind === "feishu" ? "channelUnsupported" : "channelNotConfigured";
-		let t14;
-		if ($[21] !== t || $[22] !== t13) {
-			t14 = t(t13);
-			$[21] = t;
-			$[22] = t13;
-			$[23] = t14;
-		} else t14 = $[23];
-		let t15;
-		if ($[24] !== t14) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+			$[28] = Icon;
+			$[29] = t14;
+		} else t14 = $[29];
+		const t15 = connected ? "已连接" : channel_0?.enabled ? "已开启" : "已关闭";
+		let t16;
+		if ($[30] !== t15) {
+			t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
 				tone: "quiet",
-				children: t14
+				children: t15
 			});
-			$[24] = t14;
-			$[25] = t15;
-		} else t15 = $[25];
-		if ($[26] !== t12 || $[27] !== t15) {
-			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+			$[30] = t15;
+			$[31] = t16;
+		} else t16 = $[31];
+		if ($[32] !== t14 || $[33] !== t16) {
+			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: "flex w-full items-center justify-between gap-3",
-				children: [t12, t15]
+				children: [t14, t16]
 			});
-			$[26] = t12;
-			$[27] = t15;
-			$[28] = t10;
-		} else t10 = $[28];
-		t4 = "flex min-w-0 flex-col gap-1.5";
-		const t16 = OVERVIEW_CHANNEL_LABELS[kind];
-		if ($[29] !== t16) {
-			t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			$[32] = t14;
+			$[33] = t16;
+			$[34] = t12;
+		} else t12 = $[34];
+		t6 = "flex min-w-0 flex-col gap-1.5";
+		if ($[35] !== name) {
+			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				className: "text-sm font-medium text-[var(--dsw-alias-label-primary)]",
-				children: t16
+				children: name
 			});
-			$[29] = t16;
-			$[30] = t5;
-		} else t5 = $[30];
-		t2 = "text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
-		t3 = t(description[kind]);
-		$[1] = Icon;
-		$[2] = kind;
-		$[3] = openChannel;
-		$[4] = t;
-		$[5] = t10;
-		$[6] = t2;
-		$[7] = t3;
-		$[8] = t4;
-		$[9] = t5;
-		$[10] = t6;
-		$[11] = t7;
-		$[12] = t8;
-		$[13] = t9;
+			$[35] = name;
+			$[36] = t7;
+		} else t7 = $[36];
+		t4 = "text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
+		t5 = description[kind] ? t(description[kind]) : channel_0?.id;
+		$[6] = Icon;
+		$[7] = channel_0?.enabled;
+		$[8] = channel_0?.id;
+		$[9] = connected;
+		$[10] = kind;
+		$[11] = name;
+		$[12] = openChannel;
+		$[13] = t;
+		$[14] = t10;
+		$[15] = t11;
+		$[16] = t12;
+		$[17] = t4;
+		$[18] = t5;
+		$[19] = t6;
+		$[20] = t7;
+		$[21] = t8;
+		$[22] = t9;
 	} else {
-		t10 = $[5];
-		t2 = $[6];
-		t3 = $[7];
-		t4 = $[8];
-		t5 = $[9];
-		t6 = $[10];
-		t7 = $[11];
-		t8 = $[12];
-		t9 = $[13];
+		t10 = $[14];
+		t11 = $[15];
+		t12 = $[16];
+		t4 = $[17];
+		t5 = $[18];
+		t6 = $[19];
+		t7 = $[20];
+		t8 = $[21];
+		t9 = $[22];
 	}
-	let t11;
-	if ($[31] !== t2 || $[32] !== t3) {
-		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: t2,
-			children: t3
-		});
-		$[31] = t2;
-		$[32] = t3;
-		$[33] = t11;
-	} else t11 = $[33];
-	let t12;
-	if ($[34] !== t11 || $[35] !== t4 || $[36] !== t5) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+	let t13;
+	if ($[37] !== t4 || $[38] !== t5) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: t4,
-			children: [t5, t11]
+			children: t5
 		});
-		$[34] = t11;
-		$[35] = t4;
-		$[36] = t5;
-		$[37] = t12;
-	} else t12 = $[37];
-	const t13 = kind === "feishu" ? "channelUnsupported" : "channelConfigure";
-	let t14;
-	if ($[38] !== t || $[39] !== t13) {
-		t14 = t(t13);
-		$[38] = t;
+		$[37] = t4;
+		$[38] = t5;
 		$[39] = t13;
-		$[40] = t14;
-	} else t14 = $[40];
-	let t15;
-	if ($[41] !== t14) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "mt-auto text-xs text-[var(--dsw-alias-state-business-primary)] underline-offset-4 group-hover:underline",
-			children: t14
+	} else t13 = $[39];
+	let t14;
+	if ($[40] !== t13 || $[41] !== t6 || $[42] !== t7) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+			className: t6,
+			children: [t7, t13]
 		});
-		$[41] = t14;
-		$[42] = t15;
-	} else t15 = $[42];
+		$[40] = t13;
+		$[41] = t6;
+		$[42] = t7;
+		$[43] = t14;
+	} else t14 = $[43];
+	let t15;
+	if ($[44] !== t) {
+		t15 = t("channelSettings");
+		$[44] = t;
+		$[45] = t15;
+	} else t15 = $[45];
 	let t16;
-	if ($[43] !== t10 || $[44] !== t12 || $[45] !== t15 || $[46] !== t6 || $[47] !== t7 || $[48] !== t8 || $[49] !== t9) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-			type: t6,
-			onClick: t7,
-			"aria-label": t8,
-			className: t9,
+	if ($[46] !== t15) {
+		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "mt-auto text-xs text-[var(--dsw-alias-state-business-primary)] underline-offset-4 group-hover:underline",
+			children: t15
+		});
+		$[46] = t15;
+		$[47] = t16;
+	} else t16 = $[47];
+	let t17;
+	if ($[48] !== t10 || $[49] !== t11 || $[50] !== t12 || $[51] !== t14 || $[52] !== t16 || $[53] !== t8 || $[54] !== t9) {
+		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+			type: t8,
+			onClick: t9,
+			"aria-label": t10,
+			className: t11,
 			children: [
-				t10,
 				t12,
-				t15
+				t14,
+				t16
 			]
 		});
-		$[43] = t10;
-		$[44] = t12;
-		$[45] = t15;
-		$[46] = t6;
-		$[47] = t7;
-		$[48] = t8;
-		$[49] = t9;
-		$[50] = t16;
-	} else t16 = $[50];
-	return t16;
+		$[48] = t10;
+		$[49] = t11;
+		$[50] = t12;
+		$[51] = t14;
+		$[52] = t16;
+		$[53] = t8;
+		$[54] = t9;
+		$[55] = t17;
+	} else t17 = $[55];
+	return t17;
+}
+function _temp$16(account) {
+	return account.status === "online";
 }
 // src/client/pages/channel/page.tsx
 function Channel() {
-	const $ = (0, import_dist.c)(19);
+	const $ = (0, import_dist.c)(23);
 	const { t } = useTranslation();
+	const channels = useStore(_temp$15);
 	let t0;
 	if ($[0] !== t) {
 		t0 = t("tabChannels");
@@ -2735,225 +2616,216 @@ function Channel() {
 		$[10] = t4;
 	} else t4 = $[10];
 	let t5;
-	if ($[11] === Symbol.for("react.memo_cache_sentinel")) {
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "grid gap-4 @min-[500px]:grid-cols-2 @min-[840px]:grid-cols-3",
-			children: [
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Card, { kind: "github" }),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Card, { kind: "gitlab" }),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Card, { kind: "feishu" })
-			]
-		});
-		$[11] = t5;
-	} else t5 = $[11];
+	if ($[11] !== channels) {
+		t5 = channels.map(_temp2$12);
+		$[11] = channels;
+		$[12] = t5;
+	} else t5 = $[12];
 	let t6;
-	if ($[12] !== t) {
-		t6 = t("channelSingleAccount");
-		$[12] = t;
-		$[13] = t6;
-	} else t6 = $[13];
-	let t7;
-	if ($[14] !== t6) {
-		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t6
+	if ($[13] !== t5) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "grid gap-4 @min-[500px]:grid-cols-2 @min-[840px]:grid-cols-3",
+			children: t5
 		});
+		$[13] = t5;
 		$[14] = t6;
-		$[15] = t7;
-	} else t7 = $[15];
+	} else t6 = $[14];
+	let t7;
+	if ($[15] !== t) {
+		t7 = t("channelSingleAccount");
+		$[15] = t;
+		$[16] = t7;
+	} else t7 = $[16];
 	let t8;
-	if ($[16] !== t4 || $[17] !== t7) {
-		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "@container flex flex-col gap-5 pb-10",
-			children: [
-				t4,
-				t5,
-				t7
-			]
+	if ($[17] !== t7) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: t7
 		});
-		$[16] = t4;
 		$[17] = t7;
 		$[18] = t8;
 	} else t8 = $[18];
-	return t8;
+	let t9;
+	if ($[19] !== t4 || $[20] !== t6 || $[21] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "@container flex flex-col gap-5 pb-10",
+			children: [
+				t4,
+				t6,
+				t8
+			]
+		});
+		$[19] = t4;
+		$[20] = t6;
+		$[21] = t8;
+		$[22] = t9;
+	} else t9 = $[22];
+	return t9;
+}
+function _temp2$12(channel) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Card, { kind: channel.id }, channel.id);
+}
+function _temp$15(state) {
+	return state.data.panel?.channels ?? [];
 }
 // src/client/pages/ticket/components/row.tsx
 function Row$1(t0) {
-	const $ = (0, import_dist.c)(47);
+	const $ = (0, import_dist.c)(38);
 	const { task } = t0;
 	const { t } = useTranslation();
 	const { openTicket } = useActions();
-	const status = OVERVIEW_STATUS[task.status];
 	let t1;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		t1 = {
+			waiting: "等待中",
+			queued: "排队中",
+			running: "执行中",
+			review: "待审阅",
+			done: "已完成",
+			cancelled: "已取消"
+		};
+		$[0] = t1;
+	} else t1 = $[0];
+	const labels = t1;
+	let t2;
+	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "mt-0.5 text-[var(--dsw-alias-label-tertiary)]",
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
 				width: 17,
 				height: 17
 			})
 		});
-		$[0] = t1;
-	} else t1 = $[0];
-	let t2;
-	if ($[1] !== task.id) {
-		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[1] = t2;
+	} else t2 = $[1];
+	let t3;
+	if ($[2] !== task.id) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "mr-2 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
 			children: task.id
 		});
-		$[1] = task.id;
-		$[2] = t2;
-	} else t2 = $[2];
-	let t3;
-	if ($[3] !== t || $[4] !== task.title) {
-		t3 = t(task.title);
-		$[3] = t;
-		$[4] = task.title;
-		$[5] = t3;
-	} else t3 = $[5];
+		$[2] = task.id;
+		$[3] = t3;
+	} else t3 = $[3];
 	let t4;
-	if ($[6] !== t2 || $[7] !== t3) {
+	if ($[4] !== t3 || $[5] !== task.title) {
 		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
 			className: "text-[13px] leading-5 font-medium [overflow-wrap:anywhere] m-0",
-			children: [t2, t3]
+			children: [t3, task.title]
 		});
-		$[6] = t2;
-		$[7] = t3;
-		$[8] = t4;
-	} else t4 = $[8];
-	const t5 = status.tone;
-	let t6;
-	if ($[9] !== status.label || $[10] !== t) {
-		t6 = t(status.label);
-		$[9] = status.label;
-		$[10] = t;
-		$[11] = t6;
-	} else t6 = $[11];
+		$[4] = t3;
+		$[5] = task.title;
+		$[6] = t4;
+	} else t4 = $[6];
+	const t5 = task.prepareError ? "danger" : task.status === "done" ? "success" : "quiet";
+	const t6 = task.paused ? "已暂停" : labels[task.status];
 	let t7;
-	if ($[12] !== status.tone || $[13] !== t6) {
+	if ($[7] !== t5 || $[8] !== t6) {
 		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
 			tone: t5,
 			children: t6
 		});
-		$[12] = status.tone;
-		$[13] = t6;
-		$[14] = t7;
-	} else t7 = $[14];
+		$[7] = t5;
+		$[8] = t6;
+		$[9] = t7;
+	} else t7 = $[9];
 	let t8;
-	if ($[15] !== t || $[16] !== task.channel || $[17] !== task.duration || $[18] !== task.event || $[19] !== task.status) {
-		t8 = task.status === "intervention" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("overviewInterventionReason") }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: `${t("overviewSource")}: ${OVERVIEW_CHANNEL_LABELS[task.channel]}` }),
-			task.event && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				"aria-hidden": "true",
-				children: "·"
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: task.event })] }),
-			task.status === "waiting" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				"aria-hidden": "true",
-				children: "·"
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("overviewTriggerRunning") })] }),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				"aria-hidden": "true",
-				children: "·"
-			}),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: `${t(task.status === "waiting" ? "overviewSleepDuration" : "overviewDuration")}: ${task.duration}` })
-		] });
-		$[15] = t;
-		$[16] = task.channel;
-		$[17] = task.duration;
-		$[18] = task.event;
-		$[19] = task.status;
-		$[20] = t8;
-	} else t8 = $[20];
-	let t9;
-	if ($[21] !== t7 || $[22] !== t8) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: [t7, t8]
+	if ($[10] !== task.channelId) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: task.channelId });
+		$[10] = task.channelId;
+		$[11] = t8;
+	} else t8 = $[11];
+	const t9 = task.updatedAt;
+	let t10;
+	if ($[12] !== task.updatedAt) {
+		t10 = new Date(task.updatedAt).toLocaleString();
+		$[12] = task.updatedAt;
+		$[13] = t10;
+	} else t10 = $[13];
+	let t11;
+	if ($[14] !== t10 || $[15] !== task.updatedAt) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("time", {
+			dateTime: t9,
+			children: t10
 		});
+		$[14] = t10;
+		$[15] = task.updatedAt;
+		$[16] = t11;
+	} else t11 = $[16];
+	let t12;
+	if ($[17] !== task.prepareError) {
+		t12 = task.prepareError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: task.prepareError });
+		$[17] = task.prepareError;
+		$[18] = t12;
+	} else t12 = $[18];
+	let t13;
+	if ($[19] !== t11 || $[20] !== t12 || $[21] !== t7 || $[22] !== t8) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			children: [
+				t7,
+				t8,
+				t11,
+				t12
+			]
+		});
+		$[19] = t11;
+		$[20] = t12;
 		$[21] = t7;
 		$[22] = t8;
-		$[23] = t9;
-	} else t9 = $[23];
-	let t10;
-	if ($[24] !== t4 || $[25] !== t9) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+		$[23] = t13;
+	} else t13 = $[23];
+	let t14;
+	if ($[24] !== t13 || $[25] !== t4) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: "flex min-w-0 items-start gap-3",
-			children: [t1, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			children: [t2, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "min-w-0",
-				children: [t4, t9]
+				children: [t4, t13]
 			})]
 		});
-		$[24] = t4;
-		$[25] = t9;
-		$[26] = t10;
-	} else t10 = $[26];
-	let t11;
-	if ($[27] !== t || $[28] !== task.action) {
-		t11 = task.action && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			size: "sm",
-			variant: "outline",
-			disabled: true,
-			title: t("overviewUnavailable"),
-			children: t(task.action === "pr" ? "overviewOpenPr" : "overviewOpenSession")
-		});
-		$[27] = t;
-		$[28] = task.action;
-		$[29] = t11;
-	} else t11 = $[29];
-	let t12;
-	if ($[30] !== t) {
-		t12 = t("overviewOpenDetails");
-		$[30] = t;
-		$[31] = t12;
-	} else t12 = $[31];
-	const t13 = `${t12} ${task.id}`;
-	let t14;
-	if ($[32] !== openTicket || $[33] !== task.id) {
-		t14 = () => openTicket(task.id);
-		$[32] = openTicket;
-		$[33] = task.id;
-		$[34] = t14;
-	} else t14 = $[34];
+		$[24] = t13;
+		$[25] = t4;
+		$[26] = t14;
+	} else t14 = $[26];
 	let t15;
-	if ($[35] !== t) {
-		t15 = t("overviewOpenDetails");
-		$[35] = t;
-		$[36] = t15;
-	} else t15 = $[36];
+	if ($[27] !== openTicket || $[28] !== task.id) {
+		t15 = () => openTicket(task.id);
+		$[27] = openTicket;
+		$[28] = task.id;
+		$[29] = t15;
+	} else t15 = $[29];
 	let t16;
-	if ($[37] !== t13 || $[38] !== t14 || $[39] !== t15) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			size: "sm",
-			variant: "primary",
-			"aria-label": t13,
-			onClick: t14,
-			children: t15
-		});
-		$[37] = t13;
-		$[38] = t14;
-		$[39] = t15;
-		$[40] = t16;
-	} else t16 = $[40];
+	if ($[30] !== t) {
+		t16 = t("overviewOpenDetails");
+		$[30] = t;
+		$[31] = t16;
+	} else t16 = $[31];
 	let t17;
-	if ($[41] !== t11 || $[42] !== t16) {
-		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+	if ($[32] !== t15 || $[33] !== t16) {
+		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "flex shrink-0 flex-wrap items-center gap-2 pl-[29px] @min-[640px]:pl-0",
-			children: [t11, t16]
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "primary",
+				onClick: t15,
+				children: t16
+			})
 		});
-		$[41] = t11;
-		$[42] = t16;
-		$[43] = t17;
-	} else t17 = $[43];
+		$[32] = t15;
+		$[33] = t16;
+		$[34] = t17;
+	} else t17 = $[34];
 	let t18;
-	if ($[44] !== t10 || $[45] !== t17) {
+	if ($[35] !== t14 || $[36] !== t17) {
 		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 			className: "flex flex-col gap-3 border-b border-[var(--dsw-alias-border-l3)] py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5",
-			children: [t10, t17]
+			children: [t14, t17]
 		});
-		$[44] = t10;
-		$[45] = t17;
-		$[46] = t18;
-	} else t18 = $[46];
+		$[35] = t14;
+		$[36] = t17;
+		$[37] = t18;
+	} else t18 = $[37];
 	return t18;
 }
 // node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.js
@@ -53286,7 +53158,7 @@ var import_lib = (/* @__PURE__ */ __commonJSMin(((exports) => {
 	var _legacyTheme = require_legacyTheme();
 })))();
 function ActivityChart() {
-	const $ = (0, import_dist.c)(13);
+	const $ = (0, import_dist.c)(16);
 	const t0 = (0, react.useId)();
 	let t1;
 	if ($[0] !== t0) {
@@ -53295,90 +53167,108 @@ function ActivityChart() {
 		$[1] = t1;
 	} else t1 = $[1];
 	const id = t1;
+	const triggers = useStore(_temp$14);
 	let t2;
-	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-		t2 = { maskImage: "linear-gradient(to right, transparent 5%, black 70%)" };
-		$[2] = t2;
-	} else t2 = $[2];
+	if ($[2] !== triggers) {
+		t2 = [...new Set(triggers.map(_temp2$11))].sort().map((time) => ({
+			time,
+			messages: triggers.filter((trigger_0) => trigger_0.at.startsWith(time)).length
+		}));
+		$[2] = triggers;
+		$[3] = t2;
+	} else t2 = $[3];
+	const activity = t2;
 	let t3;
-	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
-		t3 = {
+	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+		t3 = { maskImage: "linear-gradient(to right, transparent 5%, black 70%)" };
+		$[4] = t3;
+	} else t3 = $[4];
+	let t4;
+	if ($[5] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = {
 			top: 8,
 			right: 0,
 			bottom: 0,
 			left: 0
 		};
-		$[3] = t3;
-	} else t3 = $[3];
-	let t4;
+		$[5] = t4;
+	} else t4 = $[5];
 	let t5;
-	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("stop", {
+	let t6;
+	if ($[6] === Symbol.for("react.memo_cache_sentinel")) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("stop", {
 			offset: "0%",
 			stopColor: "var(--dsw-alias-state-business-primary)",
 			stopOpacity: .2
 		});
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("stop", {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("stop", {
 			offset: "100%",
 			stopColor: "var(--dsw-alias-state-business-primary)",
 			stopOpacity: .02
 		});
-		$[4] = t4;
-		$[5] = t5;
+		$[6] = t5;
+		$[7] = t6;
 	} else {
-		t4 = $[4];
-		t5 = $[5];
+		t5 = $[6];
+		t6 = $[7];
 	}
-	let t6;
-	if ($[6] !== id) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("defs", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("linearGradient", {
+	let t7;
+	if ($[8] !== id) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("defs", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("linearGradient", {
 			id,
 			x1: "0",
 			y1: "0",
 			x2: "0",
 			y2: "1",
-			children: [t4, t5]
+			children: [t5, t6]
 		}) });
-		$[6] = id;
-		$[7] = t6;
-	} else t6 = $[7];
-	const t7 = `url(#${id})`;
-	let t8;
-	if ($[8] !== t7) {
-		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Area, {
+		$[8] = id;
+		$[9] = t7;
+	} else t7 = $[9];
+	const t8 = `url(#${id})`;
+	let t9;
+	if ($[10] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Area, {
 			type: "monotone",
 			dataKey: "messages",
 			stroke: "var(--dsw-alias-state-business-primary)",
 			strokeWidth: 1.8,
-			fill: t7,
+			fill: t8,
 			isAnimationActive: false
 		});
-		$[8] = t7;
-		$[9] = t8;
-	} else t8 = $[9];
-	let t9;
-	if ($[10] !== t6 || $[11] !== t8) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+		$[10] = t8;
+		$[11] = t9;
+	} else t9 = $[11];
+	let t10;
+	if ($[12] !== activity || $[13] !== t7 || $[14] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "pointer-events-none absolute inset-x-0 bottom-0 h-37 opacity-60",
 			"aria-hidden": "true",
-			style: t2,
+			style: t3,
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
 				width: "100%",
 				height: "100%",
 				minWidth: 0,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(import_lib.AreaChart, {
-					data: OVERVIEW_ACTIVITY,
-					margin: t3,
+					data: activity,
+					margin: t4,
 					accessibilityLayer: false,
-					children: [t6, t8]
+					children: [t7, t9]
 				})
 			})
 		});
-		$[10] = t6;
-		$[11] = t8;
-		$[12] = t9;
-	} else t9 = $[12];
-	return t9;
+		$[12] = activity;
+		$[13] = t7;
+		$[14] = t9;
+		$[15] = t10;
+	} else t10 = $[15];
+	return t10;
+}
+function _temp2$11(trigger) {
+	return trigger.at.slice(0, 13);
+}
+function _temp$14(state) {
+	return state.data.panel?.topics.triggers ?? [];
 }
 // src/client/pages/overview/components/channel-tile.tsx
 function ChannelTile(t0) {
@@ -53396,47 +53286,46 @@ function ChannelTile(t0) {
 	} else t1 = $[0];
 	const Icon = t1[channel.kind];
 	const t2 = `relative flex min-w-0 flex-col items-center justify-center gap-3 rounded-xl py-3.5 ${channel.connected ? "bg-[var(--dsw-alias-card-fill)]" : "text-[var(--dsw-alias-label-tertiary)]"}`;
-	const t3 = channel.connected ? "" : "opacity-50";
-	let t4;
-	if ($[1] !== Icon || $[2] !== t3) {
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
+	let t3;
+	if ($[1] !== Icon || $[2] !== channel.connected) {
+		t3 = Icon && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 			width: 27,
 			height: 27,
-			className: t3
+			className: channel.connected ? "" : "opacity-50"
 		});
 		$[1] = Icon;
-		$[2] = t3;
-		$[3] = t4;
-	} else t4 = $[3];
-	let t5;
+		$[2] = channel.connected;
+		$[3] = t3;
+	} else t3 = $[3];
+	let t4;
 	if ($[4] !== channel.name) {
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "max-w-full truncate text-xs leading-4",
 			children: channel.name
 		});
 		$[4] = channel.name;
-		$[5] = t5;
-	} else t5 = $[5];
-	const t6 = channel.connected ? "overviewConnected" : "overviewDisconnected";
-	let t7;
-	if ($[6] !== t || $[7] !== t6) {
-		t7 = t(t6);
+		$[5] = t4;
+	} else t4 = $[5];
+	const t5 = channel.connected ? "overviewConnected" : "overviewDisconnected";
+	let t6;
+	if ($[6] !== t || $[7] !== t5) {
+		t6 = t(t5);
 		$[6] = t;
-		$[7] = t6;
-		$[8] = t7;
-	} else t7 = $[8];
-	let t8;
-	if ($[9] !== t7) {
-		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[7] = t5;
+		$[8] = t6;
+	} else t6 = $[8];
+	let t7;
+	if ($[9] !== t6) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "sr-only",
-			children: t7
+			children: t6
 		});
-		$[9] = t7;
-		$[10] = t8;
-	} else t8 = $[10];
-	let t9;
+		$[9] = t6;
+		$[10] = t7;
+	} else t7 = $[10];
+	let t8;
 	if ($[11] !== channel.connected) {
-		t9 = channel.connected && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		t8 = channel.connected && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "absolute top-1.5 right-1.5 flex size-3.5 items-center justify-center rounded-full",
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(CheckIcon, {
 				width: 10,
@@ -53444,27 +53333,27 @@ function ChannelTile(t0) {
 			})
 		});
 		$[11] = channel.connected;
-		$[12] = t9;
-	} else t9 = $[12];
-	let t10;
-	if ($[13] !== t2 || $[14] !== t4 || $[15] !== t5 || $[16] !== t8 || $[17] !== t9) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+		$[12] = t8;
+	} else t8 = $[12];
+	let t9;
+	if ($[13] !== t2 || $[14] !== t3 || $[15] !== t4 || $[16] !== t7 || $[17] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: t2,
 			children: [
+				t3,
 				t4,
-				t5,
-				t8,
-				t9
+				t7,
+				t8
 			]
 		});
 		$[13] = t2;
-		$[14] = t4;
-		$[15] = t5;
-		$[16] = t8;
-		$[17] = t9;
-		$[18] = t10;
-	} else t10 = $[18];
-	return t10;
+		$[14] = t3;
+		$[15] = t4;
+		$[16] = t7;
+		$[17] = t8;
+		$[18] = t9;
+	} else t9 = $[18];
+	return t9;
 }
 // src/client/pages/overview/components/graph-edge-path.tsx
 function GraphEdgePath(t0) {
@@ -53589,126 +53478,110 @@ function GraphEdgePath(t0) {
 }
 // src/client/pages/overview/components/graph-node-card.tsx
 function GraphNodeCard(t0) {
-	const $ = (0, import_dist.c)(36);
+	const $ = (0, import_dist.c)(28);
 	const { node, selected, onSelect } = t0;
 	const { t } = useTranslation();
 	const Icon = node.kind === "channel" ? ChannelsIcon : node.kind === "task" ? TasksIcon : node.kind === "session" ? AgentIcon : NexusIcon;
-	const task_0 = node.kind === "task" ? OVERVIEW_TASKS.find((task) => task.id === node.taskId) : void 0;
-	const status = task_0 ? OVERVIEW_STATUS[task_0.status] : void 0;
 	let t1;
-	if ($[0] !== node.label || $[1] !== t) {
-		t1 = t(node.label);
-		$[0] = node.label;
-		$[1] = t;
-		$[2] = t1;
-	} else t1 = $[2];
+	if ($[0] !== node.taskId) {
+		t1 = (state) => state.data.panel?.tickets.find((task) => task.id === node.taskId);
+		$[0] = node.taskId;
+		$[1] = t1;
+	} else t1 = $[1];
+	const task_0 = useStore(t1);
+	const status = task_0?.paused ? "已暂停" : task_0?.status;
 	let t2;
-	if ($[3] !== node.waiting || $[4] !== t) {
+	if ($[2] !== node.waiting || $[3] !== t) {
 		t2 = node.waiting ? ` ${t("graphWaiting")}` : "";
-		$[3] = node.waiting;
-		$[4] = t;
-		$[5] = t2;
-	} else t2 = $[5];
-	let t3;
-	if ($[6] !== status || $[7] !== t) {
-		t3 = status ? ` ${t(status.label)}` : "";
-		$[6] = status;
-		$[7] = t;
-		$[8] = t3;
-	} else t3 = $[8];
-	const t4 = `${t1}${node.subtitle ? ` ${node.subtitle}` : ""}${t2}${t3}`;
-	const t5 = `flex h-full w-full items-center gap-3 rounded-xl border bg-[var(--dsw-alias-bg-layer-1)] px-3 text-left font-[inherit] shadow-sm outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${node.waiting ? "border-dashed" : ""} ${selected ? "border-[var(--dsw-alias-state-business-primary)]" : "border-[var(--dsw-alias-border-l2)] hover:border-[var(--dsw-alias-border-l1)]"}`;
-	let t6;
-	if ($[9] !== Icon) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
+		$[2] = node.waiting;
+		$[3] = t;
+		$[4] = t2;
+	} else t2 = $[4];
+	const t3 = `${node.label}${node.subtitle ? ` ${node.subtitle}` : ""}${t2}${status ? ` ${status}` : ""}`;
+	const t4 = `flex h-full w-full items-center gap-3 rounded-xl border bg-[var(--dsw-alias-bg-layer-1)] px-3 text-left font-[inherit] shadow-sm outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${node.waiting ? "border-dashed" : ""} ${selected ? "border-[var(--dsw-alias-state-business-primary)]" : "border-[var(--dsw-alias-border-l2)] hover:border-[var(--dsw-alias-border-l1)]"}`;
+	let t5;
+	if ($[5] !== Icon) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 			width: 18,
 			height: 18,
 			className: "shrink-0 text-[var(--dsw-alias-label-secondary)]"
 		});
-		$[9] = Icon;
-		$[10] = t6;
-	} else t6 = $[10];
-	let t7;
-	if ($[11] !== node.label || $[12] !== t) {
-		t7 = t(node.label);
-		$[11] = node.label;
-		$[12] = t;
-		$[13] = t7;
-	} else t7 = $[13];
-	let t8;
-	if ($[14] !== t7) {
-		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[5] = Icon;
+		$[6] = t5;
+	} else t5 = $[6];
+	let t6;
+	if ($[7] !== node.label) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "truncate",
-			children: t7
+			children: node.label
 		});
-		$[14] = t7;
-		$[15] = t8;
-	} else t8 = $[15];
-	let t9;
-	if ($[16] !== status || $[17] !== t) {
-		t9 = status && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-			tone: status.tone,
+		$[7] = node.label;
+		$[8] = t6;
+	} else t6 = $[8];
+	let t7;
+	if ($[9] !== status) {
+		t7 = status && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+			tone: "quiet",
 			className: "shrink-0 px-1.5! py-0! text-[10px]! leading-4! font-normal!",
-			children: t(status.label)
+			children: status
 		});
-		$[16] = status;
-		$[17] = t;
-		$[18] = t9;
-	} else t9 = $[18];
-	let t10;
-	if ($[19] !== t8 || $[20] !== t9) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+		$[9] = status;
+		$[10] = t7;
+	} else t7 = $[10];
+	let t8;
+	if ($[11] !== t6 || $[12] !== t7) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 			className: "flex items-center gap-1.5 text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]",
-			children: [t8, t9]
+			children: [t6, t7]
 		});
-		$[19] = t8;
-		$[20] = t9;
-		$[21] = t10;
-	} else t10 = $[21];
-	let t11;
-	if ($[22] !== node.subtitle || $[23] !== node.waiting || $[24] !== t) {
-		t11 = (node.subtitle || node.waiting) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[11] = t6;
+		$[12] = t7;
+		$[13] = t8;
+	} else t8 = $[13];
+	let t9;
+	if ($[14] !== node.subtitle || $[15] !== node.waiting || $[16] !== t) {
+		t9 = (node.subtitle || node.waiting) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "block truncate text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
 			children: node.waiting ? t("graphWaiting") : node.subtitle
 		});
-		$[22] = node.subtitle;
-		$[23] = node.waiting;
-		$[24] = t;
-		$[25] = t11;
-	} else t11 = $[25];
-	let t12;
-	if ($[26] !== t10 || $[27] !== t11) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+		$[14] = node.subtitle;
+		$[15] = node.waiting;
+		$[16] = t;
+		$[17] = t9;
+	} else t9 = $[17];
+	let t10;
+	if ($[18] !== t8 || $[19] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 			className: "min-w-0 flex-1",
-			children: [t10, t11]
+			children: [t8, t9]
 		});
-		$[26] = t10;
-		$[27] = t11;
-		$[28] = t12;
-	} else t12 = $[28];
-	let t13;
-	if ($[29] !== onSelect || $[30] !== selected || $[31] !== t12 || $[32] !== t4 || $[33] !== t5 || $[34] !== t6) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+		$[18] = t8;
+		$[19] = t9;
+		$[20] = t10;
+	} else t10 = $[20];
+	let t11;
+	if ($[21] !== onSelect || $[22] !== selected || $[23] !== t10 || $[24] !== t3 || $[25] !== t4 || $[26] !== t5) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 			type: "button",
 			"aria-pressed": selected,
-			"aria-label": t4,
+			"aria-label": t3,
 			onClick: onSelect,
-			className: t5,
-			children: [t6, t12]
+			className: t4,
+			children: [t5, t10]
 		});
-		$[29] = onSelect;
-		$[30] = selected;
-		$[31] = t12;
-		$[32] = t4;
-		$[33] = t5;
-		$[34] = t6;
-		$[35] = t13;
-	} else t13 = $[35];
-	return t13;
+		$[21] = onSelect;
+		$[22] = selected;
+		$[23] = t10;
+		$[24] = t3;
+		$[25] = t4;
+		$[26] = t5;
+		$[27] = t11;
+	} else t11 = $[27];
+	return t11;
 }
 // src/client/pages/overview/components/graph-canvas.tsx
 function GraphCanvas(t0) {
-	const $ = (0, import_dist.c)(105);
+	const $ = (0, import_dist.c)(101);
 	const { nodes, edges } = t0;
 	const { t } = useTranslation();
 	const { zoomGraph, panGraph, resetGraph, selectAgent, openTicket } = useActions();
@@ -53719,464 +53592,468 @@ function GraphCanvas(t0) {
 	const left = (AGENT_GRAPH.width - width) / 2 + x;
 	const top = (AGENT_GRAPH.height - height) / 2 + y;
 	let t1;
-	if ($[0] !== edges || $[1] !== height || $[2] !== left || $[3] !== nodes || $[4] !== openTicket || $[5] !== panGraph || $[6] !== resetGraph || $[7] !== selectAgent || $[8] !== selectedId || $[9] !== t || $[10] !== top || $[11] !== width || $[12] !== zoom || $[13] !== zoomGraph) {
+	if ($[0] !== nodes || $[1] !== selectedId) {
 		let t2;
-		if ($[15] !== selectedId) {
+		if ($[3] !== selectedId) {
 			t2 = (node) => node.id === selectedId;
-			$[15] = selectedId;
-			$[16] = t2;
-		} else t2 = $[16];
-		const selected = nodes.find(t2);
-		let t3;
-		if ($[17] !== nodes) {
-			const supervised = nodes.filter(_temp2$7);
-			t3 = supervised.length ? {
-				x: Math.min(...supervised.map(_temp3$5)) - 16,
-				y: Math.min(...supervised.map(_temp4$2)) - 12,
-				width: Math.max(...supervised.map(_temp5$1)) - Math.min(...supervised.map(_temp6)) + AGENT_GRAPH.nodeWidth + 32,
-				height: Math.max(...supervised.map(_temp7)) - Math.min(...supervised.map(_temp8)) + AGENT_GRAPH.nodeHeight + 28
-			} : null;
-			$[17] = nodes;
-			$[18] = t3;
-		} else t3 = $[18];
-		const group = t3;
-		const t4 = `${left} ${top} ${width} ${height}`;
-		let t5;
-		if ($[19] !== t) {
-			t5 = t("graphTitle");
-			$[19] = t;
-			$[20] = t5;
-		} else t5 = $[20];
-		let t6;
-		if ($[21] === Symbol.for("react.memo_cache_sentinel")) {
-			t6 = (event) => {
-				if (event.button !== 0 || event.target.closest("button")) return;
-				drag.current = {
-					id: event.pointerId,
-					x: event.clientX,
-					y: event.clientY
-				};
-				event.currentTarget.setPointerCapture(event.pointerId);
+			$[3] = selectedId;
+			$[4] = t2;
+		} else t2 = $[4];
+		t1 = nodes.find(t2);
+		$[0] = nodes;
+		$[1] = selectedId;
+		$[2] = t1;
+	} else t1 = $[2];
+	const selected = t1;
+	let t2;
+	if ($[5] !== nodes) {
+		const supervised = nodes.filter(_temp2$10);
+		t2 = supervised.length ? {
+			x: Math.min(...supervised.map(_temp3$7)) - 16,
+			y: Math.min(...supervised.map(_temp4$5)) - 12,
+			width: Math.max(...supervised.map(_temp5$2)) - Math.min(...supervised.map(_temp6$1)) + AGENT_GRAPH.nodeWidth + 32,
+			height: Math.max(...supervised.map(_temp7$1)) - Math.min(...supervised.map(_temp8$1)) + AGENT_GRAPH.nodeHeight + 28
+		} : null;
+		$[5] = nodes;
+		$[6] = t2;
+	} else t2 = $[6];
+	const group = t2;
+	const t3 = `${left} ${top} ${width} ${height}`;
+	let t4;
+	if ($[7] !== t) {
+		t4 = t("graphTitle");
+		$[7] = t;
+		$[8] = t4;
+	} else t4 = $[8];
+	let t5;
+	if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
+		t5 = (event) => {
+			if (event.button !== 0 || event.target.closest("button")) return;
+			drag.current = {
+				id: event.pointerId,
+				x: event.clientX,
+				y: event.clientY
 			};
-			$[21] = t6;
-		} else t6 = $[21];
-		let t7;
-		if ($[22] !== height || $[23] !== panGraph || $[24] !== width) {
-			t7 = (event_0) => {
-				const previous = drag.current;
-				if (!previous || previous.id !== event_0.pointerId) return;
-				const bounds = event_0.currentTarget.getBoundingClientRect();
-				const scale = Math.min(bounds.width / width, bounds.height / height);
-				if (scale > 0) panGraph((previous.x - event_0.clientX) / scale, (previous.y - event_0.clientY) / scale);
-				drag.current = {
-					id: event_0.pointerId,
-					x: event_0.clientX,
-					y: event_0.clientY
-				};
+			event.currentTarget.setPointerCapture(event.pointerId);
+		};
+		$[9] = t5;
+	} else t5 = $[9];
+	let t6;
+	if ($[10] !== height || $[11] !== panGraph || $[12] !== width) {
+		t6 = (event_0) => {
+			const previous = drag.current;
+			if (!previous || previous.id !== event_0.pointerId) return;
+			const bounds = event_0.currentTarget.getBoundingClientRect();
+			const scale = Math.min(bounds.width / width, bounds.height / height);
+			if (scale > 0) panGraph((previous.x - event_0.clientX) / scale, (previous.y - event_0.clientY) / scale);
+			drag.current = {
+				id: event_0.pointerId,
+				x: event_0.clientX,
+				y: event_0.clientY
 			};
-			$[22] = height;
-			$[23] = panGraph;
-			$[24] = width;
-			$[25] = t7;
-		} else t7 = $[25];
-		let t10;
-		let t8;
-		let t9;
-		if ($[26] === Symbol.for("react.memo_cache_sentinel")) {
-			t8 = (event_1) => {
-				drag.current = null;
-				if (event_1.currentTarget.hasPointerCapture(event_1.pointerId)) event_1.currentTarget.releasePointerCapture(event_1.pointerId);
-			};
-			t9 = () => {
-				drag.current = null;
-			};
-			t10 = () => {
-				drag.current = null;
-			};
-			$[26] = t10;
-			$[27] = t8;
-			$[28] = t9;
-		} else {
-			t10 = $[26];
-			t8 = $[27];
-			t9 = $[28];
-		}
-		let t11;
-		if ($[29] !== panGraph || $[30] !== resetGraph || $[31] !== zoom || $[32] !== zoomGraph) {
-			t11 = (event_2) => {
-				if (event_2.target !== event_2.currentTarget) return;
-				const delta = 40 / zoom;
-				if (event_2.key === "ArrowLeft") panGraph(-delta, 0);
-				else if (event_2.key === "ArrowRight") panGraph(delta, 0);
-				else if (event_2.key === "ArrowUp") panGraph(0, -delta);
-				else if (event_2.key === "ArrowDown") panGraph(0, delta);
-				else if (event_2.key === "+" || event_2.key === "=") zoomGraph(.2);
-				else if (event_2.key === "-") zoomGraph(-.2);
-				else if (event_2.key === "Home") resetGraph();
-				else return;
-				event_2.preventDefault();
-			};
-			$[29] = panGraph;
-			$[30] = resetGraph;
-			$[31] = zoom;
-			$[32] = zoomGraph;
-			$[33] = t11;
-		} else t11 = $[33];
-		let t12;
-		if ($[34] !== group || $[35] !== t) {
-			t12 = group && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("g", {
-				pointerEvents: "none",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: group.x,
-					y: group.y,
-					width: group.width,
-					height: group.height,
-					rx: 18,
-					fill: "var(--dsw-alias-state-business-primary)",
-					fillOpacity: .025,
-					stroke: "var(--dsw-alias-state-business-primary)",
-					strokeOpacity: .5,
-					strokeDasharray: "6 5"
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("text", {
-					x: group.x + 12,
-					y: group.y - 10,
-					fill: "var(--dsw-alias-state-business-primary)",
-					fontSize: 13,
-					children: t("graphSupervisor")
-				})]
-			});
-			$[34] = group;
-			$[35] = t;
-			$[36] = t12;
-		} else t12 = $[36];
+		};
+		$[10] = height;
+		$[11] = panGraph;
+		$[12] = width;
+		$[13] = t6;
+	} else t6 = $[13];
+	let t7;
+	let t8;
+	let t9;
+	if ($[14] === Symbol.for("react.memo_cache_sentinel")) {
+		t7 = (event_1) => {
+			drag.current = null;
+			if (event_1.currentTarget.hasPointerCapture(event_1.pointerId)) event_1.currentTarget.releasePointerCapture(event_1.pointerId);
+		};
+		t8 = () => {
+			drag.current = null;
+		};
+		t9 = () => {
+			drag.current = null;
+		};
+		$[14] = t7;
+		$[15] = t8;
+		$[16] = t9;
+	} else {
+		t7 = $[14];
+		t8 = $[15];
+		t9 = $[16];
+	}
+	let t10;
+	if ($[17] !== panGraph || $[18] !== resetGraph || $[19] !== zoom || $[20] !== zoomGraph) {
+		t10 = (event_2) => {
+			if (event_2.target !== event_2.currentTarget) return;
+			const delta = 40 / zoom;
+			if (event_2.key === "ArrowLeft") panGraph(-delta, 0);
+			else if (event_2.key === "ArrowRight") panGraph(delta, 0);
+			else if (event_2.key === "ArrowUp") panGraph(0, -delta);
+			else if (event_2.key === "ArrowDown") panGraph(0, delta);
+			else if (event_2.key === "+" || event_2.key === "=") zoomGraph(.2);
+			else if (event_2.key === "-") zoomGraph(-.2);
+			else if (event_2.key === "Home") resetGraph();
+			else return;
+			event_2.preventDefault();
+		};
+		$[17] = panGraph;
+		$[18] = resetGraph;
+		$[19] = zoom;
+		$[20] = zoomGraph;
+		$[21] = t10;
+	} else t10 = $[21];
+	let t11;
+	if ($[22] !== group || $[23] !== t) {
+		t11 = group && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("g", {
+			pointerEvents: "none",
+			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
+				x: group.x,
+				y: group.y,
+				width: group.width,
+				height: group.height,
+				rx: 18,
+				fill: "var(--dsw-alias-state-business-primary)",
+				fillOpacity: .025,
+				stroke: "var(--dsw-alias-state-business-primary)",
+				strokeOpacity: .5,
+				strokeDasharray: "6 5"
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("text", {
+				x: group.x + 12,
+				y: group.y - 10,
+				fill: "var(--dsw-alias-state-business-primary)",
+				fontSize: 13,
+				children: t("graphSupervisor")
+			})]
+		});
+		$[22] = group;
+		$[23] = t;
+		$[24] = t11;
+	} else t11 = $[24];
+	let t12;
+	if ($[25] !== edges || $[26] !== nodes || $[27] !== selectedId) {
 		let t13;
-		if ($[37] !== edges || $[38] !== nodes || $[39] !== selectedId) {
-			let t14;
-			if ($[41] !== nodes || $[42] !== selectedId) {
-				t14 = (edge) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphEdgePath, {
-					edge,
-					nodes,
-					selectedId
-				}, `${edge.source}-${edge.target}-${edge.kind}`);
-				$[41] = nodes;
-				$[42] = selectedId;
-				$[43] = t14;
-			} else t14 = $[43];
-			t13 = edges.map(t14);
-			$[37] = edges;
-			$[38] = nodes;
-			$[39] = selectedId;
-			$[40] = t13;
-		} else t13 = $[40];
+		if ($[29] !== nodes || $[30] !== selectedId) {
+			t13 = (edge) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphEdgePath, {
+				edge,
+				nodes,
+				selectedId
+			}, `${edge.source}-${edge.target}-${edge.kind}`);
+			$[29] = nodes;
+			$[30] = selectedId;
+			$[31] = t13;
+		} else t13 = $[31];
+		t12 = edges.map(t13);
+		$[25] = edges;
+		$[26] = nodes;
+		$[27] = selectedId;
+		$[28] = t12;
+	} else t12 = $[28];
+	let t13;
+	if ($[32] !== nodes || $[33] !== selectAgent || $[34] !== selectedId) {
 		let t14;
-		if ($[44] !== nodes || $[45] !== selectAgent || $[46] !== selectedId) {
-			let t15;
-			if ($[48] !== selectAgent || $[49] !== selectedId) {
-				t15 = (node_7) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("foreignObject", {
-					x: node_7.x,
-					y: node_7.y,
-					width: AGENT_GRAPH.nodeWidth,
-					height: AGENT_GRAPH.nodeHeight,
-					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphNodeCard, {
-						node: node_7,
-						selected: selectedId === node_7.id,
-						onSelect: () => selectAgent(node_7.id)
-					})
-				}, node_7.id);
-				$[48] = selectAgent;
-				$[49] = selectedId;
-				$[50] = t15;
-			} else t15 = $[50];
-			t14 = nodes.map(t15);
-			$[44] = nodes;
-			$[45] = selectAgent;
-			$[46] = selectedId;
-			$[47] = t14;
-		} else t14 = $[47];
-		let t15;
-		if ($[51] !== t11 || $[52] !== t12 || $[53] !== t13 || $[54] !== t14 || $[55] !== t4 || $[56] !== t5 || $[57] !== t7) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				className: "overflow-x-auto",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-					viewBox: t4,
-					className: "block h-[380px] w-full min-w-[1040px] touch-none select-none bg-[var(--dsw-alias-bg-layer-2)]/40 outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
-					"aria-label": t5,
-					role: "group",
-					tabIndex: 0,
-					onPointerDown: t6,
-					onPointerMove: t7,
-					onPointerUp: t8,
-					onPointerCancel: t9,
-					onLostPointerCapture: t10,
-					onKeyDown: t11,
-					children: [
-						t12,
-						t13,
-						t14
-					]
+		if ($[36] !== selectAgent || $[37] !== selectedId) {
+			t14 = (node_7) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("foreignObject", {
+				x: node_7.x,
+				y: node_7.y,
+				width: AGENT_GRAPH.nodeWidth,
+				height: AGENT_GRAPH.nodeHeight,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphNodeCard, {
+					node: node_7,
+					selected: selectedId === node_7.id,
+					onSelect: () => selectAgent(node_7.id)
 				})
-			});
-			$[51] = t11;
-			$[52] = t12;
-			$[53] = t13;
-			$[54] = t14;
-			$[55] = t4;
-			$[56] = t5;
-			$[57] = t7;
-			$[58] = t15;
-		} else t15 = $[58];
-		let t16;
-		if ($[59] !== t) {
-			t16 = t("graphZoomOut");
-			$[59] = t;
-			$[60] = t16;
-		} else t16 = $[60];
-		const t17 = zoom <= AGENT_GRAPH.zoomMin;
-		let t18;
-		if ($[61] !== zoomGraph) {
-			t18 = () => zoomGraph(-.2);
-			$[61] = zoomGraph;
-			$[62] = t18;
-		} else t18 = $[62];
-		let t19;
-		if ($[63] === Symbol.for("react.memo_cache_sentinel")) {
-			t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOutIcon, {
-				width: 16,
-				height: 16
-			});
-			$[63] = t19;
-		} else t19 = $[63];
-		let t20;
-		if ($[64] !== t16 || $[65] !== t17 || $[66] !== t18) {
-			t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "ghost",
-				"aria-label": t16,
-				disabled: t17,
-				onClick: t18,
-				icon: t19
-			});
-			$[64] = t16;
-			$[65] = t17;
-			$[66] = t18;
-			$[67] = t20;
-		} else t20 = $[67];
-		let t21;
-		if ($[68] !== zoom) {
-			t21 = Math.round(zoom * 100);
-			$[68] = zoom;
-			$[69] = t21;
-		} else t21 = $[69];
-		const t22 = `${t21}%`;
-		let t23;
-		if ($[70] !== t22) {
-			t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "min-w-10 text-center text-xs tabular-nums text-[var(--dsw-alias-label-secondary)]",
-				children: t22
-			});
-			$[70] = t22;
-			$[71] = t23;
-		} else t23 = $[71];
-		let t24;
-		if ($[72] !== t) {
-			t24 = t("graphZoomIn");
-			$[72] = t;
-			$[73] = t24;
-		} else t24 = $[73];
-		const t25 = zoom >= AGENT_GRAPH.zoomMax;
-		let t26;
-		if ($[74] !== zoomGraph) {
-			t26 = () => zoomGraph(.2);
-			$[74] = zoomGraph;
-			$[75] = t26;
-		} else t26 = $[75];
-		let t27;
-		if ($[76] === Symbol.for("react.memo_cache_sentinel")) {
-			t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomInIcon, {
-				width: 16,
-				height: 16
-			});
-			$[76] = t27;
-		} else t27 = $[76];
-		let t28;
-		if ($[77] !== t24 || $[78] !== t25 || $[79] !== t26) {
-			t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "ghost",
-				"aria-label": t24,
-				disabled: t25,
-				onClick: t26,
-				icon: t27
-			});
-			$[77] = t24;
-			$[78] = t25;
-			$[79] = t26;
-			$[80] = t28;
-		} else t28 = $[80];
-		let t29;
-		if ($[81] !== t) {
-			t29 = t("graphFit");
-			$[81] = t;
-			$[82] = t29;
-		} else t29 = $[82];
-		let t30;
-		if ($[83] === Symbol.for("react.memo_cache_sentinel")) {
-			t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FitViewIcon, {
-				width: 16,
-				height: 16
-			});
-			$[83] = t30;
-		} else t30 = $[83];
-		let t31;
-		if ($[84] !== resetGraph || $[85] !== t29) {
-			t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "ghost",
-				"aria-label": t29,
-				onClick: resetGraph,
-				icon: t30
-			});
-			$[84] = resetGraph;
-			$[85] = t29;
-			$[86] = t31;
-		} else t31 = $[86];
-		let t32;
-		if ($[87] !== t20 || $[88] !== t23 || $[89] !== t28 || $[90] !== t31) {
-			t32 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "absolute right-3 bottom-3 flex items-center gap-1 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-1 shadow-sm",
+			}, node_7.id);
+			$[36] = selectAgent;
+			$[37] = selectedId;
+			$[38] = t14;
+		} else t14 = $[38];
+		t13 = nodes.map(t14);
+		$[32] = nodes;
+		$[33] = selectAgent;
+		$[34] = selectedId;
+		$[35] = t13;
+	} else t13 = $[35];
+	let t14;
+	if ($[39] !== t10 || $[40] !== t11 || $[41] !== t12 || $[42] !== t13 || $[43] !== t3 || $[44] !== t4 || $[45] !== t6) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "overflow-x-auto",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+				viewBox: t3,
+				className: "block h-[380px] w-full min-w-[1040px] touch-none select-none bg-[var(--dsw-alias-bg-layer-2)]/40 outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+				"aria-label": t4,
+				role: "group",
+				tabIndex: 0,
+				onPointerDown: t5,
+				onPointerMove: t6,
+				onPointerUp: t7,
+				onPointerCancel: t8,
+				onLostPointerCapture: t9,
+				onKeyDown: t10,
 				children: [
-					t20,
-					t23,
-					t28,
-					t31
-				]
-			});
-			$[87] = t20;
-			$[88] = t23;
-			$[89] = t28;
-			$[90] = t31;
-			$[91] = t32;
-		} else t32 = $[91];
-		let t33;
-		if ($[92] !== t15 || $[93] !== t32) {
-			t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "relative",
-				children: [t15, t32]
-			});
-			$[92] = t15;
-			$[93] = t32;
-			$[94] = t33;
-		} else t33 = $[94];
-		let t34;
-		if ($[95] !== t) {
-			t34 = t("graphHint");
-			$[95] = t;
-			$[96] = t34;
-		} else t34 = $[96];
-		let t35;
-		if ($[97] !== t34) {
-			t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t34 });
-			$[97] = t34;
-			$[98] = t35;
-		} else t35 = $[98];
-		let t36;
-		if ($[99] === Symbol.for("react.memo_cache_sentinel")) {
-			t36 = [
-				"flow",
-				"association",
-				"dependency"
-			];
-			$[99] = t36;
-		} else t36 = $[99];
-		let t37;
-		if ($[100] !== t) {
-			t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "ml-auto flex gap-3",
-				children: t36.map((kind) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-					className: "flex items-center gap-1.5",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "h-px w-4",
-						style: { background: AGENT_GRAPH_EDGE_COLORS[kind] }
-					}), t(kind === "flow" ? "graphFlow" : kind === "association" ? "graphAssociation" : "graphDependency")]
-				}, kind))
-			});
-			$[100] = t;
-			$[101] = t37;
-		} else t37 = $[101];
-		let t38;
-		if ($[102] !== t35 || $[103] !== t37) {
-			t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-[11px] text-[var(--dsw-alias-label-tertiary)]",
-				children: [t35, t37]
-			});
-			$[102] = t35;
-			$[103] = t37;
-			$[104] = t38;
-		} else t38 = $[104];
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [
-			t33,
-			t38,
-			selected && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center gap-3 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-xs",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {
-						width: 16,
-						height: 16
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [t(selected.label), selected.subtitle ? ` · ${selected.subtitle}` : ""] }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "text-[var(--dsw-alias-label-tertiary)]",
-						children: t(selected.waiting ? "graphWaiting" : "overviewDemo")
-					}),
-					selected.taskId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						size: "sm",
-						variant: "outline",
-						onClick: () => {
-							if (selected.taskId) openTicket(selected.taskId);
-						},
-						className: "ml-auto",
-						children: t("overviewOpenDetails")
-					})
+					t11,
+					t12,
+					t13
 				]
 			})
+		});
+		$[39] = t10;
+		$[40] = t11;
+		$[41] = t12;
+		$[42] = t13;
+		$[43] = t3;
+		$[44] = t4;
+		$[45] = t6;
+		$[46] = t14;
+	} else t14 = $[46];
+	let t15;
+	if ($[47] !== t) {
+		t15 = t("graphZoomOut");
+		$[47] = t;
+		$[48] = t15;
+	} else t15 = $[48];
+	const t16 = zoom <= AGENT_GRAPH.zoomMin;
+	let t17;
+	if ($[49] !== zoomGraph) {
+		t17 = () => zoomGraph(-.2);
+		$[49] = zoomGraph;
+		$[50] = t17;
+	} else t17 = $[50];
+	let t18;
+	if ($[51] === Symbol.for("react.memo_cache_sentinel")) {
+		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOutIcon, {
+			width: 16,
+			height: 16
+		});
+		$[51] = t18;
+	} else t18 = $[51];
+	let t19;
+	if ($[52] !== t15 || $[53] !== t16 || $[54] !== t17) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "ghost",
+			"aria-label": t15,
+			disabled: t16,
+			onClick: t17,
+			icon: t18
+		});
+		$[52] = t15;
+		$[53] = t16;
+		$[54] = t17;
+		$[55] = t19;
+	} else t19 = $[55];
+	let t20;
+	if ($[56] !== zoom) {
+		t20 = Math.round(zoom * 100);
+		$[56] = zoom;
+		$[57] = t20;
+	} else t20 = $[57];
+	const t21 = `${t20}%`;
+	let t22;
+	if ($[58] !== t21) {
+		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "min-w-10 text-center text-xs tabular-nums text-[var(--dsw-alias-label-secondary)]",
+			children: t21
+		});
+		$[58] = t21;
+		$[59] = t22;
+	} else t22 = $[59];
+	let t23;
+	if ($[60] !== t) {
+		t23 = t("graphZoomIn");
+		$[60] = t;
+		$[61] = t23;
+	} else t23 = $[61];
+	const t24 = zoom >= AGENT_GRAPH.zoomMax;
+	let t25;
+	if ($[62] !== zoomGraph) {
+		t25 = () => zoomGraph(.2);
+		$[62] = zoomGraph;
+		$[63] = t25;
+	} else t25 = $[63];
+	let t26;
+	if ($[64] === Symbol.for("react.memo_cache_sentinel")) {
+		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomInIcon, {
+			width: 16,
+			height: 16
+		});
+		$[64] = t26;
+	} else t26 = $[64];
+	let t27;
+	if ($[65] !== t23 || $[66] !== t24 || $[67] !== t25) {
+		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "ghost",
+			"aria-label": t23,
+			disabled: t24,
+			onClick: t25,
+			icon: t26
+		});
+		$[65] = t23;
+		$[66] = t24;
+		$[67] = t25;
+		$[68] = t27;
+	} else t27 = $[68];
+	let t28;
+	if ($[69] !== t) {
+		t28 = t("graphFit");
+		$[69] = t;
+		$[70] = t28;
+	} else t28 = $[70];
+	let t29;
+	if ($[71] === Symbol.for("react.memo_cache_sentinel")) {
+		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FitViewIcon, {
+			width: 16,
+			height: 16
+		});
+		$[71] = t29;
+	} else t29 = $[71];
+	let t30;
+	if ($[72] !== resetGraph || $[73] !== t28) {
+		t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "ghost",
+			"aria-label": t28,
+			onClick: resetGraph,
+			icon: t29
+		});
+		$[72] = resetGraph;
+		$[73] = t28;
+		$[74] = t30;
+	} else t30 = $[74];
+	let t31;
+	if ($[75] !== t19 || $[76] !== t22 || $[77] !== t27 || $[78] !== t30) {
+		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "absolute right-3 bottom-3 flex items-center gap-1 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-1 shadow-sm",
+			children: [
+				t19,
+				t22,
+				t27,
+				t30
+			]
+		});
+		$[75] = t19;
+		$[76] = t22;
+		$[77] = t27;
+		$[78] = t30;
+		$[79] = t31;
+	} else t31 = $[79];
+	let t32;
+	if ($[80] !== t14 || $[81] !== t31) {
+		t32 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "relative",
+			children: [t14, t31]
+		});
+		$[80] = t14;
+		$[81] = t31;
+		$[82] = t32;
+	} else t32 = $[82];
+	let t33;
+	if ($[83] !== t) {
+		t33 = t("graphHint");
+		$[83] = t;
+		$[84] = t33;
+	} else t33 = $[84];
+	let t34;
+	if ($[85] !== t33) {
+		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t33 });
+		$[85] = t33;
+		$[86] = t34;
+	} else t34 = $[86];
+	let t35;
+	if ($[87] === Symbol.for("react.memo_cache_sentinel")) {
+		t35 = [
+			"flow",
+			"association",
+			"dependency"
+		];
+		$[87] = t35;
+	} else t35 = $[87];
+	let t36;
+	if ($[88] !== t) {
+		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "ml-auto flex gap-3",
+			children: t35.map((kind) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+				className: "flex items-center gap-1.5",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: "h-px w-4",
+					style: { background: AGENT_GRAPH_EDGE_COLORS[kind] }
+				}), t(kind === "flow" ? "graphFlow" : kind === "association" ? "graphAssociation" : "graphDependency")]
+			}, kind))
+		});
+		$[88] = t;
+		$[89] = t36;
+	} else t36 = $[89];
+	let t37;
+	if ($[90] !== t34 || $[91] !== t36) {
+		t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+			children: [t34, t36]
+		});
+		$[90] = t34;
+		$[91] = t36;
+		$[92] = t37;
+	} else t37 = $[92];
+	let t38;
+	if ($[93] !== openTicket || $[94] !== selected || $[95] !== t) {
+		t38 = selected && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex flex-wrap items-center gap-3 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-xs",
+			children: [
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {
+					width: 16,
+					height: 16
+				}),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [selected.label, selected.subtitle ? ` · ${selected.subtitle}` : ""] }),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					className: "text-[var(--dsw-alias-label-tertiary)]",
+					children: selected.waiting ? t("graphWaiting") : ""
+				}),
+				selected.taskId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "outline",
+					onClick: () => {
+						if (selected.taskId) openTicket(selected.taskId);
+					},
+					className: "ml-auto",
+					children: t("overviewOpenDetails")
+				})
+			]
+		});
+		$[93] = openTicket;
+		$[94] = selected;
+		$[95] = t;
+		$[96] = t38;
+	} else t38 = $[96];
+	let t39;
+	if ($[97] !== t32 || $[98] !== t37 || $[99] !== t38) {
+		t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [
+			t32,
+			t37,
+			t38
 		] });
-		$[0] = edges;
-		$[1] = height;
-		$[2] = left;
-		$[3] = nodes;
-		$[4] = openTicket;
-		$[5] = panGraph;
-		$[6] = resetGraph;
-		$[7] = selectAgent;
-		$[8] = selectedId;
-		$[9] = t;
-		$[10] = top;
-		$[11] = width;
-		$[12] = zoom;
-		$[13] = zoomGraph;
-		$[14] = t1;
-	} else t1 = $[14];
-	return t1;
+		$[97] = t32;
+		$[98] = t37;
+		$[99] = t38;
+		$[100] = t39;
+	} else t39 = $[100];
+	return t39;
 }
-function _temp8(node_6) {
+function _temp8$1(node_6) {
 	return node_6.y;
 }
-function _temp7(node_5) {
+function _temp7$1(node_5) {
 	return node_5.y;
 }
-function _temp6(node_4) {
+function _temp6$1(node_4) {
 	return node_4.x;
 }
-function _temp5$1(node_3) {
+function _temp5$2(node_3) {
 	return node_3.x;
 }
-function _temp4$2(node_2) {
+function _temp4$5(node_2) {
 	return node_2.y;
 }
-function _temp3$5(node_1) {
+function _temp3$7(node_1) {
 	return node_1.x;
 }
-function _temp2$7(node_0) {
+function _temp2$10(node_0) {
 	return node_0.group === "supervisor";
 }
 function _temp$13(state) {
@@ -54184,66 +54061,113 @@ function _temp$13(state) {
 }
 // src/client/pages/overview/components/graph.tsx
 function Graph() {
-	const $ = (0, import_dist.c)(14);
+	const $ = (0, import_dist.c)(23);
 	const { t } = useTranslation();
+	const graph = useStore(_temp$12);
 	let t0;
-	if ($[0] !== t) {
-		t0 = t("graphTitle");
-		$[0] = t;
+	if ($[0] !== graph?.nodes) {
+		const rows = /* @__PURE__ */ new Map();
+		t0 = (graph?.nodes ?? []).map((node) => {
+			const row = rows.get(node.kind) ?? 0;
+			rows.set(node.kind, row + 1);
+			const column = node.kind === "project" ? 0 : node.kind === "ticket" ? 1 : node.kind === "worker" ? 2 : 3;
+			return {
+				id: node.id,
+				kind: node.kind === "ticket" ? "task" : node.kind === "worker" ? "session" : "route",
+				label: node.label,
+				subtitle: node.status,
+				taskId: node.ticketId ?? void 0,
+				x: 36 + column * 260,
+				y: 30 + row * 100
+			};
+		});
+		$[0] = graph?.nodes;
 		$[1] = t0;
 	} else t0 = $[1];
+	const nodes = t0;
 	let t1;
-	if ($[2] !== t0) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-			className: "text-[13px] font-medium mb-0 mt-1",
-			children: t0
-		});
-		$[2] = t0;
+	if ($[2] !== graph?.edges) {
+		t1 = graph?.edges ?? [];
+		$[2] = graph?.edges;
 		$[3] = t1;
 	} else t1 = $[3];
 	let t2;
-	if ($[4] !== t) {
-		t2 = t("graphDescription");
-		$[4] = t;
+	if ($[4] !== t1) {
+		t2 = t1.map(_temp2$9);
+		$[4] = t1;
 		$[5] = t2;
 	} else t2 = $[5];
+	const edges = t2;
 	let t3;
-	if ($[6] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mt-1 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)] mb-0",
-			children: t2
-		});
-		$[6] = t2;
+	if ($[6] !== t) {
+		t3 = t("graphTitle");
+		$[6] = t;
 		$[7] = t3;
 	} else t3 = $[7];
 	let t4;
-	if ($[8] !== t1 || $[9] !== t3) {
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-			className: "border-b border-[var(--dsw-alias-border-l3)] px-5 py-2",
-			children: [t1, t3]
+	if ($[8] !== t3) {
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+			className: "text-[13px] font-medium mb-0 mt-1",
+			children: t3
 		});
-		$[8] = t1;
-		$[9] = t3;
-		$[10] = t4;
-	} else t4 = $[10];
+		$[8] = t3;
+		$[9] = t4;
+	} else t4 = $[9];
 	let t5;
-	if ($[11] === Symbol.for("react.memo_cache_sentinel")) {
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphCanvas, {
-			nodes: AGENT_GRAPH_NODES,
-			edges: AGENT_GRAPH_EDGES
-		});
+	if ($[10] !== t) {
+		t5 = t("graphDescription");
+		$[10] = t;
 		$[11] = t5;
 	} else t5 = $[11];
 	let t6;
-	if ($[12] !== t4) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "mt-4 overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
-			children: [t4, t5]
+	if ($[12] !== t5) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "mt-1 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)] mb-0",
+			children: t5
 		});
-		$[12] = t4;
+		$[12] = t5;
 		$[13] = t6;
 	} else t6 = $[13];
-	return t6;
+	let t7;
+	if ($[14] !== t4 || $[15] !== t6) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+			className: "border-b border-[var(--dsw-alias-border-l3)] px-5 py-2",
+			children: [t4, t6]
+		});
+		$[14] = t4;
+		$[15] = t6;
+		$[16] = t7;
+	} else t7 = $[16];
+	let t8;
+	if ($[17] !== edges || $[18] !== nodes) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphCanvas, {
+			nodes,
+			edges
+		});
+		$[17] = edges;
+		$[18] = nodes;
+		$[19] = t8;
+	} else t8 = $[19];
+	let t9;
+	if ($[20] !== t7 || $[21] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "mt-4 overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+			children: [t7, t8]
+		});
+		$[20] = t7;
+		$[21] = t8;
+		$[22] = t9;
+	} else t9 = $[22];
+	return t9;
+}
+function _temp2$9(edge) {
+	return {
+		...edge,
+		kind: edge.kind === "dependency" ? "dependency" : edge.kind === "association" ? "association" : "flow"
+	};
+}
+function _temp$12(state) {
+	return state.data.panel?.graph;
 }
 // src/client/pages/overview/components/summary-card.tsx
 function SummaryCard(t0) {
@@ -54338,18 +54262,25 @@ function SummaryCard(t0) {
 	return t8;
 }
 // src/client/pages/overview/components/task-chart.tsx
-function TaskChart() {
-	const $ = (0, import_dist.c)(5);
+function TaskChart(t0) {
+	const $ = (0, import_dist.c)(10);
+	const { segments } = t0;
 	const { t } = useTranslation();
-	let t0;
-	if ($[0] !== t) {
-		t0 = t("overviewTaskChart");
-		$[0] = t;
-		$[1] = t0;
-	} else t0 = $[1];
 	let t1;
-	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
+	if ($[0] !== t) {
+		t1 = t("overviewTaskChart");
+		$[0] = t;
+		$[1] = t1;
+	} else t1 = $[1];
+	let t2;
+	if ($[2] !== segments) {
+		t2 = segments.map(_temp$11);
+		$[2] = segments;
+		$[3] = t2;
+	} else t2 = $[3];
+	let t3;
+	if ($[4] !== segments || $[5] !== t2) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
 			width: "100%",
 			height: "100%",
 			minWidth: 0,
@@ -54357,7 +54288,7 @@ function TaskChart() {
 				accessibilityLayer: false,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Pie, {
 					rootTabIndex: -1,
-					data: OVERVIEW_TASK_SEGMENTS,
+					data: segments,
 					dataKey: "value",
 					nameKey: "name",
 					cx: "50%",
@@ -54370,609 +54301,1123 @@ function TaskChart() {
 					cornerRadius: 4,
 					stroke: "none",
 					isAnimationActive: false,
-					children: OVERVIEW_TASK_SEGMENTS.map(_temp$12)
+					children: t2
 				})
 			})
 		});
-		$[2] = t1;
-	} else t1 = $[2];
-	let t2;
-	if ($[3] !== t0) {
-		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figure", {
+		$[4] = segments;
+		$[5] = t2;
+		$[6] = t3;
+	} else t3 = $[6];
+	let t4;
+	if ($[7] !== t1 || $[8] !== t3) {
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figure", {
 			className: "pointer-events-none size-[100px] shrink-0 [&_*]:outline-none",
 			role: "img",
-			"aria-label": t0,
-			children: t1
+			"aria-label": t1,
+			children: t3
 		});
-		$[3] = t0;
-		$[4] = t2;
-	} else t2 = $[4];
-	return t2;
+		$[7] = t1;
+		$[8] = t3;
+		$[9] = t4;
+	} else t4 = $[9];
+	return t4;
 }
-function _temp$12(segment) {
+function _temp$11(segment) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment.color }, segment.name);
 }
 // src/client/pages/overview/page.tsx
 function Overview() {
-	const $ = (0, import_dist.c)(152);
+	const $ = (0, import_dist.c)(180);
 	const { t } = useTranslation();
 	const navigate = useNavigate();
-	const { setOverviewView } = useActions();
-	const view = useStore(_temp$11);
-	const t0 = (0, react.useId)();
-	let t1;
-	if ($[0] !== t0) {
-		t1 = t0.replaceAll(":", "");
-		$[0] = t0;
-		$[1] = t1;
-	} else t1 = $[1];
-	const id = t1;
-	let t2;
-	if ($[2] !== t) {
-		t2 = t("overviewRecent");
-		$[2] = t;
-		$[3] = t2;
-	} else t2 = $[3];
-	const t3 = `${id}-recent`;
-	const t4 = `${id}-recent-panel`;
-	let t5;
-	if ($[4] !== t2 || $[5] !== t3 || $[6] !== t4) {
-		t5 = {
-			value: "recent",
-			label: t2,
-			id: t3,
-			panelId: t4
+	const { setOverviewView, receivePanel } = useActions();
+	let t0;
+	if ($[0] !== receivePanel) {
+		t0 = async (id, text) => {
+			const result = await postApiNexusAsksIdAnswers({ id: encodeURIComponent(id) }, { answer: text });
+			if (!result || result.id !== id || result.answeredBy !== "user") throw new Error("答复提交失败，问题可能已处理");
+			const next = await getApiNexusPanel();
+			if (!next || !next.inbox) throw new Error("答复已提交，刷新问题列表失败");
+			receivePanel(next);
 		};
-		$[4] = t2;
-		$[5] = t3;
-		$[6] = t4;
-		$[7] = t5;
-	} else t5 = $[7];
+		$[0] = receivePanel;
+		$[1] = t0;
+	} else t0 = $[1];
+	const [answerState, answer] = useAsyncFn(t0);
+	const view = useStore(_temp$10);
+	const panel = useStore(_temp2$8);
+	let t1;
+	if ($[2] !== panel?.tickets) {
+		t1 = panel?.tickets ?? [];
+		$[2] = panel?.tickets;
+		$[3] = t1;
+	} else t1 = $[3];
+	const tickets = t1;
+	const channels = (panel?.channels ?? []).map(_temp4$4);
+	let t2;
+	if ($[4] !== panel?.topics.triggers) {
+		t2 = panel?.topics.triggers ?? [];
+		$[4] = panel?.topics.triggers;
+		$[5] = t2;
+	} else t2 = $[5];
+	const triggers = t2;
+	const t3 = triggers.length;
+	let t4;
+	if ($[6] !== triggers) {
+		t4 = triggers.filter(_temp5$1);
+		$[6] = triggers;
+		$[7] = t4;
+	} else t4 = $[7];
+	const t5 = t4.length;
 	let t6;
-	if ($[8] !== t) {
-		t6 = t("overviewHierarchy");
-		$[8] = t;
+	if ($[8] !== triggers) {
+		t6 = triggers.filter(_temp6);
+		$[8] = triggers;
 		$[9] = t6;
 	} else t6 = $[9];
-	const t7 = `${id}-hierarchy`;
-	const t8 = `${id}-hierarchy-panel`;
+	const t7 = t6.length;
+	let t8;
+	if ($[10] !== tickets) {
+		t8 = tickets.filter(_temp7);
+		$[10] = tickets;
+		$[11] = t8;
+	} else t8 = $[11];
 	let t9;
-	if ($[10] !== t6 || $[11] !== t7 || $[12] !== t8) {
+	if ($[12] !== t4.length || $[13] !== t6.length || $[14] !== t8.length || $[15] !== triggers.length) {
 		t9 = {
-			value: "hierarchy",
-			label: t6,
-			id: t7,
-			panelId: t8
+			received: t3,
+			filtered: t5,
+			rate: t7,
+			added: t8.length
 		};
-		$[10] = t6;
-		$[11] = t7;
-		$[12] = t8;
-		$[13] = t9;
-	} else t9 = $[13];
+		$[12] = t4.length;
+		$[13] = t6.length;
+		$[14] = t8.length;
+		$[15] = triggers.length;
+		$[16] = t9;
+	} else t9 = $[16];
+	const metrics = t9;
 	let t10;
-	if ($[14] !== t5 || $[15] !== t9) {
-		t10 = [t5, t9];
-		$[14] = t5;
-		$[15] = t9;
-		$[16] = t10;
-	} else t10 = $[16];
-	const tabs = t10;
-	let t11;
-	if ($[17] !== t) {
-		t11 = t("overviewChannels");
-		$[17] = t;
-		$[18] = t11;
-	} else t11 = $[18];
+	if ($[17] !== tickets) {
+		t10 = (segment) => ({
+			...segment,
+			value: tickets.filter((ticket_0) => segment.name === "overviewCompleted" ? ticket_0.status === "done" : segment.name === "overviewBlocked" ? Boolean(ticket_0.paused || ticket_0.prepareError) : [
+				"running",
+				"queued",
+				"review"
+			].includes(ticket_0.status) && !ticket_0.paused && !ticket_0.prepareError).length
+		});
+		$[17] = tickets;
+		$[18] = t10;
+	} else t10 = $[18];
+	const segments = OVERVIEW_TASK_SEGMENTS.map(t10);
+	const t11 = (0, react.useId)();
 	let t12;
-	if ($[19] === Symbol.for("react.memo_cache_sentinel")) {
-		t12 = OVERVIEW_CHANNELS.filter(_temp2$6);
-		$[19] = t12;
-	} else t12 = $[19];
+	if ($[19] !== t11) {
+		t12 = t11.replaceAll(":", "");
+		$[19] = t11;
+		$[20] = t12;
+	} else t12 = $[20];
+	const id_0 = t12;
 	let t13;
-	if ($[20] === Symbol.for("react.memo_cache_sentinel")) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
-			width: 18,
-			height: 18,
-			className: "shrink-0"
-		});
-		$[20] = t13;
-	} else t13 = $[20];
-	let t14;
 	if ($[21] !== t) {
-		t14 = t("overviewMoreChannels");
+		t13 = t("overviewRecent");
 		$[21] = t;
-		$[22] = t14;
-	} else t14 = $[22];
-	let t15;
-	if ($[23] !== navigate) {
-		t15 = () => navigate("channel");
-		$[23] = navigate;
-		$[24] = t15;
-	} else t15 = $[24];
+		$[22] = t13;
+	} else t13 = $[22];
+	const t14 = `${id_0}-recent`;
+	const t15 = `${id_0}-recent-panel`;
 	let t16;
-	if ($[25] === Symbol.for("react.memo_cache_sentinel")) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: "mt-auto grid grid-cols-3 gap-2.5",
-			children: OVERVIEW_CHANNELS.slice(0, 3).map(_temp3$4)
-		});
-		$[25] = t16;
-	} else t16 = $[25];
+	if ($[23] !== t13 || $[24] !== t14 || $[25] !== t15) {
+		t16 = {
+			value: "recent",
+			label: t13,
+			id: t14,
+			panelId: t15
+		};
+		$[23] = t13;
+		$[24] = t14;
+		$[25] = t15;
+		$[26] = t16;
+	} else t16 = $[26];
 	let t17;
-	if ($[26] !== t) {
-		t17 = t("overviewOtherChannel");
-		$[26] = t;
-		$[27] = t17;
-	} else t17 = $[27];
-	let t18;
-	if ($[28] !== t17) {
-		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mt-auto pt-3 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t17
-		});
+	if ($[27] !== t) {
+		t17 = t("overviewHierarchy");
+		$[27] = t;
 		$[28] = t17;
-		$[29] = t18;
-	} else t18 = $[29];
-	let t19;
-	if ($[30] !== t11 || $[31] !== t14 || $[32] !== t15 || $[33] !== t18) {
-		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(SummaryCard, {
-			title: t11,
-			meta: `${t12.length}/${OVERVIEW_CHANNELS.length}`,
-			icon: t13,
-			actionLabel: t14,
-			onMore: t15,
-			children: [t16, t18]
-		});
-		$[30] = t11;
-		$[31] = t14;
-		$[32] = t15;
-		$[33] = t18;
-		$[34] = t19;
-	} else t19 = $[34];
+	} else t17 = $[28];
+	const t18 = `${id_0}-hierarchy`;
+	const t19 = `${id_0}-hierarchy-panel`;
 	let t20;
-	if ($[35] !== t) {
-		t20 = t("overviewReceived");
-		$[35] = t;
-		$[36] = t20;
-	} else t20 = $[36];
+	if ($[29] !== t17 || $[30] !== t18 || $[31] !== t19) {
+		t20 = {
+			value: "hierarchy",
+			label: t17,
+			id: t18,
+			panelId: t19
+		};
+		$[29] = t17;
+		$[30] = t18;
+		$[31] = t19;
+		$[32] = t20;
+	} else t20 = $[32];
 	let t21;
-	if ($[37] !== t) {
-		t21 = t("overviewLastDay");
-		$[37] = t;
-		$[38] = t21;
-	} else t21 = $[38];
-	let t22;
-	if ($[39] === Symbol.for("react.memo_cache_sentinel")) {
-		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
-			width: 18,
-			height: 18,
-			className: "shrink-0"
-		});
-		$[39] = t22;
-	} else t22 = $[39];
+	if ($[33] !== t16 || $[34] !== t20) {
+		t21 = [t16, t20];
+		$[33] = t16;
+		$[34] = t20;
+		$[35] = t21;
+	} else t21 = $[35];
+	const tabs = t21;
+	const t22 = "@container flex flex-col gap-7 pb-10";
 	let t23;
-	if ($[40] !== t) {
-		t23 = t("overviewMoreActivity");
-		$[40] = t;
-		$[41] = t23;
-	} else t23 = $[41];
-	let t24;
-	if ($[42] !== navigate) {
-		t24 = () => navigate("trigger");
-		$[42] = navigate;
-		$[43] = t24;
-	} else t24 = $[43];
+	if ($[36] !== answer || $[37] !== answerState || $[38] !== panel?.inbox.pending) {
+		t23 = (panel?.inbox.pending.some(_temp8) || answerState.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "flex flex-col gap-3 rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5",
+			"aria-label": "待答问题",
+			children: [
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+					className: "m-0 text-sm font-medium",
+					children: "待答问题"
+				}),
+				panel?.inbox.pending.filter(_temp9).map((message_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+					className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3",
+					onSubmit: (event) => {
+						event.preventDefault();
+						answer(message_0.id, String(new FormData(event.currentTarget).get("answer") ?? ""));
+					},
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: "m-0 whitespace-pre-wrap",
+						children: message_0.message
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "flex gap-2",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+							name: "answer",
+							required: true,
+							"aria-label": "答复内容",
+							disabled: answerState.loading
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							type: "submit",
+							size: "sm",
+							variant: "primary",
+							disabled: answerState.loading,
+							children: "提交答复"
+						})]
+					})]
+				}, message_0.id)),
+				answerState.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					role: "alert",
+					children: answerState.error.message
+				})
+			]
+		});
+		$[36] = answer;
+		$[37] = answerState;
+		$[38] = panel?.inbox.pending;
+		$[39] = t23;
+	} else t23 = $[39];
+	const t24 = "grid grid-cols-1 gap-4 @min-[800px]:grid-cols-3";
 	let t25;
-	if ($[44] === Symbol.for("react.memo_cache_sentinel")) {
-		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityChart, {});
-		$[44] = t25;
-	} else t25 = $[44];
-	let t26;
-	if ($[45] !== t) {
-		t26 = t("overviewActivityChart");
-		$[45] = t;
-		$[46] = t26;
-	} else t26 = $[46];
+	if ($[40] !== t) {
+		t25 = t("overviewChannels");
+		$[40] = t;
+		$[41] = t25;
+	} else t25 = $[41];
+	const t26 = `${channels.filter(_temp0).length}/${channels.length}`;
 	let t27;
-	if ($[47] === Symbol.for("react.memo_cache_sentinel")) {
-		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-[32px] leading-10 font-semibold tracking-tight",
-			children: OVERVIEW_METRICS.rate
-		});
-		$[47] = t27;
-	} else t27 = $[47];
-	let t28;
-	if ($[48] !== t) {
-		t28 = t("overviewPerHour");
-		$[48] = t;
-		$[49] = t28;
-	} else t28 = $[49];
-	let t29;
-	if ($[50] !== t28) {
-		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-sm text-[var(--dsw-alias-label-secondary)]",
-			children: t28
-		});
-		$[50] = t28;
-		$[51] = t29;
-	} else t29 = $[51];
-	let t30;
-	if ($[52] !== t26 || $[53] !== t29) {
-		t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-			"aria-label": t26,
-			className: "flex items-baseline gap-1.5 tabular-nums",
-			children: [t27, t29]
-		});
-		$[52] = t26;
-		$[53] = t29;
-		$[54] = t30;
-	} else t30 = $[54];
-	let t31;
-	if ($[55] !== t) {
-		t31 = t("overviewTotalMessages");
-		$[55] = t;
-		$[56] = t31;
-	} else t31 = $[56];
-	let t32;
-	if ($[57] !== t31) {
-		t32 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t31 });
-		$[57] = t31;
-		$[58] = t32;
-	} else t32 = $[58];
-	let t33;
-	if ($[59] !== t) {
-		t33 = t("overviewItems");
-		$[59] = t;
-		$[60] = t33;
-	} else t33 = $[60];
-	const t34 = `${OVERVIEW_METRICS.received} ${t33}`;
-	let t35;
-	if ($[61] !== t34) {
-		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-			className: "tabular-nums",
-			children: t34
-		});
-		$[61] = t34;
-		$[62] = t35;
-	} else t35 = $[62];
-	let t36;
-	if ($[63] !== t32 || $[64] !== t35) {
-		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex gap-2",
-			children: [t32, t35]
-		});
-		$[63] = t32;
-		$[64] = t35;
-		$[65] = t36;
-	} else t36 = $[65];
-	let t37;
-	if ($[66] !== t) {
-		t37 = t("overviewFiltered");
-		$[66] = t;
-		$[67] = t37;
-	} else t37 = $[67];
-	let t38;
-	if ($[68] !== t37) {
-		t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t37 });
-		$[68] = t37;
-		$[69] = t38;
-	} else t38 = $[69];
-	let t39;
-	if ($[70] !== t) {
-		t39 = t("overviewItems");
-		$[70] = t;
-		$[71] = t39;
-	} else t39 = $[71];
-	const t40 = `${OVERVIEW_METRICS.filtered} ${t39}`;
-	let t41;
-	if ($[72] !== t40) {
-		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-			className: "tabular-nums",
-			children: t40
-		});
-		$[72] = t40;
-		$[73] = t41;
-	} else t41 = $[73];
-	let t42;
-	if ($[74] !== t38 || $[75] !== t41) {
-		t42 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex gap-2",
-			children: [t38, t41]
-		});
-		$[74] = t38;
-		$[75] = t41;
-		$[76] = t42;
-	} else t42 = $[76];
-	let t43;
-	if ($[77] !== t36 || $[78] !== t42) {
-		t43 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
-			className: "mt-auto flex flex-col gap-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: [t36, t42]
-		});
-		$[77] = t36;
-		$[78] = t42;
-		$[79] = t43;
-	} else t43 = $[79];
-	let t44;
-	if ($[80] !== t20 || $[81] !== t21 || $[82] !== t23 || $[83] !== t24 || $[84] !== t30 || $[85] !== t43) {
-		t44 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(SummaryCard, {
-			title: t20,
-			meta: t21,
-			icon: t22,
-			actionLabel: t23,
-			onMore: t24,
-			background: t25,
-			children: [t30, t43]
-		});
-		$[80] = t20;
-		$[81] = t21;
-		$[82] = t23;
-		$[83] = t24;
-		$[84] = t30;
-		$[85] = t43;
-		$[86] = t44;
-	} else t44 = $[86];
-	let t45;
-	if ($[87] !== t) {
-		t45 = t("overviewTaskSummary");
-		$[87] = t;
-		$[88] = t45;
-	} else t45 = $[88];
-	let t46;
-	if ($[89] === Symbol.for("react.memo_cache_sentinel")) {
-		t46 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
+	if ($[42] === Symbol.for("react.memo_cache_sentinel")) {
+		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
 			width: 18,
 			height: 18,
 			className: "shrink-0"
 		});
-		$[89] = t46;
-	} else t46 = $[89];
-	let t47;
-	if ($[90] !== t) {
-		t47 = t("overviewMoreTasks");
-		$[90] = t;
-		$[91] = t47;
-	} else t47 = $[91];
-	let t48;
-	if ($[92] !== navigate) {
-		t48 = () => navigate("ticket");
-		$[92] = navigate;
-		$[93] = t48;
-	} else t48 = $[93];
-	let t49;
-	if ($[94] === Symbol.for("react.memo_cache_sentinel")) {
-		t49 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[42] = t27;
+	} else t27 = $[42];
+	let t28;
+	if ($[43] !== t) {
+		t28 = t("overviewMoreChannels");
+		$[43] = t;
+		$[44] = t28;
+	} else t28 = $[44];
+	let t29;
+	if ($[45] !== navigate) {
+		t29 = () => navigate("channel");
+		$[45] = navigate;
+		$[46] = t29;
+	} else t29 = $[46];
+	const t30 = channels.slice(0, 3).map(_temp1);
+	let t31;
+	if ($[47] !== t30) {
+		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "mt-auto grid grid-cols-3 gap-2.5",
+			children: t30
+		});
+		$[47] = t30;
+		$[48] = t31;
+	} else t31 = $[48];
+	let t32;
+	if ($[49] !== t) {
+		t32 = t("overviewOtherChannel");
+		$[49] = t;
+		$[50] = t32;
+	} else t32 = $[50];
+	let t33;
+	if ($[51] !== t32) {
+		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "mt-auto pt-3 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: t32
+		});
+		$[51] = t32;
+		$[52] = t33;
+	} else t33 = $[52];
+	let t34;
+	if ($[53] !== t25 || $[54] !== t26 || $[55] !== t28 || $[56] !== t29 || $[57] !== t31 || $[58] !== t33) {
+		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(SummaryCard, {
+			title: t25,
+			meta: t26,
+			icon: t27,
+			actionLabel: t28,
+			onMore: t29,
+			children: [t31, t33]
+		});
+		$[53] = t25;
+		$[54] = t26;
+		$[55] = t28;
+		$[56] = t29;
+		$[57] = t31;
+		$[58] = t33;
+		$[59] = t34;
+	} else t34 = $[59];
+	let t35;
+	if ($[60] !== t) {
+		t35 = t("overviewReceived");
+		$[60] = t;
+		$[61] = t35;
+	} else t35 = $[61];
+	let t36;
+	if ($[62] === Symbol.for("react.memo_cache_sentinel")) {
+		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
+			width: 18,
+			height: 18,
+			className: "shrink-0"
+		});
+		$[62] = t36;
+	} else t36 = $[62];
+	let t37;
+	if ($[63] !== t) {
+		t37 = t("overviewMoreActivity");
+		$[63] = t;
+		$[64] = t37;
+	} else t37 = $[64];
+	let t38;
+	if ($[65] !== navigate) {
+		t38 = () => navigate("trigger");
+		$[65] = navigate;
+		$[66] = t38;
+	} else t38 = $[66];
+	let t39;
+	if ($[67] === Symbol.for("react.memo_cache_sentinel")) {
+		t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityChart, {});
+		$[67] = t39;
+	} else t39 = $[67];
+	let t40;
+	if ($[68] !== t) {
+		t40 = t("overviewActivityChart");
+		$[68] = t;
+		$[69] = t40;
+	} else t40 = $[69];
+	let t41;
+	if ($[70] !== metrics.rate) {
+		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "text-[32px] leading-10 font-semibold tracking-tight",
-			children: OVERVIEW_METRICS.added
+			children: metrics.rate
 		});
-		$[94] = t49;
-	} else t49 = $[94];
-	let t50;
-	if ($[95] !== t) {
-		t50 = t("overviewAdded");
-		$[95] = t;
-		$[96] = t50;
-	} else t50 = $[96];
-	let t51;
-	if ($[97] !== t50) {
-		t51 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+		$[70] = metrics.rate;
+		$[71] = t41;
+	} else t41 = $[71];
+	let t42;
+	if ($[72] !== t) {
+		t42 = t("overviewPerHour");
+		$[72] = t;
+		$[73] = t42;
+	} else t42 = $[73];
+	let t43;
+	if ($[74] !== t42) {
+		t43 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "text-sm text-[var(--dsw-alias-label-secondary)]",
+			children: t42
+		});
+		$[74] = t42;
+		$[75] = t43;
+	} else t43 = $[75];
+	let t44;
+	if ($[76] !== t40 || $[77] !== t41 || $[78] !== t43) {
+		t44 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+			"aria-label": t40,
 			className: "flex items-baseline gap-1.5 tabular-nums",
-			children: [t49, /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "text-xs text-[var(--dsw-alias-label-secondary)]",
-				children: t50
-			})]
+			children: [t41, t43]
 		});
-		$[97] = t50;
-		$[98] = t51;
-	} else t51 = $[98];
+		$[76] = t40;
+		$[77] = t41;
+		$[78] = t43;
+		$[79] = t44;
+	} else t44 = $[79];
+	let t45;
+	if ($[80] !== t) {
+		t45 = t("overviewTotalMessages");
+		$[80] = t;
+		$[81] = t45;
+	} else t45 = $[81];
+	let t46;
+	if ($[82] !== t45) {
+		t46 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t45 });
+		$[82] = t45;
+		$[83] = t46;
+	} else t46 = $[83];
+	const t47 = metrics.received;
+	let t48;
+	if ($[84] !== t) {
+		t48 = t("overviewItems");
+		$[84] = t;
+		$[85] = t48;
+	} else t48 = $[85];
+	const t49 = `${t47} ${t48}`;
+	let t50;
+	if ($[86] !== t49) {
+		t50 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+			className: "tabular-nums",
+			children: t49
+		});
+		$[86] = t49;
+		$[87] = t50;
+	} else t50 = $[87];
+	let t51;
+	if ($[88] !== t46 || $[89] !== t50) {
+		t51 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex gap-2",
+			children: [t46, t50]
+		});
+		$[88] = t46;
+		$[89] = t50;
+		$[90] = t51;
+	} else t51 = $[90];
 	let t52;
-	if ($[99] !== t) {
-		t52 = OVERVIEW_TASK_SEGMENTS.map((segment) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+	if ($[91] !== t) {
+		t52 = t("overviewFiltered");
+		$[91] = t;
+		$[92] = t52;
+	} else t52 = $[92];
+	let t53;
+	if ($[93] !== t52) {
+		t53 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t52 });
+		$[93] = t52;
+		$[94] = t53;
+	} else t53 = $[94];
+	const t54 = metrics.filtered;
+	let t55;
+	if ($[95] !== t) {
+		t55 = t("overviewItems");
+		$[95] = t;
+		$[96] = t55;
+	} else t55 = $[96];
+	const t56 = `${t54} ${t55}`;
+	let t57;
+	if ($[97] !== t56) {
+		t57 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+			className: "tabular-nums",
+			children: t56
+		});
+		$[97] = t56;
+		$[98] = t57;
+	} else t57 = $[98];
+	let t58;
+	if ($[99] !== t53 || $[100] !== t57) {
+		t58 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex gap-2",
+			children: [t53, t57]
+		});
+		$[99] = t53;
+		$[100] = t57;
+		$[101] = t58;
+	} else t58 = $[101];
+	let t59;
+	if ($[102] !== t51 || $[103] !== t58) {
+		t59 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
+			className: "mt-auto flex flex-col gap-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			children: [t51, t58]
+		});
+		$[102] = t51;
+		$[103] = t58;
+		$[104] = t59;
+	} else t59 = $[104];
+	let t60;
+	if ($[105] !== t35 || $[106] !== t37 || $[107] !== t38 || $[108] !== t44 || $[109] !== t59) {
+		t60 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(SummaryCard, {
+			title: t35,
+			meta: "最近记录",
+			icon: t36,
+			actionLabel: t37,
+			onMore: t38,
+			background: t39,
+			children: [t44, t59]
+		});
+		$[105] = t35;
+		$[106] = t37;
+		$[107] = t38;
+		$[108] = t44;
+		$[109] = t59;
+		$[110] = t60;
+	} else t60 = $[110];
+	const T0 = SummaryCard;
+	let t61;
+	if ($[111] !== t) {
+		t61 = t("overviewTaskSummary");
+		$[111] = t;
+		$[112] = t61;
+	} else t61 = $[112];
+	let t62;
+	if ($[113] === Symbol.for("react.memo_cache_sentinel")) {
+		t62 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
+			width: 18,
+			height: 18,
+			className: "shrink-0"
+		});
+		$[113] = t62;
+	} else t62 = $[113];
+	let t63;
+	if ($[114] !== t) {
+		t63 = t("overviewMoreTasks");
+		$[114] = t;
+		$[115] = t63;
+	} else t63 = $[115];
+	let t64;
+	if ($[116] !== navigate) {
+		t64 = () => navigate("ticket");
+		$[116] = navigate;
+		$[117] = t64;
+	} else t64 = $[117];
+	const t65 = "flex min-h-0 flex-1 items-center justify-between gap-3";
+	const t66 = "flex h-full min-w-0 flex-col";
+	let t67;
+	if ($[118] !== metrics.added) {
+		t67 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "text-[32px] leading-10 font-semibold tracking-tight",
+			children: metrics.added
+		});
+		$[118] = metrics.added;
+		$[119] = t67;
+	} else t67 = $[119];
+	let t68;
+	if ($[120] !== t) {
+		t68 = t("overviewAdded");
+		$[120] = t;
+		$[121] = t68;
+	} else t68 = $[121];
+	let t69;
+	if ($[122] !== t68) {
+		t69 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "text-xs text-[var(--dsw-alias-label-secondary)]",
+			children: t68
+		});
+		$[122] = t68;
+		$[123] = t69;
+	} else t69 = $[123];
+	let t70;
+	if ($[124] !== t67 || $[125] !== t69) {
+		t70 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+			className: "flex items-baseline gap-1.5 tabular-nums",
+			children: [t67, t69]
+		});
+		$[124] = t67;
+		$[125] = t69;
+		$[126] = t70;
+	} else t70 = $[126];
+	const t71 = "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
+	let t72;
+	if ($[127] !== t) {
+		t72 = (segment_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: "col-span-2 grid grid-cols-subgrid items-center whitespace-nowrap",
 			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dt", {
 				className: "flex items-center gap-2",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: "size-1.5 shrink-0 rounded-full",
-					style: { background: segment.color }
-				}), t(segment.name)]
+					style: { background: segment_0.color }
+				}), t(segment_0.name)]
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 				className: "m-0 text-right tabular-nums",
-				children: segment.value
+				children: segment_0.value
 			})]
-		}, segment.name));
-		$[99] = t;
-		$[100] = t52;
-	} else t52 = $[100];
-	let t53;
-	if ($[101] !== t52) {
-		t53 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dl", {
-			className: "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: t52
+		}, segment_0.name);
+		$[127] = t;
+		$[128] = t72;
+	} else t72 = $[128];
+	const t73 = segments.map(t72);
+	let t74;
+	if ($[129] !== t73) {
+		t74 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dl", {
+			className: t71,
+			children: t73
 		});
-		$[101] = t52;
-		$[102] = t53;
-	} else t53 = $[102];
-	let t54;
-	if ($[103] !== t51 || $[104] !== t53) {
-		t54 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex h-full min-w-0 flex-col",
-			children: [t51, t53]
+		$[129] = t73;
+		$[130] = t74;
+	} else t74 = $[130];
+	let t75;
+	if ($[131] !== t70 || $[132] !== t74) {
+		t75 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t66,
+			children: [t70, t74]
 		});
-		$[103] = t51;
-		$[104] = t53;
-		$[105] = t54;
-	} else t54 = $[105];
-	let t55;
-	if ($[106] === Symbol.for("react.memo_cache_sentinel")) {
-		t55 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskChart, {});
-		$[106] = t55;
-	} else t55 = $[106];
-	let t56;
-	if ($[107] !== t54) {
-		t56 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex min-h-0 flex-1 items-center justify-between gap-3",
-			children: [t54, t55]
+		$[131] = t70;
+		$[132] = t74;
+		$[133] = t75;
+	} else t75 = $[133];
+	let t76;
+	if ($[134] !== segments) {
+		t76 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskChart, { segments });
+		$[134] = segments;
+		$[135] = t76;
+	} else t76 = $[135];
+	let t77;
+	if ($[136] !== t75 || $[137] !== t76) {
+		t77 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t65,
+			children: [t75, t76]
 		});
-		$[107] = t54;
-		$[108] = t56;
-	} else t56 = $[108];
-	let t57;
-	if ($[109] !== t45 || $[110] !== t47 || $[111] !== t48 || $[112] !== t56) {
-		t57 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SummaryCard, {
-			title: t45,
-			icon: t46,
-			actionLabel: t47,
-			onMore: t48,
-			children: t56
+		$[136] = t75;
+		$[137] = t76;
+		$[138] = t77;
+	} else t77 = $[138];
+	let t78;
+	if ($[139] !== T0 || $[140] !== t61 || $[141] !== t62 || $[142] !== t63 || $[143] !== t64 || $[144] !== t77) {
+		t78 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(T0, {
+			title: t61,
+			icon: t62,
+			actionLabel: t63,
+			onMore: t64,
+			children: t77
 		});
-		$[109] = t45;
-		$[110] = t47;
-		$[111] = t48;
-		$[112] = t56;
-		$[113] = t57;
-	} else t57 = $[113];
-	let t58;
-	if ($[114] !== t19 || $[115] !== t44 || $[116] !== t57) {
-		t58 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "grid grid-cols-1 gap-4 @min-[800px]:grid-cols-3",
+		$[139] = T0;
+		$[140] = t61;
+		$[141] = t62;
+		$[142] = t63;
+		$[143] = t64;
+		$[144] = t77;
+		$[145] = t78;
+	} else t78 = $[145];
+	let t79;
+	if ($[146] !== t34 || $[147] !== t60 || $[148] !== t78) {
+		t79 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t24,
 			children: [
-				t19,
-				t44,
-				t57
+				t34,
+				t60,
+				t78
 			]
 		});
-		$[114] = t19;
-		$[115] = t44;
-		$[116] = t57;
-		$[117] = t58;
-	} else t58 = $[117];
-	let t59;
-	if ($[118] !== t) {
-		t59 = t("overviewTaskViews");
-		$[118] = t;
-		$[119] = t59;
-	} else t59 = $[119];
-	let t60;
-	if ($[120] !== t) {
-		t60 = t("overviewTaskViews");
-		$[120] = t;
-		$[121] = t60;
-	} else t60 = $[121];
-	let t61;
-	if ($[122] !== setOverviewView || $[123] !== t60 || $[124] !== tabs || $[125] !== view) {
-		t61 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
+		$[146] = t34;
+		$[147] = t60;
+		$[148] = t78;
+		$[149] = t79;
+	} else t79 = $[149];
+	let t80;
+	if ($[150] !== t) {
+		t80 = t("overviewTaskViews");
+		$[150] = t;
+		$[151] = t80;
+	} else t80 = $[151];
+	let t81;
+	if ($[152] !== t) {
+		t81 = t("overviewTaskViews");
+		$[152] = t;
+		$[153] = t81;
+	} else t81 = $[153];
+	let t82;
+	if ($[154] !== setOverviewView || $[155] !== t81 || $[156] !== tabs || $[157] !== view) {
+		t82 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
 			size: "sm",
 			value: view,
 			onChange: setOverviewView,
 			items: tabs,
-			label: t60
+			label: t81
 		});
-		$[122] = setOverviewView;
-		$[123] = t60;
-		$[124] = tabs;
-		$[125] = view;
-		$[126] = t61;
-	} else t61 = $[126];
-	let t62;
-	if ($[127] !== t) {
-		t62 = t("overviewDemoDescription");
-		$[127] = t;
-		$[128] = t62;
-	} else t62 = $[128];
-	let t63;
-	if ($[129] !== t) {
-		t63 = t("overviewDemo");
-		$[129] = t;
-		$[130] = t63;
-	} else t63 = $[130];
-	let t64;
-	if ($[131] !== t63) {
-		t64 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-			tone: "quiet",
-			children: t63
+		$[154] = setOverviewView;
+		$[155] = t81;
+		$[156] = tabs;
+		$[157] = view;
+		$[158] = t82;
+	} else t82 = $[158];
+	const t83 = panel?.run.state;
+	const t84 = panel?.run.reason;
+	let t85;
+	if ($[159] !== t83 || $[160] !== t84) {
+		t85 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+			className: "text-xs",
+			children: [t83, t84]
 		});
-		$[131] = t63;
-		$[132] = t64;
-	} else t64 = $[132];
-	let t65;
-	if ($[133] !== t62 || $[134] !== t64) {
-		t65 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			title: t62,
-			children: t64
-		});
-		$[133] = t62;
-		$[134] = t64;
-		$[135] = t65;
-	} else t65 = $[135];
-	let t66;
-	if ($[136] !== t61 || $[137] !== t65) {
-		t66 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+		$[159] = t83;
+		$[160] = t84;
+		$[161] = t85;
+	} else t85 = $[161];
+	let t86;
+	if ($[162] !== t82 || $[163] !== t85) {
+		t86 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: "mb-2 flex flex-wrap items-center justify-between gap-3",
-			children: [t61, t65]
+			children: [t82, t85]
 		});
-		$[136] = t61;
-		$[137] = t65;
-		$[138] = t66;
-	} else t66 = $[138];
-	const t67 = `${id}-${view}-panel`;
-	const t68 = `${id}-${view}`;
-	let t69;
-	if ($[139] !== view) {
-		t69 = view === "recent" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+		$[162] = t82;
+		$[163] = t85;
+		$[164] = t86;
+	} else t86 = $[164];
+	const t87 = `${id_0}-${view}-panel`;
+	const t88 = `${id_0}-${view}`;
+	let t89;
+	if ($[165] !== tickets || $[166] !== view) {
+		t89 = view === "recent" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "pl-0",
-			children: OVERVIEW_TASKS.map(_temp4$1)
+			children: tickets.map(_temp10)
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Graph, {});
-		$[139] = view;
-		$[140] = t69;
-	} else t69 = $[140];
-	let t70;
-	if ($[141] !== t67 || $[142] !== t68 || $[143] !== t69) {
-		t70 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			id: t67,
+		$[165] = tickets;
+		$[166] = view;
+		$[167] = t89;
+	} else t89 = $[167];
+	let t90;
+	if ($[168] !== t87 || $[169] !== t88 || $[170] !== t89) {
+		t90 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			id: t87,
 			role: "tabpanel",
-			"aria-labelledby": t68,
+			"aria-labelledby": t88,
 			tabIndex: 0,
 			className: "rounded-2xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
-			children: t69
+			children: t89
 		});
-		$[141] = t67;
-		$[142] = t68;
-		$[143] = t69;
-		$[144] = t70;
-	} else t70 = $[144];
-	let t71;
-	if ($[145] !== t59 || $[146] !== t66 || $[147] !== t70) {
-		t71 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			"aria-label": t59,
-			children: [t66, t70]
+		$[168] = t87;
+		$[169] = t88;
+		$[170] = t89;
+		$[171] = t90;
+	} else t90 = $[171];
+	let t91;
+	if ($[172] !== t80 || $[173] !== t86 || $[174] !== t90) {
+		t91 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			"aria-label": t80,
+			children: [t86, t90]
 		});
-		$[145] = t59;
-		$[146] = t66;
-		$[147] = t70;
-		$[148] = t71;
-	} else t71 = $[148];
-	let t72;
-	if ($[149] !== t58 || $[150] !== t71) {
-		t72 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "@container flex flex-col gap-7 pb-10",
-			children: [t58, t71]
+		$[172] = t80;
+		$[173] = t86;
+		$[174] = t90;
+		$[175] = t91;
+	} else t91 = $[175];
+	let t92;
+	if ($[176] !== t23 || $[177] !== t79 || $[178] !== t91) {
+		t92 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t22,
+			children: [
+				t23,
+				t79,
+				t91
+			]
 		});
-		$[149] = t58;
-		$[150] = t71;
-		$[151] = t72;
-	} else t72 = $[151];
-	return t72;
+		$[176] = t23;
+		$[177] = t79;
+		$[178] = t91;
+		$[179] = t92;
+	} else t92 = $[179];
+	return t92;
 }
-function _temp4$1(task) {
+function _temp10(task) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, { task }, task.id);
 }
-function _temp3$4(channel_0) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelTile, { channel: channel_0 }, channel_0.name);
+function _temp1(channel_1) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelTile, { channel: channel_1 }, channel_1.name);
 }
-function _temp2$6(channel) {
-	return channel.connected;
+function _temp0(channel_0) {
+	return channel_0.connected;
 }
-function _temp$11(state) {
+function _temp9(message) {
+	return message.kind === "ask";
+}
+function _temp8(message_1) {
+	return message_1.kind === "ask";
+}
+function _temp7(ticket) {
+	return Date.parse(ticket.createdAt) >= Date.now() - 864e5;
+}
+function _temp6(trigger_0) {
+	return Date.parse(trigger_0.at) >= Date.now() - 36e5;
+}
+function _temp5$1(trigger) {
+	return !trigger.mentioned;
+}
+function _temp4$4(channel) {
+	return {
+		kind: channel.id,
+		name: channel.name,
+		connected: channel.enabled && channel.accounts.some(_temp3$6)
+	};
+}
+function _temp3$6(account) {
+	return account.status === "online";
+}
+function _temp2$8(state_0) {
+	return state_0.data.panel;
+}
+function _temp$10(state) {
 	return state.overview.view;
+}
+// src/client/pages/setting/components/projects.tsx
+function Projects() {
+	const $ = (0, import_dist.c)(79);
+	const { t } = useTranslation();
+	const projects = useStore(_temp$9);
+	const refreshedAt = useStore(_temp2$7);
+	const { receiveProject, receivePanel } = useActions();
+	let t0;
+	if ($[0] !== receiveProject) {
+		t0 = async (projectId, enabled) => {
+			const project = await patchApiNexusProjectsId({ id: encodeURIComponent(projectId) }, { enabled });
+			if (!project || project.id !== projectId) throw new Error("项目设置保存失败");
+			receiveProject(project);
+		};
+		$[0] = receiveProject;
+		$[1] = t0;
+	} else t0 = $[1];
+	const [saving, toggle] = useAsyncFn(t0);
+	let t1;
+	if ($[2] !== receivePanel) {
+		t1 = async () => {
+			const projects_0 = await postApiNexusProjectsRefresh();
+			if (!Array.isArray(projects_0)) throw new Error("项目发现失败");
+			const panel = await getApiNexusPanel();
+			if (!panel?.projects || !panel.settings) throw new Error("项目列表加载失败");
+			receivePanel(panel);
+		};
+		$[2] = receivePanel;
+		$[3] = t1;
+	} else t1 = $[3];
+	const [refreshing, refresh] = useAsyncFn(t1);
+	const id = (0, react.useId)();
+	const [query, setQuery] = (0, react.useState)("");
+	let t2;
+	if ($[4] !== id || $[5] !== projects || $[6] !== query || $[7] !== refresh || $[8] !== refreshedAt || $[9] !== refreshing.error || $[10] !== refreshing.loading || $[11] !== saving.error || $[12] !== saving.loading || $[13] !== t || $[14] !== toggle) {
+		const normalized = query.trim().toLocaleLowerCase();
+		const candidates = projects;
+		const visible = candidates.filter((project_0) => !normalized || [project_0.name, project_0.directory].join(" ").toLocaleLowerCase().includes(normalized));
+		let T0;
+		let t10;
+		let t3;
+		let t4;
+		let t5;
+		let t6;
+		let t7;
+		let t8;
+		let t9;
+		if ($[16] !== candidates || $[17] !== id || $[18] !== t) {
+			const enabled_0 = candidates.filter(_temp3$5).length;
+			t9 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
+			t10 = id;
+			t8 = "flex flex-wrap items-start justify-between gap-3 p-5 pb-4";
+			t7 = "min-w-0";
+			t5 = "flex flex-wrap items-center gap-2";
+			let t11;
+			if ($[28] !== t) {
+				t11 = t("settingProjects");
+				$[28] = t;
+				$[29] = t11;
+			} else t11 = $[29];
+			if ($[30] !== id || $[31] !== t11) {
+				t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+					id,
+					className: "m-0 text-sm font-medium",
+					children: t11
+				});
+				$[30] = id;
+				$[31] = t11;
+				$[32] = t6;
+			} else t6 = $[32];
+			T0 = _deepseek_ai_dsh_client_ui_primitives.Tag;
+			t3 = "quiet";
+			t4 = t("settingEnabledCount", {
+				enabled: enabled_0,
+				total: candidates.length
+			});
+			$[16] = candidates;
+			$[17] = id;
+			$[18] = t;
+			$[19] = T0;
+			$[20] = t10;
+			$[21] = t3;
+			$[22] = t4;
+			$[23] = t5;
+			$[24] = t6;
+			$[25] = t7;
+			$[26] = t8;
+			$[27] = t9;
+		} else {
+			T0 = $[19];
+			t10 = $[20];
+			t3 = $[21];
+			t4 = $[22];
+			t5 = $[23];
+			t6 = $[24];
+			t7 = $[25];
+			t8 = $[26];
+			t9 = $[27];
+		}
+		let t11;
+		if ($[33] !== T0 || $[34] !== t3 || $[35] !== t4) {
+			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(T0, {
+				tone: t3,
+				children: t4
+			});
+			$[33] = T0;
+			$[34] = t3;
+			$[35] = t4;
+			$[36] = t11;
+		} else t11 = $[36];
+		let t12;
+		if ($[37] !== t11 || $[38] !== t5 || $[39] !== t6) {
+			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: t5,
+				children: [t6, t11]
+			});
+			$[37] = t11;
+			$[38] = t5;
+			$[39] = t6;
+			$[40] = t12;
+		} else t12 = $[40];
+		let t13;
+		if ($[41] !== t) {
+			t13 = t("settingProjectsDescription");
+			$[41] = t;
+			$[42] = t13;
+		} else t13 = $[42];
+		let t14;
+		if ($[43] !== t13) {
+			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				children: t13
+			});
+			$[43] = t13;
+			$[44] = t14;
+		} else t14 = $[44];
+		let t15;
+		if ($[45] !== t12 || $[46] !== t14 || $[47] !== t7) {
+			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: t7,
+				children: [t12, t14]
+			});
+			$[45] = t12;
+			$[46] = t14;
+			$[47] = t7;
+			$[48] = t15;
+		} else t15 = $[48];
+		const t16 = refreshing.loading || saving.loading;
+		let t17;
+		if ($[49] !== refresh) {
+			t17 = () => void refresh();
+			$[49] = refresh;
+			$[50] = t17;
+		} else t17 = $[50];
+		let t18;
+		if ($[51] !== t) {
+			t18 = t("settingRefresh");
+			$[51] = t;
+			$[52] = t18;
+		} else t18 = $[52];
+		let t19;
+		if ($[53] !== t16 || $[54] !== t17 || $[55] !== t18) {
+			t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
+				disabled: t16,
+				onClick: t17,
+				children: t18
+			});
+			$[53] = t16;
+			$[54] = t17;
+			$[55] = t18;
+			$[56] = t19;
+		} else t19 = $[56];
+		let t20;
+		if ($[57] !== t15 || $[58] !== t19 || $[59] !== t8) {
+			t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+				className: t8,
+				children: [t15, t19]
+			});
+			$[57] = t15;
+			$[58] = t19;
+			$[59] = t8;
+			$[60] = t20;
+		} else t20 = $[60];
+		let t21;
+		if ($[61] !== t) {
+			t21 = t("settingSearchProjects");
+			$[61] = t;
+			$[62] = t21;
+		} else t21 = $[62];
+		let t22;
+		if ($[63] !== t) {
+			t22 = t("settingSearchProjects");
+			$[63] = t;
+			$[64] = t22;
+		} else t22 = $[64];
+		let t23;
+		if ($[65] === Symbol.for("react.memo_cache_sentinel")) {
+			t23 = (event) => setQuery(event.currentTarget.value);
+			$[65] = t23;
+		} else t23 = $[65];
+		let t24;
+		if ($[66] !== query || $[67] !== t21 || $[68] !== t22) {
+			t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+				type: "search",
+				"aria-label": t21,
+				placeholder: t22,
+				value: query,
+				onChange: t23,
+				className: "min-w-40 flex-1 !text-xs @min-[620px]:max-w-xs"
+			});
+			$[66] = query;
+			$[67] = t21;
+			$[68] = t22;
+			$[69] = t24;
+		} else t24 = $[69];
+		let t25;
+		if ($[70] !== refreshedAt || $[71] !== t) {
+			t25 = refreshedAt && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
+				dateTime: refreshedAt,
+				title: refreshedAt,
+				className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+				children: [
+					t("settingLastSynced"),
+					" ",
+					new Date(refreshedAt).toLocaleTimeString()
+				]
+			});
+			$[70] = refreshedAt;
+			$[71] = t;
+			$[72] = t25;
+		} else t25 = $[72];
+		let t26;
+		if ($[73] !== t24 || $[74] !== t25) {
+			t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-center justify-between gap-3 px-5 pb-4",
+				children: [t24, t25]
+			});
+			$[73] = t24;
+			$[74] = t25;
+			$[75] = t26;
+		} else t26 = $[75];
+		let t27;
+		if ($[76] !== refreshing.error || $[77] !== saving.error) {
+			t27 = (saving.error || refreshing.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				className: "px-5",
+				children: saving.error?.message ?? refreshing.error?.message
+			});
+			$[76] = refreshing.error;
+			$[77] = saving.error;
+			$[78] = t27;
+		} else t27 = $[78];
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: t9,
+			"aria-labelledby": t10,
+			children: [
+				t20,
+				t26,
+				t27,
+				visible.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+					className: "m-0 list-none p-0",
+					children: visible.map((project_2) => {
+						const pathId = `${id}-path-${project_2.id}`;
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+							className: "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: "flex min-w-0 flex-1 basis-48 items-start gap-2",
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+									className: "flex size-6 shrink-0 cursor-pointer items-center justify-center",
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+										type: "checkbox",
+										disabled: saving.loading || refreshing.loading || !project_2.remoteUrl && !project_2.enabled,
+										checked: Boolean(project_2.enabled),
+										"aria-label": t("settingSelectProject", { name: project_2.name }),
+										"aria-describedby": pathId,
+										onChange: (event_0) => void toggle(project_2.id, event_0.currentTarget.checked),
+										className: "size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]"
+									})
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: "min-w-0 pt-0.5",
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+										className: "truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]",
+										children: project_2.name
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+										id: pathId,
+										className: "m-0 mt-1 truncate font-mono text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+										title: project_2.directory,
+										children: project_2.directory
+									})]
+								})]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: "ml-auto flex shrink-0 items-center gap-2",
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									type: "button",
+									size: "sm",
+									variant: "outline",
+									disabled: true,
+									children: t("settingOpenSession")
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									type: "button",
+									size: "sm",
+									variant: "outline",
+									disabled: true,
+									children: t("settingOpenRepository")
+								})]
+							})]
+						}, project_2.id);
+					})
+				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "flex flex-col items-center gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 text-center",
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
+							className: "m-0 text-xs font-medium",
+							children: t(normalized ? "settingNoMatchingProjects" : "settingNoProjects")
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							className: "m-0 max-w-md text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+							children: t(normalized ? "settingNoMatchingProjectsHelp" : "settingNoProjectsHelp")
+						}),
+						normalized && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							size: "sm",
+							variant: "ghost",
+							onClick: () => setQuery(""),
+							children: t("settingClearSearch")
+						})
+					]
+				})
+			]
+		});
+		$[4] = id;
+		$[5] = projects;
+		$[6] = query;
+		$[7] = refresh;
+		$[8] = refreshedAt;
+		$[9] = refreshing.error;
+		$[10] = refreshing.loading;
+		$[11] = saving.error;
+		$[12] = saving.loading;
+		$[13] = t;
+		$[14] = toggle;
+		$[15] = t2;
+	} else t2 = $[15];
+	return t2;
+}
+function _temp3$5(project_1) {
+	return Boolean(project_1.enabled);
+}
+function _temp2$7(state_0) {
+	return state_0.setting.refreshedAt;
+}
+function _temp$9(state) {
+	return state.setting.projects;
 }
 // src/client/pages/setting/model.ts
 const GROUPS = {
@@ -55006,67 +55451,11 @@ const LIMITS = {
 		max: 3600
 	}
 };
-const SAMPLE_WORKSPACES = [
-	{
-		id: "project-nexus",
-		workspaceId: "workspace-nexus",
-		name: "dsh-nexus",
-		directory: "E:\\projects\\dsh-nexus",
-		remoteUrl: "https://github.com/dsh-tauri-desk/dsh-nexus.git",
-		enabled: true,
-		available: true
-	},
-	{
-		id: "project-kernel",
-		workspaceId: "workspace-kernel",
-		name: "dsh-third-kernel",
-		directory: "E:\\projects\\dsh-third-kernel",
-		remoteUrl: "https://github.com/hairyf/dsh-third-kernel.git",
-		enabled: true,
-		available: true
-	},
-	{
-		id: "project-lab",
-		workspaceId: "workspace-lab",
-		name: "local-lab",
-		directory: "E:\\projects\\local-lab",
-		remoteUrl: null,
-		enabled: false,
-		available: true
-	},
-	{
-		id: "project-archived",
-		workspaceId: "workspace-archived",
-		name: "archived-console",
-		directory: "E:\\archive\\console",
-		remoteUrl: "https://gitlab.com/team/console.git",
-		enabled: false,
-		available: false
-	}
-];
 function validSettings(settings) {
 	return typeof settings.autoMerge === "boolean" && Object.entries(LIMITS).every(([key, limits]) => {
 		const value = settings[key];
 		return Number.isInteger(value) && value >= limits.min && value <= limits.max;
 	});
-}
-function eligibleProjects(projects) {
-	return projects.filter((project) => project.available && Boolean(project.remoteUrl?.trim()));
-}
-function refreshProjects(current, discovered = SAMPLE_WORKSPACES) {
-	const known = new Map(current.map((project) => [project.workspaceId, project]));
-	return [...discovered.map((project) => {
-		const existing = known.get(project.workspaceId);
-		known.delete(project.workspaceId);
-		return {
-			...project,
-			id: existing?.id ?? project.id,
-			enabled: existing?.enabled ?? project.enabled
-		};
-	}), ...[...known.values()].map((project) => ({
-		...project,
-		available: false
-	}))];
 }
 function initialSettings() {
 	const saved = {
@@ -55079,7 +55468,7 @@ function initialSettings() {
 	};
 	return {
 		section: "projects",
-		projects: refreshProjects([]),
+		projects: [],
 		saved,
 		draft: { ...saved },
 		refreshedAt: null,
@@ -55087,311 +55476,72 @@ function initialSettings() {
 		invalid: false
 	};
 }
-// src/client/pages/setting/components/projects.tsx
-function Projects() {
-	const $ = (0, import_dist.c)(45);
-	const { t } = useTranslation();
-	const projects = useStore(_temp$10);
-	const refreshedAt = useStore(_temp2$5);
-	const { refreshSettingProjects, toggleSettingProject } = useActions();
-	const id = (0, react.useId)();
-	const [query, setQuery] = (0, react.useState)("");
-	let t0;
-	if ($[0] !== id || $[1] !== projects || $[2] !== query || $[3] !== refreshSettingProjects || $[4] !== refreshedAt || $[5] !== t || $[6] !== toggleSettingProject) {
-		const normalized = query.trim().toLocaleLowerCase();
-		const candidates = eligibleProjects(projects);
-		const visible = candidates.filter((project) => !normalized || [project.name, project.directory].join(" ").toLocaleLowerCase().includes(normalized));
-		const enabled = candidates.filter(_temp3$3).length;
-		let t1;
-		if ($[8] !== t) {
-			t1 = t("settingProjects");
-			$[8] = t;
-			$[9] = t1;
-		} else t1 = $[9];
-		let t2;
-		if ($[10] !== id || $[11] !== t1) {
-			t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-				id,
-				className: "m-0 text-sm font-medium",
-				children: t1
-			});
-			$[10] = id;
-			$[11] = t1;
-			$[12] = t2;
-		} else t2 = $[12];
-		const t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex flex-wrap items-center gap-2",
-			children: [t2, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-				tone: "quiet",
-				children: t("settingEnabledCount", {
-					enabled,
-					total: candidates.length
-				})
-			})]
-		});
-		let t4;
-		if ($[13] !== t) {
-			t4 = t("settingProjectsDescription");
-			$[13] = t;
-			$[14] = t4;
-		} else t4 = $[14];
-		let t5;
-		if ($[15] !== t4) {
-			t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t4
-			});
-			$[15] = t4;
-			$[16] = t5;
-		} else t5 = $[16];
-		let t6;
-		if ($[17] !== t3 || $[18] !== t5) {
-			t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "min-w-0",
-				children: [t3, t5]
-			});
-			$[17] = t3;
-			$[18] = t5;
-			$[19] = t6;
-		} else t6 = $[19];
-		let t7;
-		if ($[20] !== refreshSettingProjects) {
-			t7 = () => refreshSettingProjects((/* @__PURE__ */ new Date()).toISOString());
-			$[20] = refreshSettingProjects;
-			$[21] = t7;
-		} else t7 = $[21];
-		let t8;
-		if ($[22] !== t) {
-			t8 = t("settingRefresh");
-			$[22] = t;
-			$[23] = t8;
-		} else t8 = $[23];
-		let t9;
-		if ($[24] !== t7 || $[25] !== t8) {
-			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "outline",
-				onClick: t7,
-				children: t8
-			});
-			$[24] = t7;
-			$[25] = t8;
-			$[26] = t9;
-		} else t9 = $[26];
-		let t10;
-		if ($[27] !== t6 || $[28] !== t9) {
-			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-				className: "flex flex-wrap items-start justify-between gap-3 p-5 pb-4",
-				children: [t6, t9]
-			});
-			$[27] = t6;
-			$[28] = t9;
-			$[29] = t10;
-		} else t10 = $[29];
-		let t11;
-		if ($[30] !== t) {
-			t11 = t("settingSearchProjects");
-			$[30] = t;
-			$[31] = t11;
-		} else t11 = $[31];
-		let t12;
-		if ($[32] !== t) {
-			t12 = t("settingSearchProjects");
-			$[32] = t;
-			$[33] = t12;
-		} else t12 = $[33];
-		let t13;
-		if ($[34] === Symbol.for("react.memo_cache_sentinel")) {
-			t13 = (event) => setQuery(event.currentTarget.value);
-			$[34] = t13;
-		} else t13 = $[34];
-		let t14;
-		if ($[35] !== query || $[36] !== t11 || $[37] !== t12) {
-			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "search",
-				"aria-label": t11,
-				placeholder: t12,
-				value: query,
-				onChange: t13,
-				className: "min-w-40 flex-1 !text-xs @min-[620px]:max-w-xs"
-			});
-			$[35] = query;
-			$[36] = t11;
-			$[37] = t12;
-			$[38] = t14;
-		} else t14 = $[38];
-		let t15;
-		if ($[39] !== refreshedAt || $[40] !== t) {
-			t15 = refreshedAt && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
-				dateTime: refreshedAt,
-				title: refreshedAt,
-				className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
-				children: [
-					t("settingLastSynced"),
-					" ",
-					new Date(refreshedAt).toLocaleTimeString()
-				]
-			});
-			$[39] = refreshedAt;
-			$[40] = t;
-			$[41] = t15;
-		} else t15 = $[41];
-		let t16;
-		if ($[42] !== t14 || $[43] !== t15) {
-			t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center justify-between gap-3 px-5 pb-4",
-				children: [t14, t15]
-			});
-			$[42] = t14;
-			$[43] = t15;
-			$[44] = t16;
-		} else t16 = $[44];
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
-			"aria-labelledby": id,
-			children: [
-				t10,
-				t16,
-				visible.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-					className: "m-0 list-none p-0",
-					children: visible.map((project_1) => {
-						const pathId = `${id}-path-${project_1.id}`;
-						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-							className: "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: "flex min-w-0 flex-1 basis-48 items-start gap-2",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-									className: "flex size-6 shrink-0 cursor-pointer items-center justify-center",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-										type: "checkbox",
-										checked: project_1.enabled,
-										"aria-label": t("settingSelectProject", { name: project_1.name }),
-										"aria-describedby": pathId,
-										onChange: (event_0) => toggleSettingProject(project_1.id, event_0.currentTarget.checked),
-										className: "size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]"
-									})
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: "min-w-0 pt-0.5",
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: "truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]",
-										children: project_1.name
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										id: pathId,
-										className: "m-0 mt-1 truncate font-mono text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-										title: project_1.directory,
-										children: project_1.directory
-									})]
-								})]
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: "ml-auto flex shrink-0 items-center gap-2",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									type: "button",
-									size: "sm",
-									variant: "outline",
-									disabled: true,
-									children: t("settingOpenSession")
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-									type: "button",
-									size: "sm",
-									variant: "outline",
-									disabled: true,
-									children: t("settingOpenRepository")
-								})]
-							})]
-						}, project_1.id);
-					})
-				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "flex flex-col items-center gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 text-center",
-					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
-							className: "m-0 text-xs font-medium",
-							children: t(normalized ? "settingNoMatchingProjects" : "settingNoProjects")
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: "m-0 max-w-md text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-							children: t(normalized ? "settingNoMatchingProjectsHelp" : "settingNoProjectsHelp")
-						}),
-						normalized && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							size: "sm",
-							variant: "ghost",
-							onClick: () => setQuery(""),
-							children: t("settingClearSearch")
-						})
-					]
-				})
-			]
-		});
-		$[0] = id;
-		$[1] = projects;
-		$[2] = query;
-		$[3] = refreshSettingProjects;
-		$[4] = refreshedAt;
-		$[5] = t;
-		$[6] = toggleSettingProject;
-		$[7] = t0;
-	} else t0 = $[7];
-	return t0;
-}
-function _temp3$3(project_0) {
-	return project_0.enabled;
-}
-function _temp2$5(state_0) {
-	return state_0.setting.refreshedAt;
-}
-function _temp$10(state) {
-	return state.setting.projects;
-}
 // src/client/pages/setting/components/runtime.tsx
 function Runtime() {
-	const $ = (0, import_dist.c)(89);
+	const $ = (0, import_dist.c)(95);
 	const { t } = useTranslation();
-	const section = useStore(_temp$9);
-	const draft = useStore(_temp2$4);
-	const saved = useStore(_temp3$2);
-	const { editSettings, saveSettings, resetSettings } = useActions();
+	const section = useStore(_temp$8);
+	const draft = useStore(_temp2$6);
+	const saved = useStore(_temp3$4);
+	const ready = useStore(_temp4$3);
+	const { editSettings, receiveSettings, resetSettings } = useActions();
+	let t0;
+	if ($[0] !== draft || $[1] !== receiveSettings || $[2] !== section) {
+		t0 = async () => {
+			if (section === "projects") return;
+			const settings = await patchApiNexusSettings(Object.fromEntries(GROUPS[section].map((key) => [key, draft[key]])));
+			if (!settings || !validSettings(settings)) throw new Error("设置保存失败");
+			receiveSettings(settings);
+		};
+		$[0] = draft;
+		$[1] = receiveSettings;
+		$[2] = section;
+		$[3] = t0;
+	} else t0 = $[3];
+	const [saving, save] = useAsyncFn(t0);
 	const prefix = (0, react.useId)();
 	if (section === "projects") return null;
-	const t0 = GROUPS[section];
-	let t1;
-	if ($[0] !== draft || $[1] !== saved || $[2] !== t0) {
-		let t2;
-		if ($[4] !== draft || $[5] !== saved) {
-			t2 = (key) => draft[key] !== saved[key];
-			$[4] = draft;
-			$[5] = saved;
-			$[6] = t2;
-		} else t2 = $[6];
-		t1 = t0.some(t2);
-		$[0] = draft;
-		$[1] = saved;
-		$[2] = t0;
-		$[3] = t1;
-	} else t1 = $[3];
-	const dirty = t1;
+	const t1 = GROUPS[section];
 	let t2;
-	if ($[7] !== draft || $[8] !== saved || $[9] !== section) {
+	if ($[4] !== draft || $[5] !== saved || $[6] !== t1) {
 		let t3;
-		if ($[11] !== draft) {
-			t3 = (key_0) => [key_0, draft[key_0]];
-			$[11] = draft;
-			$[12] = t3;
-		} else t3 = $[12];
-		t2 = validSettings({
-			...saved,
-			...Object.fromEntries(GROUPS[section].map(t3))
-		});
-		$[7] = draft;
-		$[8] = saved;
-		$[9] = section;
-		$[10] = t2;
-	} else t2 = $[10];
-	const valid = t2;
+		if ($[8] !== draft || $[9] !== saved) {
+			t3 = (key_0) => draft[key_0] !== saved[key_0];
+			$[8] = draft;
+			$[9] = saved;
+			$[10] = t3;
+		} else t3 = $[10];
+		t2 = t1.some(t3);
+		$[4] = draft;
+		$[5] = saved;
+		$[6] = t1;
+		$[7] = t2;
+	} else t2 = $[7];
+	const dirty = t2;
 	let t3;
+	if ($[11] !== draft || $[12] !== saved || $[13] !== section) {
+		let t4;
+		if ($[15] !== draft) {
+			t4 = (key_1) => [key_1, draft[key_1]];
+			$[15] = draft;
+			$[16] = t4;
+		} else t4 = $[16];
+		t3 = validSettings({
+			...saved,
+			...Object.fromEntries(GROUPS[section].map(t4))
+		});
+		$[11] = draft;
+		$[12] = saved;
+		$[13] = section;
+		$[14] = t3;
+	} else t3 = $[14];
+	const valid = t3;
 	let t4;
 	let t5;
 	let t6;
 	let t7;
-	if ($[13] !== dirty || $[14] !== draft || $[15] !== editSettings || $[16] !== prefix || $[17] !== saveSettings || $[18] !== section || $[19] !== t || $[20] !== valid) {
+	let t8;
+	if ($[17] !== dirty || $[18] !== draft || $[19] !== editSettings || $[20] !== prefix || $[21] !== save || $[22] !== section || $[23] !== t || $[24] !== valid) {
 		const fields = [
 			{
 				key: "maxWorkers",
@@ -55424,69 +55574,68 @@ function Runtime() {
 				unit: "settingSecondsUnit"
 			}
 		];
-		t3 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
-		if ($[26] !== dirty || $[27] !== saveSettings || $[28] !== section || $[29] !== valid) {
-			t4 = (event) => {
+		t4 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
+		if ($[30] !== dirty || $[31] !== save || $[32] !== valid) {
+			t5 = (event) => {
 				event.preventDefault();
-				if (valid && dirty) saveSettings(section);
+				if (valid && dirty) save();
 			};
-			$[26] = dirty;
-			$[27] = saveSettings;
-			$[28] = section;
-			$[29] = valid;
-			$[30] = t4;
-		} else t4 = $[30];
-		t5 = `${prefix}-runtime`;
-		const t8 = `${prefix}-runtime`;
-		const t9 = section === "execution" ? "settingExecution" : "settingDelivery";
-		let t10;
-		if ($[31] !== t || $[32] !== t9) {
-			t10 = t(t9);
-			$[31] = t;
-			$[32] = t9;
-			$[33] = t10;
-		} else t10 = $[33];
+			$[30] = dirty;
+			$[31] = save;
+			$[32] = valid;
+			$[33] = t5;
+		} else t5 = $[33];
+		t6 = `${prefix}-runtime`;
+		const t9 = `${prefix}-runtime`;
+		const t10 = section === "execution" ? "settingExecution" : "settingDelivery";
 		let t11;
-		if ($[34] !== t10 || $[35] !== t8) {
-			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-				id: t8,
-				className: "m-0 text-sm font-medium",
-				children: t10
-			});
-			$[34] = t10;
-			$[35] = t8;
+		if ($[34] !== t || $[35] !== t10) {
+			t11 = t(t10);
+			$[34] = t;
+			$[35] = t10;
 			$[36] = t11;
 		} else t11 = $[36];
-		const t12 = section === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription";
-		let t13;
-		if ($[37] !== t || $[38] !== t12) {
-			t13 = t(t12);
-			$[37] = t;
-			$[38] = t12;
-			$[39] = t13;
-		} else t13 = $[39];
+		let t12;
+		if ($[37] !== t11 || $[38] !== t9) {
+			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+				id: t9,
+				className: "m-0 text-sm font-medium",
+				children: t11
+			});
+			$[37] = t11;
+			$[38] = t9;
+			$[39] = t12;
+		} else t12 = $[39];
+		const t13 = section === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription";
 		let t14;
-		if ($[40] !== t13) {
-			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		if ($[40] !== t || $[41] !== t13) {
+			t14 = t(t13);
+			$[40] = t;
+			$[41] = t13;
+			$[42] = t14;
+		} else t14 = $[42];
+		let t15;
+		if ($[43] !== t14) {
+			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t13
+				children: t14
 			});
-			$[40] = t13;
-			$[41] = t14;
-		} else t14 = $[41];
-		if ($[42] !== t11 || $[43] !== t14) {
-			t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-				className: "px-4 py-3",
-				children: [t11, t14]
-			});
-			$[42] = t11;
 			$[43] = t14;
-			$[44] = t6;
-		} else t6 = $[44];
-		t7 = fields.filter((field) => GROUPS[section].includes(field.key)).map((field_0) => {
+			$[44] = t15;
+		} else t15 = $[44];
+		if ($[45] !== t12 || $[46] !== t15) {
+			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+				className: "px-4 py-3",
+				children: [t12, t15]
+			});
+			$[45] = t12;
+			$[46] = t15;
+			$[47] = t7;
+		} else t7 = $[47];
+		t8 = fields.filter((field) => GROUPS[section].includes(field.key)).map((field_0) => {
 			const limits = LIMITS[field_0.key];
 			const value = draft[field_0.key];
-			const disabled = field_0.key === "autoMergeMaxLines" && !draft.autoMerge;
+			const disabled = field_0.key === "autoMergeMaxLines";
 			const invalid = !Number.isInteger(value) || value < limits.min || value > limits.max;
 			const id = `${prefix}-${field_0.key}`;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -55534,29 +55683,29 @@ function Runtime() {
 				})]
 			}, field_0.key);
 		});
-		$[13] = dirty;
-		$[14] = draft;
-		$[15] = editSettings;
-		$[16] = prefix;
-		$[17] = saveSettings;
-		$[18] = section;
-		$[19] = t;
-		$[20] = valid;
-		$[21] = t3;
-		$[22] = t4;
-		$[23] = t5;
-		$[24] = t6;
-		$[25] = t7;
+		$[17] = dirty;
+		$[18] = draft;
+		$[19] = editSettings;
+		$[20] = prefix;
+		$[21] = save;
+		$[22] = section;
+		$[23] = t;
+		$[24] = valid;
+		$[25] = t4;
+		$[26] = t5;
+		$[27] = t6;
+		$[28] = t7;
+		$[29] = t8;
 	} else {
-		t3 = $[21];
-		t4 = $[22];
-		t5 = $[23];
-		t6 = $[24];
-		t7 = $[25];
+		t4 = $[25];
+		t5 = $[26];
+		t6 = $[27];
+		t7 = $[28];
+		t8 = $[29];
 	}
-	let t8;
-	if ($[45] !== draft || $[46] !== editSettings || $[47] !== section || $[48] !== t) {
-		t8 = section === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+	let t9;
+	if ($[48] !== draft || $[49] !== editSettings || $[50] !== section || $[51] !== t) {
+		t9 = section === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
 			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "min-w-0",
@@ -55568,164 +55717,180 @@ function Runtime() {
 					children: t("settingAutoMergeHelp")
 				})]
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+				disabled: true,
 				checked: draft.autoMerge,
 				label: t("settingAutoMerge"),
 				onChange: (autoMerge) => editSettings({ autoMerge })
 			})]
 		});
-		$[45] = draft;
-		$[46] = editSettings;
-		$[47] = section;
-		$[48] = t;
-		$[49] = t8;
-	} else t8 = $[49];
-	let t9;
-	if ($[50] !== t) {
-		t9 = t("settingPersistenceOnly");
-		$[50] = t;
-		$[51] = t9;
-	} else t9 = $[51];
-	let t10;
-	if ($[52] !== t9) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t9
-		});
+		$[48] = draft;
+		$[49] = editSettings;
+		$[50] = section;
+		$[51] = t;
 		$[52] = t9;
-		$[53] = t10;
-	} else t10 = $[53];
+	} else t9 = $[52];
+	let t10;
+	if ($[53] !== saving.error) {
+		t10 = saving.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "px-4",
+			children: saving.error.message
+		});
+		$[53] = saving.error;
+		$[54] = t10;
+	} else t10 = $[54];
 	let t11;
-	if ($[54] !== dirty || $[55] !== t || $[56] !== valid) {
-		t11 = dirty && !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+	if ($[55] !== t) {
+		t11 = t("settingPersistenceOnly");
+		$[55] = t;
+		$[56] = t11;
+	} else t11 = $[56];
+	let t12;
+	if ($[57] !== t11) {
+		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: t11
+		});
+		$[57] = t11;
+		$[58] = t12;
+	} else t12 = $[58];
+	let t13;
+	if ($[59] !== dirty || $[60] !== t || $[61] !== valid) {
+		t13 = dirty && !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
 			className: "m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]",
 			children: t("settingInvalid")
 		});
-		$[54] = dirty;
-		$[55] = t;
-		$[56] = valid;
-		$[57] = t11;
-	} else t11 = $[57];
-	let t12;
-	if ($[58] !== t10 || $[59] !== t11) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "min-w-0 flex-1 basis-60",
-			children: [t10, t11]
-		});
-		$[58] = t10;
-		$[59] = t11;
-		$[60] = t12;
-	} else t12 = $[60];
-	const t13 = !dirty;
+		$[59] = dirty;
+		$[60] = t;
+		$[61] = valid;
+		$[62] = t13;
+	} else t13 = $[62];
 	let t14;
-	if ($[61] !== resetSettings || $[62] !== section) {
-		t14 = () => resetSettings(section);
-		$[61] = resetSettings;
-		$[62] = section;
-		$[63] = t14;
-	} else t14 = $[63];
-	let t15;
-	if ($[64] !== t) {
-		t15 = t("settingDiscard");
-		$[64] = t;
-		$[65] = t15;
-	} else t15 = $[65];
+	if ($[63] !== t12 || $[64] !== t13) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "min-w-0 flex-1 basis-60",
+			children: [t12, t13]
+		});
+		$[63] = t12;
+		$[64] = t13;
+		$[65] = t14;
+	} else t14 = $[65];
+	const t15 = !dirty;
 	let t16;
-	if ($[66] !== t13 || $[67] !== t14 || $[68] !== t15) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+	if ($[66] !== resetSettings || $[67] !== section) {
+		t16 = () => resetSettings(section);
+		$[66] = resetSettings;
+		$[67] = section;
+		$[68] = t16;
+	} else t16 = $[68];
+	let t17;
+	if ($[69] !== t) {
+		t17 = t("settingDiscard");
+		$[69] = t;
+		$[70] = t17;
+	} else t17 = $[70];
+	let t18;
+	if ($[71] !== t15 || $[72] !== t16 || $[73] !== t17) {
+		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			type: "button",
 			size: "sm",
 			variant: "ghost",
-			disabled: t13,
-			onClick: t14,
-			children: t15
+			disabled: t15,
+			onClick: t16,
+			children: t17
 		});
-		$[66] = t13;
-		$[67] = t14;
-		$[68] = t15;
-		$[69] = t16;
-	} else t16 = $[69];
-	const t17 = !dirty || !valid;
-	let t18;
-	if ($[70] !== t) {
-		t18 = t("settingSave");
-		$[70] = t;
-		$[71] = t18;
-	} else t18 = $[71];
-	let t19;
-	if ($[72] !== t17 || $[73] !== t18) {
-		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+		$[71] = t15;
+		$[72] = t16;
+		$[73] = t17;
+		$[74] = t18;
+	} else t18 = $[74];
+	const t19 = !ready || saving.loading || !dirty || !valid;
+	let t20;
+	if ($[75] !== t) {
+		t20 = t("settingSave");
+		$[75] = t;
+		$[76] = t20;
+	} else t20 = $[76];
+	let t21;
+	if ($[77] !== t19 || $[78] !== t20) {
+		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			type: "submit",
 			size: "sm",
 			variant: "primary",
-			disabled: t17,
-			children: t18
+			disabled: t19,
+			children: t20
 		});
-		$[72] = t17;
-		$[73] = t18;
-		$[74] = t19;
-	} else t19 = $[74];
-	let t20;
-	if ($[75] !== t16 || $[76] !== t19) {
-		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex items-center gap-2",
-			children: [t16, t19]
-		});
-		$[75] = t16;
-		$[76] = t19;
-		$[77] = t20;
-	} else t20 = $[77];
-	let t21;
-	if ($[78] !== t12 || $[79] !== t20) {
-		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
-			className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
-			children: [t12, t20]
-		});
-		$[78] = t12;
-		$[79] = t20;
-		$[80] = t21;
-	} else t21 = $[80];
+		$[77] = t19;
+		$[78] = t20;
+		$[79] = t21;
+	} else t21 = $[79];
 	let t22;
-	if ($[81] !== t21 || $[82] !== t3 || $[83] !== t4 || $[84] !== t5 || $[85] !== t6 || $[86] !== t7 || $[87] !== t8) {
-		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-			className: t3,
-			onSubmit: t4,
-			"aria-labelledby": t5,
+	if ($[80] !== t18 || $[81] !== t21) {
+		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex items-center gap-2",
+			children: [t18, t21]
+		});
+		$[80] = t18;
+		$[81] = t21;
+		$[82] = t22;
+	} else t22 = $[82];
+	let t23;
+	if ($[83] !== t14 || $[84] !== t22) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
+			className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
+			children: [t14, t22]
+		});
+		$[83] = t14;
+		$[84] = t22;
+		$[85] = t23;
+	} else t23 = $[85];
+	let t24;
+	if ($[86] !== t10 || $[87] !== t23 || $[88] !== t4 || $[89] !== t5 || $[90] !== t6 || $[91] !== t7 || $[92] !== t8 || $[93] !== t9) {
+		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+			className: t4,
+			onSubmit: t5,
+			"aria-labelledby": t6,
 			children: [
-				t6,
 				t7,
 				t8,
-				t21
+				t9,
+				t10,
+				t23
 			]
 		});
-		$[81] = t21;
-		$[82] = t3;
-		$[83] = t4;
-		$[84] = t5;
-		$[85] = t6;
-		$[86] = t7;
-		$[87] = t8;
-		$[88] = t22;
-	} else t22 = $[88];
-	return t22;
+		$[86] = t10;
+		$[87] = t23;
+		$[88] = t4;
+		$[89] = t5;
+		$[90] = t6;
+		$[91] = t7;
+		$[92] = t8;
+		$[93] = t9;
+		$[94] = t24;
+	} else t24 = $[94];
+	return t24;
 }
-function _temp3$2(state_1) {
+function _temp4$3(state_2) {
+	return state_2.data.panel !== null;
+}
+function _temp3$4(state_1) {
 	return state_1.setting.saved;
 }
-function _temp2$4(state_0) {
+function _temp2$6(state_0) {
 	return state_0.setting.draft;
 }
-function _temp$9(state) {
+function _temp$8(state) {
 	return state.setting.section;
 }
 // src/client/pages/setting/page.tsx
 function Setting() {
-	const $ = (0, import_dist.c)(90);
+	const $ = (0, import_dist.c)(80);
 	const { t } = useTranslation();
-	const activeSection = useStore(_temp$8);
-	const notice = useStore(_temp2$3);
-	const invalid = useStore(_temp3$1);
-	const executionDirty = useStore(_temp4);
+	const activeSection = useStore(_temp$7);
+	const notice = useStore(_temp2$5);
+	const invalid = useStore(_temp3$3);
+	const executionDirty = useStore(_temp4$2);
 	const deliveryDirty = useStore(_temp5);
 	const { setSettingSection } = useActions();
 	const id = (0, react.useId)();
@@ -55809,44 +55974,22 @@ function Setting() {
 				$[41] = t17;
 				$[42] = t18;
 			} else t18 = $[42];
-			let t19;
 			if ($[43] !== t16 || $[44] !== t18) {
-				t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t16, t18] });
+				t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
+					className: "flex flex-wrap items-start justify-between gap-3",
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t16, t18] })
+				});
 				$[43] = t16;
 				$[44] = t18;
-				$[45] = t19;
-			} else t19 = $[45];
-			let t20;
-			if ($[46] !== t) {
-				t20 = t("overviewDemo");
-				$[46] = t;
-				$[47] = t20;
-			} else t20 = $[47];
-			let t21;
-			if ($[48] !== t20) {
-				t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-					tone: "quiet",
-					children: t20
-				});
-				$[48] = t20;
-				$[49] = t21;
-			} else t21 = $[49];
-			if ($[50] !== t19 || $[51] !== t21) {
-				t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-					className: "flex flex-wrap items-start justify-between gap-3",
-					children: [t19, t21]
-				});
-				$[50] = t19;
-				$[51] = t21;
-				$[52] = t10;
-			} else t10 = $[52];
+				$[45] = t10;
+			} else t10 = $[45];
 			t6 = "grid min-w-0 gap-4 @min-[740px]:grid-cols-[160px_minmax(0,1fr)] @min-[940px]:gap-5";
 			t14 = "self-start @min-[740px]:sticky @min-[740px]:top-4";
-			if ($[53] !== t) {
+			if ($[46] !== t) {
 				t11 = t("settingNavigation");
-				$[53] = t;
-				$[54] = t11;
-			} else t11 = $[54];
+				$[46] = t;
+				$[47] = t11;
+			} else t11 = $[47];
 			t12 = "flex flex-wrap gap-1 rounded-xl bg-[var(--dsw-alias-card-fill)] p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0";
 			t13 = sections.map((section) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				id: `${id}-${section.value}`,
@@ -55892,35 +56035,35 @@ function Setting() {
 			t9 = $[32];
 		}
 		let t15;
-		if ($[55] !== t11 || $[56] !== t12 || $[57] !== t13) {
+		if ($[48] !== t11 || $[49] !== t12 || $[50] !== t13) {
 			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("nav", {
 				"aria-label": t11,
 				className: t12,
 				children: t13
 			});
-			$[55] = t11;
-			$[56] = t12;
-			$[57] = t13;
-			$[58] = t15;
-		} else t15 = $[58];
-		if ($[59] !== t14 || $[60] !== t15) {
+			$[48] = t11;
+			$[49] = t12;
+			$[50] = t13;
+			$[51] = t15;
+		} else t15 = $[51];
+		if ($[52] !== t14 || $[53] !== t15) {
 			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("aside", {
 				className: t14,
 				children: t15
 			});
-			$[59] = t14;
-			$[60] = t15;
-			$[61] = t7;
-		} else t7 = $[61];
+			$[52] = t14;
+			$[53] = t15;
+			$[54] = t7;
+		} else t7 = $[54];
 		t0 = `${id}-content`;
 		t1 = "region";
 		t2 = `${id}-${activeSection}`;
 		t3 = "flex min-w-0 flex-col gap-4";
-		if ($[62] !== activeSection) {
+		if ($[55] !== activeSection) {
 			t4 = activeSection === "projects" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Projects, {}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {});
-			$[62] = activeSection;
-			$[63] = t4;
-		} else t4 = $[63];
+			$[55] = activeSection;
+			$[56] = t4;
+		} else t4 = $[56];
 		t5 = invalid ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
 			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
@@ -55963,35 +56106,28 @@ function Setting() {
 		t9 = $[18];
 	}
 	let t11;
-	if ($[64] !== t) {
-		t11 = t("settingPreview");
-		$[64] = t;
-		$[65] = t11;
-	} else t11 = $[65];
-	let t12;
-	if ($[66] !== deliveryDirty || $[67] !== executionDirty || $[68] !== t) {
-		t12 = (executionDirty || deliveryDirty) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+	if ($[57] !== deliveryDirty || $[58] !== executionDirty || $[59] !== t) {
+		t11 = (executionDirty || deliveryDirty) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "ml-1",
 			children: t("settingUnsaved")
 		});
-		$[66] = deliveryDirty;
-		$[67] = executionDirty;
-		$[68] = t;
-		$[69] = t12;
-	} else t12 = $[69];
-	let t13;
-	if ($[70] !== t11 || $[71] !== t12) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+		$[57] = deliveryDirty;
+		$[58] = executionDirty;
+		$[59] = t;
+		$[60] = t11;
+	} else t11 = $[60];
+	let t12;
+	if ($[61] !== t11) {
+		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: [t11, t12]
+			children: ["保存后由宿主持久化。", t11]
 		});
-		$[70] = t11;
-		$[71] = t12;
-		$[72] = t13;
-	} else t13 = $[72];
-	let t14;
-	if ($[73] !== t0 || $[74] !== t1 || $[75] !== t13 || $[76] !== t2 || $[77] !== t3 || $[78] !== t4 || $[79] !== t5) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+		$[61] = t11;
+		$[62] = t12;
+	} else t12 = $[62];
+	let t13;
+	if ($[63] !== t0 || $[64] !== t1 || $[65] !== t12 || $[66] !== t2 || $[67] !== t3 || $[68] !== t4 || $[69] !== t5) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			id: t0,
 			role: t1,
 			"aria-labelledby": t2,
@@ -55999,297 +56135,62 @@ function Setting() {
 			children: [
 				t4,
 				t5,
-				t13
+				t12
 			]
 		});
-		$[73] = t0;
-		$[74] = t1;
-		$[75] = t13;
-		$[76] = t2;
-		$[77] = t3;
-		$[78] = t4;
-		$[79] = t5;
-		$[80] = t14;
-	} else t14 = $[80];
-	let t15;
-	if ($[81] !== t14 || $[82] !== t6 || $[83] !== t7) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+		$[63] = t0;
+		$[64] = t1;
+		$[65] = t12;
+		$[66] = t2;
+		$[67] = t3;
+		$[68] = t4;
+		$[69] = t5;
+		$[70] = t13;
+	} else t13 = $[70];
+	let t14;
+	if ($[71] !== t13 || $[72] !== t6 || $[73] !== t7) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: t6,
-			children: [t7, t14]
+			children: [t7, t13]
 		});
-		$[81] = t14;
-		$[82] = t6;
-		$[83] = t7;
-		$[84] = t15;
-	} else t15 = $[84];
-	let t16;
-	if ($[85] !== t10 || $[86] !== t15 || $[87] !== t8 || $[88] !== t9) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[71] = t13;
+		$[72] = t6;
+		$[73] = t7;
+		$[74] = t14;
+	} else t14 = $[74];
+	let t15;
+	if ($[75] !== t10 || $[76] !== t14 || $[77] !== t8 || $[78] !== t9) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: t8,
 			"aria-label": t9,
-			children: [t10, t15]
+			children: [t10, t14]
 		});
-		$[85] = t10;
-		$[86] = t15;
-		$[87] = t8;
-		$[88] = t9;
-		$[89] = t16;
-	} else t16 = $[89];
-	return t16;
+		$[75] = t10;
+		$[76] = t14;
+		$[77] = t8;
+		$[78] = t9;
+		$[79] = t15;
+	} else t15 = $[79];
+	return t15;
 }
 function _temp5(t0) {
 	const { setting: t1 } = t0;
 	const { draft: draft_0, saved: saved_0 } = t1;
 	return GROUPS.delivery.some((key_0) => draft_0[key_0] !== saved_0[key_0]);
 }
-function _temp4(t0) {
+function _temp4$2(t0) {
 	const { setting: t1 } = t0;
 	const { draft, saved } = t1;
 	return GROUPS.execution.some((key) => draft[key] !== saved[key]);
 }
-function _temp3$1(state_1) {
+function _temp3$3(state_1) {
 	return state_1.setting.invalid;
 }
-function _temp2$3(state_0) {
+function _temp2$5(state_0) {
 	return state_0.setting.notice;
 }
-function _temp$8(state) {
+function _temp$7(state) {
 	return state.setting.section;
-}
-// src/client/pages/ticket/detail/components/arrivals.tsx
-function Arrivals(t0) {
-	const $ = (0, import_dist.c)(18);
-	const { arrivals } = t0;
-	const { t } = useTranslation();
-	let t1;
-	if ($[0] !== t) {
-		t1 = (arrival) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-			className: "flex min-w-0 items-start gap-2 text-[13px] leading-5",
-			children: [
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
-					state: "idle",
-					size: 6,
-					className: "mt-[7px] shrink-0"
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: "min-w-0 flex-1 text-[var(--dsw-alias-label-secondary)] [overflow-wrap:anywhere]",
-					children: t(arrival.message)
-				}),
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: "shrink-0 whitespace-nowrap text-xs text-[var(--dsw-alias-label-tertiary)] tabular-nums",
-					children: t("ticketArrivedAgo", { count: arrival.hoursAgo })
-				})
-			]
-		}, `${arrival.message}-${arrival.hoursAgo}`);
-		$[0] = t;
-		$[1] = t1;
-	} else t1 = $[1];
-	const row = t1;
-	if (!arrivals.length) {
-		let t2;
-		if ($[2] !== t) {
-			t2 = t("ticketArrivalsEmpty");
-			$[2] = t;
-			$[3] = t2;
-		} else t2 = $[3];
-		let t3;
-		if ($[4] !== t2) {
-			t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t2
-			});
-			$[4] = t2;
-			$[5] = t3;
-		} else t3 = $[5];
-		return t3;
-	}
-	let t2;
-	if ($[6] !== arrivals || $[7] !== row) {
-		t2 = arrivals.slice(0, 2).map(row);
-		$[6] = arrivals;
-		$[7] = row;
-		$[8] = t2;
-	} else t2 = $[8];
-	let t3;
-	if ($[9] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "m-0 flex list-none flex-col gap-2 p-0",
-			children: t2
-		});
-		$[9] = t2;
-		$[10] = t3;
-	} else t3 = $[10];
-	let t4;
-	if ($[11] !== arrivals || $[12] !== row || $[13] !== t) {
-		t4 = arrivals.length > 2 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
-			className: "group",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("summary", {
-				className: "flex cursor-pointer list-none items-center gap-3 rounded-md py-1 text-xs text-[var(--dsw-alias-label-secondary)] hover:text-[var(--dsw-alias-label-primary)] focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)] [&::-webkit-details-marker]:hidden",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						"aria-hidden": "true",
-						className: "h-px flex-1 bg-[var(--dsw-alias-border-l3)]"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "group-open:hidden",
-						children: t("ticketExpandArrivals")
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "hidden group-open:inline",
-						children: t("ticketCollapseArrivals")
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						"aria-hidden": "true",
-						className: "h-px flex-1 bg-[var(--dsw-alias-border-l3)]"
-					})
-				]
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-				className: "m-0 mt-3 flex list-none flex-col gap-2 p-0",
-				children: arrivals.slice(2).map(row)
-			})]
-		});
-		$[11] = arrivals;
-		$[12] = row;
-		$[13] = t;
-		$[14] = t4;
-	} else t4 = $[14];
-	let t5;
-	if ($[15] !== t3 || $[16] !== t4) {
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex min-w-0 flex-col gap-3",
-			children: [t3, t4]
-		});
-		$[15] = t3;
-		$[16] = t4;
-		$[17] = t5;
-	} else t5 = $[17];
-	return t5;
-}
-// src/client/pages/ticket/detail/components/section.tsx
-function Section(t0) {
-	const $ = (0, import_dist.c)(7);
-	const { title, meta, children } = t0;
-	let t1;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "h-3 w-0.5 shrink-0 rounded-full bg-[var(--dsw-alias-state-business-primary)] mt-px",
-			"aria-hidden": "true"
-		});
-		$[0] = t1;
-	} else t1 = $[0];
-	let t2;
-	if ($[1] !== meta || $[2] !== title) {
-		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
-			className: "m-0 flex flex-wrap items-center gap-2 text-sm leading-5 font-medium",
-			children: [
-				t1,
-				title,
-				meta
-			]
-		});
-		$[1] = meta;
-		$[2] = title;
-		$[3] = t2;
-	} else t2 = $[3];
-	let t3;
-	if ($[4] !== children || $[5] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "flex min-w-0 flex-col gap-3 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] px-4 py-4",
-			children: [t2, children]
-		});
-		$[4] = children;
-		$[5] = t2;
-		$[6] = t3;
-	} else t3 = $[6];
-	return t3;
-}
-// src/client/pages/ticket/detail/components/issues.tsx
-function Issues(t0) {
-	const $ = (0, import_dist.c)(12);
-	const { issues } = t0;
-	const { t } = useTranslation();
-	let t1;
-	if ($[0] !== t) {
-		t1 = t("ticketIssues");
-		$[0] = t;
-		$[1] = t1;
-	} else t1 = $[1];
-	let t2;
-	if ($[2] !== issues || $[3] !== t) {
-		t2 = issues.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
-			children: t("ticketIssueCount", {
-				total: issues.length,
-				open: issues.filter(_temp$7).length
-			})
-		});
-		$[2] = issues;
-		$[3] = t;
-		$[4] = t2;
-	} else t2 = $[4];
-	let t3;
-	if ($[5] !== issues || $[6] !== t) {
-		t3 = issues.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "m-0 flex list-none flex-col gap-2.5 p-0",
-			children: issues.map((issue_0) => {
-				const Icon = issue_0.state === "open" ? IssueOpenIcon : IssueClosedIcon;
-				return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-					type: "button",
-					className: "group/issue flex w-full cursor-pointer items-start gap-2 rounded-md border-0 bg-transparent p-0 text-left text-[13px] leading-5 font-[inherit] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						title: t(issue_0.state === "open" ? "ticketIssueOpen" : "ticketIssueClosed"),
-						className: "mt-0.5 shrink-0",
-						style: { color: `var(--dsw-alias-state-${issue_0.state === "open" ? "success" : "done"}-primary)` },
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
-							width: 14,
-							height: 14
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "sr-only",
-							children: t(issue_0.state === "open" ? "ticketIssueOpen" : "ticketIssueClosed")
-						})]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: "min-w-0 text-[var(--dsw-alias-label-secondary)] [overflow-wrap:anywhere]",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "underline-offset-4 group-hover/issue:underline group-focus-visible/issue:underline",
-							children: t(issue_0.title)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "ml-2 inline-flex flex-wrap gap-1 align-middle",
-							children: issue_0.labels.map(_temp2$2)
-						})]
-					})]
-				}) }, issue_0.title);
-			})
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: t("ticketIssuesEmpty")
-		});
-		$[5] = issues;
-		$[6] = t;
-		$[7] = t3;
-	} else t3 = $[7];
-	let t4;
-	if ($[8] !== t1 || $[9] !== t2 || $[10] !== t3) {
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
-			title: t1,
-			meta: t2,
-			children: t3
-		});
-		$[8] = t1;
-		$[9] = t2;
-		$[10] = t3;
-		$[11] = t4;
-	} else t4 = $[11];
-	return t4;
-}
-function _temp2$2(label) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-		tone: label === "bug" ? "danger" : label === "linux" ? "success" : "info",
-		className: "!px-1.5 !py-0 !text-[10px] !leading-4",
-		children: label
-	}, label);
-}
-function _temp$7(issue) {
-	return issue.state === "open";
 }
 // src/client/pages/ticket/detail/components/metric.tsx
 function Metric(t0) {
@@ -56336,918 +56237,395 @@ function Metric(t0) {
 	} else t4 = $[9];
 	return t4;
 }
-// src/client/pages/ticket/detail/components/pr-status.tsx
-function PrStatus(t0) {
-	const $ = (0, import_dist.c)(24);
-	const { pullRequest } = t0;
-	const { t } = useTranslation();
-	const blocked = pullRequest.state === "open" && (pullRequest.checks === "failure" || pullRequest.reviewDecision === "changes-requested" || pullRequest.mergeability === "conflicting");
-	const tone = pullRequest.state === "draft" ? "draft" : blocked ? "blocked" : pullRequest.state;
+// src/client/pages/ticket/detail/components/section.tsx
+function Section(t0) {
+	const $ = (0, import_dist.c)(7);
+	const { title, meta, children } = t0;
 	let t1;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "h-3 w-0.5 shrink-0 rounded-full bg-[var(--dsw-alias-state-business-primary)] mt-px",
+			"aria-hidden": "true"
+		});
+		$[0] = t1;
+	} else t1 = $[0];
 	let t2;
-	let t3;
-	let t4;
-	let t5;
-	let t6;
-	let t7;
-	let t8;
-	if ($[0] !== pullRequest.number || $[1] !== t || $[2] !== tone) {
-		const { Icon, color, label } = {
-			open: {
-				Icon: PullRequestIcon,
-				color: "var(--dsw-alias-state-success-primary)",
-				label: "ticketPrOpen"
-			},
-			draft: {
-				Icon: PullRequestDraftIcon,
-				color: "var(--dsw-alias-label-tertiary)",
-				label: "ticketPrDraft"
-			},
-			blocked: {
-				Icon: PullRequestIcon,
-				color: "var(--dsw-alias-state-warn-primary)",
-				label: "ticketPrBlocked"
-			},
-			merged: {
-				Icon: PullRequestMergedIcon,
-				color: "var(--dsw-alias-state-done-primary)",
-				label: "ticketPrMerged"
-			},
-			closed: {
-				Icon: PullRequestClosedIcon,
-				color: "var(--dsw-alias-state-error-primary)",
-				label: "ticketPrClosed"
-			}
-		}[tone];
-		const description = `PR #${pullRequest.number} · ${t(label)}`;
-		t3 = "button";
-		t4 = description;
-		t5 = description;
-		t6 = "inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-2.5 text-xs leading-4 font-medium text-[var(--dsw-alias-label-primary)] outline-none transition-colors hover:bg-[var(--dsw-alias-interactive-bg-hover)] active:bg-[var(--dsw-alias-interactive-bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]";
-		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
-			width: 12,
-			height: 12,
-			style: { color }
-		});
-		const t9 = `PR #${pullRequest.number}`;
-		if ($[11] !== t9) {
-			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "tabular-nums",
-				children: t9
-			});
-			$[11] = t9;
-			$[12] = t8;
-		} else t8 = $[12];
-		t1 = "text-[11px] font-normal text-[var(--dsw-alias-label-secondary)]";
-		t2 = t(label);
-		$[0] = pullRequest.number;
-		$[1] = t;
-		$[2] = tone;
-		$[3] = t1;
-		$[4] = t2;
-		$[5] = t3;
-		$[6] = t4;
-		$[7] = t5;
-		$[8] = t6;
-		$[9] = t7;
-		$[10] = t8;
-	} else {
-		t1 = $[3];
-		t2 = $[4];
-		t3 = $[5];
-		t4 = $[6];
-		t5 = $[7];
-		t6 = $[8];
-		t7 = $[9];
-		t8 = $[10];
-	}
-	let t9;
-	if ($[13] !== t1 || $[14] !== t2) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: t1,
-			children: t2
-		});
-		$[13] = t1;
-		$[14] = t2;
-		$[15] = t9;
-	} else t9 = $[15];
-	let t10;
-	if ($[16] !== t3 || $[17] !== t4 || $[18] !== t5 || $[19] !== t6 || $[20] !== t7 || $[21] !== t8 || $[22] !== t9) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-			type: t3,
-			"aria-label": t4,
-			title: t5,
-			className: t6,
+	if ($[1] !== meta || $[2] !== title) {
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
+			className: "m-0 flex flex-wrap items-center gap-2 text-sm leading-5 font-medium",
 			children: [
-				t7,
-				t8,
-				t9
+				t1,
+				title,
+				meta
 			]
 		});
-		$[16] = t3;
-		$[17] = t4;
-		$[18] = t5;
-		$[19] = t6;
-		$[20] = t7;
-		$[21] = t8;
-		$[22] = t9;
-		$[23] = t10;
-	} else t10 = $[23];
-	return t10;
-}
-// src/client/pages/ticket/detail/components/relations.tsx
-function Relations(t0) {
-	const $ = (0, import_dist.c)(6);
-	const { tasks, empty, clear } = t0;
-	const { t } = useTranslation();
-	const { openTicket } = useActions();
-	let t1;
-	if ($[0] !== clear || $[1] !== empty || $[2] !== openTicket || $[3] !== t || $[4] !== tasks) {
-		t1 = tasks.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "m-0 flex list-none flex-col gap-2 p-0",
-			children: tasks.map((task) => {
-				const status = OVERVIEW_STATUS[task.status];
-				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-					className: "flex flex-wrap items-center gap-x-2 gap-y-1",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "ghost",
-						size: "sm",
-						className: "max-w-full !h-auto !justify-start !whitespace-normal text-left",
-						onClick: () => openTicket(task.id),
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-[var(--dsw-alias-label-secondary)]",
-							children: task.id
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "[overflow-wrap:anywhere]",
-							children: t(task.title)
-						})]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-						tone: status.tone,
-						children: t(status.label)
-					})]
-				}, task.id);
-			})
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-			className: "m-0 flex items-center gap-2 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
-				state: clear ? "done" : "idle",
-				size: 7
-			}), empty]
+		$[1] = meta;
+		$[2] = title;
+		$[3] = t2;
+	} else t2 = $[3];
+	let t3;
+	if ($[4] !== children || $[5] !== t2) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "flex min-w-0 flex-col gap-3 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] px-4 py-4",
+			children: [t2, children]
 		});
-		$[0] = clear;
-		$[1] = empty;
-		$[2] = openTicket;
-		$[3] = t;
-		$[4] = tasks;
-		$[5] = t1;
-	} else t1 = $[5];
-	return t1;
+		$[4] = children;
+		$[5] = t2;
+		$[6] = t3;
+	} else t3 = $[6];
+	return t3;
 }
 // src/client/pages/ticket/detail/page.tsx
 function TicketDetail() {
-	const $ = (0, import_dist.c)(196);
+	const $ = (0, import_dist.c)(41);
 	const { t } = useTranslation();
-	const { go } = useActions();
-	const executionDescriptionId = (0, react.useId)();
+	const { go, openTicket, openThread, receiveTicket, receivePanel } = useActions();
 	const { ticketId, returnTo } = useStore(_temp$6);
-	let associations;
-	let connected;
-	let dependencies;
-	let preview;
+	const detail = useStore(_temp2$4);
 	let t0;
+	if ($[0] !== receiveTicket || $[1] !== ticketId) {
+		t0 = async () => {
+			if (!ticketId) return;
+			const result = await getApiNexusTicketsId({ id: encodeURIComponent(ticketId) });
+			if (!result?.ticket || result.ticket.id !== ticketId) throw new Error("任务不存在或无法读取");
+			receiveTicket(result);
+		};
+		$[0] = receiveTicket;
+		$[1] = ticketId;
+		$[2] = t0;
+	} else t0 = $[2];
+	const { isLoading, error } = useAsyncState(t0, void 0);
 	let t1;
-	let t2;
-	let t3;
-	let t4;
-	let t5;
-	let t6;
-	let t7;
-	let t8;
-	let task_0;
-	if ($[0] !== go || $[1] !== returnTo || $[2] !== t || $[3] !== ticketId) {
-		t8 = Symbol.for("react.early_return_sentinel");
-		bb0: {
-			let t9;
-			if ($[18] !== ticketId) {
-				t9 = (task) => task.id === ticketId;
-				$[18] = ticketId;
-				$[19] = t9;
-			} else t9 = $[19];
-			task_0 = OVERVIEW_TASKS.find(t9);
-			let t10;
-			if ($[20] === Symbol.for("react.memo_cache_sentinel")) {
-				t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
-					width: 16,
-					height: 16
-				});
-				$[20] = t10;
-			} else t10 = $[20];
-			let t11;
-			if ($[21] !== go || $[22] !== returnTo) {
-				t11 = () => go(returnTo);
-				$[21] = go;
-				$[22] = returnTo;
-				$[23] = t11;
-			} else t11 = $[23];
-			let t12;
-			if ($[24] !== t) {
-				t12 = t("ticketBack");
-				$[24] = t;
-				$[25] = t12;
-			} else t12 = $[25];
-			let t13;
-			if ($[26] !== t11 || $[27] !== t12) {
-				t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					variant: "ghost",
-					size: "sm",
-					icon: t10,
-					onClick: t11,
-					children: t12
-				});
-				$[26] = t11;
-				$[27] = t12;
-				$[28] = t13;
-			} else t13 = $[28];
-			const back = t13;
-			if (!task_0) {
-				let t14;
-				if ($[29] !== back) {
-					t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
-					$[29] = back;
-					$[30] = t14;
-				} else t14 = $[30];
-				let t15;
-				if ($[31] !== t) {
-					t15 = t("ticketNotFound");
-					$[31] = t;
-					$[32] = t15;
-				} else t15 = $[32];
-				let t16;
-				if ($[33] !== t15) {
-					t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-						className: "text-base font-medium",
-						children: t15
-					});
-					$[33] = t15;
-					$[34] = t16;
-				} else t16 = $[34];
-				let t17;
-				if ($[35] !== t) {
-					t17 = t("ticketNotFoundDescription");
-					$[35] = t;
-					$[36] = t17;
-				} else t17 = $[36];
-				let t18;
-				if ($[37] !== t17) {
-					t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "mt-2 text-[13px] text-[var(--dsw-alias-label-secondary)]",
-						children: t17
-					});
-					$[37] = t17;
-					$[38] = t18;
-				} else t18 = $[38];
-				let t19;
-				if ($[39] !== go) {
-					t19 = () => go("ticket");
-					$[39] = go;
-					$[40] = t19;
-				} else t19 = $[40];
-				let t20;
-				if ($[41] !== t) {
-					t20 = t("tabTickets");
-					$[41] = t;
-					$[42] = t20;
-				} else t20 = $[42];
-				let t21;
-				if ($[43] !== t19 || $[44] !== t20) {
-					t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "outline",
-						size: "sm",
-						onClick: t19,
-						className: "mt-4",
-						children: t20
-					});
-					$[43] = t19;
-					$[44] = t20;
-					$[45] = t21;
-				} else t21 = $[45];
-				let t22;
-				if ($[46] !== t16 || $[47] !== t18 || $[48] !== t21) {
-					t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: "rounded-2xl border border-[var(--dsw-alias-border-l3)] p-6",
-						children: [
-							t16,
-							t18,
-							t21
-						]
-					});
-					$[46] = t16;
-					$[47] = t18;
-					$[48] = t21;
-					$[49] = t22;
-				} else t22 = $[49];
-				let t23;
-				if ($[50] !== t14 || $[51] !== t22) {
-					t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-						className: "flex flex-col gap-5 pb-10",
-						children: [t14, t22]
-					});
-					$[50] = t14;
-					$[51] = t22;
-					$[52] = t23;
-				} else t23 = $[52];
-				t8 = t23;
-				break bb0;
-			}
-			preview = TICKET_DETAIL_PREVIEWS[task_0.id];
-			const status = OVERVIEW_STATUS[task_0.status];
-			connected = OVERVIEW_CHANNELS.some((channel) => channel.kind === task_0.channel && channel.connected);
-			const node_0 = AGENT_GRAPH_NODES.find((node) => node.taskId === task_0.id);
-			if ($[53] !== node_0) {
-				dependencies = /* @__PURE__ */ new Set();
-				associations = /* @__PURE__ */ new Set();
-				if (node_0) for (const edge of AGENT_GRAPH_EDGES) {
-					if (edge.kind === "flow" || edge.source !== node_0.id && (edge.kind !== "association" || edge.target !== node_0.id)) continue;
-					const opposite = edge.source === node_0.id ? edge.target : edge.source;
-					const id = AGENT_GRAPH_NODES.find((node_1) => node_1.id === opposite)?.taskId;
-					if (id) (edge.kind === "dependency" ? dependencies : associations).add(id);
-				}
-				$[53] = node_0;
-				$[54] = associations;
-				$[55] = dependencies;
-			} else {
-				associations = $[54];
-				dependencies = $[55];
-			}
-			t5 = "@container flex min-w-0 flex-col gap-5 pb-10";
-			if ($[56] !== t) {
-				t6 = t("ticketDetail");
-				$[56] = t;
-				$[57] = t6;
-			} else t6 = $[57];
-			if ($[58] !== back) {
-				t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
-				$[58] = back;
-				$[59] = t7;
-			} else t7 = $[59];
-			t4 = "flex flex-wrap items-start justify-between gap-x-5 gap-y-3";
-			t2 = "min-w-0";
-			const t14 = status.tone;
-			let t15;
-			if ($[60] !== status.label || $[61] !== t) {
-				t15 = t(status.label);
-				$[60] = status.label;
-				$[61] = t;
-				$[62] = t15;
-			} else t15 = $[62];
-			let t16;
-			if ($[63] !== status.tone || $[64] !== t15) {
-				t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-					tone: t14,
-					children: t15
-				});
-				$[63] = status.tone;
-				$[64] = t15;
-				$[65] = t16;
-			} else t16 = $[65];
-			let t17;
-			if ($[66] !== t) {
-				t17 = t("overviewDemo");
-				$[66] = t;
-				$[67] = t17;
-			} else t17 = $[67];
-			let t18;
-			if ($[68] !== t17) {
-				t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-					tone: "quiet",
-					children: t17
-				});
-				$[68] = t17;
-				$[69] = t18;
-			} else t18 = $[69];
-			t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "mb-2 flex flex-wrap items-center gap-3",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
-						children: task_0.id
-					}),
-					t16,
-					t18
-				]
+	if ($[3] !== detail || $[4] !== receivePanel || $[5] !== receiveTicket) {
+		t1 = async (reason) => {
+			if (!detail) return;
+			const ticket = await postApiNexusTicketsIdAction({
+				id: encodeURIComponent(detail.ticket.id),
+				action: detail.ticket.paused ? "resume" : "pause"
+			}, { reason });
+			if (!ticket || ticket.id !== detail.ticket.id) throw new Error("任务操作失败");
+			receiveTicket({
+				...detail,
+				ticket
 			});
-			t0 = "m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]";
-			t1 = t(task_0.title);
-		}
-		$[0] = go;
-		$[1] = returnTo;
-		$[2] = t;
-		$[3] = ticketId;
-		$[4] = associations;
-		$[5] = connected;
-		$[6] = dependencies;
-		$[7] = preview;
-		$[8] = t0;
-		$[9] = t1;
-		$[10] = t2;
-		$[11] = t3;
-		$[12] = t4;
-		$[13] = t5;
-		$[14] = t6;
-		$[15] = t7;
-		$[16] = t8;
-		$[17] = task_0;
-	} else {
-		associations = $[4];
-		connected = $[5];
-		dependencies = $[6];
-		preview = $[7];
-		t0 = $[8];
-		t1 = $[9];
-		t2 = $[10];
-		t3 = $[11];
-		t4 = $[12];
-		t5 = $[13];
-		t6 = $[14];
-		t7 = $[15];
-		t8 = $[16];
-		task_0 = $[17];
-	}
-	if (t8 !== Symbol.for("react.early_return_sentinel")) return t8;
+			const panel = await getApiNexusPanel();
+			if (panel?.tickets) receivePanel(panel);
+		};
+		$[3] = detail;
+		$[4] = receivePanel;
+		$[5] = receiveTicket;
+		$[6] = t1;
+	} else t1 = $[6];
+	const [command, submit] = useAsyncFn(t1);
+	const [context, view] = useAsyncFn(_temp3$2);
+	const task = detail?.ticket;
+	let t2;
+	if ($[7] !== detail?.executions) {
+		t2 = detail?.executions.at(-1);
+		$[7] = detail?.executions;
+		$[8] = t2;
+	} else t2 = $[8];
+	const latest = t2;
+	let t3;
+	if ($[9] !== t) {
+		t3 = t("ticketDetail");
+		$[9] = t;
+		$[10] = t3;
+	} else t3 = $[10];
+	let t4;
+	if ($[11] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
+			width: 16,
+			height: 16
+		});
+		$[11] = t4;
+	} else t4 = $[11];
+	let t5;
+	if ($[12] !== go || $[13] !== returnTo) {
+		t5 = () => go(returnTo);
+		$[12] = go;
+		$[13] = returnTo;
+		$[14] = t5;
+	} else t5 = $[14];
+	let t6;
+	if ($[15] !== t) {
+		t6 = t("ticketBack");
+		$[15] = t;
+		$[16] = t6;
+	} else t6 = $[16];
+	let t7;
+	if ($[17] !== t5 || $[18] !== t6) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			variant: "ghost",
+			size: "sm",
+			icon: t4,
+			onClick: t5,
+			children: t6
+		}) });
+		$[17] = t5;
+		$[18] = t6;
+		$[19] = t7;
+	} else t7 = $[19];
+	let t8;
+	if ($[20] !== isLoading) {
+		t8 = isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "status",
+			children: "加载中…"
+		});
+		$[20] = isLoading;
+		$[21] = t8;
+	} else t8 = $[21];
 	let t9;
-	if ($[70] !== t0 || $[71] !== t1) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-			className: t0,
-			children: t1
+	if ($[22] !== error) {
+		t9 = Boolean(error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			children: error instanceof Error ? error.message : "读取失败"
 		});
-		$[70] = t0;
-		$[71] = t1;
-		$[72] = t9;
-	} else t9 = $[72];
+		$[22] = error;
+		$[23] = t9;
+	} else t9 = $[23];
 	let t10;
-	if ($[73] !== t2 || $[74] !== t3 || $[75] !== t9) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t2,
-			children: [t3, t9]
-		});
-		$[73] = t2;
-		$[74] = t3;
-		$[75] = t9;
-		$[76] = t10;
-	} else t10 = $[76];
-	let t11;
-	if ($[77] !== executionDescriptionId || $[78] !== preview || $[79] !== t) {
-		t11 = preview && (preview.pullRequest || preview.execution) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex min-w-0 flex-col items-end gap-1.5",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center justify-end gap-2",
-				children: [
-					preview.pullRequest && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PrStatus, { pullRequest: preview.pullRequest }),
-					preview.execution === "linked" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "outline",
-						size: "sm",
-						disabled: true,
-						title: t("ticketExecutionUnavailable"),
-						"aria-describedby": executionDescriptionId,
-						children: t("overviewOpenSession")
+	if ($[24] !== command || $[25] !== context || $[26] !== detail || $[27] !== latest?.branch || $[28] !== openThread || $[29] !== openTicket || $[30] !== submit || $[31] !== t || $[32] !== task || $[33] !== view) {
+		t10 = task && detail && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+				className: "flex flex-wrap items-start justify-between gap-3",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+						tone: "quiet",
+						children: task.paused ? "已暂停" : task.status
 					}),
-					preview.execution === "not-created" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "outline",
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: "ml-3 text-xs",
+						children: task.id
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+						className: "mt-3 text-lg font-medium",
+						children: task.title
+					})
+				] }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+					className: "flex flex-wrap items-center gap-2",
+					onSubmit: (event) => {
+						event.preventDefault();
+						submit(String(new FormData(event.currentTarget).get("reason") ?? ""));
+					},
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+						name: "reason",
+						required: true,
+						placeholder: "操作原因",
+						"aria-label": "操作原因"
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						type: "submit",
 						size: "sm",
-						disabled: true,
-						title: t("ticketResendUnavailable"),
-						"aria-describedby": executionDescriptionId,
-						children: t("ticketResend")
+						variant: "outline",
+						disabled: command.loading || task.status === "done" || task.status === "cancelled",
+						children: task.paused ? "恢复" : "暂停"
+					})]
+				})]
+			}),
+			command.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				children: command.error.message
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
+				className: "m-0 grid min-w-0 gap-3 @min-[460px]:grid-cols-2 @min-[820px]:grid-cols-4",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
+						label: t("ticketProject"),
+						icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NexusIcon, {
+							width: 17,
+							height: 17
+						}),
+						children: detail.project?.name ?? task.projectId
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
+						label: t("ticketChannel"),
+						icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
+							width: 17,
+							height: 17
+						}),
+						children: task.channelId
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
+						label: "最后更新",
+						icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
+							width: 17,
+							height: 17
+						}),
+						children: new Date(task.updatedAt).toLocaleString()
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
+						label: t("ticketExecutionBranch"),
+						icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GitBranchIcon, {
+							width: 17,
+							height: 17
+						}),
+						children: latest?.branch ?? "尚未创建"
 					})
 				]
-			}), preview.execution && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				id: executionDescriptionId,
-				className: "m-0 max-w-64 text-right text-xs leading-4 text-[var(--dsw-alias-label-secondary)]",
-				children: t(preview.execution === "not-created" ? "ticketResendUnavailable" : "ticketExecutionUnavailable")
-			})]
-		});
-		$[77] = executionDescriptionId;
-		$[78] = preview;
-		$[79] = t;
-		$[80] = t11;
-	} else t11 = $[80];
-	let t12;
-	if ($[81] !== t10 || $[82] !== t11 || $[83] !== t4) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-			className: t4,
-			children: [t10, t11]
-		});
-		$[81] = t10;
-		$[82] = t11;
-		$[83] = t4;
-		$[84] = t12;
-	} else t12 = $[84];
-	let t13;
-	if ($[85] !== t) {
-		t13 = t("ticketProject");
-		$[85] = t;
-		$[86] = t13;
-	} else t13 = $[86];
-	let t14;
-	if ($[87] === Symbol.for("react.memo_cache_sentinel")) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NexusIcon, {
-			width: 17,
-			height: 17
-		});
-		$[87] = t14;
-	} else t14 = $[87];
-	let t15;
-	if ($[88] !== preview || $[89] !== t) {
-		t15 = preview?.repository ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-			className: "inline-flex min-w-0 items-center gap-1.5",
-			title: preview.repository,
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(GitHubIcon, {
-				width: 14,
-				height: 14,
-				className: "shrink-0"
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "truncate",
-				children: preview.repository
-			})]
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "font-normal text-[var(--dsw-alias-label-secondary)]",
-			children: t("ticketProjectEmpty")
-		});
-		$[88] = preview;
-		$[89] = t;
-		$[90] = t15;
-	} else t15 = $[90];
-	let t16;
-	if ($[91] !== t13 || $[92] !== t15) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
-			label: t13,
-			icon: t14,
-			children: t15
-		});
-		$[91] = t13;
-		$[92] = t15;
-		$[93] = t16;
-	} else t16 = $[93];
-	let t17;
-	if ($[94] !== t) {
-		t17 = t("ticketChannel");
-		$[94] = t;
-		$[95] = t17;
-	} else t17 = $[95];
-	let t18;
-	if ($[96] === Symbol.for("react.memo_cache_sentinel")) {
-		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
-			width: 17,
-			height: 17
-		});
-		$[96] = t18;
-	} else t18 = $[96];
-	const t19 = OVERVIEW_CHANNEL_LABELS[task_0.channel];
-	const t20 = connected ? "done" : "idle";
-	let t21;
-	if ($[97] !== t20) {
-		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
-			state: t20,
-			size: 6
-		});
-		$[97] = t20;
-		$[98] = t21;
-	} else t21 = $[98];
-	const t22 = connected ? "ticketChannelConnected" : "overviewDisconnected";
-	let t23;
-	if ($[99] !== t || $[100] !== t22) {
-		t23 = t(t22);
-		$[99] = t;
-		$[100] = t22;
-		$[101] = t23;
-	} else t23 = $[101];
-	let t24;
-	if ($[102] !== t21 || $[103] !== t23) {
-		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-			className: "inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-normal text-[var(--dsw-alias-label-secondary)]",
-			children: [t21, t23]
-		});
-		$[102] = t21;
-		$[103] = t23;
-		$[104] = t24;
-	} else t24 = $[104];
-	let t25;
-	if ($[105] !== t17 || $[106] !== t19 || $[107] !== t24) {
-		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Metric, {
-			label: t17,
-			icon: t18,
-			children: [t19, t24]
-		});
-		$[105] = t17;
-		$[106] = t19;
-		$[107] = t24;
-		$[108] = t25;
-	} else t25 = $[108];
-	const t26 = task_0.status === "waiting" ? "ticketWaitDuration" : "ticketExecutionDuration";
-	let t27;
-	if ($[109] !== t || $[110] !== t26) {
-		t27 = t(t26);
-		$[109] = t;
-		$[110] = t26;
-		$[111] = t27;
-	} else t27 = $[111];
-	let t28;
-	if ($[112] === Symbol.for("react.memo_cache_sentinel")) {
-		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
-			width: 17,
-			height: 17
-		});
-		$[112] = t28;
-	} else t28 = $[112];
-	let t29;
-	if ($[113] !== task_0.duration) {
-		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "tabular-nums",
-			children: task_0.duration
-		});
-		$[113] = task_0.duration;
-		$[114] = t29;
-	} else t29 = $[114];
-	let t30;
-	if ($[115] !== t27 || $[116] !== t29) {
-		t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
-			label: t27,
-			icon: t28,
-			children: t29
-		});
-		$[115] = t27;
-		$[116] = t29;
-		$[117] = t30;
-	} else t30 = $[117];
-	let t31;
-	if ($[118] !== t) {
-		t31 = t("ticketExecutionBranch");
-		$[118] = t;
-		$[119] = t31;
-	} else t31 = $[119];
-	let t32;
-	if ($[120] === Symbol.for("react.memo_cache_sentinel")) {
-		t32 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GitBranchIcon, {
-			width: 17,
-			height: 17
-		});
-		$[120] = t32;
-	} else t32 = $[120];
-	let t33;
-	if ($[121] !== preview || $[122] !== t) {
-		t33 = preview?.branch ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "min-w-0 truncate font-mono text-xs",
-			title: preview.branch,
-			children: preview.branch
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "font-normal text-[var(--dsw-alias-label-secondary)]",
-			children: t("ticketBranchPending")
-		});
-		$[121] = preview;
-		$[122] = t;
-		$[123] = t33;
-	} else t33 = $[123];
-	let t34;
-	if ($[124] !== t31 || $[125] !== t33) {
-		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
-			label: t31,
-			icon: t32,
-			children: t33
-		});
-		$[124] = t31;
-		$[125] = t33;
-		$[126] = t34;
-	} else t34 = $[126];
-	let t35;
-	if ($[127] !== t16 || $[128] !== t25 || $[129] !== t30 || $[130] !== t34) {
-		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
-			className: "m-0 grid min-w-0 gap-3 @min-[460px]:grid-cols-2 @min-[820px]:grid-cols-4",
-			children: [
-				t16,
-				t25,
-				t30,
-				t34
-			]
-		});
-		$[127] = t16;
-		$[128] = t25;
-		$[129] = t30;
-		$[130] = t34;
-		$[131] = t35;
-	} else t35 = $[131];
-	let t36;
-	if ($[132] !== preview?.issues) {
-		t36 = preview?.issues ?? [];
-		$[132] = preview?.issues;
-		$[133] = t36;
-	} else t36 = $[133];
-	let t37;
-	if ($[134] !== t36) {
-		t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Issues, { issues: t36 });
-		$[134] = t36;
-		$[135] = t37;
-	} else t37 = $[135];
-	let t38;
-	if ($[136] !== t) {
-		t38 = t("ticketDependencies");
-		$[136] = t;
-		$[137] = t38;
-	} else t38 = $[137];
-	let t39;
-	if ($[138] !== dependencies) {
-		t39 = OVERVIEW_TASKS.filter((task_1) => dependencies.has(task_1.id));
-		$[138] = dependencies;
-		$[139] = t39;
-	} else t39 = $[139];
-	let t40;
-	if ($[140] !== t) {
-		t40 = t("ticketDependenciesEmpty");
-		$[140] = t;
-		$[141] = t40;
-	} else t40 = $[141];
-	let t41;
-	if ($[142] !== t39 || $[143] !== t40) {
-		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
-			tasks: t39,
-			empty: t40,
-			clear: true
-		});
-		$[142] = t39;
-		$[143] = t40;
-		$[144] = t41;
-	} else t41 = $[144];
-	let t42;
-	if ($[145] !== t38 || $[146] !== t41) {
-		t42 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
-			title: t38,
-			children: t41
-		});
-		$[145] = t38;
-		$[146] = t41;
-		$[147] = t42;
-	} else t42 = $[147];
-	let t43;
-	if ($[148] !== t) {
-		t43 = t("ticketRelatedTasks");
-		$[148] = t;
-		$[149] = t43;
-	} else t43 = $[149];
-	let t44;
-	if ($[150] !== associations) {
-		t44 = OVERVIEW_TASKS.filter((task_2) => associations.has(task_2.id));
-		$[150] = associations;
-		$[151] = t44;
-	} else t44 = $[151];
-	let t45;
-	if ($[152] !== t) {
-		t45 = t("ticketRelatedTasksEmpty");
-		$[152] = t;
-		$[153] = t45;
-	} else t45 = $[153];
-	let t46;
-	if ($[154] !== t44 || $[155] !== t45) {
-		t46 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
-			tasks: t44,
-			empty: t45
-		});
-		$[154] = t44;
-		$[155] = t45;
-		$[156] = t46;
-	} else t46 = $[156];
-	let t47;
-	if ($[157] !== t43 || $[158] !== t46) {
-		t47 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
-			title: t43,
-			children: t46
-		});
-		$[157] = t43;
-		$[158] = t46;
-		$[159] = t47;
-	} else t47 = $[159];
-	let t48;
-	if ($[160] !== t37 || $[161] !== t42 || $[162] !== t47) {
-		t48 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex min-w-0 flex-col gap-4",
-			children: [
-				t37,
-				t42,
-				t47
-			]
-		});
-		$[160] = t37;
-		$[161] = t42;
-		$[162] = t47;
-		$[163] = t48;
-	} else t48 = $[163];
-	let t49;
-	if ($[164] !== t) {
-		t49 = t("graphSupervisor");
-		$[164] = t;
-		$[165] = t49;
-	} else t49 = $[165];
-	let t50;
-	if ($[166] !== t) {
-		t50 = t("ticketSupervisorEmpty");
-		$[166] = t;
-		$[167] = t50;
-	} else t50 = $[167];
-	let t51;
-	if ($[168] !== t50) {
-		t51 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: t50
-		});
-		$[168] = t50;
-		$[169] = t51;
-	} else t51 = $[169];
-	let t52;
-	if ($[170] !== t49 || $[171] !== t51) {
-		t52 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
-			title: t49,
-			children: t51
-		});
-		$[170] = t49;
-		$[171] = t51;
-		$[172] = t52;
-	} else t52 = $[172];
-	let t53;
-	if ($[173] !== t) {
-		t53 = t("ticketArrivals");
-		$[173] = t;
-		$[174] = t53;
-	} else t53 = $[174];
-	let t54;
-	if ($[175] !== preview?.arrivals) {
-		t54 = preview?.arrivals ?? [];
-		$[175] = preview?.arrivals;
-		$[176] = t54;
-	} else t54 = $[176];
-	let t55;
-	if ($[177] !== t54 || $[178] !== task_0.id) {
-		t55 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Arrivals, { arrivals: t54 }, task_0.id);
-		$[177] = t54;
-		$[178] = task_0.id;
-		$[179] = t55;
-	} else t55 = $[179];
-	let t56;
-	if ($[180] !== t53 || $[181] !== t55) {
-		t56 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
-			title: t53,
-			children: t55
-		});
-		$[180] = t53;
-		$[181] = t55;
-		$[182] = t56;
-	} else t56 = $[182];
-	let t57;
-	if ($[183] !== t52 || $[184] !== t56) {
-		t57 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "grid min-w-0 grid-rows-[auto_1fr] gap-4",
-			children: [t52, t56]
-		});
-		$[183] = t52;
-		$[184] = t56;
-		$[185] = t57;
-	} else t57 = $[185];
-	let t58;
-	if ($[186] !== t48 || $[187] !== t57) {
-		t58 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "grid min-w-0 gap-4 @min-[740px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]",
-			children: [t48, t57]
-		});
-		$[186] = t48;
-		$[187] = t57;
-		$[188] = t58;
-	} else t58 = $[188];
-	let t59;
-	if ($[189] !== t12 || $[190] !== t35 || $[191] !== t5 || $[192] !== t58 || $[193] !== t6 || $[194] !== t7) {
-		t59 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: t5,
-			"aria-label": t6,
+			}),
+			task.prepareError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				children: task.prepareError
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Section, {
+				title: "任务描述",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 whitespace-pre-wrap",
+					children: task.description ?? "暂无描述"
+				}), task.prUrl && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+					className: "break-all",
+					children: [
+						task.prUrl,
+						" ",
+						"·",
+						" ",
+						task.prState,
+						" ",
+						"·",
+						" ",
+						task.ciState
+					]
+				})]
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Section, {
+				title: "执行记录",
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+						className: "m-0 list-none p-0",
+						children: detail.executions.map((worker) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+							className: "mb-3 flex flex-wrap items-center gap-2",
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [
+									worker.id,
+									" ",
+									"·",
+									" ",
+									worker.status
+								] }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: worker.report }),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									size: "sm",
+									variant: "outline",
+									disabled: context.loading,
+									onClick: () => void view(worker.id),
+									children: "查看上下文"
+								})
+							]
+						}, worker.id))
+					}),
+					context.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "alert",
+						children: context.error.message
+					}),
+					context.value && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
+						className: "max-h-80 overflow-auto whitespace-pre-wrap",
+						children: context.value
+					})
+				]
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
+				title: "关联任务",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+					className: "flex flex-wrap gap-2",
+					children: detail.dependencies.map((link) => {
+						const id = link.ticketId === task.id ? link.relatedId : link.ticketId;
+						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							size: "sm",
+							variant: "outline",
+							onClick: () => openTicket(id),
+							children: [
+								link.kind,
+								" ",
+								"·",
+								" ",
+								id
+							]
+						}, link.ticketId + link.relatedId + link.kind);
+					})
+				})
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
+				title: "来源话题",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+					className: "m-0 list-none p-0",
+					children: detail.topics.map((topic) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						size: "sm",
+						variant: "ghost",
+						onClick: () => openThread(topic.id),
+						children: topic.title
+					}) }, topic.id))
+				})
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
+				title: "收件箱记录",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+					className: "m-0 list-none p-0",
+					children: detail.inbox.map(_temp4$1)
+				})
+			})
+		] });
+		$[24] = command;
+		$[25] = context;
+		$[26] = detail;
+		$[27] = latest?.branch;
+		$[28] = openThread;
+		$[29] = openTicket;
+		$[30] = submit;
+		$[31] = t;
+		$[32] = task;
+		$[33] = view;
+		$[34] = t10;
+	} else t10 = $[34];
+	let t11;
+	if ($[35] !== t10 || $[36] !== t3 || $[37] !== t7 || $[38] !== t8 || $[39] !== t9) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "@container flex min-w-0 flex-col gap-5 pb-10",
+			"aria-label": t3,
 			children: [
 				t7,
-				t12,
-				t35,
-				t58
+				t8,
+				t9,
+				t10
 			]
 		});
-		$[189] = t12;
-		$[190] = t35;
-		$[191] = t5;
-		$[192] = t58;
-		$[193] = t6;
-		$[194] = t7;
-		$[195] = t59;
-	} else t59 = $[195];
-	return t59;
+		$[35] = t10;
+		$[36] = t3;
+		$[37] = t7;
+		$[38] = t8;
+		$[39] = t9;
+		$[40] = t11;
+	} else t11 = $[40];
+	return t11;
+}
+function _temp4$1(message) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+		className: "mb-3 whitespace-pre-wrap",
+		children: [
+			message.status,
+			" ",
+			"·",
+			" ",
+			message.message,
+			message.answer ? ` → ${message.answer}` : ""
+		]
+	}, message.id);
+}
+async function _temp3$2(sessionId) {
+	const result_0 = await getApiNexusSessionsIdContext({ id: encodeURIComponent(sessionId) });
+	if (!result_0 || result_0.sessionId !== sessionId) throw new Error("会话上下文读取失败");
+	return result_0.text;
+}
+function _temp2$4(state_0) {
+	return state_0.data.ticket;
 }
 function _temp$6(state) {
 	return state.navigation;
 }
 // src/client/pages/ticket/page.tsx
 function Ticket() {
-	const $ = (0, import_dist.c)(14);
+	const $ = (0, import_dist.c)(11);
 	const { t } = useTranslation();
+	const tickets = useStore(_temp$5);
 	let t0;
 	if ($[0] !== t) {
 		t0 = t("ticketListDescription");
@@ -57256,23 +56634,26 @@ function Ticket() {
 	} else t0 = $[1];
 	let t1;
 	if ($[2] !== t0) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "text-[13px] text-[var(--dsw-alias-label-secondary)] my-1",
-			children: t0
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "mb-1 flex flex-wrap items-center justify-between gap-3",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				className: "text-[13px] text-[var(--dsw-alias-label-secondary)] my-1",
+				children: t0
+			})
 		});
 		$[2] = t0;
 		$[3] = t1;
 	} else t1 = $[3];
 	let t2;
-	if ($[4] !== t) {
-		t2 = t("overviewDemo");
-		$[4] = t;
+	if ($[4] !== tickets) {
+		t2 = tickets.map(_temp2$3);
+		$[4] = tickets;
 		$[5] = t2;
 	} else t2 = $[5];
 	let t3;
 	if ($[6] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-			tone: "quiet",
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+			className: "m-0 pl-0",
 			children: t2
 		});
 		$[6] = t2;
@@ -57280,35 +56661,21 @@ function Ticket() {
 	} else t3 = $[7];
 	let t4;
 	if ($[8] !== t1 || $[9] !== t3) {
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "mb-1 flex flex-wrap items-center justify-between gap-3",
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "@container pb-10",
 			children: [t1, t3]
 		});
 		$[8] = t1;
 		$[9] = t3;
 		$[10] = t4;
 	} else t4 = $[10];
-	let t5;
-	if ($[11] === Symbol.for("react.memo_cache_sentinel")) {
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "m-0 pl-0",
-			children: OVERVIEW_TASKS.map(_temp$5)
-		});
-		$[11] = t5;
-	} else t5 = $[11];
-	let t6;
-	if ($[12] !== t4) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "@container pb-10",
-			children: [t4, t5]
-		});
-		$[12] = t4;
-		$[13] = t6;
-	} else t6 = $[13];
-	return t6;
+	return t4;
 }
-function _temp$5(task) {
+function _temp2$3(task) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, { task }, task.id);
+}
+function _temp$5(state) {
+	return state.data.panel?.tickets ?? [];
 }
 // src/client/pages/trigger/model.ts
 const KINDS = {
@@ -57346,7 +56713,7 @@ function deliveryStatus(record) {
 	if (record.deliveries.some((delivery) => delivery.status === "pending")) return "pending";
 	return record.deliveries.length ? "done" : "not-delivered";
 }
-function filterRecords(records, filters, text) {
+function filterRecords(records, filters) {
 	const query = filters.query.trim().toLocaleLowerCase();
 	return records.filter((record) => (filters.channel === "all" || record.channel === filters.channel) && (filters.status === "all" || (filters.status === "not-delivered" ? !record.deliveries.length : record.deliveries.some((delivery) => delivery.status === filters.status))) && (filters.kind === "all" || record.kind === filters.kind) && (!filters.mentionedOnly || record.mentioned) && (!query || [
 		record.id,
@@ -57355,8 +56722,8 @@ function filterRecords(records, filters, text) {
 		record.thread.ref,
 		record.thread.project,
 		record.ref,
-		text(record.thread.title),
-		text(record.text),
+		record.thread.title,
+		record.text,
 		...record.tickets
 	].join(" ").toLocaleLowerCase().includes(query))).sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id));
 }
@@ -57375,8 +56742,8 @@ function groupTopics(records) {
 		};
 	}).sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id));
 }
-function filterTopics(topics, filters, text) {
-	return topics.filter((topic) => filterRecords(topic.events, filters, text).length > 0);
+function filterTopics(topics, filters) {
+	return topics.filter((topic) => filterRecords(topic.events, filters).length > 0);
 }
 const TRIAGE = {
 	pending: "triggerTriagePending",
@@ -57389,212 +56756,46 @@ const THREAD_KINDS = {
 	chat: "triggerTopicChat",
 	ci: "triggerTopicCi"
 };
-const RECORDS = [
-	{
-		id: "github:hairyf/dsh-third-kernel:issue-162:comment-421",
-		channel: "github",
-		kind: "comment",
-		actor: "hairyf",
-		human: true,
-		mentioned: true,
-		url: "https://github.com/hairyf/dsh-third-kernel/issues/162#issuecomment-421",
-		text: "triggerTextLogin",
-		at: "2026-11-14T21:56:00+08:00",
-		thread: {
-			id: "github:issue-162",
-			kind: "issue",
-			ref: "#162",
-			title: "overviewTaskLogin",
-			triage: "claimed",
-			project: "hairyf/dsh-third-kernel",
-			url: "https://github.com/hairyf/dsh-third-kernel/issues/162"
-		},
-		tickets: ["T-105"],
-		deliveries: [{
-			target: "project",
-			project: "hairyf/dsh-third-kernel",
-			status: "pending",
-			read: true
-		}]
-	},
-	{
-		id: "feishu:topic-api:message-82",
-		channel: "feishu",
-		kind: "comment",
-		actor: "林晓",
-		human: true,
-		mentioned: true,
-		text: "triggerTextApi",
-		at: "2026-11-14T21:48:00+08:00",
-		thread: {
-			id: "feishu:topic-api",
-			kind: "chat",
-			ref: "API",
-			title: "overviewTaskApi",
-			triage: "pending"
-		},
-		tickets: [],
-		deliveries: [{
-			target: "main",
-			status: "pending",
-			read: false
-		}]
-	},
-	{
-		id: "github:hairyf/dsh-third-kernel:pull-81:review-23",
-		channel: "github",
-		kind: "comment",
-		actor: "hairyf",
-		human: true,
-		mentioned: true,
-		url: "https://github.com/hairyf/dsh-third-kernel/pull/81#pullrequestreview-23",
-		text: "triggerTextReview",
-		at: "2026-11-14T21:35:00+08:00",
-		thread: {
-			id: "github:pull-81",
-			kind: "pull",
-			ref: "PR #81",
-			title: "overviewTaskRemote",
-			triage: "claimed",
-			project: "hairyf/dsh-third-kernel",
-			url: "https://github.com/hairyf/dsh-third-kernel/pull/81"
-		},
-		tickets: ["T-104"],
-		deliveries: [{
-			target: "project",
-			project: "hairyf/dsh-third-kernel",
-			status: "done",
-			read: true
-		}]
-	},
-	{
-		id: "gitlab:team/console:issue-38:comment-15",
-		channel: "gitlab",
-		kind: "comment",
-		actor: "chen",
-		human: true,
-		mentioned: true,
-		url: "https://gitlab.com/team/console/-/issues/38#note_15",
-		text: "triggerTextDelivery",
-		at: "2026-11-14T21:22:00+08:00",
-		thread: {
-			id: "gitlab:issue-38",
-			kind: "issue",
-			ref: "#38",
-			title: "triggerThreadConsole",
-			triage: "pending",
-			url: "https://gitlab.com/team/console/-/issues/38"
-		},
-		tickets: [],
-		deliveries: [{
-			target: "main",
-			status: "stalled",
-			read: false,
-			attempts: 3,
-			error: "triggerErrorSession"
-		}]
-	},
-	{
-		id: "github:hairyf/dsh-third-kernel:ci-main:revision-12",
-		channel: "github",
-		kind: "ci",
-		actor: "GitHub Actions",
-		human: false,
-		mentioned: false,
-		text: "triggerTextCi",
-		at: "2026-11-14T21:10:00+08:00",
-		ref: "7e4b2c1",
-		thread: {
-			id: "github:ci:main",
-			kind: "ci",
-			ref: "main",
-			title: "triggerThreadCi",
-			triage: "claimed",
-			project: "hairyf/dsh-third-kernel"
-		},
-		tickets: [],
-		deliveries: [{
-			target: "project",
-			project: "hairyf/dsh-third-kernel",
-			status: "done",
-			read: true
-		}]
-	},
-	{
-		id: "github:hairyf/dsh-third-kernel:issue-162:comment-419",
-		channel: "github",
-		kind: "comment",
-		actor: "contributor",
-		human: true,
-		mentioned: false,
-		url: "https://github.com/hairyf/dsh-third-kernel/issues/162#issuecomment-419",
-		text: "triggerTextUnmentioned",
-		at: "2026-11-14T20:52:00+08:00",
-		thread: {
-			id: "github:issue-162",
-			kind: "issue",
-			ref: "#162",
-			title: "overviewTaskLogin",
-			triage: "claimed",
-			project: "hairyf/dsh-third-kernel",
-			url: "https://github.com/hairyf/dsh-third-kernel/issues/162"
-		},
-		tickets: ["T-105"],
-		deliveries: [],
-		skipped: "not-mentioned"
-	},
-	{
-		id: "feishu:topic-chatter:message-17",
-		channel: "feishu",
-		kind: "comment",
-		actor: "林晓",
-		human: true,
-		mentioned: false,
-		text: "triggerTextIgnored",
-		at: "2026-11-14T20:35:00+08:00",
-		thread: {
-			id: "feishu:topic-chatter",
-			kind: "chat",
-			ref: "讨论",
-			title: "triggerThreadChatter",
-			triage: "ignored"
-		},
-		tickets: [],
-		deliveries: [],
-		skipped: "ignored"
-	},
-	{
-		id: "github:hairyf/dsh-third-kernel:pull-81:open",
-		channel: "github",
-		kind: "open",
-		actor: "hairyf",
-		human: true,
-		mentioned: true,
-		url: "https://github.com/hairyf/dsh-third-kernel/pull/81",
-		text: "triggerTextOpen",
-		at: "2026-11-14T20:18:00+08:00",
-		ref: "nexus/T-104",
-		thread: {
-			id: "github:pull-81",
-			kind: "pull",
-			ref: "PR #81",
-			title: "overviewTaskRemote",
-			triage: "claimed",
-			project: "hairyf/dsh-third-kernel",
-			url: "https://github.com/hairyf/dsh-third-kernel/pull/81"
-		},
-		tickets: ["T-104"],
-		deliveries: [{
-			target: "project",
-			project: "hairyf/dsh-third-kernel",
-			status: "done",
-			read: true
-		}]
-	}
-];
+function recordsOf(panel) {
+	if (!panel) return [];
+	return panel.topics.triggers.flatMap((trigger) => {
+		const thread = panel.topics.threads.find((thread) => thread.id === trigger.threadId);
+		if (!thread) return [];
+		return [{
+			id: trigger.id,
+			channel: trigger.channelId,
+			kind: trigger.kind,
+			actor: trigger.actorName ?? "",
+			human: Boolean(trigger.human),
+			mentioned: Boolean(trigger.mentioned),
+			text: trigger.text,
+			at: trigger.at,
+			ref: trigger.ref ?? void 0,
+			url: trigger.url ?? void 0,
+			thread: {
+				id: thread.id,
+				kind: thread.kind,
+				ref: thread.refId,
+				title: thread.title,
+				triage: thread.triage,
+				project: panel.projects.find((project) => project.id === thread.projectId)?.name,
+				url: thread.url ?? void 0
+			},
+			tickets: panel.topics.subscriptions.filter((link) => link.threadId === thread.id).map((link) => link.ticketId),
+			deliveries: panel.deliveries.filter((message) => message.triggerId === trigger.id).map((message) => ({
+				target: message.type,
+				project: panel.projects.find((project) => project.id === message.projectId)?.name,
+				status: message.status,
+				read: Boolean(message.readAt),
+				attempts: message.deliveryAttempts,
+				error: message.deliveryError ?? void 0
+			}))
+		}];
+	});
+}
 // src/client/pages/trigger/detail/components/event.tsx
-function Event(t0) {
-	const $ = (0, import_dist.c)(80);
+function Event$1(t0) {
+	const $ = (0, import_dist.c)(77);
 	const { record } = t0;
 	const { t } = useTranslation();
 	let t1;
@@ -57697,7 +56898,6 @@ function Event(t0) {
 				href,
 				target: "_blank",
 				rel: "noopener noreferrer",
-				title: t("triggerSampleLink"),
 				className: "text-[11px] text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline",
 				children: [
 					t(record.kind === "comment" ? "triggerOpenComment" : "triggerOpenEvent"),
@@ -57762,35 +56962,28 @@ function Event(t0) {
 			$[55] = t22;
 			$[56] = t3;
 		} else t3 = $[56];
-		let t23;
-		if ($[57] !== record.text || $[58] !== t) {
-			t23 = t(record.text);
-			$[57] = record.text;
-			$[58] = t;
-			$[59] = t23;
-		} else t23 = $[59];
-		if ($[60] !== t23) {
+		if ($[57] !== record.text) {
 			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				className: "my-3 whitespace-pre-wrap text-[13px] leading-6 text-[var(--dsw-alias-label-primary)] [overflow-wrap:anywhere]",
-				children: t23
+				children: record.text
 			});
+			$[57] = record.text;
+			$[58] = t4;
+		} else t4 = $[58];
+		let t23;
+		if ($[59] !== t) {
+			t23 = t("triggerDelivery");
+			$[59] = t;
 			$[60] = t23;
-			$[61] = t4;
-		} else t4 = $[61];
-		let t24;
-		if ($[62] !== t) {
-			t24 = t("triggerDelivery");
-			$[62] = t;
-			$[63] = t24;
-		} else t24 = $[63];
-		if ($[64] !== t24) {
+		} else t23 = $[60];
+		if ($[61] !== t23) {
 			t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: "flex flex-wrap items-center gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3 text-xs text-[var(--dsw-alias-label-secondary)]",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t24 })
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t23 })
 			});
-			$[64] = t24;
-			$[65] = t5;
-		} else t5 = $[65];
+			$[61] = t23;
+			$[62] = t5;
+		} else t5 = $[62];
 		t6 = record.deliveries.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "m-0 mt-2 flex list-none flex-col gap-2 p-0",
 			children: record.deliveries.map((delivery, index) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
@@ -57817,7 +57010,7 @@ function Event(t0) {
 					delivery.error && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 						className: "m-0 mt-1 text-[11px] text-[var(--dsw-alias-state-error-primary)]",
 						children: [
-							t(delivery.error),
+							delivery.error,
 							" ",
 							"·",
 							" ",
@@ -57857,7 +57050,7 @@ function Event(t0) {
 		t8 = $[19];
 	}
 	let t9;
-	if ($[66] !== record.ref || $[67] !== t) {
+	if ($[63] !== record.ref || $[64] !== t) {
 		t9 = record.ref && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 			className: "mb-0 mt-3 break-all text-[11px] text-[var(--dsw-alias-label-secondary)]",
 			children: [
@@ -57867,12 +57060,12 @@ function Event(t0) {
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", { children: record.ref })
 			]
 		});
-		$[66] = record.ref;
-		$[67] = t;
-		$[68] = t9;
-	} else t9 = $[68];
+		$[63] = record.ref;
+		$[64] = t;
+		$[65] = t9;
+	} else t9 = $[65];
 	let t10;
-	if ($[69] !== t2 || $[70] !== t3 || $[71] !== t4 || $[72] !== t5 || $[73] !== t6 || $[74] !== t9) {
+	if ($[66] !== t2 || $[67] !== t3 || $[68] !== t4 || $[69] !== t5 || $[70] !== t6 || $[71] !== t9) {
 		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("article", {
 			className: t2,
 			children: [
@@ -57883,34 +57076,34 @@ function Event(t0) {
 				t9
 			]
 		});
-		$[69] = t2;
-		$[70] = t3;
-		$[71] = t4;
-		$[72] = t5;
-		$[73] = t6;
-		$[74] = t9;
-		$[75] = t10;
-	} else t10 = $[75];
+		$[66] = t2;
+		$[67] = t3;
+		$[68] = t4;
+		$[69] = t5;
+		$[70] = t6;
+		$[71] = t9;
+		$[72] = t10;
+	} else t10 = $[72];
 	let t11;
-	if ($[76] !== t10 || $[77] !== t7 || $[78] !== t8) {
+	if ($[73] !== t10 || $[74] !== t7 || $[75] !== t8) {
 		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 			className: t7,
 			children: [t8, t10]
 		});
-		$[76] = t10;
-		$[77] = t7;
-		$[78] = t8;
-		$[79] = t11;
-	} else t11 = $[79];
+		$[73] = t10;
+		$[74] = t7;
+		$[75] = t8;
+		$[76] = t11;
+	} else t11 = $[76];
 	return t11;
 }
 // src/client/pages/trigger/detail/page.tsx
 function TriggerDetail() {
-	const $ = (0, import_dist.c)(140);
+	const $ = (0, import_dist.c)(131);
 	const { t } = useTranslation();
 	const { go, openTicket } = useActions();
 	const id = useStore(_temp$4);
-	let href;
+	const panel = useStore(_temp2$2);
 	let latest;
 	let t0;
 	let t1;
@@ -57923,7 +57116,7 @@ function TriggerDetail() {
 	let t8;
 	let t9;
 	let tickets;
-	if ($[0] !== go || $[1] !== id || $[2] !== t) {
+	if ($[0] !== go || $[1] !== id || $[2] !== panel || $[3] !== t) {
 		t9 = Symbol.for("react.early_return_sentinel");
 		bb0: {
 			let t10;
@@ -57932,7 +57125,7 @@ function TriggerDetail() {
 				$[16] = id;
 				$[17] = t10;
 			} else t10 = $[17];
-			const topic_0 = groupTopics(RECORDS).find(t10);
+			const topic_0 = groupTopics(recordsOf(panel)).find(t10);
 			let t11;
 			if ($[18] === Symbol.for("react.memo_cache_sentinel")) {
 				t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
@@ -58004,9 +57197,9 @@ function TriggerDetail() {
 			}
 			const { latest: t15, events } = topic_0;
 			latest = t15;
-			href = sourceHref(latest.channel, latest.thread.url);
+			const href = sourceHref(latest.channel, latest.thread.url);
 			const channel = latest.channel === "feishu" ? t("triggerFeishu") : latest.channel === "github" ? "GitHub" : "GitLab";
-			tickets = [...new Set(events.flatMap(_temp2$1))];
+			tickets = [...new Set(events.flatMap(_temp3$1))];
 			t5 = "@container flex min-w-0 flex-col gap-5 pb-10";
 			if ($[35] !== t) {
 				t6 = t("triggerTopicDetail");
@@ -58028,7 +57221,6 @@ function TriggerDetail() {
 				href,
 				target: "_blank",
 				rel: "noopener noreferrer",
-				title: t("triggerSampleLink"),
 				className: "text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline",
 				children: [
 					latest.thread.ref,
@@ -58071,87 +57263,70 @@ function TriggerDetail() {
 				$[50] = t23;
 			} else t23 = $[50];
 			let t24;
-			if ($[51] !== t) {
-				t24 = t("overviewDemo");
-				$[51] = t;
-				$[52] = t24;
-			} else t24 = $[52];
-			let t25;
-			if ($[53] !== t24) {
-				t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-					tone: "quiet",
-					children: t24
-				});
-				$[53] = t24;
-				$[54] = t25;
-			} else t25 = $[54];
-			let t26;
-			if ($[55] !== t16 || $[56] !== t17 || $[57] !== t20 || $[58] !== t23 || $[59] !== t25) {
-				t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			if ($[51] !== t16 || $[52] !== t17 || $[53] !== t20 || $[54] !== t23) {
+				t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "mb-2 flex flex-wrap items-center gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]",
 					children: [
 						t16,
 						t17,
 						t20,
-						t23,
-						t25
+						t23
 					]
 				});
-				$[55] = t16;
-				$[56] = t17;
-				$[57] = t20;
-				$[58] = t23;
-				$[59] = t25;
-				$[60] = t26;
-			} else t26 = $[60];
-			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", { children: [t26, /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+				$[51] = t16;
+				$[52] = t17;
+				$[53] = t20;
+				$[54] = t23;
+				$[55] = t24;
+			} else t24 = $[55];
+			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", { children: [t24, /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 				className: "m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]",
-				children: t(latest.thread.title)
+				children: latest.thread.title
 			})] });
 			t4 = "grid min-w-0 gap-5 @min-[780px]:grid-cols-[minmax(0,1fr)_250px]";
 			t2 = "min-w-0";
-			let t27;
-			if ($[61] !== t) {
-				t27 = t("triggerTimeline");
-				$[61] = t;
-				$[62] = t27;
-			} else t27 = $[62];
-			let t28;
-			if ($[63] !== t27) {
-				t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+			let t25;
+			if ($[56] !== t) {
+				t25 = t("triggerTimeline");
+				$[56] = t;
+				$[57] = t25;
+			} else t25 = $[57];
+			let t26;
+			if ($[58] !== t25) {
+				t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 					className: "m-0 text-sm font-medium",
-					children: t27
+					children: t25
 				});
-				$[63] = t27;
-				$[64] = t28;
-			} else t28 = $[64];
-			const t29 = t("triggerEventCount", { count: events.length });
-			let t30;
-			if ($[65] !== t) {
-				t30 = t("triggerNewestFirst");
-				$[65] = t;
-				$[66] = t30;
-			} else t30 = $[66];
+				$[58] = t25;
+				$[59] = t26;
+			} else t26 = $[59];
+			const t27 = t("triggerEventCount", { count: events.length });
+			let t28;
+			if ($[60] !== t) {
+				t28 = t("triggerNewestFirst");
+				$[60] = t;
+				$[61] = t28;
+			} else t28 = $[61];
 			t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "mb-4 flex items-center justify-between gap-2",
-				children: [t28, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+				children: [t26, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 					className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
 					children: [
-						t29,
+						t27,
 						" ",
 						"·",
 						" ",
-						t30
+						t28
 					]
 				})]
 			});
 			t0 = "m-0 list-none p-0 pl-1.5";
-			t1 = events.map(_temp3);
+			t1 = events.map(_temp4);
 		}
 		$[0] = go;
 		$[1] = id;
-		$[2] = t;
-		$[3] = href;
+		$[2] = panel;
+		$[3] = t;
 		$[4] = latest;
 		$[5] = t0;
 		$[6] = t1;
@@ -58165,7 +57340,6 @@ function TriggerDetail() {
 		$[14] = t9;
 		$[15] = tickets;
 	} else {
-		href = $[3];
 		latest = $[4];
 		t0 = $[5];
 		t1 = $[6];
@@ -58181,147 +57355,147 @@ function TriggerDetail() {
 	}
 	if (t9 !== Symbol.for("react.early_return_sentinel")) return t9;
 	let t10;
-	if ($[67] !== t0 || $[68] !== t1) {
+	if ($[62] !== t0 || $[63] !== t1) {
 		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ol", {
 			className: t0,
 			children: t1
 		});
-		$[67] = t0;
-		$[68] = t1;
-		$[69] = t10;
-	} else t10 = $[69];
+		$[62] = t0;
+		$[63] = t1;
+		$[64] = t10;
+	} else t10 = $[64];
 	let t11;
-	if ($[70] !== t10 || $[71] !== t2 || $[72] !== t3) {
+	if ($[65] !== t10 || $[66] !== t2 || $[67] !== t3) {
 		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: t2,
 			children: [t3, t10]
 		});
-		$[70] = t10;
-		$[71] = t2;
-		$[72] = t3;
-		$[73] = t11;
-	} else t11 = $[73];
+		$[65] = t10;
+		$[66] = t2;
+		$[67] = t3;
+		$[68] = t11;
+	} else t11 = $[68];
 	let t12;
-	if ($[74] !== t) {
+	if ($[69] !== t) {
 		t12 = t("triggerThread");
-		$[74] = t;
-		$[75] = t12;
-	} else t12 = $[75];
+		$[69] = t;
+		$[70] = t12;
+	} else t12 = $[70];
 	let t13;
-	if ($[76] !== t12) {
+	if ($[71] !== t12) {
 		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 			className: "m-0 text-sm font-medium",
 			children: t12
 		});
-		$[76] = t12;
-		$[77] = t13;
-	} else t13 = $[77];
+		$[71] = t12;
+		$[72] = t13;
+	} else t13 = $[72];
 	let t14;
-	if ($[78] !== t) {
+	if ($[73] !== t) {
 		t14 = t("ticketProject");
-		$[78] = t;
-		$[79] = t14;
-	} else t14 = $[79];
+		$[73] = t;
+		$[74] = t14;
+	} else t14 = $[74];
 	let t15;
-	if ($[80] !== t14) {
+	if ($[75] !== t14) {
 		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
 			className: "text-[var(--dsw-alias-label-tertiary)]",
 			children: t14
 		});
-		$[80] = t14;
-		$[81] = t15;
-	} else t15 = $[81];
+		$[75] = t14;
+		$[76] = t15;
+	} else t15 = $[76];
 	let t16;
-	if ($[82] !== latest.thread.project || $[83] !== t) {
+	if ($[77] !== latest.thread.project || $[78] !== t) {
 		t16 = latest.thread.project ?? t("triggerNoProject");
-		$[82] = latest.thread.project;
-		$[83] = t;
-		$[84] = t16;
-	} else t16 = $[84];
+		$[77] = latest.thread.project;
+		$[78] = t;
+		$[79] = t16;
+	} else t16 = $[79];
 	let t17;
-	if ($[85] !== t16) {
+	if ($[80] !== t16) {
 		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 			className: "m-0 mt-1 break-all leading-5",
 			children: t16
 		});
-		$[85] = t16;
-		$[86] = t17;
-	} else t17 = $[86];
+		$[80] = t16;
+		$[81] = t17;
+	} else t17 = $[81];
 	let t18;
-	if ($[87] !== t15 || $[88] !== t17) {
+	if ($[82] !== t15 || $[83] !== t17) {
 		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t15, t17] });
-		$[87] = t15;
-		$[88] = t17;
-		$[89] = t18;
-	} else t18 = $[89];
+		$[82] = t15;
+		$[83] = t17;
+		$[84] = t18;
+	} else t18 = $[84];
 	let t19;
-	if ($[90] !== t) {
+	if ($[85] !== t) {
 		t19 = t("triggerThreadId");
-		$[90] = t;
-		$[91] = t19;
-	} else t19 = $[91];
+		$[85] = t;
+		$[86] = t19;
+	} else t19 = $[86];
 	let t20;
-	if ($[92] !== t19) {
+	if ($[87] !== t19) {
 		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
 			className: "text-[var(--dsw-alias-label-tertiary)]",
 			children: t19
 		});
-		$[92] = t19;
-		$[93] = t20;
-	} else t20 = $[93];
+		$[87] = t19;
+		$[88] = t20;
+	} else t20 = $[88];
 	let t21;
-	if ($[94] !== latest.thread.id) {
+	if ($[89] !== latest.thread.id) {
 		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 			className: "m-0 mt-1 break-all font-mono text-[11px] leading-5",
 			children: latest.thread.id
 		});
-		$[94] = latest.thread.id;
-		$[95] = t21;
-	} else t21 = $[95];
+		$[89] = latest.thread.id;
+		$[90] = t21;
+	} else t21 = $[90];
 	let t22;
-	if ($[96] !== t20 || $[97] !== t21) {
+	if ($[91] !== t20 || $[92] !== t21) {
 		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t20, t21] });
-		$[96] = t20;
-		$[97] = t21;
-		$[98] = t22;
-	} else t22 = $[98];
+		$[91] = t20;
+		$[92] = t21;
+		$[93] = t22;
+	} else t22 = $[93];
 	let t23;
-	if ($[99] !== t18 || $[100] !== t22) {
+	if ($[94] !== t18 || $[95] !== t22) {
 		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
 			className: "m-0 mt-3 flex flex-col gap-3 text-xs",
 			children: [t18, t22]
 		});
-		$[99] = t18;
-		$[100] = t22;
-		$[101] = t23;
-	} else t23 = $[101];
+		$[94] = t18;
+		$[95] = t22;
+		$[96] = t23;
+	} else t23 = $[96];
 	let t24;
-	if ($[102] !== t13 || $[103] !== t23) {
+	if ($[97] !== t13 || $[98] !== t23) {
 		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4",
 			children: [t13, t23]
 		});
-		$[102] = t13;
-		$[103] = t23;
-		$[104] = t24;
-	} else t24 = $[104];
+		$[97] = t13;
+		$[98] = t23;
+		$[99] = t24;
+	} else t24 = $[99];
 	let t25;
-	if ($[105] !== t) {
+	if ($[100] !== t) {
 		t25 = t("triggerLinkedTasks");
-		$[105] = t;
-		$[106] = t25;
-	} else t25 = $[106];
+		$[100] = t;
+		$[101] = t25;
+	} else t25 = $[101];
 	let t26;
-	if ($[107] !== t25) {
+	if ($[102] !== t25) {
 		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 			className: "m-0 text-sm font-medium",
 			children: t25
 		});
-		$[107] = t25;
-		$[108] = t26;
-	} else t26 = $[108];
+		$[102] = t25;
+		$[103] = t26;
+	} else t26 = $[103];
 	let t27;
-	if ($[109] !== openTicket || $[110] !== t || $[111] !== tickets) {
+	if ($[104] !== openTicket || $[105] !== t || $[106] !== tickets) {
 		t27 = tickets.length ? tickets.map((ticket) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			size: "sm",
 			variant: "outline",
@@ -58331,108 +57505,99 @@ function TriggerDetail() {
 			className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
 			children: t("triggerNoTask")
 		});
-		$[109] = openTicket;
-		$[110] = t;
-		$[111] = tickets;
-		$[112] = t27;
-	} else t27 = $[112];
+		$[104] = openTicket;
+		$[105] = t;
+		$[106] = tickets;
+		$[107] = t27;
+	} else t27 = $[107];
 	let t28;
-	if ($[113] !== t27) {
+	if ($[108] !== t27) {
 		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "mt-3 flex flex-wrap gap-2",
 			children: t27
 		});
-		$[113] = t27;
-		$[114] = t28;
-	} else t28 = $[114];
+		$[108] = t27;
+		$[109] = t28;
+	} else t28 = $[109];
 	let t29;
-	if ($[115] !== t26 || $[116] !== t28) {
+	if ($[110] !== t26 || $[111] !== t28) {
 		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4",
 			children: [t26, t28]
 		});
-		$[115] = t26;
-		$[116] = t28;
-		$[117] = t29;
-	} else t29 = $[117];
+		$[110] = t26;
+		$[111] = t28;
+		$[112] = t29;
+	} else t29 = $[112];
 	let t30;
-	if ($[118] !== t) {
+	if ($[113] !== t) {
 		t30 = t("triggerExternalText");
-		$[118] = t;
-		$[119] = t30;
-	} else t30 = $[119];
+		$[113] = t;
+		$[114] = t30;
+	} else t30 = $[114];
 	let t31;
-	if ($[120] !== t30) {
+	if ($[115] !== t30) {
 		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
 			children: t30
 		});
-		$[120] = t30;
-		$[121] = t31;
-	} else t31 = $[121];
+		$[115] = t30;
+		$[116] = t31;
+	} else t31 = $[116];
 	let t32;
-	if ($[122] !== href || $[123] !== t) {
-		t32 = href && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t("triggerSampleLink")
-		});
-		$[122] = href;
-		$[123] = t;
-		$[124] = t32;
-	} else t32 = $[124];
-	let t33;
-	if ($[125] !== t24 || $[126] !== t29 || $[127] !== t31 || $[128] !== t32) {
-		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("aside", {
+	if ($[117] !== t24 || $[118] !== t29 || $[119] !== t31) {
+		t32 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("aside", {
 			className: "flex min-w-0 flex-col gap-4 self-start @min-[780px]:sticky @min-[780px]:top-4",
 			children: [
 				t24,
 				t29,
-				t31,
-				t32
+				t31
 			]
 		});
-		$[125] = t24;
-		$[126] = t29;
-		$[127] = t31;
-		$[128] = t32;
-		$[129] = t33;
-	} else t33 = $[129];
-	let t34;
-	if ($[130] !== t11 || $[131] !== t33 || $[132] !== t4) {
-		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+		$[117] = t24;
+		$[118] = t29;
+		$[119] = t31;
+		$[120] = t32;
+	} else t32 = $[120];
+	let t33;
+	if ($[121] !== t11 || $[122] !== t32 || $[123] !== t4) {
+		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: t4,
-			children: [t11, t33]
+			children: [t11, t32]
 		});
-		$[130] = t11;
-		$[131] = t33;
-		$[132] = t4;
-		$[133] = t34;
-	} else t34 = $[133];
-	let t35;
-	if ($[134] !== t34 || $[135] !== t5 || $[136] !== t6 || $[137] !== t7 || $[138] !== t8) {
-		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[121] = t11;
+		$[122] = t32;
+		$[123] = t4;
+		$[124] = t33;
+	} else t33 = $[124];
+	let t34;
+	if ($[125] !== t33 || $[126] !== t5 || $[127] !== t6 || $[128] !== t7 || $[129] !== t8) {
+		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: t5,
 			"aria-label": t6,
 			children: [
 				t7,
 				t8,
-				t34
+				t33
 			]
 		});
-		$[134] = t34;
-		$[135] = t5;
-		$[136] = t6;
-		$[137] = t7;
-		$[138] = t8;
-		$[139] = t35;
-	} else t35 = $[139];
-	return t35;
+		$[125] = t33;
+		$[126] = t5;
+		$[127] = t6;
+		$[128] = t7;
+		$[129] = t8;
+		$[130] = t34;
+	} else t34 = $[130];
+	return t34;
 }
-function _temp3(event_0) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Event, { record: event_0 }, event_0.id);
+function _temp4(event_0) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Event$1, { record: event_0 }, event_0.id);
 }
-function _temp2$1(event) {
+function _temp3$1(event) {
 	return [...event.tickets];
+}
+function _temp2$2(state_0) {
+	return state_0.data.panel;
 }
 function _temp$4(state) {
 	return state.trigger.selectedId;
@@ -58653,360 +57818,331 @@ function _temp$3(state) {
 }
 // src/client/pages/trigger/components/row.tsx
 function Row(t0) {
-	const $ = (0, import_dist.c)(93);
+	const $ = (0, import_dist.c)(83);
 	const { topic } = t0;
 	const { t } = useTranslation();
 	const { openThread } = useActions();
 	const record = topic.latest;
-	let t1;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = {
-			github: GitHubIcon,
-			gitlab: GitLabIcon,
-			feishu: FeishuIcon
-		};
-		$[0] = t1;
-	} else t1 = $[0];
-	const Icon = t1[record.channel];
+	const Icon = record.channel === "github" ? GitHubIcon : record.channel === "feishu" ? FeishuIcon : GitLabIcon;
 	const status = STATUSES[deliveryStatus({
 		...record,
 		deliveries: topic.events.flatMap(_temp$2)
 	})];
+	let t1;
+	if ($[0] !== record.channel || $[1] !== t) {
+		t1 = record.channel === "feishu" ? t("triggerFeishu") : record.channel === "github" ? "GitHub" : "GitLab";
+		$[0] = record.channel;
+		$[1] = t;
+		$[2] = t1;
+	} else t1 = $[2];
+	const channel = t1;
 	let t2;
-	if ($[1] !== record.channel || $[2] !== t) {
-		t2 = record.channel === "feishu" ? t("triggerFeishu") : record.channel === "github" ? "GitHub" : "GitLab";
-		$[1] = record.channel;
-		$[2] = t;
-		$[3] = t2;
-	} else t2 = $[3];
-	const channel = t2;
+	if ($[3] !== openThread || $[4] !== record.thread.id) {
+		t2 = () => openThread(record.thread.id);
+		$[3] = openThread;
+		$[4] = record.thread.id;
+		$[5] = t2;
+	} else t2 = $[5];
 	let t3;
-	if ($[4] !== openThread || $[5] !== record.thread.id) {
-		t3 = () => openThread(record.thread.id);
-		$[4] = openThread;
-		$[5] = record.thread.id;
-		$[6] = t3;
-	} else t3 = $[6];
-	let t4;
-	if ($[7] !== t) {
-		t4 = t("triggerOpenTopic");
-		$[7] = t;
-		$[8] = t4;
-	} else t4 = $[8];
+	if ($[6] !== t) {
+		t3 = t("triggerOpenTopic");
+		$[6] = t;
+		$[7] = t3;
+	} else t3 = $[7];
+	const t4 = `${t3} ${record.thread.title}`;
 	let t5;
-	if ($[9] !== record.thread.title || $[10] !== t) {
-		t5 = t(record.thread.title);
-		$[9] = record.thread.title;
-		$[10] = t;
-		$[11] = t5;
-	} else t5 = $[11];
-	const t6 = `${t4} ${t5}`;
-	let t7;
-	if ($[12] !== Icon) {
-		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
+	if ($[8] !== Icon) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 			width: 18,
 			height: 18
 		});
-		$[12] = Icon;
-		$[13] = t7;
-	} else t7 = $[13];
-	let t8;
-	if ($[14] !== channel || $[15] !== t7) {
-		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[8] = Icon;
+		$[9] = t5;
+	} else t5 = $[9];
+	let t6;
+	if ($[10] !== channel || $[11] !== t5) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--dsw-alias-card-fill)]",
 			title: channel,
-			children: t7
+			children: t5
 		});
-		$[14] = channel;
-		$[15] = t7;
-		$[16] = t8;
-	} else t8 = $[16];
-	let t9;
-	if ($[17] !== record.thread.title || $[18] !== t) {
-		t9 = t(record.thread.title);
-		$[17] = record.thread.title;
-		$[18] = t;
-		$[19] = t9;
-	} else t9 = $[19];
-	let t10;
-	if ($[20] !== t9) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[10] = channel;
+		$[11] = t5;
+		$[12] = t6;
+	} else t6 = $[12];
+	let t7;
+	if ($[13] !== record.thread.title) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "min-w-0 font-medium text-[var(--dsw-alias-label-primary)] underline-offset-4 group-hover/topic:underline",
-			children: t9
+			children: record.thread.title
 		});
-		$[20] = t9;
-		$[21] = t10;
-	} else t10 = $[21];
-	let t11;
-	if ($[22] !== record.thread.ref) {
-		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[13] = record.thread.title;
+		$[14] = t7;
+	} else t7 = $[14];
+	let t8;
+	if ($[15] !== record.thread.ref) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
 			children: record.thread.ref
 		});
-		$[22] = record.thread.ref;
-		$[23] = t11;
-	} else t11 = $[23];
-	const t12 = KINDS[record.kind];
-	let t13;
-	if ($[24] !== t || $[25] !== t12) {
-		t13 = t(t12);
-		$[24] = t;
-		$[25] = t12;
-		$[26] = t13;
-	} else t13 = $[26];
-	let t14;
-	if ($[27] !== t13) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+		$[15] = record.thread.ref;
+		$[16] = t8;
+	} else t8 = $[16];
+	const t9 = KINDS[record.kind];
+	let t10;
+	if ($[17] !== t || $[18] !== t9) {
+		t10 = t(t9);
+		$[17] = t;
+		$[18] = t9;
+		$[19] = t10;
+	} else t10 = $[19];
+	let t11;
+	if ($[20] !== t10) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
 			tone: "neutral",
-			children: t13
+			children: t10
 		});
-		$[27] = t13;
-		$[28] = t14;
-	} else t14 = $[28];
-	let t15;
-	if ($[29] !== record.mentioned || $[30] !== t) {
-		t15 = record.mentioned && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+		$[20] = t10;
+		$[21] = t11;
+	} else t11 = $[21];
+	let t12;
+	if ($[22] !== record.mentioned || $[23] !== t) {
+		t12 = record.mentioned && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
 			tone: "info",
 			children: t("triggerMentioned")
 		});
-		$[29] = record.mentioned;
-		$[30] = t;
-		$[31] = t15;
-	} else t15 = $[31];
-	let t16;
-	if ($[32] !== t10 || $[33] !== t11 || $[34] !== t14 || $[35] !== t15) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+		$[22] = record.mentioned;
+		$[23] = t;
+		$[24] = t12;
+	} else t12 = $[24];
+	let t13;
+	if ($[25] !== t11 || $[26] !== t12 || $[27] !== t7 || $[28] !== t8) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 			className: "flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-5",
 			children: [
-				t10,
+				t7,
+				t8,
 				t11,
-				t14,
-				t15
+				t12
 			]
 		});
-		$[32] = t10;
-		$[33] = t11;
-		$[34] = t14;
-		$[35] = t15;
-		$[36] = t16;
-	} else t16 = $[36];
-	let t17;
-	if ($[37] !== record.text || $[38] !== t) {
-		t17 = t(record.text);
-		$[37] = record.text;
-		$[38] = t;
-		$[39] = t17;
-	} else t17 = $[39];
-	let t18;
-	if ($[40] !== t17) {
-		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[25] = t11;
+		$[26] = t12;
+		$[27] = t7;
+		$[28] = t8;
+		$[29] = t13;
+	} else t13 = $[29];
+	let t14;
+	if ($[30] !== record.text) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "mt-1 block truncate text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: t17
+			children: record.text
 		});
-		$[40] = t17;
-		$[41] = t18;
-	} else t18 = $[41];
+		$[30] = record.text;
+		$[31] = t14;
+	} else t14 = $[31];
+	let t15;
+	if ($[32] !== channel) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: channel });
+		$[32] = channel;
+		$[33] = t15;
+	} else t15 = $[33];
+	let t16;
+	if ($[34] === Symbol.for("react.memo_cache_sentinel")) {
+		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			"aria-hidden": "true",
+			children: "·"
+		});
+		$[34] = t16;
+	} else t16 = $[34];
+	let t17;
+	if ($[35] !== record.actor) {
+		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: record.actor });
+		$[35] = record.actor;
+		$[36] = t17;
+	} else t17 = $[36];
+	let t18;
+	if ($[37] !== record.human || $[38] !== t) {
+		t18 = !record.human && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("triggerAutomated") });
+		$[37] = record.human;
+		$[38] = t;
+		$[39] = t18;
+	} else t18 = $[39];
 	let t19;
-	if ($[42] !== channel) {
-		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: channel });
-		$[42] = channel;
-		$[43] = t19;
-	} else t19 = $[43];
+	if ($[40] === Symbol.for("react.memo_cache_sentinel")) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			"aria-hidden": "true",
+			children: "·"
+		});
+		$[40] = t19;
+	} else t19 = $[40];
 	let t20;
-	if ($[44] === Symbol.for("react.memo_cache_sentinel")) {
-		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			"aria-hidden": "true",
-			children: "·"
-		});
-		$[44] = t20;
-	} else t20 = $[44];
+	if ($[41] !== t || $[42] !== topic.events.length) {
+		t20 = t("triggerEventCount", { count: topic.events.length });
+		$[41] = t;
+		$[42] = topic.events.length;
+		$[43] = t20;
+	} else t20 = $[43];
 	let t21;
-	if ($[45] !== record.actor) {
-		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: record.actor });
-		$[45] = record.actor;
-		$[46] = t21;
-	} else t21 = $[46];
+	if ($[44] !== t20) {
+		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t20 });
+		$[44] = t20;
+		$[45] = t21;
+	} else t21 = $[45];
 	let t22;
-	if ($[47] !== record.human || $[48] !== t) {
-		t22 = !record.human && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("triggerAutomated") });
-		$[47] = record.human;
-		$[48] = t;
-		$[49] = t22;
-	} else t22 = $[49];
-	let t23;
-	if ($[50] === Symbol.for("react.memo_cache_sentinel")) {
-		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			"aria-hidden": "true",
-			children: "·"
-		});
-		$[50] = t23;
-	} else t23 = $[50];
-	let t24;
-	if ($[51] !== t || $[52] !== topic.events.length) {
-		t24 = t("triggerEventCount", { count: topic.events.length });
-		$[51] = t;
-		$[52] = topic.events.length;
-		$[53] = t24;
-	} else t24 = $[53];
-	let t25;
-	if ($[54] !== t24) {
-		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t24 });
-		$[54] = t24;
-		$[55] = t25;
-	} else t25 = $[55];
-	let t26;
-	if ($[56] !== record.thread.project) {
-		t26 = record.thread.project && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+	if ($[46] !== record.thread.project) {
+		t22 = record.thread.project && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			"aria-hidden": "true",
 			children: "·"
 		}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "[overflow-wrap:anywhere]",
 			children: record.thread.project
 		})] });
-		$[56] = record.thread.project;
-		$[57] = t26;
-	} else t26 = $[57];
-	let t27;
-	if ($[58] !== t19 || $[59] !== t21 || $[60] !== t22 || $[61] !== t25 || $[62] !== t26) {
-		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+		$[46] = record.thread.project;
+		$[47] = t22;
+	} else t22 = $[47];
+	let t23;
+	if ($[48] !== t15 || $[49] !== t17 || $[50] !== t18 || $[51] !== t21 || $[52] !== t22) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 			className: "mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-[var(--dsw-alias-label-tertiary)]",
 			children: [
+				t15,
+				t16,
+				t17,
+				t18,
 				t19,
-				t20,
 				t21,
-				t22,
-				t23,
-				t25,
-				t26
+				t22
 			]
 		});
-		$[58] = t19;
-		$[59] = t21;
-		$[60] = t22;
-		$[61] = t25;
+		$[48] = t15;
+		$[49] = t17;
+		$[50] = t18;
+		$[51] = t21;
+		$[52] = t22;
+		$[53] = t23;
+	} else t23 = $[53];
+	let t24;
+	if ($[54] !== t13 || $[55] !== t14 || $[56] !== t23) {
+		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+			className: "min-w-0 flex-1",
+			children: [
+				t13,
+				t14,
+				t23
+			]
+		});
+		$[54] = t13;
+		$[55] = t14;
+		$[56] = t23;
+		$[57] = t24;
+	} else t24 = $[57];
+	const t25 = status.tone;
+	let t26;
+	if ($[58] !== status.label || $[59] !== t) {
+		t26 = t(status.label);
+		$[58] = status.label;
+		$[59] = t;
+		$[60] = t26;
+	} else t26 = $[60];
+	let t27;
+	if ($[61] !== status.tone || $[62] !== t26) {
+		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+			tone: t25,
+			children: t26
+		});
+		$[61] = status.tone;
 		$[62] = t26;
 		$[63] = t27;
 	} else t27 = $[63];
-	let t28;
-	if ($[64] !== t16 || $[65] !== t18 || $[66] !== t27) {
-		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-			className: "min-w-0 flex-1",
-			children: [
-				t16,
-				t18,
-				t27
-			]
-		});
-		$[64] = t16;
-		$[65] = t18;
-		$[66] = t27;
-		$[67] = t28;
-	} else t28 = $[67];
-	const t29 = status.tone;
+	const t28 = record.at;
+	const t29 = record.at;
 	let t30;
-	if ($[68] !== status.label || $[69] !== t) {
-		t30 = t(status.label);
-		$[68] = status.label;
-		$[69] = t;
-		$[70] = t30;
-	} else t30 = $[70];
+	if ($[64] !== record.at) {
+		t30 = record.at.slice(11, 16);
+		$[64] = record.at;
+		$[65] = t30;
+	} else t30 = $[65];
 	let t31;
-	if ($[71] !== status.tone || $[72] !== t30) {
-		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-			tone: t29,
+	if ($[66] !== record.at || $[67] !== t30) {
+		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("time", {
+			dateTime: t28,
+			title: t29,
+			className: "text-[11px] text-[var(--dsw-alias-label-tertiary)] tabular-nums",
 			children: t30
 		});
-		$[71] = status.tone;
-		$[72] = t30;
-		$[73] = t31;
-	} else t31 = $[73];
-	const t32 = record.at;
-	const t33 = record.at;
-	let t34;
-	if ($[74] !== record.at) {
-		t34 = record.at.slice(11, 16);
-		$[74] = record.at;
-		$[75] = t34;
-	} else t34 = $[75];
-	let t35;
-	if ($[76] !== record.at || $[77] !== t34) {
-		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("time", {
-			dateTime: t32,
-			title: t33,
-			className: "text-[11px] text-[var(--dsw-alias-label-tertiary)] tabular-nums",
-			children: t34
-		});
-		$[76] = record.at;
-		$[77] = t34;
-		$[78] = t35;
-	} else t35 = $[78];
-	let t36;
-	if ($[79] !== t) {
-		t36 = t("triggerOpenTopic");
-		$[79] = t;
-		$[80] = t36;
-	} else t36 = $[80];
-	let t37;
-	if ($[81] !== t36) {
-		t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		$[66] = record.at;
+		$[67] = t30;
+		$[68] = t31;
+	} else t31 = $[68];
+	let t32;
+	if ($[69] !== t) {
+		t32 = t("triggerOpenTopic");
+		$[69] = t;
+		$[70] = t32;
+	} else t32 = $[70];
+	let t33;
+	if ($[71] !== t32) {
+		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
-			children: t36
+			children: t32
 		});
-		$[81] = t36;
-		$[82] = t37;
-	} else t37 = $[82];
-	let t38;
-	if ($[83] !== t31 || $[84] !== t35 || $[85] !== t37) {
-		t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+		$[71] = t32;
+		$[72] = t33;
+	} else t33 = $[72];
+	let t34;
+	if ($[73] !== t27 || $[74] !== t31 || $[75] !== t33) {
+		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 			className: "flex shrink-0 flex-col items-end gap-2",
 			children: [
+				t27,
 				t31,
-				t35,
-				t37
+				t33
 			]
 		});
-		$[83] = t31;
-		$[84] = t35;
-		$[85] = t37;
-		$[86] = t38;
-	} else t38 = $[86];
-	let t39;
-	if ($[87] !== t28 || $[88] !== t3 || $[89] !== t38 || $[90] !== t6 || $[91] !== t8) {
-		t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
+		$[73] = t27;
+		$[74] = t31;
+		$[75] = t33;
+		$[76] = t34;
+	} else t34 = $[76];
+	let t35;
+	if ($[77] !== t2 || $[78] !== t24 || $[79] !== t34 || $[80] !== t4 || $[81] !== t6) {
+		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
 			className: "border-t border-[var(--dsw-alias-border-l3)] first:border-t-0",
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
-				onClick: t3,
-				"aria-label": t6,
+				onClick: t2,
+				"aria-label": t4,
 				className: "group/topic flex w-full cursor-pointer items-start gap-3 rounded-xl border-0 bg-transparent p-4 text-left font-[inherit] outline-none transition-colors hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
 				children: [
-					t8,
-					t28,
-					t38
+					t6,
+					t24,
+					t34
 				]
 			})
 		});
-		$[87] = t28;
-		$[88] = t3;
-		$[89] = t38;
-		$[90] = t6;
-		$[91] = t8;
-		$[92] = t39;
-	} else t39 = $[92];
-	return t39;
+		$[77] = t2;
+		$[78] = t24;
+		$[79] = t34;
+		$[80] = t4;
+		$[81] = t6;
+		$[82] = t35;
+	} else t35 = $[82];
+	return t35;
 }
 function _temp$2(event) {
 	return [...event.deliveries];
 }
 // src/client/pages/trigger/components/summary.tsx
 function Summary() {
-	const $ = (0, import_dist.c)(12);
+	const $ = (0, import_dist.c)(13);
 	const { t } = useTranslation();
 	const { setTriggerFilters } = useActions();
 	const selected = useStore(_temp$1);
+	const panel = useStore(_temp2$1);
 	let t0;
-	if ($[0] !== t) {
-		const topics = groupTopics(RECORDS);
+	if ($[0] !== panel || $[1] !== t) {
+		const topics = groupTopics(recordsOf(panel));
 		t0 = [{
 			value: "all",
 			label: t("triggerReceived"),
@@ -59025,21 +58161,22 @@ function Summary() {
 				kind: "all",
 				mentionedOnly: false,
 				status: value
-			}, t).length,
+			}).length,
 			color: `var(--dsw-alias-state-${value === "stalled" ? "error" : value === "done" ? "success" : "business"}-primary)`
 		}))];
-		$[0] = t;
-		$[1] = t0;
-	} else t0 = $[1];
+		$[0] = panel;
+		$[1] = t;
+		$[2] = t0;
+	} else t0 = $[2];
 	const cards = t0;
 	let t1;
-	if ($[2] !== t) {
+	if ($[3] !== t) {
 		t1 = t("triggerSummary");
-		$[2] = t;
-		$[3] = t1;
-	} else t1 = $[3];
+		$[3] = t;
+		$[4] = t1;
+	} else t1 = $[4];
 	let t2;
-	if ($[4] !== cards || $[5] !== selected || $[6] !== setTriggerFilters || $[7] !== t) {
+	if ($[5] !== cards || $[6] !== selected || $[7] !== setTriggerFilters || $[8] !== t) {
 		t2 = cards.map((card) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 			type: "button",
 			"aria-pressed": selected === card.value,
@@ -59059,35 +58196,39 @@ function Summary() {
 				})]
 			})]
 		}, card.value));
-		$[4] = cards;
-		$[5] = selected;
-		$[6] = setTriggerFilters;
-		$[7] = t;
-		$[8] = t2;
-	} else t2 = $[8];
+		$[5] = cards;
+		$[6] = selected;
+		$[7] = setTriggerFilters;
+		$[8] = t;
+		$[9] = t2;
+	} else t2 = $[9];
 	let t3;
-	if ($[9] !== t1 || $[10] !== t2) {
+	if ($[10] !== t1 || $[11] !== t2) {
 		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "grid grid-cols-2 gap-3 @min-[740px]:grid-cols-4",
 			role: "group",
 			"aria-label": t1,
 			children: t2
 		});
-		$[9] = t1;
-		$[10] = t2;
-		$[11] = t3;
-	} else t3 = $[11];
+		$[10] = t1;
+		$[11] = t2;
+		$[12] = t3;
+	} else t3 = $[12];
 	return t3;
+}
+function _temp2$1(state_0) {
+	return state_0.data.panel;
 }
 function _temp$1(state) {
 	return state.trigger.filters.status;
 }
 // src/client/pages/trigger/page.tsx
 function Trigger() {
-	const $ = (0, import_dist.c)(57);
+	const $ = (0, import_dist.c)(42);
 	const { t } = useTranslation();
 	const filters = useStore(_temp);
 	const { resetTriggerFilters } = useActions();
+	const panel = useStore(_temp2);
 	let t0;
 	let t1;
 	let t2;
@@ -59097,111 +58238,77 @@ function Trigger() {
 	let t6;
 	let t7;
 	let t8;
-	if ($[0] !== filters || $[1] !== resetTriggerFilters || $[2] !== t) {
-		const topics = groupTopics(RECORDS);
-		const records = filterTopics(topics, filters, t);
+	if ($[0] !== filters || $[1] !== panel || $[2] !== resetTriggerFilters || $[3] !== t) {
+		const topics = groupTopics(recordsOf(panel));
+		const records = filterTopics(topics, filters);
 		t5 = "@container flex min-w-0 flex-col gap-5 pb-10";
-		if ($[12] !== t) {
+		if ($[13] !== t) {
 			t6 = t("tabTriggers");
-			$[12] = t;
-			$[13] = t6;
-		} else t6 = $[13];
+			$[13] = t;
+			$[14] = t6;
+		} else t6 = $[14];
 		let t9;
-		if ($[14] !== t) {
+		if ($[15] !== t) {
 			t9 = t("triggerTitle");
-			$[14] = t;
-			$[15] = t9;
-		} else t9 = $[15];
+			$[15] = t;
+			$[16] = t9;
+		} else t9 = $[16];
 		let t10;
-		if ($[16] !== t9) {
+		if ($[17] !== t9) {
 			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 				className: "m-0 text-base leading-6 font-medium",
 				children: t9
 			});
-			$[16] = t9;
-			$[17] = t10;
-		} else t10 = $[17];
+			$[17] = t9;
+			$[18] = t10;
+		} else t10 = $[18];
 		let t11;
-		if ($[18] !== t) {
+		if ($[19] !== t) {
 			t11 = t("triggerDescription");
-			$[18] = t;
-			$[19] = t11;
-		} else t11 = $[19];
+			$[19] = t;
+			$[20] = t11;
+		} else t11 = $[20];
 		let t12;
-		if ($[20] !== t11) {
+		if ($[21] !== t11) {
 			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				className: "m-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
 				children: t11
 			});
-			$[20] = t11;
-			$[21] = t12;
-		} else t12 = $[21];
-		let t13;
-		if ($[22] !== t10 || $[23] !== t12) {
-			t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t10, t12] });
-			$[22] = t10;
-			$[23] = t12;
-			$[24] = t13;
-		} else t13 = $[24];
-		let t14;
-		if ($[25] !== t) {
-			t14 = t("overviewDemo");
-			$[25] = t;
-			$[26] = t14;
-		} else t14 = $[26];
-		let t15;
-		if ($[27] !== t14) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-				tone: "quiet",
-				children: t14
-			});
-			$[27] = t14;
-			$[28] = t15;
-		} else t15 = $[28];
-		if ($[29] !== t13 || $[30] !== t15) {
-			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+			$[21] = t11;
+			$[22] = t12;
+		} else t12 = $[22];
+		if ($[23] !== t10 || $[24] !== t12) {
+			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
 				className: "flex flex-wrap items-start justify-between gap-3",
-				children: [t13, t15]
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t10, t12] })
 			});
-			$[29] = t13;
-			$[30] = t15;
-			$[31] = t7;
-		} else t7 = $[31];
-		if ($[32] === Symbol.for("react.memo_cache_sentinel")) {
+			$[23] = t10;
+			$[24] = t12;
+			$[25] = t7;
+		} else t7 = $[25];
+		if ($[26] === Symbol.for("react.memo_cache_sentinel")) {
 			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Summary, {});
-			$[32] = t8;
-		} else t8 = $[32];
+			$[26] = t8;
+		} else t8 = $[26];
 		t2 = "flex flex-col gap-3";
-		if ($[33] === Symbol.for("react.memo_cache_sentinel")) {
+		if ($[27] === Symbol.for("react.memo_cache_sentinel")) {
 			t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
-			$[33] = t3;
-		} else t3 = $[33];
-		let t16;
-		if ($[34] !== t) {
-			t16 = t("triggerSampleDay");
-			$[34] = t;
-			$[35] = t16;
-		} else t16 = $[35];
-		let t17;
-		if ($[36] !== t16) {
-			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t16 });
-			$[36] = t16;
-			$[37] = t17;
-		} else t17 = $[37];
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			$[27] = t3;
+		} else t3 = $[27];
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				role: "status",
 				children: t("triggerResultCount", {
 					count: records.length,
 					total: topics.length
 				})
-			}), t17]
+			})
 		});
 		t0 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
 		t1 = records.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "m-0 list-none p-0",
-			children: records.map(_temp2)
+			children: records.map(_temp3)
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: "flex flex-col items-center gap-3 px-5 py-12 text-center",
 			children: [
@@ -59227,93 +58334,80 @@ function Trigger() {
 			]
 		});
 		$[0] = filters;
-		$[1] = resetTriggerFilters;
-		$[2] = t;
-		$[3] = t0;
-		$[4] = t1;
-		$[5] = t2;
-		$[6] = t3;
-		$[7] = t4;
-		$[8] = t5;
-		$[9] = t6;
-		$[10] = t7;
-		$[11] = t8;
+		$[1] = panel;
+		$[2] = resetTriggerFilters;
+		$[3] = t;
+		$[4] = t0;
+		$[5] = t1;
+		$[6] = t2;
+		$[7] = t3;
+		$[8] = t4;
+		$[9] = t5;
+		$[10] = t6;
+		$[11] = t7;
+		$[12] = t8;
 	} else {
-		t0 = $[3];
-		t1 = $[4];
-		t2 = $[5];
-		t3 = $[6];
-		t4 = $[7];
-		t5 = $[8];
-		t6 = $[9];
-		t7 = $[10];
-		t8 = $[11];
+		t0 = $[4];
+		t1 = $[5];
+		t2 = $[6];
+		t3 = $[7];
+		t4 = $[8];
+		t5 = $[9];
+		t6 = $[10];
+		t7 = $[11];
+		t8 = $[12];
 	}
 	let t9;
-	if ($[38] !== t0 || $[39] !== t1) {
+	if ($[28] !== t0 || $[29] !== t1) {
 		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: t0,
 			children: t1
 		});
-		$[38] = t0;
-		$[39] = t1;
-		$[40] = t9;
-	} else t9 = $[40];
+		$[28] = t0;
+		$[29] = t1;
+		$[30] = t9;
+	} else t9 = $[30];
 	let t10;
-	if ($[41] !== t) {
-		t10 = t("triggerPreviewNotice");
-		$[41] = t;
-		$[42] = t10;
-	} else t10 = $[42];
-	let t11;
-	if ($[43] !== t10) {
-		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t10
-		});
-		$[43] = t10;
-		$[44] = t11;
-	} else t11 = $[44];
-	let t12;
-	if ($[45] !== t11 || $[46] !== t2 || $[47] !== t3 || $[48] !== t4 || $[49] !== t9) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+	if ($[31] !== t2 || $[32] !== t3 || $[33] !== t4 || $[34] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: t2,
 			children: [
 				t3,
 				t4,
-				t9,
-				t11
+				t9
 			]
 		});
-		$[45] = t11;
-		$[46] = t2;
-		$[47] = t3;
-		$[48] = t4;
-		$[49] = t9;
-		$[50] = t12;
-	} else t12 = $[50];
-	let t13;
-	if ($[51] !== t12 || $[52] !== t5 || $[53] !== t6 || $[54] !== t7 || $[55] !== t8) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[31] = t2;
+		$[32] = t3;
+		$[33] = t4;
+		$[34] = t9;
+		$[35] = t10;
+	} else t10 = $[35];
+	let t11;
+	if ($[36] !== t10 || $[37] !== t5 || $[38] !== t6 || $[39] !== t7 || $[40] !== t8) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: t5,
 			"aria-label": t6,
 			children: [
 				t7,
 				t8,
-				t12
+				t10
 			]
 		});
-		$[51] = t12;
-		$[52] = t5;
-		$[53] = t6;
-		$[54] = t7;
-		$[55] = t8;
-		$[56] = t13;
-	} else t13 = $[56];
-	return t13;
+		$[36] = t10;
+		$[37] = t5;
+		$[38] = t6;
+		$[39] = t7;
+		$[40] = t8;
+		$[41] = t11;
+	} else t11 = $[41];
+	return t11;
 }
-function _temp2(topic) {
+function _temp3(topic) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row, { topic }, topic.latest.thread.id);
+}
+function _temp2(state_0) {
+	return state_0.data.panel;
 }
 function _temp(state) {
 	return state.trigger.filters;
@@ -59354,6 +58448,12 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 		channel: { selected: null },
 		overview: { view: "recent" },
 		setting: initialSettings(),
+		data: {
+			panel: null,
+			ticket: null,
+			loading: false,
+			error: null
+		},
 		trigger: {
 			selectedId: null,
 			openFilter: null,
@@ -59373,6 +58473,47 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 		}
 	}),
 	actions: {
+		setLoading: (draft, loading) => {
+			draft.data.loading = loading;
+			draft.data.error = null;
+		},
+		setLoadError: (draft, error) => {
+			draft.data.loading = false;
+			draft.data.error = error;
+		},
+		receivePanel: (draft, value) => {
+			const { settings, ...panel } = value;
+			const dirty = Object.keys(draft.setting.saved).some((key) => draft.setting.draft[key] !== draft.setting.saved[key]);
+			draft.data.panel = panel;
+			draft.data.loading = false;
+			draft.data.error = null;
+			const { maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings;
+			draft.setting.saved = {
+				maxWorkers,
+				backgroundLimitMinutes,
+				autoMerge,
+				autoMergeMaxLines,
+				deliveryMaxAttempts,
+				deliveryRetryCeilingSeconds
+			};
+			if (!dirty) draft.setting.draft = { ...draft.setting.saved };
+			draft.setting.projects = value.projects;
+			draft.setting.refreshedAt = (/* @__PURE__ */ new Date()).toISOString();
+		},
+		receiveProject: (draft, project) => {
+			draft.setting.projects = draft.setting.projects.map((item) => item.id === project.id ? project : item);
+			if (draft.data.panel) draft.data.panel.projects = draft.data.panel.projects.map((item) => item.id === project.id ? project : item);
+			draft.setting.notice = "project";
+		},
+		receiveTicket: (draft, ticket) => {
+			if (ticket.ticket.id === draft.navigation.ticketId) draft.data.ticket = ticket;
+		},
+		receiveSettings: (draft, value) => {
+			draft.setting.saved = value;
+			draft.setting.draft = { ...value };
+			draft.setting.invalid = false;
+			draft.setting.notice = "saved";
+		},
 		go: (draft, page) => {
 			draft.navigation.page = page;
 			draft.trigger.openFilter = null;
@@ -59387,6 +58528,7 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 		openTicket: (draft, id) => {
 			if (draft.navigation.page !== "ticket/detail") draft.navigation.returnTo = draft.navigation.page === "overview" || draft.navigation.page === "trigger" || draft.navigation.page === "trigger/detail" ? draft.navigation.page : "ticket";
 			draft.navigation.ticketId = id;
+			draft.data.ticket = null;
 			draft.channel.selected = null;
 			draft.navigation.page = "ticket/detail";
 		},
@@ -59418,17 +58560,6 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 			draft.setting.invalid = false;
 			draft.setting.notice = null;
 		},
-		refreshSettingProjects: (draft, at) => {
-			draft.setting.projects = refreshProjects(draft.setting.projects);
-			draft.setting.refreshedAt = at;
-			draft.setting.notice = "refreshed";
-		},
-		toggleSettingProject: (draft, id, enabled) => {
-			const project = draft.setting.projects.find((project) => project.id === id);
-			if (!project || enabled && !project.available) return;
-			project.enabled = enabled;
-			draft.setting.notice = "project";
-		},
 		editSettings: (draft, patch) => {
 			Object.assign(draft.setting.draft, patch);
 			if (patch.autoMerge === false && !validSettings({
@@ -59442,18 +58573,6 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 			for (const key of GROUPS[section]) Object.assign(draft.setting.draft, { [key]: draft.setting.saved[key] });
 			draft.setting.invalid = false;
 			draft.setting.notice = null;
-		},
-		saveSettings: (draft, section) => {
-			const next = { ...draft.setting.saved };
-			for (const key of GROUPS[section]) Object.assign(next, { [key]: draft.setting.draft[key] });
-			if (!validSettings(next)) {
-				draft.setting.invalid = true;
-				draft.setting.notice = null;
-				return;
-			}
-			draft.setting.saved = next;
-			draft.setting.invalid = false;
-			draft.setting.notice = "saved";
 		},
 		setOverviewView: (draft, view) => {
 			draft.overview.view = view;
@@ -59477,263 +58596,112 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 });
 // src/client/panel.tsx
 function Panel() {
-	const $ = (0, import_dist.c)(56);
 	const { t } = useTranslation();
+	const { receivePanel, setLoadError, setLoading } = useActions();
+	const loading = useStore((state) => state.data.loading);
+	const error = useStore((state_0) => state_0.data.error);
+	const { execute } = useAsyncState(async () => {
+		setLoading(true);
+		try {
+			const panel = await getApiNexusPanel();
+			if (!panel || !Array.isArray(panel.tickets) || !panel.settings) throw new Error("面板数据加载失败");
+			receivePanel(panel);
+		} catch (error_0) {
+			setLoadError(error_0 instanceof Error ? error_0.message : "面板数据加载失败");
+		}
+	}, void 0);
+	const selectedTicketId = useStore((state_1) => state_1.navigation.ticketId);
 	const page = usePage();
 	const navigate = useNavigate();
-	const t0 = (0, react.useId)();
-	let t1;
-	if ($[0] !== t0) {
-		t1 = t0.replaceAll(":", "");
-		$[0] = t0;
-		$[1] = t1;
-	} else t1 = $[1];
-	const tabsId = t1;
-	let t2;
-	if ($[2] !== t || $[3] !== tabsId) {
-		t2 = TABS.map((tab) => ({
-			value: tab.kind,
-			label: t(tab.label),
-			id: `${tabsId}-${tab.kind}`,
-			panelId: `${tabsId}-${tab.kind}-panel`
-		}));
-		$[2] = t;
-		$[3] = tabsId;
-		$[4] = t2;
-	} else t2 = $[4];
-	const items = t2;
-	let t3;
-	if ($[5] !== page) {
-		t3 = tabOf(page);
-		$[5] = page;
-		$[6] = t3;
-	} else t3 = $[6];
-	const tab_0 = t3;
-	let t4;
-	if ($[7] === Symbol.for("react.memo_cache_sentinel")) {
-		t4 = { fontFamily: "var(--dsw-font-family, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif)" };
-		$[7] = t4;
-	} else t4 = $[7];
-	let t5;
-	if ($[8] !== t) {
-		t5 = t("title");
-		$[8] = t;
-		$[9] = t5;
-	} else t5 = $[9];
-	let t6;
-	if ($[10] !== t5) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h1", {
-			className: "text-xl leading-7 font-semibold",
-			children: t5
-		});
-		$[10] = t5;
-		$[11] = t6;
-	} else t6 = $[11];
-	let t7;
-	if ($[12] !== t) {
-		t7 = t("desc");
-		$[12] = t;
-		$[13] = t7;
-	} else t7 = $[13];
-	let t8;
-	if ($[14] !== t7) {
-		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mt-1 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: t7
-		});
-		$[14] = t7;
-		$[15] = t8;
-	} else t8 = $[15];
-	let t9;
-	if ($[16] !== t6 || $[17] !== t8) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "min-w-0",
-			children: [t6, t8]
-		});
-		$[16] = t6;
-		$[17] = t8;
-		$[18] = t9;
-	} else t9 = $[18];
-	let t10;
-	if ($[19] !== t) {
-		t10 = t("overviewUnavailable");
-		$[19] = t;
-		$[20] = t10;
-	} else t10 = $[20];
-	let t11;
-	if ($[21] !== t) {
-		t11 = t("openMainSession");
-		$[21] = t;
-		$[22] = t11;
-	} else t11 = $[22];
-	let t12;
-	if ($[23] !== t10 || $[24] !== t11) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			variant: "outline",
-			size: "sm",
-			disabled: true,
-			title: t10,
-			children: t11
-		});
-		$[23] = t10;
-		$[24] = t11;
-		$[25] = t12;
-	} else t12 = $[25];
-	let t13;
-	if ($[26] !== t12 || $[27] !== t9) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex flex-wrap items-start justify-between gap-4",
-			children: [t9, t12]
-		});
-		$[26] = t12;
-		$[27] = t9;
-		$[28] = t13;
-	} else t13 = $[28];
-	let t14;
-	if ($[29] !== t) {
-		t14 = t("tabsLabel");
-		$[29] = t;
-		$[30] = t14;
-	} else t14 = $[30];
-	let t15;
-	if ($[31] !== items || $[32] !== navigate || $[33] !== t14 || $[34] !== tab_0) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: "w-full min-w-0 overflow-x-auto",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
-				size: "sm",
-				items,
-				value: tab_0,
-				onChange: navigate,
-				label: t14,
-				className: "w-fit"
-			})
-		});
-		$[31] = items;
-		$[32] = navigate;
-		$[33] = t14;
-		$[34] = tab_0;
-		$[35] = t15;
-	} else t15 = $[35];
-	let t16;
-	if ($[36] !== t13 || $[37] !== t15) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+	const tabsId = (0, react.useId)().replaceAll(":", "");
+	const items = TABS.map((tab) => ({
+		value: tab.kind,
+		label: t(tab.label),
+		id: `${tabsId}-${tab.kind}`,
+		panelId: `${tabsId}-${tab.kind}-panel`
+	}));
+	const tab_0 = tabOf(page);
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		className: "box-border flex h-full min-h-0 w-full min-w-0 max-w-full flex-col items-center overflow-y-auto px-[clamp(20px,4vw,48px)] text-[13px] leading-5 text-[var(--dsw-alias-label-primary)] [&_*]:box-border",
+		style: { fontFamily: "var(--dsw-font-family, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif)" },
+		children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 			className: "flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-5 pt-7",
-			children: [t13, t15]
-		});
-		$[36] = t13;
-		$[37] = t15;
-		$[38] = t16;
-	} else t16 = $[38];
-	const t17 = `${tabsId}-${tab_0}-panel`;
-	const t18 = `${tabsId}-${tab_0}`;
-	let t19;
-	if ($[39] === Symbol.for("react.memo_cache_sentinel")) {
-		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "overview",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overview, {})
-		});
-		$[39] = t19;
-	} else t19 = $[39];
-	let t20;
-	if ($[40] === Symbol.for("react.memo_cache_sentinel")) {
-		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "ticket",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Ticket, {})
-		});
-		$[40] = t20;
-	} else t20 = $[40];
-	let t21;
-	if ($[41] === Symbol.for("react.memo_cache_sentinel")) {
-		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "ticket/detail",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TicketDetail, {})
-		});
-		$[41] = t21;
-	} else t21 = $[41];
-	let t22;
-	if ($[42] === Symbol.for("react.memo_cache_sentinel")) {
-		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "trigger",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Trigger, {})
-		});
-		$[42] = t22;
-	} else t22 = $[42];
-	let t23;
-	if ($[43] === Symbol.for("react.memo_cache_sentinel")) {
-		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "trigger/detail",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TriggerDetail, {})
-		});
-		$[43] = t23;
-	} else t23 = $[43];
-	let t24;
-	if ($[44] === Symbol.for("react.memo_cache_sentinel")) {
-		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "channel",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Channel, {})
-		});
-		$[44] = t24;
-	} else t24 = $[44];
-	let t25;
-	if ($[45] === Symbol.for("react.memo_cache_sentinel")) {
-		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "channel/detail",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelDetail, {})
-		});
-		$[45] = t25;
-	} else t25 = $[45];
-	let t26;
-	if ($[46] === Symbol.for("react.memo_cache_sentinel")) {
-		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-			cond: "setting",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Setting, {})
-		});
-		$[46] = t26;
-	} else t26 = $[46];
-	let t27;
-	if ($[47] !== page) {
-		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$1, {
-			value: page,
-			children: [
-				t19,
-				t20,
-				t21,
-				t22,
-				t23,
-				t24,
-				t25,
-				t26
-			]
-		});
-		$[47] = page;
-		$[48] = t27;
-	} else t27 = $[48];
-	let t28;
-	if ($[49] !== t17 || $[50] !== t18 || $[51] !== t27) {
-		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			id: t17,
+			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-start justify-between gap-4",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h1", {
+						className: "text-xl leading-7 font-semibold",
+						children: t("title")
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: "mt-1 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: t("desc")
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					variant: "outline",
+					size: "sm",
+					disabled: loading,
+					onClick: () => void execute(),
+					children: loading ? "加载中…" : "刷新"
+				})]
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+				className: "w-full min-w-0 overflow-x-auto",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
+					size: "sm",
+					items,
+					value: tab_0,
+					onChange: navigate,
+					label: t("tabsLabel"),
+					className: "w-fit"
+				})
+			})]
+		}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			id: `${tabsId}-${tab_0}-panel`,
 			role: "tabpanel",
-			"aria-labelledby": t18,
+			"aria-labelledby": `${tabsId}-${tab_0}`,
 			className: "mt-6 flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-6",
-			children: t27
-		});
-		$[49] = t17;
-		$[50] = t18;
-		$[51] = t27;
-		$[52] = t28;
-	} else t28 = $[52];
-	let t29;
-	if ($[53] !== t16 || $[54] !== t28) {
-		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "box-border flex h-full min-h-0 w-full min-w-0 max-w-full flex-col items-center overflow-y-auto px-[clamp(20px,4vw,48px)] text-[13px] leading-5 text-[var(--dsw-alias-label-primary)] [&_*]:box-border",
-			style: t4,
-			children: [t16, t28]
-		});
-		$[53] = t16;
-		$[54] = t28;
-		$[55] = t29;
-	} else t29 = $[55];
-	return t29;
+			children: [error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				children: error
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$1, {
+				value: page,
+				children: [
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "overview",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overview, {})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "ticket",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Ticket, {})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "ticket/detail",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TicketDetail, {}, selectedTicketId ?? "none")
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "trigger",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Trigger, {})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "trigger/detail",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TriggerDetail, {})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "channel",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Channel, {})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "channel/detail",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelDetail, {})
+					}),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "setting",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Setting, {})
+					})
+				]
+			})]
+		})]
+	});
 }
 // src/client/index.tsx
 const inject = [

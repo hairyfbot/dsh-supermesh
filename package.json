@@ -84,10 +84,12 @@
     "croner": "catalog:utils",
     "dsh-h3": "catalog:utils",
     "dsh-taiwind": "catalog:utils",
+    "h3": "catalog:",
     "kysely": "catalog:database",
     "kysely-model": "catalog:database",
     "react-if-lite": "catalog:react",
-    "recharts": "catalog:react"
+    "recharts": "catalog:react",
+    "unstorage": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:cli",

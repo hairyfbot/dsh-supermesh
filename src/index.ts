@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 // 类型增强：仅加载各服务包对 Context 的 declare module 声明，运行时无副作用
 import type { } from '@deepseek-ai/dsh-agent-preset-registry'
 import type { } from '@deepseek-ai/dsh-api-session-controller'
+import type { } from '@deepseek-ai/dsh-client-connection'
 import type { } from '@deepseek-ai/dsh-credentials'
 import type { } from '@deepseek-ai/dsh-session'
 import type { } from '@deepseek-ai/dsh-session-query'
@@ -9,8 +10,11 @@ import type { } from '@deepseek-ai/dsh-workspace'
 
 import type { AgentPreset } from './utils/agent'
 import { agents } from './ai'
+import { handleSessionEvent } from './events/session-event'
+import { server } from './server'
+import { runtime } from './service/runtime'
 
-export const inject = ['agentPresets', 'sessionController', 'workspaceRegistry', 'sessionQuery', 'credentials']
+export const inject = ['agentPresets', 'sessionController', 'workspaceRegistry', 'sessionQuery', 'credentials', 'connection', 'webServer']
 
 export async function apply(ctx: Context): Promise<void> {
   const presets = ctx.get('agentPresets')
@@ -33,4 +37,16 @@ export async function apply(ctx: Context): Promise<void> {
       return () => disposers.forEach(dispose => dispose())
     }, 'nexus:tools')
   })
+
+  ctx.on('session/event', handleSessionEvent)
+
+  await ctx.effect(() => server(ctx, {
+    origin: ctx.webServer.getOrigin(),
+    owner: (event) => {
+      const admission = ctx.connection.admit({ headers: event.req.headers })
+      return !('rejection' in admission) && admission.peer.principal.kind === 'owner'
+    },
+  }), 'nexus:routes')
+
+  await ctx.effect(() => runtime.start(), 'nexus:runtime')
 }

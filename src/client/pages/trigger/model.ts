@@ -1,21 +1,22 @@
 import type { InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '../../../database/types'
+import type { GetApiNexusPanelResponse } from '../../apis/index.type'
 import type { DshNexusKey } from '../../locale'
-import type { OverviewChannelKind, OverviewTask } from '../../types'
+import type { OverviewChannelKind } from '../../types'
 
 export interface EventRecord {
   id: string
-  channel: OverviewChannelKind
+  channel: string
   kind: TriggerKind
   actor: string
   human: boolean
   mentioned: boolean
-  text: DshNexusKey
+  text: string
   at: string
   ref?: string
   url?: string
-  thread: { id: string, kind: ThreadKind, ref: string, title: DshNexusKey, triage: ThreadTriage, project?: string, url?: string }
-  tickets: readonly OverviewTask['id'][]
-  deliveries: readonly { target: InboxTarget, project?: string, status: InboxStatus, read: boolean, attempts?: number, error?: DshNexusKey }[]
+  thread: { id: string, kind: ThreadKind, ref: string, title: string, triage: ThreadTriage, project?: string, url?: string }
+  tickets: readonly string[]
+  deliveries: readonly { target: InboxTarget, project?: string, status: InboxStatus, read: boolean, attempts?: number, error?: string }[]
   skipped?: 'not-mentioned' | 'ignored'
 }
 
@@ -43,7 +44,7 @@ export const STATUSES = {
   'not-delivered': { label: 'triggerNotDelivered', tone: 'quiet' },
 } as const
 
-export function sourceHref(channel: OverviewChannelKind, url?: string): string | undefined {
+export function sourceHref(channel: string, url?: string): string | undefined {
   if (channel === 'feishu' || !url || !URL.canParse(url))
     return undefined
   const parsed = new URL(url)
@@ -58,14 +59,14 @@ export function deliveryStatus(record: EventRecord): DeliveryStatus {
   return record.deliveries.length ? 'done' : 'not-delivered'
 }
 
-export function filterRecords(records: readonly EventRecord[], filters: Filters, text: (key: DshNexusKey) => string): EventRecord[] {
+export function filterRecords(records: readonly EventRecord[], filters: Filters): EventRecord[] {
   const query = filters.query.trim().toLocaleLowerCase()
   return records.filter(record =>
     (filters.channel === 'all' || record.channel === filters.channel)
     && (filters.status === 'all' || (filters.status === 'not-delivered' ? !record.deliveries.length : record.deliveries.some(delivery => delivery.status === filters.status)))
     && (filters.kind === 'all' || record.kind === filters.kind)
     && (!filters.mentionedOnly || record.mentioned)
-    && (!query || [record.id, record.actor, record.channel, record.thread.ref, record.thread.project, record.ref, text(record.thread.title), text(record.text), ...record.tickets].join(' ').toLocaleLowerCase().includes(query)),
+    && (!query || [record.id, record.actor, record.channel, record.thread.ref, record.thread.project, record.ref, record.thread.title, record.text, ...record.tickets].join(' ').toLocaleLowerCase().includes(query)),
   ).sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id))
 }
 
@@ -87,125 +88,34 @@ export function groupTopics(records: readonly EventRecord[]): Topic[] {
   }).sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id))
 }
 
-export function filterTopics(topics: readonly Topic[], filters: Filters, text: (key: DshNexusKey) => string): Topic[] {
-  return topics.filter(topic => filterRecords(topic.events, filters, text).length > 0)
+export function filterTopics(topics: readonly Topic[], filters: Filters): Topic[] {
+  return topics.filter(topic => filterRecords(topic.events, filters).length > 0)
 }
 
 export const TRIAGE = { pending: 'triggerTriagePending', claimed: 'triggerTriageClaimed', ignored: 'triggerTriageIgnored' } as const
 export const THREAD_KINDS = { issue: 'triggerTopicIssue', pull: 'triggerTopicPull', chat: 'triggerTopicChat', ci: 'triggerTopicCi' } as const
 
-export const RECORDS: readonly EventRecord[] = [
-  {
-    id: 'github:hairyf/dsh-third-kernel:issue-162:comment-421',
-    channel: 'github',
-    kind: 'comment',
-    actor: 'hairyf',
-    human: true,
-    mentioned: true,
-    url: 'https://github.com/hairyf/dsh-third-kernel/issues/162#issuecomment-421',
-    text: 'triggerTextLogin',
-    at: '2026-11-14T21:56:00+08:00',
-    thread: { id: 'github:issue-162', kind: 'issue', ref: '#162', title: 'overviewTaskLogin', triage: 'claimed', project: 'hairyf/dsh-third-kernel', url: 'https://github.com/hairyf/dsh-third-kernel/issues/162' },
-    tickets: ['T-105'],
-    deliveries: [{ target: 'project', project: 'hairyf/dsh-third-kernel', status: 'pending', read: true }],
-  },
-  {
-    id: 'feishu:topic-api:message-82',
-    channel: 'feishu',
-    kind: 'comment',
-    actor: '林晓',
-    human: true,
-    mentioned: true,
-    text: 'triggerTextApi',
-    at: '2026-11-14T21:48:00+08:00',
-    thread: { id: 'feishu:topic-api', kind: 'chat', ref: 'API', title: 'overviewTaskApi', triage: 'pending' },
-    tickets: [],
-    deliveries: [{ target: 'main', status: 'pending', read: false }],
-  },
-  {
-    id: 'github:hairyf/dsh-third-kernel:pull-81:review-23',
-    channel: 'github',
-    kind: 'comment',
-    actor: 'hairyf',
-    human: true,
-    mentioned: true,
-    url: 'https://github.com/hairyf/dsh-third-kernel/pull/81#pullrequestreview-23',
-    text: 'triggerTextReview',
-    at: '2026-11-14T21:35:00+08:00',
-    thread: { id: 'github:pull-81', kind: 'pull', ref: 'PR #81', title: 'overviewTaskRemote', triage: 'claimed', project: 'hairyf/dsh-third-kernel', url: 'https://github.com/hairyf/dsh-third-kernel/pull/81' },
-    tickets: ['T-104'],
-    deliveries: [{ target: 'project', project: 'hairyf/dsh-third-kernel', status: 'done', read: true }],
-  },
-  {
-    id: 'gitlab:team/console:issue-38:comment-15',
-    channel: 'gitlab',
-    kind: 'comment',
-    actor: 'chen',
-    human: true,
-    mentioned: true,
-    url: 'https://gitlab.com/team/console/-/issues/38#note_15',
-    text: 'triggerTextDelivery',
-    at: '2026-11-14T21:22:00+08:00',
-    thread: { id: 'gitlab:issue-38', kind: 'issue', ref: '#38', title: 'triggerThreadConsole', triage: 'pending', url: 'https://gitlab.com/team/console/-/issues/38' },
-    tickets: [],
-    deliveries: [{ target: 'main', status: 'stalled', read: false, attempts: 3, error: 'triggerErrorSession' }],
-  },
-  {
-    id: 'github:hairyf/dsh-third-kernel:ci-main:revision-12',
-    channel: 'github',
-    kind: 'ci',
-    actor: 'GitHub Actions',
-    human: false,
-    mentioned: false,
-    text: 'triggerTextCi',
-    at: '2026-11-14T21:10:00+08:00',
-    ref: '7e4b2c1',
-    thread: { id: 'github:ci:main', kind: 'ci', ref: 'main', title: 'triggerThreadCi', triage: 'claimed', project: 'hairyf/dsh-third-kernel' },
-    tickets: [],
-    deliveries: [{ target: 'project', project: 'hairyf/dsh-third-kernel', status: 'done', read: true }],
-  },
-  {
-    id: 'github:hairyf/dsh-third-kernel:issue-162:comment-419',
-    channel: 'github',
-    kind: 'comment',
-    actor: 'contributor',
-    human: true,
-    mentioned: false,
-    url: 'https://github.com/hairyf/dsh-third-kernel/issues/162#issuecomment-419',
-    text: 'triggerTextUnmentioned',
-    at: '2026-11-14T20:52:00+08:00',
-    thread: { id: 'github:issue-162', kind: 'issue', ref: '#162', title: 'overviewTaskLogin', triage: 'claimed', project: 'hairyf/dsh-third-kernel', url: 'https://github.com/hairyf/dsh-third-kernel/issues/162' },
-    tickets: ['T-105'],
-    deliveries: [],
-    skipped: 'not-mentioned',
-  },
-  {
-    id: 'feishu:topic-chatter:message-17',
-    channel: 'feishu',
-    kind: 'comment',
-    actor: '林晓',
-    human: true,
-    mentioned: false,
-    text: 'triggerTextIgnored',
-    at: '2026-11-14T20:35:00+08:00',
-    thread: { id: 'feishu:topic-chatter', kind: 'chat', ref: '讨论', title: 'triggerThreadChatter', triage: 'ignored' },
-    tickets: [],
-    deliveries: [],
-    skipped: 'ignored',
-  },
-  {
-    id: 'github:hairyf/dsh-third-kernel:pull-81:open',
-    channel: 'github',
-    kind: 'open',
-    actor: 'hairyf',
-    human: true,
-    mentioned: true,
-    url: 'https://github.com/hairyf/dsh-third-kernel/pull/81',
-    text: 'triggerTextOpen',
-    at: '2026-11-14T20:18:00+08:00',
-    ref: 'nexus/T-104',
-    thread: { id: 'github:pull-81', kind: 'pull', ref: 'PR #81', title: 'overviewTaskRemote', triage: 'claimed', project: 'hairyf/dsh-third-kernel', url: 'https://github.com/hairyf/dsh-third-kernel/pull/81' },
-    tickets: ['T-104'],
-    deliveries: [{ target: 'project', project: 'hairyf/dsh-third-kernel', status: 'done', read: true }],
-  },
-]
+export function recordsOf(panel: Pick<GetApiNexusPanelResponse, 'projects' | 'topics' | 'deliveries'> | null): EventRecord[] {
+  if (!panel)
+    return []
+  return panel.topics.triggers.flatMap((trigger) => {
+    const thread = panel.topics.threads.find(thread => thread.id === trigger.threadId)
+    if (!thread)
+      return []
+    return [{
+      id: trigger.id,
+      channel: trigger.channelId,
+      kind: trigger.kind,
+      actor: trigger.actorName ?? '',
+      human: Boolean(trigger.human),
+      mentioned: Boolean(trigger.mentioned),
+      text: trigger.text,
+      at: trigger.at,
+      ref: trigger.ref ?? undefined,
+      url: trigger.url ?? undefined,
+      thread: { id: thread.id, kind: thread.kind, ref: thread.refId, title: thread.title, triage: thread.triage, project: panel.projects.find(project => project.id === thread.projectId)?.name, url: thread.url ?? undefined },
+      tickets: panel.topics.subscriptions.filter(link => link.threadId === thread.id).map(link => link.ticketId),
+      deliveries: panel.deliveries.filter(message => message.triggerId === trigger.id).map(message => ({ target: message.type, project: panel.projects.find(project => project.id === message.projectId)?.name, status: message.status, read: Boolean(message.readAt), attempts: message.deliveryAttempts, error: message.deliveryError ?? undefined })),
+    }]
+  })
+}

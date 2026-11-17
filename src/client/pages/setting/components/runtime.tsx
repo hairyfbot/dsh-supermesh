@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import type { DshNexusKey } from '../../../locale'
 import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useAsyncFn } from '@reause/core'
 import { useId } from 'react'
+import { patchApiNexusSettings } from '../../../apis'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 import { GROUPS, LIMITS, validSettings } from '../model'
@@ -11,7 +13,17 @@ export function Runtime(): ReactNode {
   const section = useStore(state => state.setting.section)
   const draft = useStore(state => state.setting.draft)
   const saved = useStore(state => state.setting.saved)
-  const { editSettings, saveSettings, resetSettings } = useActions()
+  const ready = useStore(state => state.data.panel !== null)
+  const { editSettings, receiveSettings, resetSettings } = useActions()
+  const [saving, save] = useAsyncFn(async () => {
+    if (section === 'projects')
+      return
+    const patch = Object.fromEntries(GROUPS[section].map(key => [key, draft[key]]))
+    const settings = await patchApiNexusSettings(patch)
+    if (!settings || !validSettings(settings))
+      throw new Error('设置保存失败')
+    receiveSettings(settings)
+  })
   const prefix = useId()
   if (section === 'projects')
     return null
@@ -31,7 +43,7 @@ export function Runtime(): ReactNode {
       onSubmit={(event) => {
         event.preventDefault()
         if (valid && dirty)
-          saveSettings(section)
+          void save()
       }}
       aria-labelledby={`${prefix}-runtime`}
     >
@@ -42,7 +54,7 @@ export function Runtime(): ReactNode {
       {fields.filter(field => (GROUPS[section] as readonly string[]).includes(field.key)).map((field) => {
         const limits = LIMITS[field.key]
         const value = draft[field.key]
-        const disabled = field.key === 'autoMergeMaxLines' && !draft.autoMerge
+        const disabled = field.key === 'autoMergeMaxLines'
         const invalid = !Number.isInteger(value) || value < limits.min || value > limits.max
         const id = `${prefix}-${field.key}`
         return (
@@ -67,9 +79,10 @@ export function Runtime(): ReactNode {
             <h4 className="m-0 text-xs font-medium">{t('settingAutoMerge')}</h4>
             <p className="m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAutoMergeHelp')}</p>
           </div>
-          <Switch checked={draft.autoMerge} label={t('settingAutoMerge')} onChange={autoMerge => editSettings({ autoMerge })} />
+          <Switch disabled checked={draft.autoMerge} label={t('settingAutoMerge')} onChange={autoMerge => editSettings({ autoMerge })} />
         </div>
       )}
+      {saving.error && <p role="alert" className="px-4">{saving.error.message}</p>}
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5">
         <div className="min-w-0 flex-1 basis-60">
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('settingPersistenceOnly')}</p>
@@ -77,7 +90,7 @@ export function Runtime(): ReactNode {
         </div>
         <div className="flex items-center gap-2">
           <Button type="button" size="sm" variant="ghost" disabled={!dirty} onClick={() => resetSettings(section)}>{t('settingDiscard')}</Button>
-          <Button type="submit" size="sm" variant="primary" disabled={!dirty || !valid}>{t('settingSave')}</Button>
+          <Button type="submit" size="sm" variant="primary" disabled={!ready || saving.loading || !dirty || !valid}>{t('settingSave')}</Button>
         </div>
       </footer>
     </form>

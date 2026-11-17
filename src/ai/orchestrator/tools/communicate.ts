@@ -1,4 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
 export const ask_user = defineTool({
   name: 'ask_user',
@@ -18,9 +20,22 @@ export const ask_user = defineTool({
     schema: { type: 'string', description: 'ask 的 id 与投递去向。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建 Inbox(type=user, kind=ask, status=pending)；有 triggerId 就按该触发发到对应渠道
-    // TODO: 人一直不答就停在 type=user，不要代答，也不要重复问
-    throw new Error('ask_user 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'main')
+      throw new Error('仅主编排可调用')
+    const trigger = args.triggerId ? await db.trigger.findById(args.triggerId) : null
+    if (args.triggerId && !trigger)
+      throw new Error('触发不存在')
+    const thread = trigger ? await db.thread.findById(trigger.threadId) : null
+    if (trigger && (!thread || thread.kind === 'ci' || !thread.url))
+      throw new Error('该触发没有可回复地址')
+    const pending = (await db.inbox.listPendingAsk()).find(row => row.origin === 'main' && row.message === args.question && row.triggerId === (args.triggerId ?? null))
+    if (pending)
+      return JSON.stringify({ id: pending.id, status: 'pending', delivery: pending.triggerId ? 'queued' : 'panel' })
+    const row = await db.inbox.enqueueAsk({ type: 'user', origin: 'main', kind: 'ask', triggerId: trigger?.id ?? null, threadId: thread?.id ?? null, projectId: thread?.projectId ?? null, message: args.question })
+    return JSON.stringify({ id: row.id, status: 'pending', delivery: row.triggerId ? 'queued' : 'panel' })
   },
 })

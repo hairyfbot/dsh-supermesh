@@ -1,9 +1,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
-/**
- * 项目编排的 `report`：能带 supervisorId。
- * Worker 的 `report` 是另一个工具（没有 supervisorId，它不知道 Supervisor 存在），不要合并。
- */
 export const report = defineTool({
   name: 'report',
   description: '向上级报事实：状态 + 一句话摘要。发完继续，不等答复。',
@@ -32,17 +30,23 @@ export const report = defineTool({
     schema: { type: 'string', description: '是否已投递。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 往 Inbox 投一条 kind=ticket；带 supervisorId 路由到该 Supervisor，否则投给主编排
-    // TODO: ticketId 只写入 Inbox.ticketId 溯源，不参与路由 —— 路由只认 supervisorId
-    throw new Error('report 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'project' || !identity.projectId)
+      throw new Error('仅项目编排可调用')
+    if (args.ticketId) {
+      const ticket = await db.ticket.findById(args.ticketId)
+      if (!ticket || ticket.projectId !== identity.projectId)
+        throw new Error('工单不属于当前项目')
+    }
+    if (args.supervisorId && !(await db.supervisor.findById(args.supervisorId)))
+      throw new Error('Supervisor 不存在')
+    return JSON.stringify(await db.inbox.enqueue({ type: args.supervisorId ? 'supervisor' : 'main', projectId: identity.projectId, supervisorId: args.supervisorId ?? null, origin: 'project', kind: 'ticket', ticketId: args.ticketId ?? null, title: args.state, message: args.summary }))
   },
 })
 
-/**
- * 项目编排的 `ask`：能带 supervisorId。
- * Worker 的 `ask` 是另一个工具（没有 supervisorId），不要合并。
- */
 export const ask = defineTool({
   name: 'ask',
   description: '向上级提问。发完这条工作线停下，答案到了会被 prompt 回来；会话本身继续处理别的票。',
@@ -65,10 +69,17 @@ export const ask = defineTool({
     schema: { type: 'string', description: 'ask 的 id 与投递去向。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建一条 Inbox(kind=ask, status=pending)，按 supervisorId 与否决定路由
-    // TODO: 挂起「这条工作线」而不是挂起会话
-    throw new Error('ask 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'project' || !identity.projectId)
+      throw new Error('仅项目编排可调用')
+    if (args.ticketId)
+      await db.ticket.requireOpen(args.ticketId, identity.projectId)
+    if (args.supervisorId && (await db.supervisor.findById(args.supervisorId))?.status !== 'active')
+      throw new Error('Supervisor 不存在或已关闭')
+    return JSON.stringify(await db.inbox.enqueueAsk({ type: args.supervisorId ? 'supervisor' : 'main', projectId: identity.projectId, supervisorId: args.supervisorId ?? null, origin: 'project', kind: 'ask', ticketId: args.ticketId ?? null, message: args.question }))
   },
 })
 
@@ -86,9 +97,12 @@ export const escalate = defineTool({
     schema: { type: 'string', description: '上交后的处理者。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 就地改 type 为上级、escalations+1、lastEscalatedAt=now、deadline 重置、status 保持 pending
-    // TODO: 不新建记录 —— 一个问题只有一条记录、一个身份；只有从 type=user 升级出去的那一次要回渠道补一句话
-    throw new Error('escalate 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'project' || !identity.projectId)
+      throw new Error('仅项目编排可调用')
+    return JSON.stringify(await db.inbox.escalateScoped(args.askId, { type: 'project', projectId: identity.projectId }, new Date().toISOString()))
   },
 })

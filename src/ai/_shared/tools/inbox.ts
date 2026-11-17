@@ -1,4 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
 export const inbox_list = defineTool({
   name: 'inbox_list',
@@ -13,10 +15,17 @@ export const inbox_list = defineTool({
     schema: { type: 'string', description: '收件箱消息列表，每条一行。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 读 Inbox 表，按会话身份过滤 type（main / project / supervisor）且 status=pending，按 createdAt 升序
-    // TODO: detail=false 时只返回 id / kind / 摘要；detail=true 时附正文
-    throw new Error('inbox_list 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role === 'worker')
+      throw new Error('Worker 没有收件箱')
+    const scope = identity.role === 'project' && identity.projectId ? { type: 'project' as const, projectId: identity.projectId } : identity.role === 'supervisor' && identity.supervisorId ? { type: 'supervisor' as const, supervisorId: identity.supervisorId } : identity.role === 'main' ? { type: 'main' as const } : null
+    if (!scope)
+      throw new Error('会话身份不完整')
+    const rows = await db.inbox.listScoped(scope)
+    return JSON.stringify(rows.map(row => args.detail ? row : { id: row.id, kind: row.kind, summary: row.title ?? row.message.split('\n')[0].slice(0, 120) }))
   },
 })
 
@@ -35,9 +44,15 @@ export const inbox_kill = defineTool({
     schema: { type: 'string', description: '实际标为 done 的条数。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 把给定 id 的 Inbox 行写 status=done + doneAt，返回受影响条数
-    // TODO: 不属于当前会话的 id 必须拒绝，不能跨身份改别人的收件箱
-    throw new Error('inbox_kill 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role === 'worker')
+      throw new Error('Worker 没有收件箱')
+    const scope = identity.role === 'project' && identity.projectId ? { type: 'project' as const, projectId: identity.projectId } : identity.role === 'supervisor' && identity.supervisorId ? { type: 'supervisor' as const, supervisorId: identity.supervisorId } : identity.role === 'main' ? { type: 'main' as const } : null
+    if (!scope)
+      throw new Error('会话身份不完整')
+    return String(await db.inbox.completeScoped(args.ids, scope, new Date().toISOString()))
   },
 })

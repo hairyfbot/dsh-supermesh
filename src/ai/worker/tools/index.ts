@@ -1,9 +1,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
+import { db } from '../../../database'
+import { session } from '../../../service/session'
 
-/**
- * Worker 的 `report`：没有 supervisorId。
- * Worker 不知道 Supervisor 存不存在，也不该知道 —— 它只有一个去处：项目编排。
- */
 export const report = defineTool({
   name: 'report',
   description: '报告进度。发完继续干活，不等回复。要对方动脑子的走 ask。',
@@ -24,17 +22,19 @@ export const report = defineTool({
     schema: { type: 'string', description: '是否已投递。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 更新 Worker.report / reportAt，往项目编排投一条 Inbox(kind=ticket)
-    // TODO: 票已结束时拒绝 —— 不要在一个已经作废的票上补报
-    throw new Error('report 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'worker' || !identity.workerId || !identity.ticketId)
+      throw new Error('仅 Worker 可调用')
+    const worker = await db.worker.findById(identity.workerId)
+    if (!worker || worker.status === 'ended')
+      throw new Error('Worker 已结束')
+    return JSON.stringify(await db.worker.reportProgress(worker.id, args.state, args.summary))
   },
 })
 
-/**
- * Worker 的 `ask`：没有 supervisorId，只有一个去处 —— 项目编排。
- * 项目编排的 `ask` 是另一个工具（能带 supervisorId），不要合并。
- */
 export const ask = defineTool({
   name: 'ask',
   description: '问项目编排。发完这条工作线停下，等答案被 prompt 回来。不要一边问一边继续做。',
@@ -49,9 +49,16 @@ export const ask = defineTool({
     schema: { type: 'string', description: 'ask 的 id。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async () => {
-    // TODO: 建一条 Inbox(kind=ask, type=project)，停住这条工作线
-    // TODO: 需求不清楚、要人拍板、要改别的仓库、权限或环境问题，都走这里
-    throw new Error('ask 尚未实现')
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Nexus 身份')
+    if (identity.role !== 'worker' || !identity.workerId || !identity.ticketId)
+      throw new Error('仅 Worker 可调用')
+    const ticket = await db.ticket.requireOpen(identity.ticketId)
+    const worker = await db.worker.findById(identity.workerId)
+    if (!worker || worker.status === 'ended')
+      throw new Error('Worker 已结束')
+    return JSON.stringify(await db.inbox.enqueueAsk({ type: 'project', projectId: ticket.projectId, origin: 'worker', kind: 'ask', ticketId: ticket.id, workerId: worker.id, message: args.question }))
   },
 })

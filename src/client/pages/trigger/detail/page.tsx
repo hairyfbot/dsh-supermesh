@@ -3,14 +3,15 @@ import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { ArrowLeftIcon } from '../../../components/icons'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
-import { groupTopics, RECORDS, sourceHref, THREAD_KINDS, TRIAGE } from '../model'
+import { groupTopics, recordsOf, sourceHref, THREAD_KINDS, TRIAGE } from '../model'
 import { Event } from './components/event'
 
 export function TriggerDetail(): ReactNode {
   const { t } = useTranslation()
   const { go, openTicket } = useActions()
   const id = useStore(state => state.trigger.selectedId)
-  const topic = groupTopics(RECORDS).find(topic => topic.latest.thread.id === id)
+  const panel = useStore(state => state.data.panel)
+  const topic = groupTopics(recordsOf(panel)).find(topic => topic.latest.thread.id === id)
   const back = <Button size="sm" variant="ghost" icon={<ArrowLeftIcon width={16} height={16} />} onClick={() => go('trigger')}>{t('triggerBack')}</Button>
   if (!topic) {
     return (
@@ -32,7 +33,7 @@ export function TriggerDetail(): ReactNode {
           <span>{channel}</span>
           {href
             ? (
-                <a href={href} target="_blank" rel="noopener noreferrer" title={t('triggerSampleLink')} className="text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline">
+                <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline">
                   {latest.thread.ref}
                   {' '}
                   ↗
@@ -41,9 +42,8 @@ export function TriggerDetail(): ReactNode {
             : <span>{latest.thread.ref}</span>}
           <Tag tone="neutral">{t(THREAD_KINDS[latest.thread.kind])}</Tag>
           <Tag tone="outline">{t(TRIAGE[latest.thread.triage])}</Tag>
-          <Tag tone="quiet">{t('overviewDemo')}</Tag>
         </div>
-        <h2 className="m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]">{t(latest.thread.title)}</h2>
+        <h2 className="m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]">{latest.thread.title}</h2>
       </header>
       <div className="grid min-w-0 gap-5 @min-[780px]:grid-cols-[minmax(0,1fr)_250px]">
         <div className="min-w-0">
@@ -78,7 +78,6 @@ export function TriggerDetail(): ReactNode {
             <div className="mt-3 flex flex-wrap gap-2">{tickets.length ? tickets.map(ticket => <Button key={ticket} size="sm" variant="outline" onClick={() => openTicket(ticket)}>{ticket}</Button>) : <span className="text-xs text-[var(--dsw-alias-label-tertiary)]">{t('triggerNoTask')}</span>}</div>
           </section>
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerExternalText')}</p>
-          {href && <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerSampleLink')}</p>}
         </aside>
       </div>
     </section>

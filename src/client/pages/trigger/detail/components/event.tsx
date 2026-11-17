@@ -21,7 +21,7 @@ export function Event({ record }: { record: EventRecord }): ReactNode {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {href && (
-              <a href={href} target="_blank" rel="noopener noreferrer" title={t('triggerSampleLink')} className="text-[11px] text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline">
+              <a href={href} target="_blank" rel="noopener noreferrer" className="text-[11px] text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline">
                 {t(record.kind === 'comment' ? 'triggerOpenComment' : 'triggerOpenEvent')}
                 {' '}
                 ↗
@@ -36,7 +36,7 @@ export function Event({ record }: { record: EventRecord }): ReactNode {
             </time>
           </div>
         </header>
-        <p className="my-3 whitespace-pre-wrap text-[13px] leading-6 text-[var(--dsw-alias-label-primary)] [overflow-wrap:anywhere]">{t(record.text)}</p>
+        <p className="my-3 whitespace-pre-wrap text-[13px] leading-6 text-[var(--dsw-alias-label-primary)] [overflow-wrap:anywhere]">{record.text}</p>
         <div className="flex flex-wrap items-center gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3 text-xs text-[var(--dsw-alias-label-secondary)]">
           <span>{t('triggerDelivery')}</span>
         </div>
@@ -53,7 +53,7 @@ export function Event({ record }: { record: EventRecord }): ReactNode {
                     {delivery.status === 'pending' && <span className="block text-[11px] text-[var(--dsw-alias-label-secondary)]">{t(delivery.read ? 'triggerReadPending' : 'triggerQueued')}</span>}
                     {delivery.error && (
                       <p className="m-0 mt-1 text-[11px] text-[var(--dsw-alias-state-error-primary)]">
-                        {t(delivery.error)}
+                        {delivery.error}
                         {' '}
                         ·
                         {' '}
@@ -73,14 +73,7 @@ export function Event({ record }: { record: EventRecord }): ReactNode {
             <code>{record.ref}</code>
           </p>
         )}
-        {/* <p className="mb-0 mt-3 break-all font-mono text-[10px] leading-4 text-[var(--dsw-alias-label-tertiary)]">
-          <span className="font-sans">
-            {t('triggerEventId')}
-            :
-            {' '}
-          </span>
-          {record.id}
-        </p> */}
+
       </article>
     </li>
   )

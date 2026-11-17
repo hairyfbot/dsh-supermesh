@@ -282,66 +282,30 @@ export type Inbox = {
 export type Project = {
     id: string;
     /**
-     * 项目挂在哪条 git 渠道下
-     */
-    channelId: string;
-    /**
-     * 仓库全名，例如 `hairyf/dsh-third-kernel`
+     * 工作区显示名；同名工作区允许存在，不作为仓库身份。
      */
     name: string;
     /**
-     * 对应的 DSH 工作区 id；一个工作区最多属于一个项目
+     * 一个工作区最多对应一个项目。
      */
     workspaceId: string;
     /**
-     * 本地克隆目录
+     * 本地 Git 工作区目录。
      */
     directory: string;
     /**
-     * 项目编排会话 id；为空表示还没起过。冒号后面的 session 可以随时换，这里只记最近一次
+     * Git remote 地址；可空以兼容历史，自动发现候选须配置 remote。
+     */
+    remoteUrl: string | null;
+    /**
+     * 是否纳入 Nexus 编排范围；工作区同步不得覆盖人工选择。
+     */
+    enabled: Generated<number>;
+    /**
+     * 最近一次项目编排会话。
      */
     orchestratorSessionId: string | null;
     createdAt: string;
-    updatedAt: string;
-};
-export type Setting = {
-    /**
-     * 固定 `global`
-     */
-    id: string;
-    /**
-     * 同时能跑几个 Worker（槽位上限）。超出就排队 `queued`。范围 1–16。
-     *
-     * **额外留 1 个槽位给「人的消息」和状态查询**：正常槽位满时仍能插进去，
-     * 所以新人派活永远挤不掉你已经在做的活。
-     */
-    maxWorkers: Generated<number>;
-    /**
-     * 后台工作最多还能跑几分钟。到点杀掉后台、把票报成 waiting。
-     *
-     * 回合结束时如果还有 shell job 或 subagent 在跑，票继续占着槽位、继续算
-     * working，不报 waiting —— 否则槽位被别的票占了，任务起了服务器却没人接。
-     */
-    backgroundLimitMinutes: Generated<number>;
-    /**
-     * 自动合并。**默认关**。
-     *
-     * 开着时也只对本票开的 PR 生效，且要满足：`ready`、批准覆盖 head、
-     * 增删合计小于行数阈值。推新版本前先撤销自动合并。
-     */
-    autoMerge: Generated<number>;
-    /**
-     * 自动合并的行数上限（增 + 删）。
-     */
-    autoMergeMaxLines: Generated<number>;
-    /**
-     * 投递连续失败几次转 `stalled`
-     */
-    deliveryMaxAttempts: Generated<number>;
-    /**
-     * 投递重试的封顶间隔（秒）。退避 2s → 4s → … → 这个值
-     */
-    deliveryRetryCeilingSeconds: Generated<number>;
     updatedAt: string;
 };
 export type SourceState = {
@@ -572,7 +536,6 @@ export type DB = {
     ci_watch: CiWatch;
     inbox: Inbox;
     project: Project;
-    setting: Setting;
     source_state: SourceState;
     supervisor: Supervisor;
     supervisor_ticket: SupervisorTicket;
