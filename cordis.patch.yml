@@ -1,5 +1,12 @@
 - insert:
+    - id: experimental-worktree
+      name: '@deepseek-ai/dsh-experimental-worktree'
     - id: dsh-nexus
       name: dsh-nexus
     - id: dsh-taiwind
       name: dsh-taiwind
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    customSkillDirs:
+      - E:/projects/dsh-nexus/assets/skills

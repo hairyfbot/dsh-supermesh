@@ -16,7 +16,7 @@ import { getServerContext, getServerOptions } from "dsh-h3/utils";
 import { fetch } from "undici";
 import { defineWebServer } from "dsh-h3";
 import { HTTPError, defineHandler, getRouterParam, readBody } from "h3";
-import { createUserMessage } from "@deepseek-ai/dsh-llm";
+import { ReasoningEffortId, createUserMessage } from "@deepseek-ai/dsh-llm";
 import { access, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { Session, SessionId } from "@deepseek-ai/dsh-session";
 import { realpathNormalize } from "@deepseek-ai/dsh-workspace";
@@ -976,11 +976,18 @@ var Ticket = class Ticket extends Model {
 		}).where("id", "=", id).execute();
 	}
 	async finish(id, status, endedAt, updatedAt) {
-		await this.db.updateTable("ticket").set({
-			status,
-			endedAt,
-			updatedAt
-		}).where("id", "=", id).execute();
+		await this.db.transaction().execute(async (trx) => {
+			await trx.updateTable("ticket").set({
+				status,
+				endedAt,
+				updatedAt,
+				prepareError: null
+			}).where("id", "=", id).execute();
+			await trx.updateTable("inbox").set({
+				status: "done",
+				doneAt: endedAt
+			}).where("ticketId", "=", id).where("kind", "=", "ask").where("status", "in", ["pending", "stalled"]).execute();
+		});
 	}
 	async setPullRequest(id, prUrl, prState, ciState) {
 		await this.db.updateTable("ticket").set({
@@ -1029,7 +1036,15 @@ var Ticket = class Ticket extends Model {
 			const duplicate = await trx.selectFrom("ticket_thread").select("ticketId").where("threadId", "in", ids).executeTakeFirst();
 			if (duplicate) throw new Error(`来源话题已关联工单：${duplicate.ticketId}`);
 			const now = (/* @__PURE__ */ new Date()).toISOString();
-			const id = `T-${randomUUID()}`;
+			let sequence = (await trx.selectFrom("ticket").select("id").execute()).reduce((max, row) => {
+				const match = /^T-(\d+)$/.exec(row.id);
+				return match ? Math.max(max, Number(match[1])) : max;
+			}, 0);
+			let id = `T-${String(sequence + 1).padStart(3, "0")}`;
+			while (await trx.selectFrom("ticket").select("id").where("id", "=", id).executeTakeFirst()) {
+				sequence++;
+				id = `T-${String(sequence + 1).padStart(3, "0")}`;
+			}
 			const row = {
 				id,
 				projectId,
@@ -1060,6 +1075,47 @@ var Ticket = class Ticket extends Model {
 		if (!row || projectId !== void 0 && row.projectId !== projectId) throw new Error("工单不存在或不属于当前项目");
 		if (row.status === "done" || row.status === "cancelled") throw new Error("工单已结束");
 		return row;
+	}
+	async reopen(id, updatedAt) {
+		const result = await this.db.updateTable("ticket").set({
+			status: "waiting",
+			endedAt: null,
+			updatedAt
+		}).where("id", "=", id).where("status", "in", ["done", "cancelled"]).executeTakeFirst();
+		return Number(result.numUpdatedRows ?? 0) > 0;
+	}
+	async closeThread(threadId, outcome, at, branch) {
+		const thread = await this.db.selectFrom("thread").selectAll().where("id", "=", threadId).executeTakeFirst();
+		if (!thread?.url || thread.kind !== "pull") return [];
+		const ended = [];
+		for (const { ticketId } of await this.db.selectFrom("ticket_thread").select("ticketId").where("threadId", "=", threadId).orderBy("createdAt").execute()) {
+			const row = await this.findById(ticketId);
+			if (!row || CLOSED_STATUS.includes(row.status)) continue;
+			const worker = await this.latestWorker(ticketId);
+			if (row.prUrl === thread.url || !!branch && worker?.branch === branch) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
+			else if (row.prUrl || !await this.onlyFollow(ticketId)) continue;
+			else await this.save(ticketId, { prState: outcome });
+			if (await this.unfinished(ticketId, at, worker)) continue;
+			const updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+			await this.finish(ticketId, "done", worker && Date.parse(worker.createdAt) > Date.parse(at) ? updatedAt : at, updatedAt);
+			ended.push(ticketId);
+		}
+		return ended;
+	}
+	async latestWorker(ticketId) {
+		return this.db.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
+	}
+	async onlyFollow(ticketId) {
+		return (await this.db.selectFrom("ticket_thread").innerJoin("thread", "thread.id", "ticket_thread.threadId").select("thread.id").where("ticket_thread.ticketId", "=", ticketId).where("thread.kind", "=", "pull").execute()).length === 1;
+	}
+	async unfinished(ticketId, at, worker) {
+		if (!worker) return false;
+		if (await this.tookUpSince(ticketId, worker.reportAt ?? worker.createdAt)) return true;
+		if (!(Date.parse(worker.createdAt) > Date.parse(at))) return false;
+		return !["ready", "dropped"].includes(worker.reportState ?? "");
+	}
+	async tookUpSince(ticketId, since) {
+		return !!await this.db.selectFrom("inbox").select("id").where("ticketId", "=", ticketId).where("origin", "=", "channel").where("kind", "=", "trigger").where("status", "!=", "done").where("readAt", "is not", null).where("createdAt", ">", since).executeTakeFirst();
 	}
 	async setPausedIfOpen(id, paused, updatedAt) {
 		return this.db.updateTable("ticket").set({
@@ -1155,6 +1211,9 @@ var Trigger = class extends Model {
 	async findById(id) {
 		return this.db.selectFrom("trigger").selectAll().where("id", "=", id).executeTakeFirst();
 	}
+	async findLatestByThread(threadId) {
+		return this.db.selectFrom("trigger").selectAll().where("threadId", "=", threadId).orderBy("at", "desc").orderBy("id", "desc").executeTakeFirst();
+	}
 	async listRecent(limit = 100) {
 		return this.db.selectFrom("trigger").selectAll().orderBy("at", "desc").orderBy("id").limit(Math.max(1, Math.min(1e3, limit))).execute();
 	}
@@ -1176,6 +1235,9 @@ var Worker = class Worker extends Model {
 	}
 	async findRunningByBranch(branch) {
 		return this.db.selectFrom("worker").selectAll().where("branch", "=", branch).where("status", "=", "running").executeTakeFirst();
+	}
+	async findByBranch(branch) {
+		return this.db.selectFrom("worker").selectAll().where("branch", "=", branch).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
 	}
 	async start(id, startedAt) {
 		await this.db.updateTable("worker").set({
@@ -1221,8 +1283,28 @@ var Worker = class Worker extends Model {
 			if (!(await trx.selectFrom("project").selectAll().where("id", "=", projectId).executeTakeFirst())?.enabled) throw new Error("项目未启用");
 			const existing = await trx.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).where("status", "!=", "ended").executeTakeFirst();
 			if (existing) return existing;
-			const id = randomUUID();
+			const previous = await trx.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
 			const now = (/* @__PURE__ */ new Date()).toISOString();
+			if (previous && previous.reportState !== "failed") {
+				await trx.updateTable("worker").set({
+					status: "queued",
+					startedAt: null,
+					endedAt: null,
+					endedReason: null,
+					reportState: null,
+					report: null,
+					reportAt: null,
+					backgroundUntil: null,
+					recoveryNote: null,
+					branch: branch ?? previous.branch
+				}).where("id", "=", previous.id).execute();
+				await trx.updateTable("ticket").set({
+					status: "queued",
+					updatedAt: now
+				}).where("id", "=", ticketId).execute();
+				return await new Worker(trx).findById(previous.id);
+			}
+			const id = randomUUID();
 			await trx.insertInto("worker").values({
 				id,
 				ticketId,
@@ -1232,8 +1314,8 @@ var Worker = class Worker extends Model {
 				endedAt: null,
 				title: ticket.title,
 				endedReason: null,
-				branch: branch ?? `nexus/${ticketId}`,
-				worktree: null,
+				branch: branch ?? previous?.branch ?? `nexus/${ticketId}`,
+				worktree: previous?.worktree ?? null,
 				reportState: null,
 				report: null,
 				reportAt: null,
@@ -1347,11 +1429,19 @@ function defineService(service) {
 }
 // src/service/setting.ts
 const defaults = {
+	models: {
+		main: null,
+		manager: null,
+		project: null,
+		worker: null,
+		supervisor: null
+	},
 	administrators: [],
 	maxWorkers: 10,
 	backgroundLimitMinutes: 30,
 	autoMerge: false,
 	autoMergeMaxLines: 200,
+	autoArchiveWorkers: false,
 	deliveryMaxAttempts: 3,
 	deliveryRetryCeilingSeconds: 60,
 	updatedAt: ""
@@ -1363,6 +1453,13 @@ const limits = {
 	deliveryMaxAttempts: [1, 20],
 	deliveryRetryCeilingSeconds: [2, 3600]
 };
+const roles$1 = [
+	"main",
+	"manager",
+	"project",
+	"worker",
+	"supervisor"
+];
 let writing$2 = Promise.resolve();
 const setting = defineService({
 	async load() {
@@ -1378,6 +1475,7 @@ const setting = defineService({
 			...defaults,
 			...patch,
 			administrators: normalizeAdministrators(patch.administrators ?? []),
+			models: normalizeModels(patch.models),
 			...updatedAt === void 0 ? {} : { updatedAt }
 		};
 	},
@@ -1385,7 +1483,8 @@ const setting = defineService({
 		if (!valid(patch)) return Promise.reject(/* @__PURE__ */ new TypeError("invalid_config"));
 		const updates = {
 			...patch,
-			...patch.administrators === void 0 ? {} : { administrators: normalizeAdministrators(patch.administrators) }
+			...patch.administrators === void 0 ? {} : { administrators: normalizeAdministrators(patch.administrators) },
+			...patch.models === void 0 ? {} : { models: normalizeModels(patch.models) }
 		};
 		const operation = writing$2.then(async () => {
 			const next = {
@@ -1406,11 +1505,34 @@ function valid(value, allowEmpty = false) {
 	if (!allowEmpty && entries.length === 0) return false;
 	return entries.every(([key, entry]) => {
 		if (key === "administrators") return Array.isArray(entry) && entry.length <= 100 && entry.every((name) => typeof name === "string" && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim()));
-		if (key === "autoMerge") return typeof entry === "boolean";
+		if (key === "autoMerge" || key === "autoArchiveWorkers") return typeof entry === "boolean";
+		if (key === "models") return validModels(entry);
 		if (!Object.hasOwn(limits, key)) return false;
 		const [min, max] = limits[key];
 		return typeof entry === "number" && Number.isInteger(entry) && entry >= min && entry <= max;
 	});
+}
+function validModels(value) {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+	const entries = Object.entries(value);
+	return entries.length > 0 && entries.every(([role, model]) => roles$1.includes(role) && validModel(model));
+}
+function validModel(value) {
+	if (value === null) return true;
+	if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+	const { provider, model, reasoningEffort } = value;
+	return Object.keys(value).every((key) => key === "provider" || key === "model" || key === "reasoningEffort") && typeof provider === "string" && provider.trim().length > 0 && typeof model === "string" && model.trim().length > 0 && (reasoningEffort === void 0 || typeof reasoningEffort === "string" && reasoningEffort.trim().length > 0);
+}
+function normalizeModels(value) {
+	const source = value ?? {};
+	return Object.fromEntries(roles$1.map((role) => {
+		const model = source[role];
+		return [role, model ? {
+			provider: model.provider,
+			model: model.model,
+			...model.reasoningEffort ? { reasoningEffort: model.reasoningEffort } : {}
+		} : null];
+	}));
 }
 function normalizeAdministrators(names) {
 	const unique = /* @__PURE__ */ new Map();
@@ -1457,6 +1579,115 @@ function bypasses(hostname, pattern) {
 	const escaped = pattern.replace(/[|\\{}()[\]^$+?.]/g, "\\$&").replaceAll("*", ".*");
 	return new RegExp(`^${escaped}$`, "i").test(hostname);
 }
+// src/server/routes/agent.models.get.ts
+const getAgentModels = defineHandler(async () => {
+	const ctx = getServerContext(server);
+	const [settings, catalog] = await Promise.all([setting.load(), ctx.sessionController.modelCatalog()]);
+	return {
+		models: settings.models,
+		catalog
+	};
+});
+// src/service/role-model.ts
+const roleModel = defineService({
+	async resolve(model) {
+		const value = await getServerContext(server).llm.resolveCallConfig({
+			provider: model.provider,
+			model: model.model,
+			...model.reasoningEffort ? { reasoningEffort: ReasoningEffortId(model.reasoningEffort) } : {}
+		});
+		return {
+			provider: value.provider,
+			model: value.model,
+			...value.reasoningEffort ? { reasoningEffort: value.reasoningEffort } : {}
+		};
+	},
+	async initialize(agent, model) {
+		if (!model) return;
+		if (agent.session.requestHeader() || agent.session.snapshotEvents().some((event) => event.type === "model/selection")) return;
+		const ctx = getServerContext(server);
+		const selected = await roleModel.resolve(model);
+		agent.session.append("model/selection", selected);
+		let initial = true;
+		let assembled;
+		agent.ctx.effect(() => {
+			const disposers = [
+				agent.ctx.on("system-prompt/assemble", async (_assembly, _context, next) => {
+					const selection = initial ? selected : void 0;
+					const result = await next();
+					assembled = selection;
+					return selection ? {
+						...result,
+						variables: {
+							...result.variables,
+							provider: selection.provider,
+							model: selection.model
+						}
+					} : result;
+				}, { prepend: true }),
+				agent.ctx.on("agent/request", async (_payload, next) => {
+					const result = await next();
+					if (!assembled) return result;
+					const { reasoningEffort: _inherited, ...rest } = result;
+					return {
+						...rest,
+						...assembled
+					};
+				}, { prepend: true }),
+				ctx.on("session/event", (session, event) => {
+					if (session === agent.session && (event.type === "request/header" || event.type === "model/selection")) initial = false;
+				})
+			];
+			return () => disposers.forEach((dispose) => dispose());
+		});
+		await ctx.sessionPersistence.flush();
+	}
+});
+// src/server/routes/agent.models.patch.ts
+const roles = [
+	"main",
+	"manager",
+	"project",
+	"worker",
+	"supervisor"
+];
+const patchAgentModels = defineHandler(async (event) => {
+	const body = await readBody(event);
+	if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => ![
+		"role",
+		"provider",
+		"model",
+		"reasoningEffort"
+	].includes(key)) || !roles.includes(body.role) || typeof body.provider !== "string" || typeof body.model !== "string" || body.reasoningEffort !== void 0 && typeof body.reasoningEffort !== "string") throw new HTTPError({
+		status: 400,
+		message: "invalid_agent_model"
+	});
+	const provider = body.provider.trim();
+	const name = body.model.trim();
+	const effort = body.reasoningEffort?.trim() ?? "";
+	if ((provider || name || effort) && !(provider && name)) throw new HTTPError({
+		status: 400,
+		message: "invalid_agent_model"
+	});
+	const entry = provider && name ? {
+		provider,
+		model: name,
+		...effort ? { reasoningEffort: effort } : {}
+	} : null;
+	if (entry) try {
+		await roleModel.resolve(entry);
+	} catch {
+		throw new HTTPError({
+			status: 400,
+			message: "unresolved_agent_model"
+		});
+	}
+	const models = {
+		...(await setting.load()).models,
+		[body.role]: entry
+	};
+	return { models: (await setting.save({ models })).models };
+});
 // src/service/session.ts
 const presets$1 = {
 	main: "orchestrator",
@@ -1485,7 +1716,7 @@ const session = defineService({
 			const current = await session.findMain();
 			if (current && current !== agent.session.id) throw new Error("ambiguous_main_session");
 		}
-		if (role !== "worker") await bindWorkspace(agent.session.id, agent.session.header.cwd);
+		await bindWorkspace(agent.session.id, agent.session.header.cwd);
 		if (role === "main") await storage.setItem("mainSessionId", agent.session.id);
 		return role;
 	},
@@ -1715,12 +1946,18 @@ const session = defineService({
 });
 async function bindWorkspace(id, cwd) {
 	const ctx = getServerContext(server);
-	const workspace = await session.workspace();
 	const sid = SessionId(id);
-	if (workspace.sessionIds.includes(sid)) return;
 	const directory = cwd ?? (await ctx.sessionQuery.readSession(sid)).session.cwd;
-	if (!directory || await realpathNormalize(directory) !== workspace.path) return;
-	await workspace.attachSession(sid);
+	if (!directory) return;
+	const actual = await realpathNormalize(directory).catch(() => void 0);
+	if (!actual) return;
+	for (const workspace of [await session.workspace(), ...ctx.workspaceRegistry.list()]) {
+		if (workspace.sessionIds.includes(sid)) return;
+		if (workspace.path !== actual) continue;
+		await workspace.attachSession(sid).catch(() => void 0);
+		return;
+	}
+	await (await ctx.workspaceRegistry.create(actual, basename(actual)).catch(() => void 0))?.attachSession(sid).catch(() => void 0);
 }
 async function resolveAgent(id) {
 	if (!await session.resolve(id)) throw new Error("unknown_session");
@@ -1789,12 +2026,19 @@ const inbox = defineService({
 			messages
 		};
 	},
-	async read(id, includeChannel = false) {
+	async read(id, includeChannel = false, ids) {
 		const mailbox = await inbox.peek(id, includeChannel);
 		if (!mailbox) throw new Error("unknown_session");
 		const now = (/* @__PURE__ */ new Date()).toISOString();
-		await db.inbox.markRead(mailbox.messages.filter((message) => !message.readAt).map((message) => message.id), now);
-		return mailbox;
+		const selected = ids?.length ? mailbox.messages.filter((message) => ids.includes(message.id)) : mailbox.messages;
+		await db.inbox.markRead(selected.filter((message) => !message.readAt).map((message) => message.id), now);
+		if (!ids?.length) return mailbox;
+		const missing = ids.filter((id) => !mailbox.messages.some((message) => message.id === id));
+		return {
+			...mailbox,
+			messages: selected,
+			missing
+		};
 	},
 	async complete(id, ids, includeChannel = false) {
 		const identity = await session.resolve(id);
@@ -1909,7 +2153,11 @@ const inbox = defineService({
 					await db.inbox.resetDelivery(message.id);
 				} catch (error) {
 					if (stopped$2) break;
-					await db.inbox.recordDeliveryFailure(message.id, error instanceof Error ? error.message : String(error), new Date(Date.now() + 2e3).toISOString());
+					const reason = error instanceof Error ? error.message : String(error);
+					const settings = await setting.load();
+					const delays = Math.min(2 ** Math.min(message.deliveryAttempts + 1, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
+					await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delays).toISOString());
+					if (message.deliveryAttempts + 1 >= settings.deliveryMaxAttempts) await db.inbox.markStalled(message.id, reason);
 				}
 			}
 		});
@@ -2672,46 +2920,22 @@ const worktree = defineService({
 		if (parseRepositoryRemote(result.remoteUrl, gitlabHost).webUrl !== repository.webUrl) throw new Error("repository_path_conflict");
 		return result;
 	},
-	async create(directory, ticketId, branch = "nexus/") {
-		return run(`create:${resolve(directory)}:${ticketId}`, async () => {
-			if (!isAbsolute(directory) || !/^[a-z0-9][\w-]*$/i.test(ticketId)) throw new Error("invalid_worktree_identity");
-			branch ||= "nexus/";
-			if (branch === "nexus/") branch += ticketId;
-			if (branch.split("/").at(-1) !== ticketId) throw new Error("branch_ticket_mismatch");
-			const root = await realpath(directory);
-			if (!samePath$1(await git(root, ["rev-parse", "--show-toplevel"]), root)) throw new Error("repository_root_required");
-			await git(root, [
-				"check-ref-format",
-				"--branch",
-				branch
-			]);
-			const target = join(dirname(root), ".nexus-worktrees", basename(root), ticketId);
-			try {
-				await lstat(target);
-			} catch (error) {
-				if (!(error instanceof Error) || !("code" in error) || error.code !== "ENOENT") throw error;
-				await mkdir(dirname(target), { recursive: true });
-				if (!samePath$1(await realpath(dirname(target)), dirname(target))) throw new Error("worktree_parent_conflict");
-				await git(root, [
-					"worktree",
-					"add",
-					"-b",
-					branch,
-					target,
-					"HEAD"
-				]);
-				await worktree.verify(root, target, branch);
-				return {
-					branch,
-					worktree: target
-				};
-			}
-			await worktree.verify(root, target, branch);
-			return {
-				branch,
-				worktree: target
-			};
+	async create(agent, ticketId) {
+		if (!/^[a-z0-9][\w-]*$/i.test(ticketId)) throw new Error("invalid_worktree_identity");
+		const branch = `nexus/${ticketId}`;
+		const ctx = getServerContext(server);
+		if (!ctx.worktrees) throw new Error("worktrees_unavailable");
+		const created = await ctx.worktrees.create(agent, {
+			name: branch,
+			from: "HEAD"
 		});
+		if (created.branch !== branch) throw new Error("worktree_branch_conflict");
+		return {
+			branch: created.branch,
+			worktree: created.path,
+			baseCommit: created.baseCommit,
+			repositoryRoot: created.repositoryRoot
+		};
 	},
 	async verify(directory, target, branch) {
 		return run(`verify:${resolve(target)}`, async () => {
@@ -2988,7 +3212,7 @@ const getPanel = defineHandler(async () => {
 		"running",
 		"background",
 		"queued"
-	].includes(projectSessions.get(project.id).status));
+	].includes(projectSessions.get(project.id).status) || openTickets.some((ticket) => ticket.projectId === project.id));
 	const hasRuntime = currentTickets.length > 0 || currentProjects.length > 0 || [
 		"running",
 		"background",
@@ -3096,7 +3320,7 @@ const getPanel = defineHandler(async () => {
 		},
 		run,
 		inbox: {
-			pending,
+			pending: pending.filter((message) => !message.ticketId || openTickets.some((ticket) => ticket.id === message.ticketId)),
 			resolved: messages.filter((message) => message.type === "user" && message.status === "done"),
 			blocked: tickets.filter((ticket) => ticket.paused)
 		},
@@ -3358,6 +3582,8 @@ const authorize = defineHandler(async (event) => {
 const server = defineWebServer((app) => {
 	app.use(authorize);
 	app.get("/api/nexus/panel", getPanel);
+	app.get("/api/nexus/agents/models", getAgentModels);
+	app.patch("/api/nexus/agents/models", patchAgentModels);
 	app.get("/api/nexus/tickets/:id", getTicket);
 	app.patch("/api/nexus/tickets/:id", patchTicket);
 	app.put("/api/nexus/channels/:id/configuration", putChannelConfiguration);
@@ -3449,7 +3675,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BnCscs0s.js");
+			const { shell } = await import("./shell-CxEclTUz.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3458,7 +3684,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BnCscs0s.js");
+			const { shell } = await import("./shell-CxEclTUz.js");
 			await shell.refresh();
 			return view;
 		});

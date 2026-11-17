@@ -26,6 +26,7 @@ export const create_worker = defineTool({
     if (identity?.role !== 'project' || !identity.projectId)
       throw new Error('仅项目编排可调用')
     const worker = await db.worker.queue(args.ticketId, identity.projectId, args.branch)
+    await db.ticket.setPrepareError(args.ticketId, null, new Date().toISOString())
     await workerService.reconcile()
     return JSON.stringify(await db.worker.findById(worker.id))
   },

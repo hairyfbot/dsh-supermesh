@@ -56,6 +56,13 @@ export const read_channel = defineTool({
       items = [thread]
       nextResource = thread.kind !== 'ci' ? thread.url : null
     }
+    else if (await isThreadId(resource)) {
+      const thread = (await db.thread.findById(resource))!
+      if (identity.role === 'worker' && !allowedThreads.has(thread.id))
+        throw new Error('Worker 只能读取本任务来源')
+      items = [thread]
+      nextResource = thread.kind !== 'ci' ? thread.url : null
+    }
     else if (resource.startsWith('ticket/')) {
       const ticket = await db.ticket.findById(resource.slice(7))
       if (!ticket)
@@ -145,6 +152,12 @@ export const reply_channel = defineTool({
     return JSON.stringify({ id: row.id, status: 'queued' })
   },
 })
+
+async function isThreadId(value: string): Promise<boolean> {
+  if (!/^[\w-]+:[\w./-]+$/.test(value))
+    return false
+  return Boolean(await db.thread.findById(value))
+}
 
 function canonicalGitHub(value: string): string {
   const match = /^github:([^:]+):(issue|pull):([1-9]\d*)$/.exec(value)

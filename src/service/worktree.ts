@@ -1,10 +1,23 @@
+import type { Context } from '@deepseek-ai/cordis'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import { execFile } from 'node:child_process'
 import { lstat, mkdir, mkdtemp, realpath, rename, rm } from 'node:fs/promises'
-import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
+import { getServerContext } from 'dsh-h3/utils'
+import { server } from '../server'
 import { parseRepositoryRemote } from '../utils/repository'
 import { defineService } from '../utils/service'
+
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    worktrees: {
+      create: (agent: Agent, request?: { name?: string, from?: string }, signal?: AbortSignal) => Promise<{ path: string, branch: string, baseCommit: string, repositoryRoot: string }>
+      restore: (agent: Agent, request: { path: string, branch: string, baseCommit: string, repositoryRoot: string }, signal?: AbortSignal) => Promise<{ path: string, branchRecreated: boolean }>
+    }
+  }
+}
 
 const execute = promisify(execFile)
 const operations = new Map<string, Promise<unknown>>()
@@ -76,36 +89,17 @@ export const worktree = defineService({
       throw new Error('repository_path_conflict')
     return result
   },
-  async create(directory: string, ticketId: string, branch = 'nexus/'): Promise<{ branch: string, worktree: string }> {
-    return run(`create:${resolve(directory)}:${ticketId}`, async () => {
-      if (!isAbsolute(directory) || !/^[a-z0-9][\w-]*$/i.test(ticketId))
-        throw new Error('invalid_worktree_identity')
-      branch ||= 'nexus/'
-      if (branch === 'nexus/')
-        branch += ticketId
-      if (branch.split('/').at(-1) !== ticketId)
-        throw new Error('branch_ticket_mismatch')
-      const root = await realpath(directory)
-      if (!samePath(await git(root, ['rev-parse', '--show-toplevel']), root))
-        throw new Error('repository_root_required')
-      await git(root, ['check-ref-format', '--branch', branch])
-      const target = join(dirname(root), '.nexus-worktrees', basename(root), ticketId)
-      try {
-        await lstat(target)
-      }
-      catch (error) {
-        if (!(error instanceof Error) || !('code' in error) || error.code !== 'ENOENT')
-          throw error
-        await mkdir(dirname(target), { recursive: true })
-        if (!samePath(await realpath(dirname(target)), dirname(target)))
-          throw new Error('worktree_parent_conflict')
-        await git(root, ['worktree', 'add', '-b', branch, target, 'HEAD'])
-        await worktree.verify(root, target, branch)
-        return { branch, worktree: target }
-      }
-      await worktree.verify(root, target, branch)
-      return { branch, worktree: target }
-    })
+  async create(agent: Agent, ticketId: string): Promise<{ branch: string, worktree: string, baseCommit: string, repositoryRoot: string }> {
+    if (!/^[a-z0-9][\w-]*$/i.test(ticketId))
+      throw new Error('invalid_worktree_identity')
+    const branch = `nexus/${ticketId}`
+    const ctx = getServerContext<Context>(server)
+    if (!ctx.worktrees)
+      throw new Error('worktrees_unavailable')
+    const created = await ctx.worktrees.create(agent, { name: branch, from: 'HEAD' })
+    if (created.branch !== branch)
+      throw new Error('worktree_branch_conflict')
+    return { branch: created.branch, worktree: created.path, baseCommit: created.baseCommit, repositoryRoot: created.repositoryRoot }
   },
   async verify(directory: string, target: string, branch: string): Promise<void> {
     return run(`verify:${resolve(target)}`, async () => {

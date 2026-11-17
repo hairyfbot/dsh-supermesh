@@ -13,8 +13,9 @@ import { handleSessionEvent } from './events/session-event'
 import { server } from './server'
 import { runtime } from './service/runtime'
 import { session } from './service/session'
+import { skill } from './service/skill'
 
-export const inject = ['agents', 'agentPresets', 'sessionController', 'workspaceRegistry', 'sessionQuery', 'credentials', 'connection', 'webServer']
+export const inject = ['agents', 'agentPresets', 'sessionController', 'workspaceRegistry', 'sessionQuery', 'credentials', 'connection', 'webServer', 'worktrees']
 
 export async function apply(ctx: Context): Promise<void> {
   await ctx.effect(async function* () {
@@ -37,4 +38,5 @@ export async function apply(ctx: Context): Promise<void> {
   }), 'nexus:routes')
 
   await ctx.effect(() => runtime.start(), 'nexus:runtime')
+  await ctx.effect(() => skill.install(ctx), 'nexus:skills')
 }

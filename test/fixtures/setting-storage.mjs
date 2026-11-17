@@ -45,6 +45,9 @@ try {
   for (const autoMergeMaxLines of [0, 10001, 1.5, '200']) {
     await assert.rejects(setting.save({ autoMergeMaxLines }), { message: 'invalid_config' })
   }
+  assert.equal((await setting.load()).autoArchiveWorkers, false)
+  assert.equal((await setting.save({ autoArchiveWorkers: true })).autoArchiveWorkers, true)
+  assert.equal((await setting.save({ autoArchiveWorkers: false })).autoArchiveWorkers, false)
   assert.equal((await setting.save({ autoMerge: true })).autoMerge, true)
   assert.equal((await setting.load()).autoMerge, true)
   await storage.setItem('setting', { autoMerge: 'yes' })

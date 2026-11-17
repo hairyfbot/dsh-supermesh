@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-session-query'
 import type {} from '@deepseek-ai/dsh-workspace'
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
+import { basename } from 'node:path'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import { realpathNormalize } from '@deepseek-ai/dsh-workspace'
 import { getServerContext } from 'dsh-h3/utils'
@@ -45,8 +46,7 @@ export const session = defineService({
       if (current && current !== agent.session.id)
         throw new Error('ambiguous_main_session')
     }
-    if (role !== 'worker')
-      await bindWorkspace(agent.session.id, agent.session.header.cwd)
+    await bindWorkspace(agent.session.id, agent.session.header.cwd)
     if (role === 'main')
       await storage.setItem('mainSessionId', agent.session.id)
     return role
@@ -274,14 +274,23 @@ export const session = defineService({
 
 async function bindWorkspace(id: string, cwd?: string): Promise<void> {
   const ctx = getServerContext<Context>(server)
-  const workspace = await session.workspace()
   const sid = SessionId(id)
-  if (workspace.sessionIds.includes(sid))
-    return
   const directory = cwd ?? (await ctx.sessionQuery.readSession(sid)).session.cwd
-  if (!directory || await realpathNormalize(directory) !== workspace.path)
+  if (!directory)
     return
-  await workspace.attachSession(sid)
+  const actual = await realpathNormalize(directory).catch(() => undefined)
+  if (!actual)
+    return
+  for (const workspace of [await session.workspace(), ...ctx.workspaceRegistry.list()]) {
+    if (workspace.sessionIds.includes(sid))
+      return
+    if (workspace.path !== actual)
+      continue
+    await workspace.attachSession(sid).catch(() => undefined)
+    return
+  }
+  const created = await ctx.workspaceRegistry.create(actual, basename(actual)).catch(() => undefined)
+  await created?.attachSession(sid).catch(() => undefined)
 }
 
 async function resolveAgent(id: string): Promise<Agent> {

@@ -11,7 +11,7 @@ export type Page = TabKind | 'channel/detail' | 'ticket/detail' | 'trigger/detai
 
 export const store = defineStore({
   init: () => {
-    const saved: RuntimeSettings = { administrators: [], maxWorkers: 10, backgroundLimitMinutes: 30, autoMerge: false, autoMergeMaxLines: 200, deliveryMaxAttempts: 3, deliveryRetryCeilingSeconds: 60 }
+    const saved: RuntimeSettings = { administrators: [], maxWorkers: 10, backgroundLimitMinutes: 30, autoMerge: false, autoMergeMaxLines: 200, autoArchiveWorkers: false, deliveryMaxAttempts: 3, deliveryRetryCeilingSeconds: 60 }
     return ({
       navigation: { page: 'overview' as Page, ticketId: null as string | null, returnTo: 'overview' as 'overview' | 'ticket' | 'trigger' | 'trigger/detail' },
       channel: { selected: null as OverviewChannelKind | null },
@@ -38,8 +38,8 @@ export const store = defineStore({
       draft.data.panel = panel
       draft.data.loading = false
       draft.data.error = null
-      const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings
-      draft.setting.saved = { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
+      const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings
+      draft.setting.saved = { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
       if (!dirty && !administratorsDirty)
         draft.setting.draft = { ...draft.setting.saved }
       else if (!administratorsDirty)

@@ -36,6 +36,16 @@ export class Worker extends Model<DB, 'worker'> {
       .executeTakeFirst()
   }
 
+  async findByBranch(branch: string): Promise<Selectable<DB['worker']> | undefined> {
+    return this.db
+      .selectFrom('worker')
+      .selectAll()
+      .where('branch', '=', branch)
+      .orderBy('createdAt', 'desc')
+      .orderBy('id', 'desc')
+      .executeTakeFirst()
+  }
+
   async start(id: string, startedAt: string): Promise<void> {
     await this.db
       .updateTable('worker')
@@ -103,9 +113,15 @@ export class Worker extends Model<DB, 'worker'> {
       const existing = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).where('status', '!=', 'ended').executeTakeFirst()
       if (existing)
         return existing
-      const id = randomUUID()
+      const previous = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt', 'desc').orderBy('id', 'desc').executeTakeFirst()
       const now = new Date().toISOString()
-      await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? `nexus/${ticketId}`, worktree: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
+      if (previous && previous.reportState !== 'failed') {
+        await trx.updateTable('worker').set({ status: 'queued', startedAt: null, endedAt: null, endedReason: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null, branch: branch ?? previous.branch }).where('id', '=', previous.id).execute()
+        await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
+        return (await new Worker(trx).findById(previous.id))!
+      }
+      const id = randomUUID()
+      await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? previous?.branch ?? `nexus/${ticketId}`, worktree: previous?.worktree ?? null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
       await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
       return (await new Worker(trx).findById(id))!
     })

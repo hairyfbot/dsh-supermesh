@@ -4,11 +4,12 @@ export interface RuntimeSettings {
   backgroundLimitMinutes: number
   autoMerge: boolean
   autoMergeMaxLines: number
+  autoArchiveWorkers: boolean
   deliveryMaxAttempts: number
   deliveryRetryCeilingSeconds: number
 }
 
-export type Section = 'general' | 'projects' | 'execution' | 'delivery'
+export type Section = 'general' | 'projects' | 'agents' | 'execution' | 'delivery'
 
 export const GROUPS = {
   execution: ['maxWorkers', 'backgroundLimitMinutes', 'autoMerge', 'autoMergeMaxLines'],
@@ -28,7 +29,7 @@ export function administratorSignature(administrators: string[]): string {
 }
 
 export function validSettings(settings: RuntimeSettings): boolean {
-  return Array.isArray(settings.administrators) && settings.administrators.length <= 100 && settings.administrators.every(name => typeof name === 'string' && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim())) && typeof settings.autoMerge === 'boolean' && Object.entries(LIMITS).every(([key, limits]) => {
+  return Array.isArray(settings.administrators) && settings.administrators.length <= 100 && settings.administrators.every(name => typeof name === 'string' && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim())) && typeof settings.autoMerge === 'boolean' && typeof settings.autoArchiveWorkers === 'boolean' && Object.entries(LIMITS).every(([key, limits]) => {
     const value = settings[key as keyof typeof LIMITS]
     return Number.isInteger(value) && value >= limits.min && value <= limits.max
   })

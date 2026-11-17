@@ -102,12 +102,12 @@ export function Overview(): ReactNode {
         </SummaryCard>
       </div>
       {(panel?.inbox.pending.some(message => message.kind === 'ask') || answerState.error) && (
-        <details className="flex flex-col gap-3 rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5" aria-label="待答问题">
+        <details className="flex flex-col rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5" aria-label="待答问题">
           <summary className="cursor-pointer text-sm font-medium">待答问题</summary>
           {panel?.inbox.pending.filter(message => message.kind === 'ask').map(message => (
             <form
               key={message.id}
-              className="flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3"
+              className="flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3 mt-3"
               onSubmit={(event) => {
                 event.preventDefault()
                 void answer(message.id, String(new FormData(event.currentTarget).get('answer') ?? ''))

@@ -1396,6 +1396,26 @@ const dicts = {
 		settingNoProjects: "还没有 Git 项目",
 		settingNoProjectsHelp: "添加已配置 remote 的 Git 工作区后，刷新以发现项目。",
 		settingClearSearch: "清除搜索",
+		settingAgents: "智能体",
+		settingAgentsHelp: "为每个代理指定使用的模型；列表来自官方模型目录，未指定时沿用部署默认模型。",
+		settingAgentsLoading: "正在加载模型目录…",
+		settingAgentsEmpty: "当前没有可用模型，请先在设置 → 模型 中配置提供商。",
+		settingAgentsSelect: "选择模型",
+		settingAgentsUnset: "沿用默认",
+		settingAgentsFailed: "保存失败，请检查模型目录后重试。",
+		settingAgentsMain: "主编排",
+		settingAgentsManager: "Manager",
+		settingAgentsProject: "项目编排",
+		settingAgentsWorker: "Worker",
+		settingAgentsSupervisor: "Supervisor",
+		settingAgentsModel: "模型",
+		settingAgentsEffort: "推理强度（可选）",
+		settingAgentsEffortDefault: "模型默认",
+		settingAgentsDefault: "DSH 当前默认：{model}",
+		settingAgentsDefaultUnavailable: "DSH 默认模型暂不可用",
+		settingAgentsCatalogError: "无法加载官方模型目录：{error}",
+		settingAutoArchiveWorkers: "自动清理会话",
+		settingAutoArchiveWorkersHelp: "任务完成后自动归档执行会话，会话仍可在归档中查看，对应工作树按官方规则保留或清理。",
 		settingAutoMerge: "自动合并 PR",
 		settingAutoMergeHelp: "默认关闭。开启后遵守任务和仓库指令，针对当前 HEAD 在平台开启自动合并；新增与删除行数总和须严格小于上限。条件失效时撤销自动合并。合并使用你默认登录的 gh 账号，发布仍使用渠道机器人身份。",
 		settingMaxWorkers: "Worker 并发上限",
@@ -1783,6 +1803,26 @@ const dicts = {
 		settingNoProjects: "No Git projects yet",
 		settingNoProjectsHelp: "Add a Git workspace with a configured remote, then refresh to discover it.",
 		settingClearSearch: "Clear search",
+		settingAgents: "Agents",
+		settingAgentsHelp: "Pick the model each agent runs; options come from the official model catalog, and an unset agent keeps the deployment default.",
+		settingAgentsLoading: "Loading the model catalog…",
+		settingAgentsEmpty: "No model is available; configure a provider under Settings → Models first.",
+		settingAgentsSelect: "Select model",
+		settingAgentsUnset: "Use default",
+		settingAgentsFailed: "Save failed; check the model catalog and retry.",
+		settingAgentsMain: "Main orchestrator",
+		settingAgentsManager: "Manager",
+		settingAgentsProject: "Project orchestrator",
+		settingAgentsWorker: "Worker",
+		settingAgentsSupervisor: "Supervisor",
+		settingAgentsModel: "Model",
+		settingAgentsEffort: "Reasoning effort (optional)",
+		settingAgentsEffortDefault: "Model default",
+		settingAgentsDefault: "DSH default: {model}",
+		settingAgentsDefaultUnavailable: "DSH default model unavailable",
+		settingAgentsCatalogError: "The official model catalog is unavailable: {error}",
+		settingAutoArchiveWorkers: "Auto-archive sessions",
+		settingAutoArchiveWorkersHelp: "Archive the worker session once its task completes. Archived sessions stay readable, and the worktree follows the official retention rules.",
 		settingAutoMerge: "Automatically merge PRs",
 		settingAutoMergeHelp: "Off by default. Follow task and repository instructions and enable platform auto-merge for the current HEAD only when total added and removed lines are strictly below the limit. Cancel auto-merge if conditions stop holding. Merging uses your default gh login; publishing still uses the channel bot identity.",
 		settingMaxWorkers: "Concurrent Workers",
@@ -2125,7 +2165,7 @@ function Default(props) {
 	const { children, as, ...rest } = props;
 	return wrapper(as, rest, children);
 }
-function Switch$1(props) {
+function Switch$2(props) {
 	const { as, value, children, ...rest } = props;
 	const isUseValue = props.value !== void 0;
 	let matchingCase;
@@ -2147,6 +2187,19 @@ function Switch$1(props) {
 /** @method get */
 async function getApiNexusPanel(config) {
 	return (await fetch("/api/nexus/panel", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusAgentsModels(config) {
+	return (await fetch("/api/nexus/agents/models", { ...config })).json();
+}
+/** @method patch */
+async function patchApiNexusAgentsModels(body, config) {
+	return (await fetch("/api/nexus/agents/models", {
+		headers: { "Content-Type": "application/json" },
+		method: "PATCH",
+		body: JSON.stringify(body),
+		...config
+	})).json();
 }
 /** @method get */
 async function getApiNexusTicketsId(paths, config) {
@@ -3559,7 +3612,7 @@ function ChannelDetail() {
 	} else t8 = $[14];
 	let t9;
 	if ($[15] !== kind || $[16] !== t8) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$1, {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$2, {
 			value: kind,
 			children: [
 				t4,
@@ -56613,7 +56666,7 @@ function Overview() {
 	let t80;
 	if ($[150] !== answer || $[151] !== answerState || $[152] !== panel?.inbox.pending) {
 		t80 = (panel?.inbox.pending.some(_temp7$2) || answerState.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
-			className: "flex flex-col gap-3 rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5",
+			className: "flex flex-col rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5",
 			"aria-label": "待答问题",
 			children: [
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", {
@@ -56621,7 +56674,7 @@ function Overview() {
 					children: "待答问题"
 				}),
 				panel?.inbox.pending.filter(_temp8$1).map((message_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-					className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3",
+					className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3 mt-3",
 					onSubmit: (event) => {
 						event.preventDefault();
 						answer(message_0.id, String(new FormData(event.currentTarget).get("answer") ?? ""));
@@ -56853,17 +56906,269 @@ function administratorSignature(administrators) {
 	return [...new Set(administrators.join(",").split(/[,\s]+/).filter(Boolean).map((name) => name.toLowerCase()))].sort().join(",");
 }
 function validSettings(settings) {
-	return Array.isArray(settings.administrators) && settings.administrators.length <= 100 && settings.administrators.every((name) => typeof name === "string" && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim())) && typeof settings.autoMerge === "boolean" && Object.entries(LIMITS).every(([key, limits]) => {
+	return Array.isArray(settings.administrators) && settings.administrators.length <= 100 && settings.administrators.every((name) => typeof name === "string" && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim())) && typeof settings.autoMerge === "boolean" && typeof settings.autoArchiveWorkers === "boolean" && Object.entries(LIMITS).every(([key, limits]) => {
 		const value = settings[key];
 		return Number.isInteger(value) && value >= limits.min && value <= limits.max;
 	});
+}
+// src/client/pages/setting/components/agents.tsx
+const roles = [
+	{
+		role: "main",
+		label: "settingAgentsMain"
+	},
+	{
+		role: "manager",
+		label: "settingAgentsManager"
+	},
+	{
+		role: "project",
+		label: "settingAgentsProject"
+	},
+	{
+		role: "worker",
+		label: "settingAgentsWorker"
+	},
+	{
+		role: "supervisor",
+		label: "settingAgentsSupervisor"
+	}
+];
+const INHERIT = "inherit";
+function Agents() {
+	const { t } = useTranslation();
+	const ready = useStore((state) => state.data.panel !== null);
+	const [catalog, setCatalog] = (0, react.useState)(null);
+	const [models, setModels] = (0, react.useState)(null);
+	const [loading, setLoading] = (0, react.useState)(true);
+	const [loadError, setLoadError] = (0, react.useState)(null);
+	const [open, setOpen] = (0, react.useState)(null);
+	const [pending, setPending] = (0, react.useState)(null);
+	const [failed, setFailed] = (0, react.useState)(null);
+	(0, react.useEffect)(() => {
+		const controller = new AbortController();
+		const load = async () => {
+			try {
+				const value = await getApiNexusAgentsModels({ signal: controller.signal });
+				if (controller.signal.aborted) return;
+				if (!value?.models || !value.catalog) throw new Error("invalid_agent_models");
+				setModels(value.models);
+				setCatalog(value.catalog);
+			} catch (error) {
+				if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : String(error));
+			} finally {
+				if (!controller.signal.aborted) setLoading(false);
+			}
+		};
+		load();
+		return () => controller.abort();
+	}, []);
+	async function submit(role, change) {
+		if (!ready || pending !== null) return;
+		const controller_0 = new AbortController();
+		setPending(role);
+		setFailed(null);
+		try {
+			const result = await patchApiNexusAgentsModels({
+				role,
+				provider: change.provider,
+				model: change.model,
+				...change.reasoningEffort ? { reasoningEffort: change.reasoningEffort } : {}
+			}, { signal: controller_0.signal });
+			if (controller_0.signal.aborted) return;
+			if (!result?.models) throw new Error("invalid_agent_models");
+			setModels(result.models);
+		} catch {
+			if (!controller_0.signal.aborted) setFailed(role);
+		} finally {
+			if (!controller_0.signal.aborted) setPending(null);
+		}
+	}
+	const currentModel = (role_0) => {
+		const entry = models?.[role_0];
+		return entry ? catalog?.groups.find((group) => group.id === entry.provider)?.models.find((model) => model.id === entry.model) : void 0;
+	};
+	const modelName = (entry_0, role_1) => currentModel(role_1)?.name ?? entry_0.model;
+	const effortName = (role_2) => {
+		const entry_1 = models?.[role_2];
+		if (!entry_1?.reasoningEffort) return t("settingAgentsEffortDefault");
+		return currentModel(role_2)?.reasoning?.efforts.find((effort) => effort.id === entry_1.reasoningEffort)?.name ?? entry_1.reasoningEffort;
+	};
+	const triggerLabel = (role_3) => {
+		const entry_2 = models?.[role_3];
+		return entry_2 ? modelName(entry_2, role_3) : t("settingAgentsUnset");
+	};
+	const items = (role_4) => {
+		const entry_3 = models?.[role_4];
+		const reasoning = currentModel(role_4)?.reasoning;
+		return [
+			{
+				id: INHERIT,
+				label: t("settingAgentsUnset")
+			},
+			...catalog?.groups.flatMap((group_0) => [{
+				type: "label",
+				id: `group:${group_0.id}`,
+				text: group_0.name
+			}, ...group_0.models.map((model_0) => ({
+				id: `model:${group_0.id}/${model_0.id}`,
+				label: model_0.name
+			}))]) ?? [],
+			...entry_3 && reasoning ? [
+				{
+					type: "separator",
+					id: "effort-separator"
+				},
+				{
+					type: "label",
+					id: "effort-label",
+					text: t("settingAgentsEffort")
+				},
+				...effortChoices(reasoning, t)
+			] : []
+		];
+	};
+	const selectedIds = (role_5) => {
+		const entry_4 = models?.[role_5];
+		return entry_4 ? [`model:${entry_4.provider}/${entry_4.model}`, `effort:${entry_4.reasoningEffort ?? ""}`] : [INHERIT];
+	};
+	if (loading) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		role: "status",
+		className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+		children: t("settingAgentsLoading")
+	});
+	if (!catalog || !models) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		role: "alert",
+		className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+		children: t("settingAgentsCatalogError", { error: loadError ?? "" })
+	});
+	const fallback = catalog.default;
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+		"aria-labelledby": "nexus-agents",
+		children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+			className: "px-4 py-3",
+			children: [
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+					id: "nexus-agents",
+					className: "m-0 text-sm font-medium",
+					children: t("settingAgents")
+				}),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					children: t("settingAgentsHelp")
+				}),
+				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+					children: fallback ? t("settingAgentsDefault", { model: `${fallback.provider} / ${fallback.model}${fallback.reasoningEffort ? ` · ${fallback.reasoningEffort}` : ""}` }) : t("settingAgentsDefaultUnavailable")
+				}),
+				catalog.groups.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					role: "status",
+					className: "m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+					children: t("settingAgentsEmpty")
+				}),
+				loadError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					role: "alert",
+					className: "m-0 mt-1.5 text-xs text-[var(--dsw-alias-state-error-primary)]",
+					children: t("settingAgentsCatalogError", { error: loadError })
+				})
+			]
+		}), roles.map(({ role: role_6, label }) => {
+			const entry_5 = models[role_6];
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
+					children: [
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
+							className: "m-0 text-xs font-medium",
+							children: t(label)
+						}),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							className: "m-0 mt-1 font-mono text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+							children: role_6
+						}),
+						failed === role_6 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							role: "alert",
+							className: "m-0 mt-1 text-xs text-[var(--dsw-alias-state-error-primary)]",
+							children: t("settingAgentsFailed")
+						})
+					]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+					open: open === role_6,
+					onClose: () => setOpen(null),
+					anchor: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						type: "button",
+						size: "sm",
+						variant: "outline",
+						disabled: !ready || pending !== null,
+						"aria-haspopup": "menu",
+						"aria-expanded": open === role_6,
+						"aria-label": `${t(label)} · ${t("settingAgentsSelect")}`,
+						onClick: () => setOpen(open === role_6 ? null : role_6),
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: "max-w-56 truncate",
+							children: pending === role_6 ? t("channelSaving") : triggerLabel(role_6)
+						}), entry_5?.reasoningEffort && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: "ml-1.5 text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+							children: effortName(role_6)
+						})]
+					}),
+					items: items(role_6),
+					selectedIds: selectedIds(role_6),
+					onSelect: (value_0) => {
+						if (value_0 === INHERIT) {
+							setOpen(null);
+							submit(role_6, {
+								provider: "",
+								model: ""
+							});
+							return;
+						}
+						if (value_0.startsWith("effort:")) {
+							setOpen(null);
+							if (entry_5) submit(role_6, {
+								provider: entry_5.provider,
+								model: entry_5.model,
+								reasoningEffort: value_0.slice(7)
+							});
+							return;
+						}
+						const route = value_0.slice(6);
+						const at = route.indexOf("/");
+						setOpen(null);
+						submit(role_6, {
+							provider: route.slice(0, at),
+							model: route.slice(at + 1)
+						});
+					},
+					portal: true,
+					minWidthFromAnchor: true,
+					align: "end",
+					side: "bottom"
+				})]
+			}, role_6);
+		})]
+	});
+}
+function effortChoices(reasoning, t) {
+	if (!reasoning) return [];
+	return [...reasoning.defaultEffort === void 0 ? [{
+		id: "effort:",
+		label: t("settingAgentsEffortDefault")
+	}] : [], ...reasoning.efforts.map((effort) => ({
+		id: `effort:${effort.id}`,
+		label: effort.name
+	}))];
 }
 // src/client/pages/setting/components/general.tsx
 function General() {
 	const { t } = useTranslation();
 	const saved = useStore((state) => state.setting.saved.administrators);
 	const draft = useStore((state_0) => state_0.setting.draft.administrators);
-	const ready = useStore((state_1) => state_1.data.panel !== null);
+	const savedArchive = useStore((state_1) => state_1.setting.saved.autoArchiveWorkers);
+	const draftArchive = useStore((state_2) => state_2.setting.draft.autoArchiveWorkers);
+	const ready = useStore((state_3) => state_3.data.panel !== null);
 	const { editSettings, receiveGeneralSettings, clearSettingNotice } = useActions();
 	const [saving, setSaving] = (0, react.useState)(false);
 	const [failed, setFailed] = (0, react.useState)(false);
@@ -56876,7 +57181,7 @@ function General() {
 	const value = draft.join(",");
 	const names = value.split(/[,\s]+/).filter(Boolean);
 	const valid = names.length <= 100 && names.every((name) => /^[a-z0-9][\w.-]{0,254}$/i.test(name));
-	const dirty = administratorSignature(draft) !== administratorSignature(saved);
+	const dirty = administratorSignature(draft) !== administratorSignature(saved) || draftArchive !== savedArchive;
 	async function save() {
 		if (!ready || !dirty || !valid || request.current) return;
 		const controller = new AbortController();
@@ -56885,10 +57190,14 @@ function General() {
 		setFailed(false);
 		clearSettingNotice();
 		try {
-			const settings = await patchApiNexusSettings({ administrators: names }, { signal: controller.signal });
+			const settings = await patchApiNexusSettings({
+				administrators: names,
+				autoArchiveWorkers: draftArchive
+			}, { signal: controller.signal });
 			if (controller.signal.aborted || request.current !== controller) return;
 			if (!settings || !Array.isArray(settings.administrators)) throw new Error("invalid_settings");
 			receiveGeneralSettings(settings.administrators);
+			editSettings({ autoArchiveWorkers: settings.autoArchiveWorkers });
 		} catch {
 			if (!controller.signal.aborted && request.current === controller) setFailed(true);
 		} finally {
@@ -56955,6 +57264,24 @@ function General() {
 					})
 				]
 			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "min-w-0",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
+						className: "m-0 text-xs font-medium",
+						children: t("settingAutoArchiveWorkers")
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: t("settingAutoArchiveWorkersHelp")
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+					disabled: !ready || saving,
+					checked: draftArchive,
+					label: t("settingAutoArchiveWorkers"),
+					onChange: (autoArchiveWorkers) => editSettings({ autoArchiveWorkers })
+				})]
+			}),
 			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
 				className: "flex flex-wrap items-center justify-end gap-2 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -56963,7 +57290,10 @@ function General() {
 					variant: "ghost",
 					disabled: saving || !dirty,
 					onClick: () => {
-						editSettings({ administrators: [...saved] });
+						editSettings({
+							administrators: [...saved],
+							autoArchiveWorkers: savedArchive
+						});
 						setFailed(false);
 					},
 					children: t("settingDiscard")
@@ -57540,6 +57870,7 @@ function _temp$11(state) {
 function Runtime() {
 	const { t } = useTranslation();
 	const section = useStore((state) => state.setting.section);
+	const scoped = section === "execution" || section === "delivery" ? section : null;
 	const draft = useStore((state_0) => state_0.setting.draft);
 	const saved = useStore((state_1) => state_1.setting.saved);
 	const ready = useStore((state_2) => state_2.data.panel !== null);
@@ -57552,8 +57883,8 @@ function Runtime() {
 		request.current = null;
 	}, [section]);
 	async function save() {
-		if (!ready || request.current || section === "projects" || section === "general") return;
-		const patch = Object.fromEntries(GROUPS[section].map((key) => [key, draft[key]]));
+		if (!ready || request.current || !scoped) return;
+		const patch = Object.fromEntries(GROUPS[scoped].map((key) => [key, draft[key]]));
 		const controller = new AbortController();
 		request.current = controller;
 		setSaving(true);
@@ -57562,7 +57893,7 @@ function Runtime() {
 			const settings = await patchApiNexusSettings(patch, { signal: controller.signal });
 			if (controller.signal.aborted || request.current !== controller) return;
 			if (!settings || !validSettings(settings)) throw new Error("invalid_settings");
-			receiveSettings(settings, section);
+			receiveSettings(settings, scoped);
 		} catch {
 			if (!controller.signal.aborted && request.current === controller) setFailed(true);
 		} finally {
@@ -57573,11 +57904,11 @@ function Runtime() {
 		}
 	}
 	const prefix = (0, react.useId)();
-	if (section === "projects" || section === "general") return null;
-	const dirty = GROUPS[section].some((key_0) => draft[key_0] !== saved[key_0]);
+	if (!scoped) return null;
+	const dirty = GROUPS[scoped].some((key_0) => draft[key_0] !== saved[key_0]);
 	const valid = validSettings({
 		...saved,
-		...Object.fromEntries(GROUPS[section].map((key_1) => [key_1, draft[key_1]]))
+		...Object.fromEntries(GROUPS[scoped].map((key_1) => [key_1, draft[key_1]]))
 	});
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
 		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
@@ -57592,10 +57923,10 @@ function Runtime() {
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 					id: `${prefix}-runtime`,
 					className: "m-0 text-sm font-medium",
-					children: t(section === "execution" ? "settingExecution" : "settingDelivery")
+					children: t(scoped === "execution" ? "settingExecution" : "settingDelivery")
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-					children: t(section === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription")
+					children: t(scoped === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription")
 				})]
 			}),
 			[
@@ -57629,7 +57960,7 @@ function Runtime() {
 					help: "settingRetryCeilingHelp",
 					unit: "settingSecondsUnit"
 				}
-			].filter((field) => GROUPS[section].includes(field.key)).map((field_0) => {
+			].filter((field) => GROUPS[scoped].includes(field.key)).map((field_0) => {
 				const limits = LIMITS[field_0.key];
 				const value = draft[field_0.key];
 				const disabled = !ready || saving || field_0.key === "autoMergeMaxLines" && !draft.autoMerge;
@@ -57680,7 +58011,7 @@ function Runtime() {
 					})]
 				}, field_0.key);
 			}),
-			section === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			scoped === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "min-w-0",
@@ -57722,7 +58053,7 @@ function Runtime() {
 						size: "sm",
 						variant: "ghost",
 						disabled: saving || !dirty,
-						onClick: () => resetSettings(section),
+						onClick: () => resetSettings(scoped),
 						children: t("settingDiscard")
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						type: "submit",
@@ -57738,7 +58069,7 @@ function Runtime() {
 }
 // src/client/pages/setting/page.tsx
 function Setting() {
-	const $ = (0, import_dist.c)(90);
+	const $ = (0, import_dist.c)(91);
 	const { t } = useTranslation();
 	const activeSection = useStore(_temp$10);
 	const notice = useStore(_temp2$7);
@@ -57782,6 +58113,11 @@ function Setting() {
 					icon: GitBranchIcon
 				},
 				{
+					value: "agents",
+					label: "settingAgents",
+					icon: AgentIcon
+				},
+				{
 					value: "execution",
 					label: "settingExecution",
 					icon: TasksIcon
@@ -57795,6 +58131,7 @@ function Setting() {
 			const dirty = {
 				general: generalDirty,
 				projects: false,
+				agents: false,
 				execution: executionDirty,
 				delivery: deliveryDirty
 			};
@@ -57939,32 +58276,41 @@ function Setting() {
 		let t18;
 		if ($[59] === Symbol.for("react.memo_cache_sentinel")) {
 			t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-				cond: "execution",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "execution")
+				cond: "agents",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Agents, {})
 			});
 			$[59] = t18;
 		} else t18 = $[59];
 		let t19;
 		if ($[60] === Symbol.for("react.memo_cache_sentinel")) {
 			t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-				cond: "delivery",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "delivery")
+				cond: "execution",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "execution")
 			});
 			$[60] = t19;
 		} else t19 = $[60];
-		if ($[61] !== activeSection) {
-			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$1, {
+		let t20;
+		if ($[61] === Symbol.for("react.memo_cache_sentinel")) {
+			t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+				cond: "delivery",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "delivery")
+			});
+			$[61] = t20;
+		} else t20 = $[61];
+		if ($[62] !== activeSection) {
+			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$2, {
 				value: activeSection,
 				children: [
 					t16,
 					t17,
 					t18,
-					t19
+					t19,
+					t20
 				]
 			});
-			$[61] = activeSection;
-			$[62] = t4;
-		} else t4 = $[62];
+			$[62] = activeSection;
+			$[63] = t4;
+		} else t4 = $[63];
 		t5 = invalid ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
 			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
@@ -58008,35 +58354,35 @@ function Setting() {
 		t9 = $[19];
 	}
 	let t11;
-	if ($[63] !== t) {
+	if ($[64] !== t) {
 		t11 = t("settingPreview");
-		$[63] = t;
-		$[64] = t11;
-	} else t11 = $[64];
+		$[64] = t;
+		$[65] = t11;
+	} else t11 = $[65];
 	let t12;
-	if ($[65] !== deliveryDirty || $[66] !== executionDirty || $[67] !== generalDirty || $[68] !== t) {
+	if ($[66] !== deliveryDirty || $[67] !== executionDirty || $[68] !== generalDirty || $[69] !== t) {
 		t12 = (generalDirty || executionDirty || deliveryDirty) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "ml-1",
 			children: t("settingUnsaved")
 		});
-		$[65] = deliveryDirty;
-		$[66] = executionDirty;
-		$[67] = generalDirty;
-		$[68] = t;
-		$[69] = t12;
-	} else t12 = $[69];
+		$[66] = deliveryDirty;
+		$[67] = executionDirty;
+		$[68] = generalDirty;
+		$[69] = t;
+		$[70] = t12;
+	} else t12 = $[70];
 	let t13;
-	if ($[70] !== t11 || $[71] !== t12) {
+	if ($[71] !== t11 || $[72] !== t12) {
 		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
 			children: [t11, t12]
 		});
-		$[70] = t11;
-		$[71] = t12;
-		$[72] = t13;
-	} else t13 = $[72];
+		$[71] = t11;
+		$[72] = t12;
+		$[73] = t13;
+	} else t13 = $[73];
 	let t14;
-	if ($[73] !== t0 || $[74] !== t1 || $[75] !== t13 || $[76] !== t2 || $[77] !== t3 || $[78] !== t4 || $[79] !== t5) {
+	if ($[74] !== t0 || $[75] !== t1 || $[76] !== t13 || $[77] !== t2 || $[78] !== t3 || $[79] !== t4 || $[80] !== t5) {
 		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			id: t0,
 			role: t1,
@@ -58048,39 +58394,39 @@ function Setting() {
 				t13
 			]
 		});
-		$[73] = t0;
-		$[74] = t1;
-		$[75] = t13;
-		$[76] = t2;
-		$[77] = t3;
-		$[78] = t4;
-		$[79] = t5;
-		$[80] = t14;
-	} else t14 = $[80];
+		$[74] = t0;
+		$[75] = t1;
+		$[76] = t13;
+		$[77] = t2;
+		$[78] = t3;
+		$[79] = t4;
+		$[80] = t5;
+		$[81] = t14;
+	} else t14 = $[81];
 	let t15;
-	if ($[81] !== t14 || $[82] !== t6 || $[83] !== t7) {
+	if ($[82] !== t14 || $[83] !== t6 || $[84] !== t7) {
 		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: t6,
 			children: [t7, t14]
 		});
-		$[81] = t14;
-		$[82] = t6;
-		$[83] = t7;
-		$[84] = t15;
-	} else t15 = $[84];
+		$[82] = t14;
+		$[83] = t6;
+		$[84] = t7;
+		$[85] = t15;
+	} else t15 = $[85];
 	let t16;
-	if ($[85] !== t10 || $[86] !== t15 || $[87] !== t8 || $[88] !== t9) {
+	if ($[86] !== t10 || $[87] !== t15 || $[88] !== t8 || $[89] !== t9) {
 		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: t8,
 			"aria-label": t9,
 			children: [t10, t15]
 		});
-		$[85] = t10;
-		$[86] = t15;
-		$[87] = t8;
-		$[88] = t9;
-		$[89] = t16;
-	} else t16 = $[89];
+		$[86] = t10;
+		$[87] = t15;
+		$[88] = t8;
+		$[89] = t9;
+		$[90] = t16;
+	} else t16 = $[90];
 	return t16;
 }
 function _temp6$1(t0) {
@@ -61022,7 +61368,7 @@ function Panel$1() {
 			children: [(error || opening.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "alert",
 				children: error ?? opening.error?.message
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$1, {
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$2, {
 				value: page,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
@@ -61071,6 +61417,7 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 			backgroundLimitMinutes: 30,
 			autoMerge: false,
 			autoMergeMaxLines: 200,
+			autoArchiveWorkers: false,
 			deliveryMaxAttempts: 3,
 			deliveryRetryCeilingSeconds: 60
 		};
@@ -61131,13 +61478,14 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 			draft.data.panel = panel;
 			draft.data.loading = false;
 			draft.data.error = null;
-			const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings;
+			const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings;
 			draft.setting.saved = {
 				administrators,
 				maxWorkers,
 				backgroundLimitMinutes,
 				autoMerge,
 				autoMergeMaxLines,
+				autoArchiveWorkers,
 				deliveryMaxAttempts,
 				deliveryRetryCeilingSeconds
 			};

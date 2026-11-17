@@ -15,6 +15,25 @@ export async function getApiNexusPanel(config?: RequestInit) {
 }
 
 /** @method get */
+export async function getApiNexusAgentsModels(config?: RequestInit) {
+  const response = await fetch("/api/nexus/agents/models", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusAgentsModelsResponse>;
+}
+
+/** @method patch */
+export async function patchApiNexusAgentsModels(body: Types.PatchApiNexusAgentsModelsBody, config?: RequestInit) {
+  const response = await fetch("/api/nexus/agents/models", {
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+    body: JSON.stringify(body),
+    ...config,
+  });
+  return response.json() as Promise<Types.PatchApiNexusAgentsModelsResponse>;
+}
+
+/** @method get */
 export async function getApiNexusTicketsId(paths: Types.GetApiNexusTicketsidPath, config?: RequestInit) {
   const response = await fetch(`/api/nexus/tickets/${paths.id}`, {
     ...config,

@@ -237,7 +237,7 @@ export class GitLabChannel {
     const body = typeof row.body === 'string' ? row.body : typeof row.description === 'string' ? row.description : typeof row.state === 'string' ? row.state : ''
     const mentioned = bots.some(bot => new RegExp(`(?:^|[^a-z0-9_@])@${escapeRegex(bot.name)}(?![a-z0-9_.-])`, 'i').test(body))
     const at = timestamp(row.updated_at ?? row.created_at)
-    const id = `${thread.id}:${sourceKind}:${identity(row.id)}:${digest({ body, at, state: row.state }).slice(0, 16)}`
+    const id = `${thread.id}:${sourceKind}:${identity(row.id)}`
     const url = sourceKind === 'note' ? `${thread.url}#note_${identity(row.id)}` : text(row.web_url)
     await db.trigger.ingest({ id, channelId: 'gitlab', threadId: thread.id, kind, actorName, human: Number(human), mentioned: Number(mentioned), text: body, url, at, ref: typeof row.source_branch === 'string' ? row.source_branch : null })
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)
@@ -250,8 +250,18 @@ export class GitLabChannel {
     const targets = new Map<string, { projectId: string | null, ticketId: string | null }>()
     for (const ticketId of subscriptions) {
       const ticket = await db.ticket.findById(ticketId)
-      if (ticket && !['done', 'cancelled'].includes(ticket.status))
-        targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
+      if (!ticket)
+        continue
+      if (['done', 'cancelled'].includes(ticket.status)) {
+        if (!mentioned)
+          continue
+        if (await db.ticket.reopen(ticketId, at)) {
+          await db.worker.queue(ticketId, ticket.projectId)
+          targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
+        }
+        continue
+      }
+      targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
     }
     if (!subscriptions.length)
       targets.set(thread.projectId ?? 'main', { projectId: thread.triage === 'claimed' ? thread.projectId : null, ticketId: null })

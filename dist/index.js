@@ -1,13 +1,17 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-D7YIpmBn.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-CcMJGd9Z.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { createRouteDispatcher } from "@deepseek-ai/dsh-http-proxy";
+import { getServerContext } from "dsh-h3/utils";
 import { fetch } from "undici";
 import { mkdir, readFile, rename as rename$1, writeFile } from "node:fs/promises";
+import { SessionId } from "@deepseek-ai/dsh-session";
 import { Cron } from "croner";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 // src/ai/_shared/plugins/index.ts
 const IS_WINDOWS = process.platform === "win32";
 const agentInstructions = {
@@ -437,10 +441,7 @@ var GitHubChannel = class {
 		const body = typeof row.body === "string" ? row.body : typeof row.state === "string" ? row.state : "";
 		const mentioned = bots.some((bot) => new RegExp(`@${escapeRegex$1(bot.name)}(?![a-z0-9-])`, "i").test(body));
 		const at = timestamp$1(row.updated_at ?? row.submitted_at ?? row.created_at);
-		const id = `${thread.id}:${sourceKind}:${identity$1(row.id)}:${digest$1({
-			body,
-			at
-		}).slice(0, 16)}`;
+		const id = `${thread.id}:${sourceKind}:${identity$1(row.id)}`;
 		const trigger = {
 			id,
 			channelId: "github",
@@ -463,7 +464,19 @@ var GitHubChannel = class {
 		const targets = /* @__PURE__ */ new Map();
 		for (const ticketId of subscriptions) {
 			const ticket = await db.ticket.findById(ticketId);
-			if (ticket && !["done", "cancelled"].includes(ticket.status)) targets.set(ticket.projectId, {
+			if (!ticket) continue;
+			if (["done", "cancelled"].includes(ticket.status)) {
+				if (!mentioned) continue;
+				if (await db.ticket.reopen(ticketId, trigger.at)) {
+					await db.worker.queue(ticketId, ticket.projectId);
+					targets.set(ticket.projectId, {
+						projectId: ticket.projectId,
+						ticketId
+					});
+				}
+				continue;
+			}
+			targets.set(ticket.projectId, {
 				projectId: ticket.projectId,
 				ticketId
 			});
@@ -570,7 +583,7 @@ var GitHubChannel = class {
 			};
 			await this.save(target.repository, `pr_fact:${target.number}`, fact);
 			const branch = typeof record$1(remote.head).ref === "string" ? text$1(record$1(remote.head).ref) : null;
-			const worker = branch ? await db.worker.findRunningByBranch(branch) : void 0;
+			const worker = branch ? await db.worker.findByBranch(branch) : void 0;
 			const owned = worker && await db.ticket.findById(worker.ticketId);
 			if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
 				await db.ticketThread.link(owned.id, thread.id, now$1());
@@ -581,6 +594,7 @@ var GitHubChannel = class {
 				const ticket = await db.ticket.findById(ticketId);
 				if (ticket?.projectId === projectId && ticket.prUrl === thread.url) await db.ticket.setPullRequest(ticketId, thread.url, state, ciState);
 			}
+			if (state === "merged" || state === "closed") await this.threadClosed(projectId, thread, state, ciState);
 			const fingerprint = digest$1({
 				head,
 				state,
@@ -634,6 +648,41 @@ var GitHubChannel = class {
 				...ciError ? { reason: ciError } : {}
 			};
 		});
+	}
+	async threadClosed(projectId, thread, outcome, ciState) {
+		const at = now$1();
+		const before = await db.ticketThread.listTicketIds(thread.id);
+		await db.ticket.closeThread(thread.id, outcome, at, null);
+		const ended = [];
+		for (const ticketId of before) {
+			const ticket = await db.ticket.findById(ticketId);
+			if (!ticket || ticket.status !== "done" || ticket.prUrl !== thread.url) continue;
+			ended.push(ticketId);
+			const message = `${ticketId} 的变更请求已${outcome === "merged" ? "合并" : "关闭"}：${thread.url}`;
+			for (const type of ["project", "main"]) await db.inbox.enqueue({
+				id: `nexus:merged:${ticketId}:${type}`,
+				type,
+				origin: "system",
+				kind: "notice",
+				projectId: ticket.projectId,
+				ticketId,
+				title: outcome === "merged" ? "PR merged" : "PR closed",
+				message
+			});
+		}
+		if (outcome !== "merged" || !ended.length) return;
+		for (const source of await db.thread.listByChannel("github")) {
+			if (source.kind !== "issue" || source.projectId !== projectId || !source.url) continue;
+			if (!(await db.ticketThread.listTicketIds(source.id)).some((id) => ended.includes(id))) continue;
+			let resource;
+			try {
+				resource = parseResource$1(source.url);
+			} catch {
+				continue;
+			}
+			if (resource.kind !== "issue") continue;
+			await this.request(`repos/${resource.repository}/issues/${resource.number}`, void 0, "PATCH", { state: "closed" }).catch(() => void 0);
+		}
 	}
 	async collectBranch(projectId, branch, signal) {
 		const project = await this.project(projectId);
@@ -1281,11 +1330,7 @@ var GitLabChannel = class {
 		const body = typeof row.body === "string" ? row.body : typeof row.description === "string" ? row.description : typeof row.state === "string" ? row.state : "";
 		const mentioned = bots.some((bot) => new RegExp(`(?:^|[^a-z0-9_@])@${escapeRegex(bot.name)}(?![a-z0-9_.-])`, "i").test(body));
 		const at = timestamp(row.updated_at ?? row.created_at);
-		const id = `${thread.id}:${sourceKind}:${identity(row.id)}:${digest({
-			body,
-			at,
-			state: row.state
-		}).slice(0, 16)}`;
+		const id = `${thread.id}:${sourceKind}:${identity(row.id)}`;
 		const url = sourceKind === "note" ? `${thread.url}#note_${identity(row.id)}` : text(row.web_url);
 		await db.trigger.ingest({
 			id,
@@ -1308,7 +1353,19 @@ var GitLabChannel = class {
 		const targets = /* @__PURE__ */ new Map();
 		for (const ticketId of subscriptions) {
 			const ticket = await db.ticket.findById(ticketId);
-			if (ticket && !["done", "cancelled"].includes(ticket.status)) targets.set(ticket.projectId, {
+			if (!ticket) continue;
+			if (["done", "cancelled"].includes(ticket.status)) {
+				if (!mentioned) continue;
+				if (await db.ticket.reopen(ticketId, at)) {
+					await db.worker.queue(ticketId, ticket.projectId);
+					targets.set(ticket.projectId, {
+						projectId: ticket.projectId,
+						ticketId
+					});
+				}
+				continue;
+			}
+			targets.set(ticket.projectId, {
 				projectId: ticket.projectId,
 				ticketId
 			});
@@ -1709,6 +1766,11 @@ const read_channel = defineTool({
 			if (identity.role === "worker" && !allowedThreads.has(thread.id)) throw new Error("Worker 只能读取本任务来源");
 			items = [thread];
 			nextResource = thread.kind !== "ci" ? thread.url : null;
+		} else if (await isThreadId(resource)) {
+			const thread = await db.thread.findById(resource);
+			if (identity.role === "worker" && !allowedThreads.has(thread.id)) throw new Error("Worker 只能读取本任务来源");
+			items = [thread];
+			nextResource = thread.kind !== "ci" ? thread.url : null;
 		} else if (resource.startsWith("ticket/")) {
 			const ticket = await db.ticket.findById(resource.slice(7));
 			if (!ticket) throw new Error("工单不存在");
@@ -1805,6 +1867,10 @@ const reply_channel = defineTool({
 		});
 	}
 });
+async function isThreadId(value) {
+	if (!/^[\w-]+:[\w./-]+$/.test(value)) return false;
+	return Boolean(await db.thread.findById(value));
+}
 function canonicalGitHub(value) {
 	const match = /^github:([^:]+):(issue|pull):([1-9]\d*)$/.exec(value);
 	if (match) return `https://github.com/${match[1]}/${match[2] === "issue" ? "issues" : "pull"}/${match[3]}`;
@@ -1840,19 +1906,23 @@ const inbox_list = defineTool({
 });
 const read_mailbox = defineTool({
 	name: "read_mailbox",
-	description: "读取当前角色未处理邮件，以及可用项目的 id、仓库地址和本地路径。主编排先用它确定分诊目标；读取标为已读，处理完用 inbox_kill，ask 必须用 answer。",
-	parameters: {},
+	description: "读取当前角色未处理邮件，以及可用项目的 id、仓库地址和本地路径。可传 ids 一次读取指定多条邮件。主编排先用它确定分诊目标；读取标为已读，处理完用 inbox_kill，ask 必须用 answer。",
+	parameters: { ids: {
+		type: "array",
+		items: { type: "string" },
+		description: "只读取这些邮件 id；省略则读取全部未处理邮件。"
+	} },
 	output: {
 		schema: {
 			type: "string",
-			description: "完整角色邮箱。"
+			description: "完整角色邮箱，或所选邮件。"
 		},
 		render: (_args, value) => [{
 			type: "text",
 			text: value
 		}]
 	},
-	execute: async (_args, exec) => JSON.stringify(await inbox.read(exec.agent?.session.id ?? "", true))
+	execute: async (args, exec) => JSON.stringify(await inbox.read(exec.agent?.session.id ?? "", true, args.ids))
 });
 const inbox_kill = defineTool({
 	name: "inbox_kill",
@@ -2091,7 +2161,7 @@ const worker$1 = defineService({
 					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
 					continue;
 				}
-				if (ticket.paused || ticket.prepareError) continue;
+				if (ticket.paused) continue;
 				if ((await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) continue;
 				const project = await db.project.findById(ticket.projectId);
 				if (!project) {
@@ -2101,20 +2171,37 @@ const worker$1 = defineService({
 				if (!project.enabled) continue;
 				let started = false;
 				try {
-					let branch = worker.branch;
+					const branch = `nexus/${ticket.id}`;
 					let directory = worker.worktree;
-					if (branch && directory) await worktree.verify(project.directory, directory, branch);
-					else {
-						const created = await worktree.create(project.directory, ticket.id, branch ?? void 0);
-						branch = created.branch;
-						directory = created.worktree;
-						await db.worker.update(worker.id, {
-							branch,
-							worktree: directory
+					if (await session.history(worker.id).then(() => true).catch(() => false)) {
+						if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
+						directory = directory ?? project.directory;
+					} else {
+						await session.create("worker", {
+							sessionId: worker.id,
+							ticketId: ticket.id,
+							projectId: project.id,
+							directory: project.directory,
+							title: worker.title ?? ticket.title
 						});
+						if (stopped) throw new Error("worker_stopped");
+						if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
+						else {
+							const created = await worktree.create(await session.activate(worker.id), ticket.id);
+							directory = created.worktree;
+							await db.worker.update(worker.id, {
+								branch: created.branch,
+								worktree: directory
+							});
+						}
 					}
+					if (!directory) throw new Error("worker_directory_required");
 					if (stopped) throw new Error("worker_stopped");
 					const threads = await db.ticketThread.listByTicket(ticket.id);
+					const sources = await Promise.all(threads.map(async (thread) => {
+						const latest = await db.trigger.findLatestByThread(thread.threadId);
+						return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId;
+					}));
 					const prompt = [
 						`${ticket.id}: ${ticket.title}`,
 						ticket.description ?? "",
@@ -2123,17 +2210,9 @@ const worker$1 = defineService({
 							autoMergeMaxLines: settings.autoMergeMaxLines
 						})}`,
 						"来源话题：",
-						...threads.map((thread) => thread.threadId),
+						...sources,
 						worker.recoveryNote ?? ""
 					].filter(Boolean).join(String.fromCharCode(10));
-					await session.create("worker", {
-						sessionId: worker.id,
-						ticketId: ticket.id,
-						projectId: project.id,
-						directory,
-						title: worker.title ?? ticket.title
-					});
-					if (stopped) throw new Error("worker_stopped");
 					const now = (/* @__PURE__ */ new Date()).toISOString();
 					await db.worker.start(worker.id, now);
 					await db.ticket.start(ticket.id, now, now);
@@ -2147,7 +2226,8 @@ const worker$1 = defineService({
 					if (started) {
 						await session.stop(worker.id);
 						await db.worker.end(worker.id, "failed", (/* @__PURE__ */ new Date()).toISOString());
-						await db.ticket.update(ticket.id, {
+						const latest = await db.ticket.findById(ticket.id);
+						if (!latest || latest.status !== "done" && latest.status !== "cancelled") await db.ticket.update(ticket.id, {
 							status: "waiting",
 							updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 						});
@@ -2201,6 +2281,11 @@ const worker$1 = defineService({
 				} catch (error) {
 					if (stopped) break;
 					const now = (/* @__PURE__ */ new Date()).toISOString();
+					const latest = await db.ticket.findById(ticket.id);
+					if (latest && (latest.status === "done" || latest.status === "cancelled")) {
+						await db.worker.end(worker.id, "stopped", now);
+						continue;
+					}
 					await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now);
 					await db.ticket.update(ticket.id, {
 						status: "waiting",
@@ -2258,10 +2343,22 @@ async function finish(current, reason) {
 	await db.worker.setBackgroundUntil(current.id, null);
 	await db.worker.end(current.id, reason ?? (current.reportState === "failed" ? "failed" : "completed"), now);
 	const ticket = await db.ticket.findById(current.ticketId);
-	if (ticket && ticket.status !== "done" && ticket.status !== "cancelled") await db.ticket.update(ticket.id, {
-		status: !reason && current.reportState === "ready" ? "review" : "waiting",
-		updatedAt: now
-	});
+	if (ticket && ticket.status !== "done" && ticket.status !== "cancelled") {
+		if (!reason && current.reportState === "dropped") await db.ticket.finish(ticket.id, "done", now, now);
+		else await db.ticket.update(ticket.id, {
+			status: !reason && current.reportState === "ready" ? "review" : "waiting",
+			updatedAt: now
+		});
+	}
+	if (!reason && current.reportState !== "failed") await archive(current.id);
+}
+async function archive(id) {
+	if (!(await setting.load()).autoArchiveWorkers) return;
+	try {
+		await getServerContext(server).workspaceRegistry.archiveSession(SessionId(id), { stopActivity: true });
+	} catch (error) {
+		getServerContext(server).logger.warn("nexus: archiving finished worker %s failed: %s", id, error instanceof Error ? error.message : String(error));
+	}
 }
 // src/ai/manager/index.ts
 const manager = definePreset({
@@ -2534,6 +2631,7 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
 				const identity = await session.resolve(exec.agent?.session.id ?? "");
 				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
 				const worker = await db.worker.queue(args.ticketId, identity.projectId, args.branch);
+				await db.ticket.setPrepareError(args.ticketId, null, (/* @__PURE__ */ new Date()).toISOString());
 				await worker$1.reconcile();
 				return JSON.stringify(await db.worker.findById(worker.id));
 			}
@@ -4317,6 +4415,18 @@ async function activate() {
 		throw error;
 	}
 }
+// src/service/skill.ts
+const skill = defineService({
+	roots() {
+		return [join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "skills")].filter((path) => existsSync(path));
+	},
+	async install(ctx) {
+		const roots = skill.roots();
+		if (!roots.length) return () => void 0;
+		const fiber = ctx.plugin(await import("@deepseek-ai/dsh-skill-filesystem"), { customSkillDirs: roots });
+		return () => void fiber.dispose();
+	}
+});
 // src/index.ts
 const inject = [
 	"agents",
@@ -4326,7 +4436,8 @@ const inject = [
 	"sessionQuery",
 	"credentials",
 	"connection",
-	"webServer"
+	"webServer",
+	"worktrees"
 ];
 async function apply(ctx) {
 	await ctx.effect(async function* () {
@@ -4345,5 +4456,6 @@ async function apply(ctx) {
 		}
 	}), "nexus:routes");
 	await ctx.effect(() => runtime.start(), "nexus:runtime");
+	await ctx.effect(() => skill.install(ctx), "nexus:skills");
 }
 export { apply, inject };

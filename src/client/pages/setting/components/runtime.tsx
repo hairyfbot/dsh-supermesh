@@ -10,6 +10,7 @@ import { GROUPS, LIMITS, validSettings } from '../../../store/setting'
 export function Runtime(): ReactNode {
   const { t } = useTranslation()
   const section = useStore(state => state.setting.section)
+  const scoped = section === 'execution' || section === 'delivery' ? section : null
   const draft = useStore(state => state.setting.draft)
   const saved = useStore(state => state.setting.saved)
   const ready = useStore(state => state.data.panel !== null)
@@ -23,9 +24,9 @@ export function Runtime(): ReactNode {
     request.current = null
   }, [section])
   async function save(): Promise<void> {
-    if (!ready || request.current || section === 'projects' || section === 'general')
+    if (!ready || request.current || !scoped)
       return
-    const patch = Object.fromEntries(GROUPS[section].map(key => [key, draft[key]]))
+    const patch = Object.fromEntries(GROUPS[scoped].map(key => [key, draft[key]]))
     const controller = new AbortController()
     request.current = controller
     setSaving(true)
@@ -36,7 +37,7 @@ export function Runtime(): ReactNode {
         return
       if (!settings || !validSettings(settings))
         throw new Error('invalid_settings')
-      receiveSettings(settings, section)
+      receiveSettings(settings, scoped)
     }
     catch {
       if (!controller.signal.aborted && request.current === controller)
@@ -50,10 +51,10 @@ export function Runtime(): ReactNode {
     }
   }
   const prefix = useId()
-  if (section === 'projects' || section === 'general')
+  if (!scoped)
     return null
-  const dirty = GROUPS[section].some(key => draft[key] !== saved[key])
-  const candidate = { ...saved, ...Object.fromEntries(GROUPS[section].map(key => [key, draft[key]])) }
+  const dirty = GROUPS[scoped].some(key => draft[key] !== saved[key])
+  const candidate = { ...saved, ...Object.fromEntries(GROUPS[scoped].map(key => [key, draft[key]])) }
   const valid = validSettings(candidate)
   const fields: { key: keyof typeof LIMITS, label: DshNexusKey, help: DshNexusKey, unit: DshNexusKey }[] = [
     { key: 'maxWorkers', label: 'settingMaxWorkers', help: 'settingMaxWorkersHelp', unit: 'settingWorkersUnit' },
@@ -73,10 +74,10 @@ export function Runtime(): ReactNode {
       aria-labelledby={`${prefix}-runtime`}
     >
       <header className="px-4 py-3">
-        <h3 id={`${prefix}-runtime`} className="m-0 text-sm font-medium">{t(section === 'execution' ? 'settingExecution' : 'settingDelivery')}</h3>
-        <p className="m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(section === 'execution' ? 'settingExecutionDescription' : 'settingDeliveryDescription')}</p>
+        <h3 id={`${prefix}-runtime`} className="m-0 text-sm font-medium">{t(scoped === 'execution' ? 'settingExecution' : 'settingDelivery')}</h3>
+        <p className="m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(scoped === 'execution' ? 'settingExecutionDescription' : 'settingDeliveryDescription')}</p>
       </header>
-      {fields.filter(field => (GROUPS[section] as readonly string[]).includes(field.key)).map((field) => {
+      {fields.filter(field => (GROUPS[scoped] as readonly string[]).includes(field.key)).map((field) => {
         const limits = LIMITS[field.key]
         const value = draft[field.key]
         const disabled = !ready || saving || (field.key === 'autoMergeMaxLines' && !draft.autoMerge)
@@ -98,7 +99,7 @@ export function Runtime(): ReactNode {
           </div>
         )
       })}
-      {section === 'execution' && (
+      {scoped === 'execution' && (
         <div className="flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3">
           <div className="min-w-0">
             <h4 className="m-0 text-xs font-medium">{t('settingAutoMerge')}</h4>
@@ -114,7 +115,7 @@ export function Runtime(): ReactNode {
           {dirty && !valid && <p role="status" className="m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant="ghost" disabled={saving || !dirty} onClick={() => resetSettings(section)}>{t('settingDiscard')}</Button>
+          <Button type="button" size="sm" variant="ghost" disabled={saving || !dirty} onClick={() => resetSettings(scoped)}>{t('settingDiscard')}</Button>
           <Button type="submit" size="sm" variant="primary" disabled={!ready || saving || !dirty || !valid}>{t('settingSave')}</Button>
         </div>
       </footer>

@@ -51,13 +51,17 @@ export const inbox = defineService({
     const projects = (await db.project.listAll()).filter(project => project.enabled && (identity.role === 'main' || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({ id, name, directory, remoteUrl }))
     return { sessionId: id, role: scope.type, projects, pendingCount: messages.length, messages }
   },
-  async read(id: string, includeChannel = false) {
+  async read(id: string, includeChannel = false, ids?: string[]) {
     const mailbox = await inbox.peek(id, includeChannel)
     if (!mailbox)
       throw new Error('unknown_session')
     const now = new Date().toISOString()
-    await db.inbox.markRead(mailbox.messages.filter(message => !message.readAt).map(message => message.id), now)
-    return mailbox
+    const selected = ids?.length ? mailbox.messages.filter(message => ids.includes(message.id)) : mailbox.messages
+    await db.inbox.markRead(selected.filter(message => !message.readAt).map(message => message.id), now)
+    if (!ids?.length)
+      return mailbox
+    const missing = ids.filter(id => !mailbox.messages.some(message => message.id === id))
+    return { ...mailbox, messages: selected, missing }
   },
   async complete(id: string, ids: string[], includeChannel = false): Promise<number> {
     const identity = await session.resolve(id)
@@ -195,7 +199,12 @@ export const inbox = defineService({
         catch (error) {
           if (stopped)
             break
-          await db.inbox.recordDeliveryFailure(message.id, error instanceof Error ? error.message : String(error), new Date(Date.now() + 2000).toISOString())
+          const reason = error instanceof Error ? error.message : String(error)
+          const settings = await setting.load()
+          const delays = Math.min(2 ** Math.min(message.deliveryAttempts + 1, 20), settings.deliveryRetryCeilingSeconds) * 1000
+          await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delays).toISOString())
+          if (message.deliveryAttempts + 1 >= settings.deliveryMaxAttempts)
+            await db.inbox.markStalled(message.id, reason)
         }
       }
     })

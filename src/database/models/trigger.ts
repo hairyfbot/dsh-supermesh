@@ -61,6 +61,10 @@ export class Trigger extends Model<DB, 'trigger'> {
     return this.db.selectFrom('trigger').selectAll().where('id', '=', id).executeTakeFirst()
   }
 
+  async findLatestByThread(threadId: string): Promise<Selectable<DB['trigger']> | undefined> {
+    return this.db.selectFrom('trigger').selectAll().where('threadId', '=', threadId).orderBy('at', 'desc').orderBy('id', 'desc').executeTakeFirst()
+  }
+
   async listRecent(limit = 100): Promise<Selectable<DB['trigger']>[]> {
     return this.db.selectFrom('trigger').selectAll().orderBy('at', 'desc').orderBy('id').limit(Math.max(1, Math.min(1000, limit))).execute()
   }

@@ -30,7 +30,7 @@ export class GitHubChannel {
     return task
   }
 
-  private async request(path: string, signal?: AbortSignal, method: 'GET' | 'POST' = 'GET', body?: Record<string, unknown>): Promise<unknown> {
+  private async request(path: string, signal?: AbortSignal, method: 'GET' | 'POST' | 'PATCH' = 'GET', body?: Record<string, unknown>): Promise<unknown> {
     signal?.throwIfAborted()
     return this.runner.request({ site: 'github.com', path, method, body, signal })
   }
@@ -249,7 +249,7 @@ export class GitHubChannel {
     const body = typeof row.body === 'string' ? row.body : typeof row.state === 'string' ? row.state : ''
     const mentioned = bots.some(bot => new RegExp(`@${escapeRegex(bot.name)}(?![a-z0-9-])`, 'i').test(body))
     const at = timestamp(row.updated_at ?? row.submitted_at ?? row.created_at)
-    const id = `${thread.id}:${sourceKind}:${identity(row.id)}:${digest({ body, at }).slice(0, 16)}`
+    const id = `${thread.id}:${sourceKind}:${identity(row.id)}`
     const trigger = { id, channelId: 'github', threadId: thread.id, kind, actorName, human: Number(human), mentioned: Number(mentioned), text: body, url: text(row.html_url), at, ref: row.head ? text(record(row.head).ref) : null }
     await db.trigger.ingest(trigger)
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)
@@ -262,8 +262,19 @@ export class GitHubChannel {
     const targets = new Map<string, { projectId: string | null, ticketId: string | null }>()
     for (const ticketId of subscriptions) {
       const ticket = await db.ticket.findById(ticketId)
-      if (ticket && !['done', 'cancelled'].includes(ticket.status))
-        targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
+      if (!ticket)
+        continue
+      if (['done', 'cancelled'].includes(ticket.status)) {
+        if (!mentioned)
+          continue
+        const resumed = await db.ticket.reopen(ticketId, trigger.at)
+        if (resumed) {
+          await db.worker.queue(ticketId, ticket.projectId)
+          targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
+        }
+        continue
+      }
+      targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
     }
     if (!subscriptions.length)
       targets.set(thread.projectId ?? 'main', { projectId: thread.triage === 'claimed' ? thread.projectId : null, ticketId: null })
@@ -354,7 +365,7 @@ export class GitHubChannel {
       const fact: PullFact = { head, base: text(base.ref), state, ciState, collectedAt: now(), updatedAt, ciError, url: text(remote.html_url) }
       await this.save(target.repository, `pr_fact:${target.number}`, fact)
       const branch = typeof record(remote.head).ref === 'string' ? text(record(remote.head).ref) : null
-      const worker = branch ? await db.worker.findRunningByBranch(branch) : undefined
+      const worker = branch ? await db.worker.findByBranch(branch) : undefined
       const owned = worker && await db.ticket.findById(worker.ticketId)
       if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
         await db.ticketThread.link(owned.id, thread.id, now())
@@ -366,6 +377,8 @@ export class GitHubChannel {
         if (ticket?.projectId === projectId && ticket.prUrl === thread.url)
           await db.ticket.setPullRequest(ticketId, thread.url, state, ciState)
       }
+      if (state === 'merged' || state === 'closed')
+        await this.threadClosed(projectId, thread, state, ciState)
       const fingerprint = digest({ head, state, ciState, ciError, checks: snapshot?.checks, statuses: snapshot?.statuses })
       const ref = `${target.repository}:${target.number}`
       const { row: watch } = await db.ciWatch.recordRevision({ id: `github:pull:${ref}`, channelId: 'github', kind: 'pull', ref, fingerprint, head, updatedAt: now() })
@@ -379,6 +392,41 @@ export class GitHubChannel {
       }
       return { ok: !ciError, ...(ciError ? { reason: ciError } : {}) }
     })
+  }
+
+  private async threadClosed(projectId: string, thread: Thread, outcome: 'merged' | 'closed', ciState: CiSnapshot['state']): Promise<void> {
+    void ciState
+    const at = now()
+    const before = await db.ticketThread.listTicketIds(thread.id)
+    await db.ticket.closeThread(thread.id, outcome, at, null)
+    const ended: string[] = []
+    for (const ticketId of before) {
+      const ticket = await db.ticket.findById(ticketId)
+      if (!ticket || ticket.status !== 'done' || ticket.prUrl !== thread.url)
+        continue
+      ended.push(ticketId)
+      const message = `${ticketId} 的变更请求已${outcome === 'merged' ? '合并' : '关闭'}：${thread.url}`
+      for (const type of ['project', 'main'] as const)
+        await db.inbox.enqueue({ id: `nexus:merged:${ticketId}:${type}`, type, origin: 'system', kind: 'notice', projectId: ticket.projectId, ticketId, title: outcome === 'merged' ? 'PR merged' : 'PR closed', message })
+    }
+    if (outcome !== 'merged' || !ended.length)
+      return
+    for (const source of await db.thread.listByChannel('github')) {
+      if (source.kind !== 'issue' || source.projectId !== projectId || !source.url)
+        continue
+      if (!(await db.ticketThread.listTicketIds(source.id)).some(id => ended.includes(id)))
+        continue
+      let resource: Resource
+      try {
+        resource = parseResource(source.url)
+      }
+      catch {
+        continue
+      }
+      if (resource.kind !== 'issue')
+        continue
+      await this.request(`repos/${resource.repository}/issues/${resource.number}`, undefined, 'PATCH', { state: 'closed' }).catch(() => undefined)
+    }
   }
 
   async collectBranch(projectId: string, branch: string, signal?: AbortSignal): Promise<void> {

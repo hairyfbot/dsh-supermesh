@@ -1,8 +1,12 @@
+import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { Selectable } from 'kysely'
 import type { DB } from '../database/types'
 import { randomUUID } from 'node:crypto'
+import { SessionId } from '@deepseek-ai/dsh-session'
+import { getServerContext } from 'dsh-h3/utils'
 import { db } from '../database'
+import { server } from '../server'
 import { defineService } from '../utils/service'
 import { session } from './session'
 import { setting } from './setting'
@@ -38,7 +42,7 @@ export const worker = defineService({
           await db.worker.end(worker.id, 'stopped', new Date().toISOString())
           continue
         }
-        if (ticket.paused || ticket.prepareError)
+        if (ticket.paused)
           continue
         if ((await db.inbox.listByTicket(ticket.id)).some(message => message.kind === 'ask' && message.status === 'pending' && message.workerId === worker.id))
           continue
@@ -51,24 +55,37 @@ export const worker = defineService({
           continue
         let started = false
         try {
-          let branch = worker.branch
+          const branch = `nexus/${ticket.id}`
           let directory = worker.worktree
-          if (branch && directory) {
-            await worktree.verify(project.directory, directory, branch)
+          const existing = await session.history(worker.id).then(() => true).catch(() => false)
+          if (existing) {
+            if (directory && worker.branch === branch)
+              await worktree.verify(project.directory, directory, branch)
+            directory = directory ?? project.directory
           }
           else {
-            const created = await worktree.create(project.directory, ticket.id, branch ?? undefined)
-            branch = created.branch
-            directory = created.worktree
-            await db.worker.update(worker.id, { branch, worktree: directory })
+            await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory, title: worker.title ?? ticket.title })
+            if (stopped)
+              throw new Error('worker_stopped')
+            if (directory && worker.branch === branch) {
+              await worktree.verify(project.directory, directory, branch)
+            }
+            else {
+              const created = await worktree.create(await session.activate(worker.id), ticket.id)
+              directory = created.worktree
+              await db.worker.update(worker.id, { branch: created.branch, worktree: directory })
+            }
           }
+          if (!directory)
+            throw new Error('worker_directory_required')
           if (stopped)
             throw new Error('worker_stopped')
           const threads = await db.ticketThread.listByTicket(ticket.id)
-          const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', `执行配置：${JSON.stringify({ autoMerge: settings.autoMerge, autoMergeMaxLines: settings.autoMergeMaxLines })}`, '来源话题：', ...threads.map(thread => thread.threadId), worker.recoveryNote ?? ''].filter(Boolean).join(String.fromCharCode(10))
-          await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory, title: worker.title ?? ticket.title })
-          if (stopped)
-            throw new Error('worker_stopped')
+          const sources = await Promise.all(threads.map(async (thread) => {
+            const latest = await db.trigger.findLatestByThread(thread.threadId)
+            return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId
+          }))
+          const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', `执行配置：${JSON.stringify({ autoMerge: settings.autoMerge, autoMergeMaxLines: settings.autoMergeMaxLines })}`, '来源话题：', ...sources, worker.recoveryNote ?? ''].filter(Boolean).join(String.fromCharCode(10))
           const now = new Date().toISOString()
           await db.worker.start(worker.id, now)
           await db.ticket.start(ticket.id, now, now)
@@ -84,7 +101,9 @@ export const worker = defineService({
           if (started) {
             await session.stop(worker.id)
             await db.worker.end(worker.id, 'failed', new Date().toISOString())
-            await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
+            const latest = await db.ticket.findById(ticket.id)
+            if (!latest || (latest.status !== 'done' && latest.status !== 'cancelled'))
+              await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
             running--
           }
         }
@@ -152,6 +171,11 @@ export const worker = defineService({
           if (stopped)
             break
           const now = new Date().toISOString()
+          const latest = await db.ticket.findById(ticket.id)
+          if (latest && (latest.status === 'done' || latest.status === 'cancelled')) {
+            await db.worker.end(worker.id, 'stopped', now)
+            continue
+          }
           await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now)
           await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
           await db.worker.end(worker.id, 'failed', now)
@@ -221,6 +245,24 @@ async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'st
   await db.worker.setBackgroundUntil(current.id, null)
   await db.worker.end(current.id, reason ?? (current.reportState === 'failed' ? 'failed' : 'completed'), now)
   const ticket = await db.ticket.findById(current.ticketId)
-  if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled')
-    await db.ticket.update(ticket.id, { status: !reason && current.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
+  if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled') {
+    if (!reason && current.reportState === 'dropped')
+      await db.ticket.finish(ticket.id, 'done', now, now)
+    else
+      await db.ticket.update(ticket.id, { status: !reason && current.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
+  }
+  if (!reason && current.reportState !== 'failed')
+    await archive(current.id)
+}
+
+async function archive(id: string): Promise<void> {
+  const settings = await setting.load()
+  if (!settings.autoArchiveWorkers)
+    return
+  try {
+    await getServerContext<Context>(server).workspaceRegistry.archiveSession(SessionId(id), { stopActivity: true })
+  }
+  catch (error) {
+    getServerContext<Context>(server).logger.warn('nexus: archiving finished worker %s failed: %s', id, error instanceof Error ? error.message : String(error))
+  }
 }

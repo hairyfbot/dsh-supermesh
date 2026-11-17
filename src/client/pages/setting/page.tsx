@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { useId } from 'react'
 import { Case, Switch } from 'react-if-lite'
-import { ActivityIcon, GitBranchIcon, TasksIcon } from '../../components/icons'
+import { ActivityIcon, AgentIcon, GitBranchIcon, TasksIcon } from '../../components/icons'
 import { useActions, useStore } from '../../hooks/use-store'
 import { useTranslation } from '../../hooks/use-translation'
 import { administratorSignature, GROUPS } from '../../store/setting'
+import { Agents } from './components/agents'
 import { General } from './components/general'
 import { Projects } from './components/projects'
 import { Runtime } from './components/runtime'
@@ -23,10 +24,11 @@ export function Setting(): ReactNode {
   const sections = [
     { value: 'general', label: 'settingGeneral', icon: TasksIcon },
     { value: 'projects', label: 'settingProjects', icon: GitBranchIcon },
+    { value: 'agents', label: 'settingAgents', icon: AgentIcon },
     { value: 'execution', label: 'settingExecution', icon: TasksIcon },
     { value: 'delivery', label: 'settingDelivery', icon: ActivityIcon },
   ] as const
-  const dirty = { general: generalDirty, projects: false, execution: executionDirty, delivery: deliveryDirty }
+  const dirty = { general: generalDirty, projects: false, agents: false, execution: executionDirty, delivery: deliveryDirty }
   return (
     <section className="@container flex min-w-0 flex-col gap-4 pb-8" aria-label={t('tabSettings')}>
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -51,6 +53,7 @@ export function Setting(): ReactNode {
           <Switch value={activeSection}>
             <Case cond="general"><General /></Case>
             <Case cond="projects"><Projects /></Case>
+            <Case cond="agents"><Agents /></Case>
             <Case cond="execution"><Runtime key="execution" /></Case>
             <Case cond="delivery"><Runtime key="delivery" /></Case>
           </Switch>

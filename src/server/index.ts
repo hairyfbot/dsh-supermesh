@@ -3,6 +3,8 @@ import type { H3Event } from 'h3'
 import { defineWebServer } from 'dsh-h3'
 import { getServerOptions } from 'dsh-h3/utils'
 import { defineHandler, HTTPError } from 'h3'
+import { getAgentModels } from './routes/agent.models.get'
+import { patchAgentModels } from './routes/agent.models.patch'
 import { postAnswer } from './routes/ask.answers.post'
 import { getChannelAuthentication } from './routes/channel.authentication.get'
 import { postChannelAuthentication } from './routes/channel.authentication.post'
@@ -41,6 +43,8 @@ export const authorize = defineHandler(async (event) => {
 export const server = defineWebServer<ServerOptions>((app) => {
   app.use(authorize)
   app.get('/api/nexus/panel', getPanel)
+  app.get('/api/nexus/agents/models', getAgentModels)
+  app.patch('/api/nexus/agents/models', patchAgentModels)
   app.get('/api/nexus/tickets/:id', getTicket)
   app.patch('/api/nexus/tickets/:id', patchTicket)
   app.put('/api/nexus/channels/:id/configuration', putChannelConfiguration)
