@@ -33,7 +33,7 @@ export const create_worker = defineTool({
 
 export const send = defineTool({
   name: 'send',
-  description: '往 Worker 会话里塞话。默认 queue；只有确定它正在做错、需要立刻止损才用 interrupt。',
+  description: '直接将完整消息交给活跃 Worker，跳过业务排队；只有需要立刻止损才用 interrupt。Worker 没有收件箱。',
   parameters: {
     workerId: {
       type: 'string',
@@ -49,7 +49,7 @@ export const send = defineTool({
       type: 'string',
       enum: ['queue', 'interrupt', 'reply'],
       required: true,
-      description: 'queue 排队一轮；interrupt 立刻打断并 steer；reply 回答它的 ask。',
+      description: 'queue 也直接 steer 到最近一步；interrupt 中止当前回合再 steer；reply 回答它的 ask 并直接 steer。',
     },
   },
   output: {
@@ -70,11 +70,14 @@ export const send = defineTool({
       throw new Error('Worker 已结束')
     if (ticket.status === 'done' || ticket.status === 'cancelled')
       throw new Error('工单已结束')
+    if (!(await session.lookup(worker.id)))
+      throw new Error('Worker 未在运行时加载、已归档或不属于 Nexus；不能直接发送')
     if (args.mode === 'reply') {
       const asks = (await db.inbox.listByTicket(ticket.id)).filter(row => row.workerId === worker.id && row.kind === 'ask' && row.status === 'pending')
       if (asks.length !== 1 || !db.inbox.owns(asks[0]!, { type: 'project', projectId: identity.projectId }))
         throw new Error('reply 必须唯一对应当前项目编排待答的 ask')
       await db.inbox.answerScoped(asks[0]!.id, args.text, { type: 'project', projectId: identity.projectId }, new Date().toISOString())
+      await session.send(worker.id, `[Answer ${asks[0]!.id}] ${args.text}`, 'reply', `nexus:answer:${asks[0]!.id}`)
     }
     else {
       await session.send(worker.id, args.text, args.mode)
@@ -125,7 +128,7 @@ export const cancel = defineTool({
     },
     keepInbox: {
       type: 'boolean',
-      description: 'true 时不清理它收件箱里的待处理消息；省略则一并清掉。',
+      description: 'true 保留官方 Agent 尚未接收的输入；省略则清除。不涉及业务收件箱。',
     },
   },
   output: {

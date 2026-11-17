@@ -15,6 +15,9 @@
     "skipLibCheck": true
   },
   "exclude": [
-    "soruce"
+    "soruce",
+    "node_modules",
+    "temp",
+    ".temp"
   ]
 }

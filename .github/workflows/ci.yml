@@ -24,7 +24,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install DSH and Playwright
-        run: pnpm install -g @deepseek-ai/dsh@0.2.1-rc.5 && pnpm exec playwright install chromium
+        shell: bash
+        run: |
+          pnpm install -g @deepseek-ai/dsh@0.2.2-rc.3
+          pnpm exec playwright install --with-deps chromium
+          echo "DSH_E2E_CLI=$(pnpm root -g)/@deepseek-ai/dsh/lib/bin.js" >> "$GITHUB_ENV"
 
       - name: Lint and typecheck
         run: pnpm run lint && pnpm run typecheck

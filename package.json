@@ -39,7 +39,9 @@
         "@deepseek-ai/dsh-client-ui-primitives",
         "@deepseek-ai/dsh-client-ui-renderer",
         "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-ui-sidebar"
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-chat"
       ],
       "platform": "web"
     },
@@ -58,7 +60,7 @@
     "release": "bumpp",
     "start": "tsx src/index.ts",
     "test": "vitest run --project unit --passWithNoTests",
-    "test:e2e": "pnpm run build && vitest run --project e2e",
+    "test:e2e": "vitest run --project e2e",
     "typecheck": "tsc",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "tsx scripts/migrate.ts",
@@ -74,11 +76,12 @@
     "release": "Bump version and publish a release",
     "start": "Run the entry file",
     "test": "Run the unit test suite",
-    "test:e2e": "Build, then run the browser E2E suite against a real DSH shell",
+    "test:e2e": "Run the browser E2E suite against an isolated real DSH shell",
     "typecheck": "Check types",
     "prepare": "Set up git hooks and skills"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-http-proxy": "catalog:",
     "@fileshed/kysely-node-sqlite": "catalog:database",
     "@reause/core": "catalog:utils",
     "croner": "catalog:utils",
@@ -89,6 +92,7 @@
     "kysely-model": "catalog:database",
     "react-if-lite": "catalog:react",
     "recharts": "catalog:react",
+    "undici": "catalog:",
     "unstorage": "catalog:"
   },
   "devDependencies": {
@@ -108,6 +112,7 @@
     "@deepseek-ai/dsh-client-connection": "catalog:dsh",
     "@deepseek-ai/dsh-client-locale": "catalog:dsh",
     "@deepseek-ai/dsh-client-store": "catalog:dsh",
+    "@deepseek-ai/dsh-client-ui-chat": "catalog:",
     "@deepseek-ai/dsh-client-ui-conversation": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-layout": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-plugin-manager": "catalog:dsh",

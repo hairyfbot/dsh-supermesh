@@ -1,7 +1,8 @@
 import type { ChildProcess } from 'node:child_process'
+import { once } from 'node:events'
 import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
-import { join } from 'node:path'
+import { isAbsolute } from 'node:path'
 import process from 'node:process'
 import { x } from 'tinyexec'
 
@@ -15,33 +16,11 @@ export interface BrowserSeedCookie {
   sameSite: 'Strict'
 }
 
-export function dshCommand(): string | null {
-  const explicit = process.env.DSH_E2E_DSH ?? process.env.DSHM_E2E_DSH
-  if (explicit)
-    return explicit
-
-  const path = process.env.PATH ?? ''
-  const extensions = process.platform === 'win32'
-    ? (process.env.PATHEXT ?? '.COM;.EXE;.BAT;.CMD;.PS1').split(';')
-    : ['']
-
-  for (const directory of path.split(process.platform === 'win32' ? ';' : ':')) {
-    if (!directory)
-      continue
-    for (const extension of extensions) {
-      if (existsSync(join(directory, `dsh${extension}`)))
-        return 'dsh'
-    }
-  }
-  return null
-}
-
-export function dshAvailable(): boolean {
-  if (dshCommand() !== null)
-    return true
-  if (process.env.DSH_E2E_REQUIRED === '1' || process.env.DSHM_E2E_REQUIRED === '1')
-    throw new Error('DSH_E2E_REQUIRED=1 but no dsh CLI is reachable')
-  return false
+export function dshCommand(): string {
+  const cli = process.env.DSH_E2E_CLI
+  if (!cli || !isAbsolute(cli) || !existsSync(cli) || !cli.endsWith('.js'))
+    throw new Error('Set DSH_E2E_CLI to the installed official @deepseek-ai/dsh lib/bin.js absolute path; command shims are not allowed')
+  return cli
 }
 
 export function cleanRootUrl(baseUrl: string): URL {
@@ -155,8 +134,9 @@ export async function freePort(): Promise<number> {
 }
 
 export async function stop(process_: ChildProcess): Promise<void> {
-  if (process_.exitCode !== null)
+  if (process_.exitCode !== null || process_.signalCode !== null)
     return
+  const exited = once(process_, 'exit')
   if (process.platform === 'win32' && process_.pid !== undefined) {
     await x('taskkill', ['/pid', String(process_.pid), '/T', '/F'], {
       nodeOptions: { stdio: 'ignore' },
@@ -166,13 +146,19 @@ export async function stop(process_: ChildProcess): Promise<void> {
   else {
     process_.kill('SIGTERM')
   }
-  await new Promise(resolve => setTimeout(resolve, 500))
+  await Promise.race([
+    exited,
+    new Promise<never>((_, reject) => {
+      const timer = setTimeout(() => reject(new Error('owned DSH process did not exit')), 30_000)
+      timer.unref()
+      void exited.finally(() => clearTimeout(timer))
+    }),
+  ])
 }
 
 export async function exchangeProcessLaunchToken(
   baseUrl: string,
   processLaunchUrl: string,
-  fetch_: typeof fetch = fetch,
 ): Promise<{ cookie: BrowserSeedCookie } | null> {
   const launch = trustedProcessLaunchUrl(baseUrl, processLaunchUrl)
   const expected = cleanRootUrl(baseUrl)
@@ -186,7 +172,7 @@ export async function exchangeProcessLaunchToken(
     return null
   }
 
-  const response = await fetch_(launch.href, {
+  const response = await fetch(launch.href, {
     redirect: 'manual',
     signal: AbortSignal.timeout(30_000),
   })

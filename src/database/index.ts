@@ -26,7 +26,6 @@ const connection = new Kysely<DB>({
   dialect: new NodeSqliteDialect({ database }),
 })
 
-/** Kysely 连接 + 每张表一个模型；模型方法都在 `./models/*` 里。 */
 export const db = Object.assign(connection, {
   channel: new Channel(connection),
   channelAccount: new ChannelAccount(connection),

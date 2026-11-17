@@ -30,7 +30,16 @@ export const answer = defineTool({
     const scope = identity.role === 'project' && identity.projectId ? { type: 'project' as const, projectId: identity.projectId } : identity.role === 'supervisor' && identity.supervisorId ? { type: 'supervisor' as const, supervisorId: identity.supervisorId } : identity.role === 'main' ? { type: 'main' as const } : null
     if (!scope)
       throw new Error('会话身份不完整')
-    await db.inbox.answerScoped(args.askId, args.text, scope, new Date().toISOString())
-    return JSON.stringify({ id: args.askId, status: 'done', delivery: 'queued' })
+    const question = await db.inbox.findById(args.askId)
+    if (question?.origin === 'worker') {
+      if (!question.workerId || !(await session.lookup(question.workerId)))
+        throw new Error('Worker 未在运行时加载、已归档或不属于 Nexus；不能直接回答')
+      if ((await db.worker.findById(question.workerId))?.status === 'ended')
+        throw new Error('Worker 已结束')
+    }
+    const row = await db.inbox.answerScoped(args.askId, args.text, scope, new Date().toISOString())
+    if (row.origin === 'worker' && row.workerId)
+      await session.send(row.workerId, `[Answer ${row.id}] ${args.text}`, 'reply', `nexus:answer:${row.id}`)
+    return JSON.stringify({ id: args.askId, status: 'done', delivery: row.origin === 'worker' ? 'direct' : 'queued' })
   },
 })

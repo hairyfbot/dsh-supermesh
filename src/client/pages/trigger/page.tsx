@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Empty } from '../../components/empty'
 import { ActivityIcon } from '../../components/icons'
 import { useActions, useStore } from '../../hooks/use-store'
 import { useTranslation } from '../../hooks/use-translation'
@@ -33,14 +34,12 @@ export function Trigger(): ReactNode {
           {records.length
             ? <ul className="m-0 list-none p-0">{records.map(topic => <Row key={topic.latest.thread.id} topic={topic} />)}</ul>
             : (
-                <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
-                  <ActivityIcon width={24} height={24} className="text-[var(--dsw-alias-label-tertiary)]" />
-                  <h3 className="m-0 text-sm font-medium">{t('triggerEmpty')}</h3>
-                  <p className="m-0 text-xs text-[var(--dsw-alias-label-secondary)]">{t('triggerEmptyDescription')}</p>
+                <Empty className="!min-h-0 !gap-3 !py-6" title={t('triggerEmpty')} description={t('triggerEmptyDescription')} icon={<ActivityIcon width={24} height={24} />}>
                   <Button size="sm" variant="outline" onClick={resetTriggerFilters}>{t('triggerReset')}</Button>
-                </div>
+                </Empty>
               )}
         </div>
+        <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerPreviewNotice')}</p>
       </div>
     </section>
   )

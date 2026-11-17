@@ -1,75 +1,54 @@
 # AGENTS.md
 
-> 首次工作前运行 `pnpm install --frozen-lockfile`；CI 与本地 E2E 需要预装 `@deepseek-ai/dsh` CLI 和 Playwright Chromium。
+## 工作入口
 
-## Workspace Routing & Context Guidelines
+- 首次工作前运行 `pnpm install --frozen-lockfile`；CI 与本地 E2E 预装 DSH CLI 和 Playwright Chromium。
+- 分析、修改、重构或编写测试前，按路径和业务域读取下表中所有适用规范。
+- 用户的明确要求优先于仓库规范，领域规范优先于通用建议。不得机械套用精简、内联或目录规则改变 UI/UX、组件边界或业务协议。
+- 规范仅在用户明确授权维护时修改，采用现行规则的覆盖式写法；同一事项只保留一致结论，不写历史经过、迁移对照或互相冲突的补充条款。
+- `docs/specs/` 只收录通用开发与插件工程协议，不创建项目专属规范，不写具体产品功能、角色规则、页面数据或接口清单。
 
-在执行代码分析、优化、重构或单测编写前，必须根据修改对象的**路径、业务域与环境**，主动读取并叠加遵循对应的规范文档：
+## 规范路由
 
-### 1. 规范矩阵与路由表 (Specification Routing Matrix)
+| 修改范围 / 触发条件 | 必须读取的规范 |
+| --- | --- |
+| 所有代码分析与修改 | [通用开发协议](<docs/specs/devlopment.md>) |
+| 客户端入口、页面、组件、状态、Hook、HTTP API、官方插槽与样式 | [客户端协议](<docs/specs/plugin.client.md>) |
+| 宿主装配、Agent 工具、事件、数据库、文件存储、调度器、HTTP 路由 | [宿主架构协议](<docs/specs/plugin.host.md>) |
+| 领域服务、宿主能力访问、异步任务与资源清理 | [领域服务协议](<docs/specs/plugin.host.service.md>) |
+| 新增或修改测试、视觉对照、故障验证、交付声明 | [测试与验证协议](<docs/specs/testing.md>) |
 
-| 修改范围 / 触发条件 | 业务场景 / 对应模块 | 必须参照的规范文档 |
-| :--- | :--- | :--- |
-| **基础通用** | 所有代码修改 | `docs/specs/devlopment.md` |
-| **测试标准** | 通用 Unit Test、E2E 集成测试断言与结构 | `docs/specs/testing.md` |
-| **插件 - 客户端核心** | 插件 Client 通信、状态管理与客户端逻辑 | `docs/specs/plugin.client.md` |
-| **插件 - 宿主核心** | 宿主进程管理、插件加载器、沙箱隔离 | `docs/specs/plugin.host.md` |
-| **插件 - 宿主服务** | 宿主系统级 Service、底座 API 实现 | `docs/specs/plugin.host.service.md` |
+## 执行边界
 
-### 2. 规范叠加与优先级 (Specification Stacking Rules)
+- 保留项目架构与每个 Agent 的工具分配；迁移功能不附带无关的大规模重构。
+- 不得执行 Build 命令、启动替代服务器或通过安装脚本间接触发构建，除非用户明确允许。现有开发 watcher 与当前 GUI 必须区分，另起服务不能更新当前 GUI。
+- 不擅改数据库 schema、迁移、真实用户数据、全局 CLI 登录或系统代理。此类变更须有明确用户授权；只读排查与子进程局部配置不得扩展成全局修改。
+- 并行代理分配互不冲突的写入范围。多页面 demo 对照按页面独立分工；集成者回读最终代码并运行相关验证。
+- 保留用户已有改动，不擅自提交、暂存、重置或回滚工作区。参考副本只读，不能为检查通过修改参考源码。
+- 临时草稿、探测脚本与检查证据放在 `.temp/`，不得用真实凭据或用户数据作为测试夹具。
+- 使用当前安装版本的官方文档和公开源码核实 DSH API、插槽、事件与生命周期；不得猜测协议或以类型断言掩盖版本差异。
 
-- **通用基础**：`docs/specs/devlopment.md` 为全局必须叠加的基础规范。
+## 沟通与注释
 
-## 沟通与评论规范 (Reply & Comment Rules)
+- 中文回复，结论在前，默认三至五句；不堆标题、表格、命令和文件清单。完整报告仅在用户要求时展开。
+- 不使用 AI 套话、奉承或装饰性 emoji。同一话题的外部评论原地更新，不连续补发。
+- 推荐方案给出必要的可执行命令；明确区分已实现、已验证、未验证和环境限制，不把缓解说成修复成功。
+- 代码默认不写注释。只有难以自解释的算法、真实故障背景及协议要求的 `// keep:effect <原因>` 允许少量说明；删除冗余注释和废弃存根。
 
-回复用户、以及在 issue / PR 下留言时，一律适用：
+## 检索约束
 
-1. **短。先给结论**：
-   - 默认三五句说完。不写小标题、不写表格、不写清单堆砌；只有用户明确要「详细/完整报告」时才展开。
-   - 不复述刚跑过的命令、文件清单或工具输出，用户不关心过程。
-2. **说人话，不要 AI 腔**：
-   - 禁止「综上所述」「值得注意的是」「希望能帮到你」这类套话，禁止 emoji 装饰与 ✅🎉 式排版。
-   - 正文用中文；仅代码、命令、标识符与官方术语保留英文，不要中英夹杂堆术语。
-3. **不刷屏**：
-   - 同一话题只留一条评论/一条回复。写长了或写错了，原地编辑（`gh api --method PATCH`），不要补发第二条。
-   - 链接与代码块只留必要的那一两条，堆参考链接视为噪音。
-4. **结论要能落地**：
-   - 推荐方案必须给一条可直接复制的命令，并诚实标注限制：不支持、已失效、只是缓解，都要写清楚。
-   
-## 最高优先级 (Strict Guidelines)
+- 内容检索使用提供的 grep 工具或 `rg`；文件查找使用 glob 工具、`fd` 或 Git 索引。
+- 禁止 `Get-ChildItem -Recurse`、`dir -s` 及递归 `Select-String -Path`。
+- 读取文本使用 read 工具；目录只列必要层级，避免遍历依赖与参考副本。
 
-1. **极致代码精简与注释策略**：
-   - **0 注释原则**：编写/重构代码时必须保持 **0 注释**，仅允许在极难通过代码自解释的**关键节点/复杂算法**添加微量注释。
-   - **清理冗余**：优化时若发现代码中存在大面积文档描述、历史残余注释或冗余代码，应主动清理/精简，提升干净度。
-2. **临时草稿区**：
-   - 若需要临时记录、存放中间分析过程或草稿，可随意在 `.temp` 文件中编写（该文件下拥有绝对自由度）。
-3. **插件开发保护**：
-   - 在处理或重构插件相关代码时，**切勿执行构建（Build）命令**（用户可能正处于 Dev 开发热重载状态）。
+## 交付验证
 
----
-
-## Command Performance Constraints (Strictly Enforced)
-
-执行文件查找或代码检索时，必须遵守极速命令约束，避免触发低效遍历：
-
-1. **FORBIDDEN POWERSHELL COMMANDS:**
-   - **NEVER** use `Get-ChildItem -Recurse` or `dir -s` to search files/directories.
-   - **NEVER** use `Select-String -Path` for recursive text searches.
-
-2. **FAST ALTERNATIVES (MANDATORY):**
-   - **Searching text in files:** Use `rg "pattern"` (ripgrep).
-   - **Finding files by name/path:** Use `fd <pattern>` or `git ls-files | Select-String "pattern"`.
-   - **Listing top-level directory items:** Use simple `Get-ChildItem` (NO `-Recurse`).
-
-3. **GIT PROJECT EXEMPTION:**
-   - Always leverage Git index if available: `git ls-files` is exponentially faster than PowerShell directory traversal.
-
-## 验证
-
-交付前依次执行并确保通过：
+代码交付前依次执行，检查实际输出而不只检查退出码：
 
 ```bash
 pnpm run lint --fix
 pnpm run typecheck
 pnpm run test -- --run
 ```
+
+接口和模型类型变更须先运行对应生成命令。不得手改生成文件、放宽测试或覆盖视觉基线来制造通过结果。文档任务检查规范一致性、路由和链接，不执行构建或无关业务操作。

@@ -1,5 +1,8 @@
 import type { GhRequest, GhRunner } from './types'
 import { execFile } from 'node:child_process'
+import process from 'node:process'
+import { channel } from '../../service/channel'
+import { channelProxyEnvironment } from '../proxy'
 
 export class GhError extends Error {
   constructor(public readonly code: string, public readonly retryAfterSeconds?: number) {
@@ -9,11 +12,24 @@ export class GhError extends Error {
 
 export class ExecFileGhRunner implements GhRunner {
   async request(request: GhRequest): Promise<unknown> {
+    if (request.signal?.aborted)
+      throw new GhError('interrupted')
+    const token = await channel.resolveCredential('github')
+    if (request.signal?.aborted)
+      throw new GhError('interrupted')
+    if (!token?.trim())
+      throw new GhError('not_logged_in')
+    const env = await channelProxyEnvironment(new URL(`https://${request.site}`), process.env)
+    for (const key of Object.keys(env)) {
+      if (['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GITHUB_ENTERPRISE_TOKEN'].includes(key.toUpperCase()))
+        delete env[key]
+    }
+    env.GH_TOKEN = token
     const args = ['api', '--hostname', request.site, '--method', request.method, '--include', request.path]
     if (request.body)
       args.push('--input', '-')
     return new Promise((resolve, reject) => {
-      const child = execFile('gh', args, { signal: request.signal, timeout: 30000, maxBuffer: 16 * 1024 * 1024 }, (error, stdout, stderr) => {
+      const child = execFile('gh', args, { signal: request.signal, timeout: 30000, maxBuffer: 16 * 1024 * 1024, env }, (error, stdout, stderr) => {
         const response = stdout.replace(/\r\n/g, '\n')
         const status = Number(/^HTTP\/\S+ (\d+)/m.exec(response)?.[1])
         const retryAfter = /^retry-after: (\d+)/im.exec(response)?.[1]

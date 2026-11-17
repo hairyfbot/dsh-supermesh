@@ -10,6 +10,23 @@ import { worktree } from './worktree'
 let syncing: Promise<Selectable<DB['project']>[]> | undefined
 
 export const project = defineService({
+  async list(): Promise<(Selectable<DB['project']> & { available?: boolean })[]> {
+    const rows = await db.project.listAll()
+    const workspaces = getServerContext<Context>(server).workspaceRegistry.list()
+    return Promise.all(rows.map(async (current) => {
+      const workspace = workspaces.find(workspace => workspace.id === current.workspaceId)
+      return { ...current, available: workspace ? await workspace.status() === 'ok' : false }
+    }))
+  },
+  async open(id: string, signal: AbortSignal): Promise<{ opened: true }> {
+    const current = await db.project.findById(id)
+    if (!current)
+      throw new Error('project_not_found')
+    const ctx = getServerContext<Context>(server)
+    if (!ctx.sessionController.canOpenWorkspacePath())
+      throw new Error('native_open_unavailable')
+    return ctx.sessionController.openWorkspacePath({ path: current.directory }, signal)
+  },
   sync(): Promise<Selectable<DB['project']>[]> {
     if (syncing)
       return syncing

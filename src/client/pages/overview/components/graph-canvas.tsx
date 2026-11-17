@@ -1,33 +1,37 @@
+import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
+import type { SessionId } from '@deepseek-ai/dsh-session'
 import type { ReactNode } from 'react'
-import type { AgentGraphEdge, AgentGraphNode } from '../../../types'
+import type { AgentGraphEdge, GraphNode } from '../../../types'
+import type { GraphGroup } from './graph-layout'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { AgentIcon, FitViewIcon, ZoomInIcon, ZoomOutIcon } from '../../../components/icons'
-import { AGENT_GRAPH, AGENT_GRAPH_EDGE_COLORS } from '../../../constants'
+import { AGENT_GRAPH, AGENT_GRAPH_EDGE_COLORS } from '../../../config/constants'
+import { useDshContext } from '../../../hooks/use-dsh-context'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 import { GraphEdgePath } from './graph-edge-path'
+import { graphViewport } from './graph-layout'
 import { GraphNodeCard } from './graph-node-card'
 
-export function GraphCanvas({ nodes, edges }: { nodes: readonly AgentGraphNode[], edges: readonly AgentGraphEdge[] }): ReactNode {
+export function GraphCanvas({ nodes, edges, groups }: { nodes: readonly GraphNode[], edges: readonly AgentGraphEdge[], groups: readonly GraphGroup[] }): ReactNode {
   const { t } = useTranslation()
+  const ctx = useDshContext()
   const { zoomGraph, panGraph, resetGraph, selectAgent, openTicket } = useActions()
   const { zoom, x, y, selectedId } = useStore(state => state.graph)
   const drag = useRef<{ id: number, x: number, y: number } | null>(null)
-  const width = AGENT_GRAPH.width / zoom
-  const height = AGENT_GRAPH.height / zoom
-  const left = (AGENT_GRAPH.width - width) / 2 + x
-  const top = (AGENT_GRAPH.height - height) / 2 + y
+  const [fit, setFit] = useState(false)
+  const { width, height, left, top } = graphViewport(nodes, { zoom, x, y }, fit)
   const selected = nodes.find(node => node.id === selectedId)
-  const supervised = nodes.filter(node => node.group === 'supervisor')
-  const group = supervised.length
-    ? {
-        x: Math.min(...supervised.map(node => node.x)) - 16,
-        y: Math.min(...supervised.map(node => node.y)) - 12,
-        width: Math.max(...supervised.map(node => node.x)) - Math.min(...supervised.map(node => node.x)) + AGENT_GRAPH.nodeWidth + 32,
-        height: Math.max(...supervised.map(node => node.y)) - Math.min(...supervised.map(node => node.y)) + AGENT_GRAPH.nodeHeight + 28,
-      }
-    : null
+  const boxes = groups.flatMap((group, index) => {
+    const members = nodes.filter(node => group.nodeIds.includes(node.id))
+    if (!members.length)
+      return []
+    const inset = 16 + index * 6
+    const x = Math.min(...members.map(node => node.x)) - inset
+    const y = Math.min(...members.map(node => node.y)) - 12 - index * 6
+    return [{ ...group, x, y, width: Math.max(...members.map(node => node.x)) + AGENT_GRAPH.nodeWidth + inset - x, height: Math.max(...members.map(node => node.y)) + AGENT_GRAPH.nodeHeight + 16 + index * 6 - y }]
+  })
   return (
     <div>
       <div className="relative">
@@ -65,30 +69,44 @@ export function GraphCanvas({ nodes, edges }: { nodes: readonly AgentGraphNode[]
               if (event.target !== event.currentTarget)
                 return
               const delta = 40 / zoom
-              if (event.key === 'ArrowLeft')
+              if (event.key === 'ArrowLeft') {
                 panGraph(-delta, 0)
-              else if (event.key === 'ArrowRight')
+              }
+              else if (event.key === 'ArrowRight') {
                 panGraph(delta, 0)
-              else if (event.key === 'ArrowUp')
+              }
+              else if (event.key === 'ArrowUp') {
                 panGraph(0, -delta)
-              else if (event.key === 'ArrowDown')
+              }
+              else if (event.key === 'ArrowDown') {
                 panGraph(0, delta)
-              else if (event.key === '+' || event.key === '=')
+              }
+              else if (event.key === '+' || event.key === '=') {
                 zoomGraph(0.2)
-              else if (event.key === '-')
+              }
+              else if (event.key === '-') {
                 zoomGraph(-0.2)
-              else if (event.key === 'Home')
+              }
+              else if (event.key === 'Home') {
+                setFit(false)
                 resetGraph()
-              else return
+              }
+              else {
+                return
+              }
               event.preventDefault()
             }}
           >
-            {group && (
-              <g pointerEvents="none">
+            {boxes.map(group => (
+              <g key={group.id} pointerEvents="none">
+                <title>{group.label}</title>
                 <rect x={group.x} y={group.y} width={group.width} height={group.height} rx={18} fill="var(--dsw-alias-state-business-primary)" fillOpacity={0.025} stroke="var(--dsw-alias-state-business-primary)" strokeOpacity={0.5} strokeDasharray="6 5" />
-                <text x={group.x + 12} y={group.y - 10} fill="var(--dsw-alias-state-business-primary)" fontSize={13}>{t('graphSupervisor')}</text>
+                <text x={group.x + 12} y={group.y - 10} fill="var(--dsw-alias-state-business-primary)" fontSize={13}>
+                  {t('graphSupervisor')}
+                  {boxes.length > 1 ? ` · ${group.label}` : ''}
+                </text>
               </g>
-            )}
+            ))}
             {edges.map(edge => <GraphEdgePath key={`${edge.source}-${edge.target}-${edge.kind}`} edge={edge} nodes={nodes} selectedId={selectedId} />)}
             {nodes.map(node => <foreignObject key={node.id} x={node.x} y={node.y} width={AGENT_GRAPH.nodeWidth} height={AGENT_GRAPH.nodeHeight}><GraphNodeCard node={node} selected={selectedId === node.id} onSelect={() => selectAgent(node.id)} /></foreignObject>)}
           </svg>
@@ -97,7 +115,16 @@ export function GraphCanvas({ nodes, edges }: { nodes: readonly AgentGraphNode[]
           <Button size="sm" variant="ghost" aria-label={t('graphZoomOut')} disabled={zoom <= AGENT_GRAPH.zoomMin} onClick={() => zoomGraph(-0.2)} icon={<ZoomOutIcon width={16} height={16} />} />
           <span className="min-w-10 text-center text-xs tabular-nums text-[var(--dsw-alias-label-secondary)]">{`${Math.round(zoom * 100)}%`}</span>
           <Button size="sm" variant="ghost" aria-label={t('graphZoomIn')} disabled={zoom >= AGENT_GRAPH.zoomMax} onClick={() => zoomGraph(0.2)} icon={<ZoomInIcon width={16} height={16} />} />
-          <Button size="sm" variant="ghost" aria-label={t('graphFit')} onClick={resetGraph} icon={<FitViewIcon width={16} height={16} />} />
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label={t('graphFit')}
+            onClick={() => {
+              setFit(true)
+              resetGraph()
+            }}
+            icon={<FitViewIcon width={16} height={16} />}
+          />
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-[11px] text-[var(--dsw-alias-label-tertiary)]">
@@ -115,10 +142,11 @@ export function GraphCanvas({ nodes, edges }: { nodes: readonly AgentGraphNode[]
         <div className="flex flex-wrap items-center gap-3 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-xs">
           <AgentIcon width={16} height={16} />
           <span>
-            {selected.label}
+            {t(selected.label)}
             {selected.subtitle ? ` · ${selected.subtitle}` : ''}
           </span>
-          <span className="text-[var(--dsw-alias-label-tertiary)]">{selected.waiting ? t('graphWaiting') : ''}</span>
+          <span className="text-[var(--dsw-alias-label-tertiary)]">{t(selected.status === 'not_created' ? 'graphNotCreated' : selected.status === 'queued' ? 'graphQueued' : selected.status === 'running' ? 'graphRunning' : selected.status === 'background' ? 'graphBackground' : selected.status === 'done' ? 'graphDone' : selected.status === 'cancelled' ? 'graphCancelled' : selected.status === 'waiting' ? 'overviewStatusWaiting' : selected.status === 'review' ? 'overviewStatusReview' : selected.status === 'paused' || selected.status === 'error' ? 'overviewStatusIntervention' : 'graphIdle')}</span>
+          {selected.sessionId && <Button size="sm" variant="outline" onClick={() => ctx.uiWorkspace.openSession(selected.sessionId as SessionId)}>{t('overviewOpenSession')}</Button>}
           {selected.taskId && (
             <Button
               size="sm"

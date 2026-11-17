@@ -1,14 +1,41 @@
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
 import type { GetApiNexusPanelResponse } from '../../../apis/index.type'
 import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { TasksIcon } from '../../../components/icons'
-import { useActions } from '../../../hooks/use-store'
+import { useDshContext } from '../../../hooks/use-dsh-context'
+import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 
 export function Row({ task }: { task: GetApiNexusPanelResponse['tickets'][number] }): ReactNode {
   const { t } = useTranslation()
   const { openTicket } = useActions()
-  const labels = { waiting: '等待中', queued: '排队中', running: '执行中', review: '待审阅', done: '已完成', cancelled: '已取消' }
+  const ctx = useDshContext()
+  const panel = useStore(state => state.data.panel)
+  const refreshedAt = useStore(state => state.setting.refreshedAt)
+  const sessions = panel?.graph.nodes.filter(node => node.ticketId === task.id && node.sessionId)
+  const session = sessions?.find(node => node.status === 'running') ?? sessions?.at(-1)
+  const channel = panel?.channels.find(channel => channel.id === task.channelId)
+  const status = {
+    waiting: { label: 'overviewStatusWaiting', tone: 'quiet' },
+    queued: { label: 'ticketStatusQueued', tone: 'quiet' },
+    running: { label: 'overviewStatusRunning', tone: 'info' },
+    review: { label: 'overviewStatusReview', tone: 'warning' },
+    done: { label: 'overviewCompleted', tone: 'success' },
+    cancelled: { label: 'ticketStatusCancelled', tone: 'quiet' },
+  } as const
+  const intervention = Boolean(task.prepareError || task.paused)
+  const subscriptions = panel?.topics.subscriptions.filter(subscription => subscription.ticketId === task.id)
+  const trigger = panel?.topics.triggers
+    .filter(trigger => subscriptions?.some(subscription => subscription.threadId === trigger.threadId))
+    .toSorted((a, b) => b.at.localeCompare(a.at))[0]
+  const prUrl = task.prUrl && /^https?:\/\//i.test(task.prUrl) ? task.prUrl : null
+  const prNumber = prUrl?.match(/\/(?:pull|merge_requests)\/(\d+)(?:[/?#]|$)/)?.[1]
+  const event = prNumber ? `PR #${prNumber}${task.prState ? ` ${task.prState}` : ''}` : trigger ? `${trigger.ref ?? ''} ${trigger.kind}`.trim() : null
+  const start = task.status === 'waiting' ? null : task.startedAt
+  const end = task.endedAt ?? (start ? refreshedAt : null)
+  const seconds = start && end ? Math.max(0, Math.floor((Date.parse(end) - Date.parse(start)) / 1000)) : Number.NaN
+  const duration = Number.isFinite(seconds) ? `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ` : ''}${seconds >= 60 ? `${Math.floor(seconds / 60) % 60}m ` : ''}${seconds % 60}s` : null
   return (
     <li className="flex flex-col gap-3 border-b border-[var(--dsw-alias-border-l3)] py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5">
       <div className="flex min-w-0 items-start gap-3">
@@ -19,15 +46,39 @@ export function Row({ task }: { task: GetApiNexusPanelResponse['tickets'][number
             {task.title}
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">
-            <Tag tone={task.prepareError ? 'danger' : task.status === 'done' ? 'success' : 'quiet'}>{task.paused ? '已暂停' : labels[task.status]}</Tag>
-            <span>{task.channelId}</span>
-            <time dateTime={task.updatedAt}>{new Date(task.updatedAt).toLocaleString()}</time>
-            {task.prepareError && <span>{task.prepareError}</span>}
+            <Tag tone={intervention ? 'danger' : status[task.status].tone}>{t(task.paused ? 'ticketStatusPaused' : task.prepareError ? 'overviewStatusIntervention' : status[task.status].label)}</Tag>
+            {intervention
+              ? <span>{task.prepareError ?? t('ticketStatusPaused')}</span>
+              : (
+                  <>
+                    <span>{`${t('overviewSource')}: ${channel?.name ?? task.channelId}`}</span>
+                    {event && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{event}</span>
+                      </>
+                    )}
+                    {task.status === 'waiting' && session?.status === 'running' && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{t('overviewTriggerRunning')}</span>
+                      </>
+                    )}
+                    {(duration || task.status === 'waiting') && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{`${t(task.status === 'waiting' ? 'ticketWaitDuration' : 'ticketExecutionDuration')}: ${duration ?? t('ticketDurationUnknown')}`}</span>
+                      </>
+                    )}
+                  </>
+                )}
           </div>
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2 pl-[29px] @min-[640px]:pl-0">
-        <Button size="sm" variant="primary" onClick={() => openTicket(task.id)}>{t('overviewOpenDetails')}</Button>
+        {prUrl && <Button size="sm" variant="outline" onClick={() => window.open(prUrl, '_blank', 'noopener,noreferrer')}>{t('overviewOpenPr')}</Button>}
+        {session?.sessionId && <Button size="sm" variant="outline" onClick={() => ctx.uiWorkspace.openSession(session.sessionId as SessionId)}>{t('overviewOpenSession')}</Button>}
+        <Button size="sm" variant="primary" aria-label={`${t('overviewOpenDetails')} ${task.id}`} onClick={() => openTicket(task.id)}>{t('overviewOpenDetails')}</Button>
       </div>
     </li>
   )

@@ -1,36 +1,27 @@
 import type { GetApiNexusPanelResponse, GetApiNexusTicketsidResponse } from '../apis/index.type'
-import type { RuntimeSettings, Section } from '../pages/setting/model'
 import type { Filters } from '../pages/trigger/model'
 import type { OverviewChannelKind, OverviewView } from '../types'
+import type { RuntimeSettings, Section } from './setting'
 import { defineStore } from '@deepseek-ai/dsh-client-store'
-import { AGENT_GRAPH } from '../constants'
-import { GROUPS, initialSettings, validSettings } from '../pages/setting/model'
+import { AGENT_GRAPH } from '../config/constants'
+import { GROUPS, validSettings } from './setting'
 
 export type TabKind = 'overview' | 'ticket' | 'trigger' | 'channel' | 'setting'
 export type Page = TabKind | 'channel/detail' | 'ticket/detail' | 'trigger/detail'
 
-export const TABS = [
-  { kind: 'overview', label: 'tabOverview' },
-  { kind: 'ticket', label: 'tabTickets' },
-  { kind: 'trigger', label: 'tabTriggers' },
-  { kind: 'channel', label: 'tabChannels' },
-  { kind: 'setting', label: 'tabSettings' },
-] as const
-
-export function tabOf(page: Page): TabKind {
-  return page.split('/')[0] as TabKind
-}
-
 export const store = defineStore({
-  init: () => ({
-    navigation: { page: 'overview' as Page, ticketId: null as string | null, returnTo: 'overview' as 'overview' | 'ticket' | 'trigger' | 'trigger/detail' },
-    channel: { selected: null as OverviewChannelKind | null },
-    overview: { view: 'recent' as OverviewView },
-    setting: initialSettings(),
-    data: { panel: null as Omit<GetApiNexusPanelResponse, 'settings'> | null, ticket: null as GetApiNexusTicketsidResponse | null, loading: false, error: null as string | null },
-    trigger: { selectedId: null as string | null, openFilter: null as 'channel' | 'kind' | 'status' | null, filters: { query: '', channel: 'all', status: 'all', kind: 'all', mentionedOnly: false } as Filters },
-    graph: { zoom: 1, x: 0, y: 0, selectedId: null as string | null },
-  }),
+  init: () => {
+    const saved: RuntimeSettings = { maxWorkers: 10, backgroundLimitMinutes: 30, autoMerge: false, autoMergeMaxLines: 200, deliveryMaxAttempts: 3, deliveryRetryCeilingSeconds: 60 }
+    return ({
+      navigation: { page: 'overview' as Page, ticketId: null as string | null, returnTo: 'overview' as 'overview' | 'ticket' | 'trigger' | 'trigger/detail' },
+      channel: { selected: null as OverviewChannelKind | null },
+      overview: { view: 'recent' as OverviewView },
+      setting: { section: 'projects' as Section, saved, draft: { ...saved }, refreshedAt: null as string | null, notice: null as 'saved' | 'refreshed' | 'project' | null, invalid: false },
+      data: { panel: null as Omit<GetApiNexusPanelResponse, 'settings'> | null, ticket: null as GetApiNexusTicketsidResponse | null, loading: false, error: null as string | null },
+      trigger: { selectedId: null as string | null, openFilter: null as 'channel' | 'kind' | 'status' | null, filters: { query: '', channel: 'all', status: 'all', kind: 'all', mentionedOnly: false } as Filters },
+      graph: { zoom: 1, x: 0, y: 0, selectedId: null as string | null },
+    })
+  },
   actions: {
     setLoading: (draft, loading: boolean) => {
       draft.data.loading = loading
@@ -50,11 +41,9 @@ export const store = defineStore({
       draft.setting.saved = { maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
       if (!dirty)
         draft.setting.draft = { ...draft.setting.saved }
-      draft.setting.projects = value.projects
       draft.setting.refreshedAt = new Date().toISOString()
     },
     receiveProject: (draft, project: GetApiNexusPanelResponse['projects'][number]) => {
-      draft.setting.projects = draft.setting.projects.map(item => item.id === project.id ? project : item)
       if (draft.data.panel)
         draft.data.panel.projects = draft.data.panel.projects.map(item => item.id === project.id ? project : item)
       draft.setting.notice = 'project'

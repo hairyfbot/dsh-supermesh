@@ -1,74 +1,42 @@
-> 该文档已固定，禁止修改。
+# 插件宿主架构协议
 
-# 插件宿主端架构规范 (Plugin Host Architecture Protocol)
+适用于插件宿主装配、Agent 工具、事件、数据库、存储、调度和 HTTP 路由。叠加 [通用开发协议](<devlopment.md>) 和 [领域服务协议](<plugin.host.service.md>)。
 
-> 本规范为 [devlopment.md](./devlopment.md) 在 **DeepSeek Harness 插件宿主端（Node Runtime）** 的落地协议。插件 `src/host` 实现必须严格遵守本规范。
-> **服务层细则**见：[plugin.host.service.md](./plugin.host.service.md)（定义宏、动词白名单与签名铁律）。
+## 架构边界
 
----
+- 保留按领域划分的架构；迁移功能不复制来源实现的大规模重构，不把参考实现当作整体架构替换依据。
+- Agent 工具按所属角色与权限边界组织；共享工具只承载真实共用能力，不能扩大角色权限。
+- 数据库通过运行时 import 的单例访问，不建立第二个数据库实例或全局依赖透传容器。
+- SQL 只存在于数据库模型层。服务、工具和路由调用模型方法，不为搬移一次模型调用额外建立薄服务层。
+- 配置沿用明确的存储边界，通过既有存储入口读写，不擅自把文件配置迁入数据库。
+- 调度器属于 runtime 基础设施，领域运行逻辑属于服务，私有状态属于消费模块；不得集中到全局 config 对象或放进 utils 杂货模块。
+- 数据库 schema、DDL 和迁移修改须明确授权，不夹带无关表结构调整，不重建真实用户数据库。
 
-## 一、 核心架构原则
+## 装配与资源
 
-* **零无用中间层**：`apply.ts` 只做装配接线，不写业务逻辑；禁止为 2~3 个文件建立纯转发的 `index.ts`；临时数据转换必须就地处理。
-* **彻底删除与零包袱**：彻底清理废弃逻辑、兼容层与存根代码，严禁保留 `legacy`/`compat` 文件。文件移动/重命名统一使用 `git mv`。
-* **单向依赖流**：
+- 宿主入口声明式装配预设、事件、HTTP 服务和运行服务；业务处理位于对应模块。
+- 领域服务内部读取宿主能力；事件入口可以使用官方作用域 Context 管理注册与释放，不把 Context 当业务参数层层传递。
+- 返回的 disposer 必须实际调用；异步注册部分失败时释放已注册资源，插件卸载时等待异步清理。
+- Agent 工具和监听同时受插件及 Agent 生命周期管理，任一销毁均不得留下注册。
+- 取消子进程和在途操作后等待必要收尾，不能仅发 kill 就假定已结束。
 
-$$\text{apply.ts (装配)} \longrightarrow \begin{bmatrix} \text{server/routes/} \\ \text{tools/} \\ \text{events/} \\ \text{prompts/} \end{bmatrix} \longrightarrow \text{service/ (业务领域)} \longrightarrow \begin{bmatrix} \text{storage/} \\ \text{utils/} \end{bmatrix}$$
+## HTTP 协议与命名
 
----
+- 使用原生 H3 `defineHandler`，通过 `defineWebServer` 和原生路由方法显式注册，不自建 handler 宏、路由框架或通信兼容层。
+- Origin、Host 与 owner 鉴权在统一入口完成；具体资源与角色权限仍由对应业务边界校验。
+- 路由只解析参数、校验 DTO、调用领域服务或模型，并映射可公开的错误；不直接执行系统命令或泄漏凭据。
+- 路由文件采用单数主资源和点分层级，例如 `resource.subresource.get.ts`；保持一致命名，不堆砌复数或连字符。
+- 文件命名不隐式决定 URL 或 HTTP method。实际协议在服务入口显式注册，不为文件后缀擅改协议或添加空路由。
+- URL 使用资源路径和标准 HTTP 方法，不加冗余 CRUD 动词后缀。
+- 路由变更后通过 GenAPI 生成客户端接口，并检查生成器实际输出。
 
-## 二、 结构范例 (`示例`)
+## 持久化与安全
 
-```text
-src/
-├── index.ts                   # 平铺装配器
-├── config/ (constants.ts, ...)
-├── types/index.ts             # 仅跨多模块共享类型；单模块专属类型与其模块同目录同名
-├── server/
-│   ├── index.ts               # defineWebServer + 原生 app 方法注册
-│   └── routes/                # handler 文件；URL 与方法由 index.ts 显式注册
-├── ai/                        # 定义预设与预设工具
-├── events/                    # 事件监听 (session-event.ts, tools-execute.ts)
-├── service/                   # 业务领域服务 (文件名 = 导出标识符)
-│   ├── worktree.ts            # 领域编排 (create/checkout/attach)
-│   ├── ledger.ts              # 持久化 <Binding> (load/save/remove/list)
-│   ├── cleaner.ts             # 长任务调度 (start/lookup/unsettled)
-│   └── session-context.ts     # 只读推演 (resolve/peek)
-└── utils/                     # 仅跨多模块共享纯函数 (git.ts, filesystem.ts)；单模块专属工具与其模块同目录同名
-
-```
-
-## 三、 核心层实现细则
-
-**1. 装配总线 (`apply.ts`)**
-
-* 仅包含声明式注册 (`ctx.tools.register()`、`ctx.on()`、`ctx.systemPrompt.*()`、`ctx.effect()`)。
-* 超过 2 行的回调必须抽离至 `events/` 或 `prompts/`。禁止创建全局 `deps` 对象透传。
-
-```typescript
-import { server } from './server'
-
-export function apply(ctx: HostContext): void {
-  ctx.effect(() => server(ctx), 'plugin: routes')
-
-  ctx.tools.register(createWorktreeTool())
-  ctx.tools.register(checkoutWorktreeTool())
-  ctx.on('session/event', (session, event) => handleSessionEvent(session, event))
-  ctx.on('tools/execute', (exec, next) => handleToolsExecute(exec, next))
-  ctx.systemPrompt.context(checkoutContextProvider)
-  ctx.systemPrompt.section(worktreeSectionProvider)
-}
-
-```
-
-## 四、 自检清单 (Checklist)
-
-* [ ] **装配精简**：`apply.ts` 是否仅包含声明式注册（无逻辑内联/过度嵌套）？
-* [ ] **状态收口**：内存 Map/Set 是否收拢于 `config/runtime.ts`？是否存在参数击穿透传？
-* [ ] **服务约束**：领域服务是否使用 `defineService`（共享请求中间件除外）？文件名与导出标识符是否一致？方法名是否为该领域的动作动词且全仓无同义词混用？
-* [ ] **路由纯度**：`server/routes/` 是否仅负责协议解析与 DTO 校验？无直接操作 `storage`/宿主对象/系统命令行为？
-* [ ] **路由形态**：URL 是否为资源路径 + 标准方法（方法命名文件）；动作端点是否仅限 `POST /<资源>/<动作>`，
-                  且路径里没有 `/create`、`/update`、`/delete`、`/save`、`/remove` 这类 CRUD 动作后缀？
-* [ ] **工具解耦**：`utils/` 是否无状态、脱离业务上下文且未引入契约宏？
-* [ ] **彻底清理**：废弃代码/兼容层/无用 `index.ts` 是否已清理？重命名是否使用 `git mv`？
-* [ ] **工程校验**：`pnpm --filter <pkg> typecheck` 与 `test` 是否全绿通过？
+- 文件存储和数据库初始化失败必须显式失败，不能以空数据覆盖持久化内容。
+- 凭据使用宿主 credentials 能力，不进入普通配置、公开 DTO 或日志，不退回使用全局账号。
+- 目标站点、凭据和权限必须读取一致版本；变更安全边界时重新校验身份与权限，不能跨站继承同名身份授权。
+- 请求只向验证过的目标发送凭据，限制重定向与超时。输出按流安全处理，不泄漏跨块 secret、URL userinfo 或敏感 query。
+- 子进程优先采用官方代理策略并尊重显式配置，不擅改系统代理、全局环境和全局 HTTP dispatcher，也不固定端口。
+- HTTP 客户端与 dispatcher 版本须兼容，自有 dispatcher 在正文消费或取消后释放；不能用适配存根掩盖真实不兼容。
+- 查询依赖官方状态投影，不自建事件折叠状态机。只读查询不能隐式创建、恢复或认领资源。
+- 需要持久化的工作和幂等标识不能仅存内存；操作结果不确定时不得盲目重发副作用。

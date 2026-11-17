@@ -1,27 +1,53 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import type {} from '@deepseek-ai/dsh-agent-preset-registry'
 import type { SessionRequestId } from '@deepseek-ai/dsh-api-session-controller'
 import type {} from '@deepseek-ai/dsh-session-query'
 import type {} from '@deepseek-ai/dsh-workspace'
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import { getServerContext } from 'dsh-h3/utils'
 import { DSH_PLUGIN_HOME } from '../config/paths'
 import { db } from '../database'
 import { server } from '../server'
+import { storage } from '../storage'
 import { defineService } from '../utils/service'
+import { inbox } from './inbox'
 
 type Role = 'main' | 'project' | 'supervisor' | 'worker'
 interface Identity { role: Role, projectId?: string, supervisorId?: string, ticketId?: string, workerId?: string }
 const presets = { main: 'orchestrator', project: 'manager', supervisor: 'supervisor', worker: 'worker' } as const
 
+const registered = new Set<string>()
 const operations = new Map<string, Promise<unknown>>()
 let controller = new AbortController()
 let stopped = false
 
 export const session = defineService({
+  register(id: string): () => void {
+    registered.add(id)
+    return () => {
+      registered.delete(id)
+    }
+  },
+  async attach(agent: Agent): Promise<Role | null> {
+    const ctx = getServerContext<Context>(server)
+    const preset = ctx.agentPresets.composedPreset(agent.ctx)
+    if (!preset || !registered.has(preset) || agent.session.header.origin === 'subagent' || agent.session.header.parentSession || ctx.workspaceRegistry.archivedSessionIds.includes(agent.session.id))
+      return null
+    const role = (Object.keys(presets) as Role[]).find(role => presets[role] === preset)
+    if (!role)
+      return null
+    if (role === 'main') {
+      const current = await session.findMain()
+      if (current && current !== agent.session.id)
+        throw new Error('ambiguous_main_session')
+      await storage.setItem('mainSessionId', agent.session.id)
+    }
+    return role
+  },
   start(): () => Promise<void> {
     if (operations.size)
       throw new Error('session_busy')
@@ -39,15 +65,18 @@ export const session = defineService({
     if (ctx.workspaceRegistry.archivedSessionIds.includes(sid))
       return null
     let header
+    let preset
     try {
-      header = (await ctx.sessionQuery.readSession(sid)).session
+      const snapshot = await ctx.sessionQuery.readSession(sid)
+      header = snapshot.session
+      preset = ctx.agentPresets.presetForSession(Session.create(sid, snapshot.events, snapshot.session))
     }
     catch (error) {
       if (error instanceof Error && 'code' in error && error.code === 'SESSION_QUERY_SESSION_NOT_FOUND')
         return null
       throw error
     }
-    if (header.origin === 'subagent' || header.parentSession)
+    if (!preset || !registered.has(preset) || header.origin === 'subagent' || header.parentSession)
       return null
     const [worker, project, supervisor] = await Promise.all([
       db.worker.findById(id),
@@ -57,24 +86,21 @@ export const session = defineService({
     if ([worker, project, supervisor].filter(Boolean).length > 1)
       throw new Error('session_binding_conflict')
     if (worker) {
-      if (header.agentPreset !== presets.worker)
+      const agent = ctx.agents.get(sid)
+      if (preset !== presets.worker || !agent || ctx.agentPresets.composedPreset(agent.ctx) !== presets.worker)
         return null
       const ticket = await db.ticket.findById(worker.ticketId)
       return ticket ? { role: 'worker', projectId: ticket.projectId, ticketId: ticket.id, workerId: worker.id } : null
     }
     if (project)
-      return header.agentPreset === presets.project ? { role: 'project', projectId: project.id } : null
+      return preset === presets.project ? { role: 'project', projectId: project.id } : null
     if (supervisor)
-      return header.agentPreset === presets.supervisor && supervisor.status === 'active' ? { role: 'supervisor', supervisorId: supervisor.id } : null
-    return header.agentPreset === presets.main ? { role: 'main' } : null
+      return preset === presets.supervisor && supervisor.status === 'active' ? { role: 'supervisor', supervisorId: supervisor.id } : null
+    return preset === presets.main && await storage.getItem<string>('mainSessionId') === id ? { role: 'main' } : null
   },
   async findMain(): Promise<string | null> {
-    const ctx = getServerContext<Context>(server)
-    const records = await ctx.sessionQuery.listSessions()
-    const candidates = records.filter(({ header }) => header.agentPreset === presets.main && !header.parentSession && header.origin !== 'subagent' && !ctx.workspaceRegistry.archivedSessionIds.includes(header.id))
-    if (candidates.length > 1)
-      throw new Error('ambiguous_main_session')
-    return candidates[0]?.header.id ?? null
+    const id = await storage.getItem<string>('mainSessionId')
+    return id && (await session.resolve(id))?.role === 'main' ? id : null
   },
   async create(role: Role, options: { sessionId?: string, projectId?: string, supervisorId?: string, ticketId?: string, directory?: string, title?: string, prompt?: string }): Promise<string> {
     if (stopped)
@@ -87,6 +113,18 @@ export const session = defineService({
         throw new Error('project_not_found')
       if (role === 'supervisor' && (!supervisor || supervisor.status !== 'active'))
         throw new Error('supervisor_not_active')
+      if (role === 'main') {
+        const existing = await session.findMain()
+        if (existing)
+          return existing
+      }
+      if (role === 'project' && project?.orchestratorSessionId) {
+        const identity = await session.resolve(project.orchestratorSessionId)
+        if (identity?.role === 'project' && identity.projectId === project.id)
+          return project.orchestratorSessionId
+        if (identity)
+          throw new Error('session_binding_conflict')
+      }
       const requestedId = options.sessionId ?? randomUUID()
       if (role === 'worker') {
         const worker = await db.worker.findById(requestedId)
@@ -99,12 +137,16 @@ export const session = defineService({
       const id = created.sessionId
       if (id !== requestedId)
         throw new Error('session_identity_conflict')
+      if (role === 'main')
+        await storage.setItem('mainSessionId', id)
       if (project && role === 'project')
         await db.project.setOrchestrator(project.id, id, new Date().toISOString())
       if (supervisor && role === 'supervisor')
         await db.supervisor.attachSession(supervisor.id, id)
       if (options.title)
         await ctx.sessionController.rename({ sessionId: id, title: options.title })
+      if (role !== 'worker')
+        await inbox.notify(await resolveAgent(id), true)
       if (options.prompt)
         await session.send(id, options.prompt)
       return id
@@ -117,8 +159,10 @@ export const session = defineService({
       throw new Error('runtime_stopping')
     return run(`session:send:${id}:${requestId}`, async () => {
       const identity = await session.resolve(id)
-      if (!identity)
-        throw new Error('unknown_session')
+      if (!identity) {
+        const worker = await db.worker.findById(id)
+        throw new Error(worker ? worker.status === 'ended' ? 'worker_ended' : 'worker_not_live_or_archived' : 'unknown_session')
+      }
       if (identity.workerId && (await db.worker.findById(id))?.status === 'ended')
         throw new Error('worker_ended')
       const ctx = getServerContext<Context>(server)
@@ -127,7 +171,7 @@ export const session = defineService({
       await ctx.sessionController.prompt({
         sessionId: SessionId(id),
         requestId: requestId as SessionRequestId,
-        mode: mode === 'queue' ? 'queue' : 'steer',
+        mode: identity.role !== 'worker' && mode === 'queue' ? 'queue' : 'steer',
         content: [{ type: 'text', text }],
       }, controller.signal)
     })
@@ -155,6 +199,14 @@ export const session = defineService({
     }).join(String.fromCharCode(10, 10))
     const end = Math.min(text.length, offset + limit)
     return { text: text.slice(offset, end), next_offset: end < text.length ? end : null }
+  },
+  async lookup(id: string): Promise<Agent | null> {
+    if (!(await session.resolve(id)))
+      return null
+    return getServerContext<Context>(server).agents.get(SessionId(id)) ?? null
+  },
+  async history(id: string) {
+    return getServerContext<Context>(server).sessionQuery.readSession(SessionId(id))
   },
   async receipts(id: string): Promise<{ requestId: string, consumedAt: string }[]> {
     const { events } = await getServerContext<Context>(server).sessionQuery.readSession(SessionId(id))

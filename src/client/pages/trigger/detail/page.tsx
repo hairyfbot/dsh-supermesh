@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Empty } from '../../../components/empty'
 import { ArrowLeftIcon } from '../../../components/icons'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
@@ -17,7 +18,7 @@ export function TriggerDetail(): ReactNode {
     return (
       <section className="flex flex-col gap-5 pb-10">
         <div>{back}</div>
-        <p className="rounded-xl border border-[var(--dsw-alias-border-l3)] p-5 text-sm">{t('triggerTopicNotFound')}</p>
+        <Empty compact className="rounded-xl border border-[var(--dsw-alias-border-l3)] p-5 [&>p]:text-sm [&>p]:text-[var(--dsw-alias-label-primary)]" title={t('triggerTopicNotFound')} />
       </section>
     )
   }
@@ -33,7 +34,7 @@ export function TriggerDetail(): ReactNode {
           <span>{channel}</span>
           {href
             ? (
-                <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline">
+                <a href={href} target="_blank" rel="noopener noreferrer" title={t('triggerSampleLink')} className="text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline">
                   {latest.thread.ref}
                   {' '}
                   ↗
@@ -57,7 +58,7 @@ export function TriggerDetail(): ReactNode {
               {t('triggerNewestFirst')}
             </span>
           </div>
-          <ol className="m-0 list-none p-0 pl-1.5">{events.map(event => <Event key={event.id} record={event} />)}</ol>
+          <ol className="m-0 list-none p-0 pl-1.5">{events.map(event => <Event key={event.id} event={event} />)}</ol>
         </div>
         <aside className="flex min-w-0 flex-col gap-4 self-start @min-[780px]:sticky @min-[780px]:top-4">
           <section className="rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4">
@@ -75,9 +76,10 @@ export function TriggerDetail(): ReactNode {
           </section>
           <section className="rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4">
             <h3 className="m-0 text-sm font-medium">{t('triggerLinkedTasks')}</h3>
-            <div className="mt-3 flex flex-wrap gap-2">{tickets.length ? tickets.map(ticket => <Button key={ticket} size="sm" variant="outline" onClick={() => openTicket(ticket)}>{ticket}</Button>) : <span className="text-xs text-[var(--dsw-alias-label-tertiary)]">{t('triggerNoTask')}</span>}</div>
+            <div className="mt-3 flex flex-wrap gap-2">{tickets.length ? tickets.map(ticket => <Button key={ticket} size="sm" variant="outline" onClick={() => openTicket(ticket)}>{ticket}</Button>) : <Empty compact className="[&>p]:text-xs [&>p]:text-[var(--dsw-alias-label-tertiary)]" title={t('triggerNoTask')} />}</div>
           </section>
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerExternalText')}</p>
+          {href && <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerSampleLink')}</p>}
         </aside>
       </div>
     </section>

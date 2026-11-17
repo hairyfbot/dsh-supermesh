@@ -1,3 +1,4 @@
+import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
@@ -5,8 +6,13 @@ import { useStore } from '../../../hooks/use-store'
 
 export function ActivityChart(): ReactNode {
   const id = useId().replaceAll(':', '')
-  const triggers = useStore(state => state.data.panel?.topics.triggers ?? [])
-  const activity = [...new Set(triggers.map(trigger => trigger.at.slice(0, 13)))].sort().map(time => ({ time, messages: triggers.filter(trigger => trigger.at.startsWith(time)).length }))
+  const now = Date.now()
+  const triggers = useStore(state => state.data.panel?.topics.triggers ?? []).filter(trigger => Date.parse(trigger.at) >= now - 86400000 && Date.parse(trigger.at) <= now)
+  const activity = Array.from({ length: 24 }, (_, index) => {
+    const end = now - (23 - index) * 3600000
+    const start = end - 3600000
+    return { time: new Date(end).toISOString(), messages: triggers.filter(trigger => Date.parse(trigger.at) >= start && (index === 23 ? Date.parse(trigger.at) <= end : Date.parse(trigger.at) < end)).length }
+  })
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-37 opacity-60" aria-hidden="true" style={{ maskImage: 'linear-gradient(to right, transparent 5%, black 70%)' }}>
       <ResponsiveContainer width="100%" height="100%" minWidth={0}>

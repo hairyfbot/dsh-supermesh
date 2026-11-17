@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { migrations } from '../src/database/migrations'
 import { MigrationProvider } from '../src/database/utils/migration'
 
@@ -7,7 +7,6 @@ const databases: DatabaseSync[] = []
 
 afterEach(() => {
   for (const database of databases.splice(0)) database.close()
-  vi.restoreAllMocks()
 })
 
 describe('project schema migration', () => {

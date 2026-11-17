@@ -136,6 +136,8 @@ export class Inbox extends Model<DB, 'inbox'> {
   }
 
   async enqueue(value: Pick<Insertable<DB['inbox']>, 'type' | 'origin' | 'kind' | 'message'> & Partial<Insertable<DB['inbox']>>): Promise<Selectable<DB['inbox']>> {
+    if (!['user', 'main', 'project', 'supervisor'].includes(value.type))
+      throw new Error('invalid_inbox_recipient')
     const insert = async (trx: Kysely<DB>) => {
       const model = new Inbox(trx)
       if (value.id) {
@@ -175,8 +177,12 @@ export class Inbox extends Model<DB, 'inbox'> {
     return this.db.selectFrom('inbox').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt').orderBy('seq').execute()
   }
 
-  async listScoped(scope: InboxScope): Promise<Selectable<DB['inbox']>[]> {
-    let query = this.db.selectFrom('inbox').selectAll().where('type', '=', scope.type).where('status', '=', 'pending')
+  async listScoped(scope: InboxScope, includeChannel = false): Promise<Selectable<DB['inbox']>[]> {
+    if (!['main', 'project', 'supervisor'].includes(scope.type))
+      throw new Error('invalid_inbox_recipient')
+    let query = this.db.selectFrom('inbox').selectAll().where('type', '=', scope.type).where('status', 'in', ['pending', 'stalled'])
+    if (!includeChannel)
+      query = query.where('origin', '!=', 'channel')
     if (scope.type === 'project')
       query = query.where('projectId', '=', scope.projectId)
     if (scope.type === 'supervisor')
@@ -184,19 +190,21 @@ export class Inbox extends Model<DB, 'inbox'> {
     return query.orderBy('createdAt').orderBy('seq').execute()
   }
 
-  owns(row: Selectable<DB['inbox']>, scope: InboxScope): boolean {
-    return row.type === scope.type && (scope.type !== 'project' || row.projectId === scope.projectId) && (scope.type !== 'supervisor' || row.supervisorId === scope.supervisorId)
+  owns(row: Selectable<DB['inbox']>, scope: InboxScope, includeChannel = false): boolean {
+    return ['main', 'project', 'supervisor'].includes(scope.type) && (includeChannel || row.origin !== 'channel') && row.type === scope.type && (scope.type !== 'project' || row.projectId === scope.projectId) && (scope.type !== 'supervisor' || row.supervisorId === scope.supervisorId)
   }
 
-  async completeScoped(ids: string[], scope: InboxScope, now: string): Promise<number> {
+  async completeScoped(ids: string[], scope: InboxScope, now: string, includeChannel = false): Promise<number> {
     if (!ids.length)
       return 0
     return this.db.transaction().execute(async (trx) => {
       const model = new Inbox(trx)
       const rows = await trx.selectFrom('inbox').selectAll().where('id', 'in', [...new Set(ids)]).execute()
-      if (rows.length !== new Set(ids).size || rows.some(row => !model.owns(row, scope)))
+      if (rows.length !== new Set(ids).size || rows.some(row => !model.owns(row, scope, includeChannel)))
         throw new Error('收件箱不存在或不属于当前身份')
-      const result = await trx.updateTable('inbox').set({ status: 'done', doneAt: now }).where('id', 'in', ids).where('status', '=', 'pending').executeTakeFirst()
+      if (rows.some(row => row.kind === 'ask' && row.status !== 'done'))
+        throw new Error('answer_required')
+      const result = await trx.updateTable('inbox').set({ status: 'done', doneAt: now }).where('id', 'in', ids).where('status', 'in', ['pending', 'stalled']).executeTakeFirst()
       return Number(result.numUpdatedRows)
     })
   }
@@ -205,7 +213,7 @@ export class Inbox extends Model<DB, 'inbox'> {
     return this.db.transaction().execute(async (trx) => {
       const model = new Inbox(trx)
       const row = await model.findById(id)
-      if (!row || !model.owns(row, scope) || row.kind !== 'ask' || row.status !== 'pending')
+      if (!row || !model.owns(row, scope) || row.kind !== 'ask' || row.status === 'done')
         throw new Error('只能回答指向当前身份的 pending ask')
       await model.answer(id, text, scope.type, now)
       return row
@@ -216,7 +224,7 @@ export class Inbox extends Model<DB, 'inbox'> {
     return this.db.transaction().execute(async (trx) => {
       const model = new Inbox(trx)
       const row = await model.findById(id)
-      if (!row || !model.owns(row, scope) || row.kind !== 'ask' || row.status !== 'pending')
+      if (!row || !model.owns(row, scope) || row.kind !== 'ask' || row.status === 'done')
         throw new Error('只能升级指向当前身份的 pending ask')
       if (scope.type === 'main')
         throw new Error('主编排应通过 ask_user 询问人，不能自动升级')
@@ -232,6 +240,12 @@ export class Inbox extends Model<DB, 'inbox'> {
     return this.db.updateTable('inbox').set({ answer, answeredBy: 'user', answeredAt, status: 'done', doneAt: answeredAt }).where('id', '=', id).where('type', '=', 'user').where('kind', '=', 'ask').where('status', '=', 'pending').returningAll().executeTakeFirst()
   }
 
+  async enqueueAnswer(row: Selectable<DB['inbox']>): Promise<void> {
+    if (!row.answer || !row.answeredBy || row.answeredBy === 'user' || (row.origin !== 'main' && row.origin !== 'project' && row.origin !== 'supervisor'))
+      return
+    await this.enqueue({ id: `nexus:answer:${row.id}`, type: row.origin, origin: row.answeredBy, kind: 'notice', title: row.title, message: row.answer, projectId: row.projectId, supervisorId: row.supervisorId, ticketId: row.ticketId, workerId: row.workerId, threadId: row.threadId, triggerId: row.triggerId })
+  }
+
   async listAnswered(): Promise<Selectable<DB['inbox']>[]> {
     return this.db.selectFrom('inbox').selectAll().where('kind', '=', 'ask').where('status', '=', 'done').where('answer', 'is not', null).orderBy('seq').execute()
   }
@@ -241,7 +255,7 @@ export class Inbox extends Model<DB, 'inbox'> {
   }
 
   async listDelivery(): Promise<Selectable<DB['inbox']>[]> {
-    return this.db.selectFrom('inbox').selectAll().where('type', '!=', 'user').where('status', 'in', ['pending', 'stalled']).orderBy('seq').execute()
+    return this.db.selectFrom('inbox').selectAll().where('type', 'in', ['main', 'project', 'supervisor']).where('status', 'in', ['pending', 'stalled']).orderBy('seq').execute()
   }
 
   async listOutgoing(): Promise<Selectable<DB['inbox']>[]> {

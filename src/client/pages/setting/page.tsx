@@ -3,9 +3,9 @@ import { useId } from 'react'
 import { ActivityIcon, GitBranchIcon, TasksIcon } from '../../components/icons'
 import { useActions, useStore } from '../../hooks/use-store'
 import { useTranslation } from '../../hooks/use-translation'
+import { GROUPS } from '../../store/setting'
 import { Projects } from './components/projects'
 import { Runtime } from './components/runtime'
-import { GROUPS } from './model'
 
 export function Setting(): ReactNode {
   const { t } = useTranslation()
@@ -47,7 +47,7 @@ export function Setting(): ReactNode {
           {activeSection === 'projects' ? <Projects /> : <Runtime />}
           {invalid ? <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p> : notice && <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(notices[notice])}</p>}
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">
-            保存后由宿主持久化。
+            {t('settingPreview')}
             {(executionDirty || deliveryDirty) && <span className="ml-1">{t('settingUnsaved')}</span>}
           </p>
         </div>

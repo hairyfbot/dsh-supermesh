@@ -4,6 +4,8 @@
 *.log
 *.tgz
 coverage
+.vitest-attachments
+test/e2e/__screenshots__
 docs/draw/
 lib-cov
 logs
@@ -18,3 +20,8 @@ temp
 !**/skills/*/**
 **/skills/npm-*
 prisma/database
+
+.temp
+data.db
+
+%SystemDrive%

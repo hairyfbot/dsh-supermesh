@@ -6,7 +6,7 @@ import { useId } from 'react'
 import { patchApiNexusSettings } from '../../../apis'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
-import { GROUPS, LIMITS, validSettings } from '../model'
+import { GROUPS, LIMITS, validSettings } from '../../../store/setting'
 
 export function Runtime(): ReactNode {
   const { t } = useTranslation()

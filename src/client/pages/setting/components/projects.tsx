@@ -1,14 +1,33 @@
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
 import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useAsyncFn } from '@reause/core'
 import { useId, useState } from 'react'
-import { getApiNexusPanel, patchApiNexusProjectsId, postApiNexusProjectsRefresh } from '../../../apis'
+import { getApiNexusPanel, patchApiNexusProjectsId, postApiNexusProjects, postApiNexusProjectsIdOpenings, putApiNexusProjectsIdSession } from '../../../apis'
+import { Empty } from '../../../components/empty'
+import { useDshContext } from '../../../hooks/use-dsh-context'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 
 export function Projects(): ReactNode {
   const { t } = useTranslation()
-  const projects = useStore(state => state.setting.projects)
+  const ctx = useDshContext()
+  const [opening, open] = useAsyncFn(async (action: 'session' | 'repository', projectId: string) => {
+    const paths = { id: encodeURIComponent(projectId) }
+    if (action === 'repository') {
+      const result = await postApiNexusProjectsIdOpenings(paths)
+      if (result?.opened !== true)
+        throw new Error(result && 'message' in result && typeof result.message === 'string' ? result.message : '打开仓库失败')
+      return
+    }
+    const navigation = ctx.layout.beginNavigation()
+    const result = await putApiNexusProjectsIdSession(paths)
+    if (!result || typeof result.sessionId !== 'string' || !result.sessionId.trim())
+      throw new Error(result && 'message' in result && typeof result.message === 'string' ? result.message : '打开项目会话失败')
+    if (!navigation.aborted)
+      ctx.uiWorkspace.openSession(result.sessionId as SessionId)
+  })
+  const projects = useStore(state => state.data.panel?.projects ?? [])
   const refreshedAt = useStore(state => state.setting.refreshedAt)
   const { receiveProject, receivePanel } = useActions()
   const [saving, toggle] = useAsyncFn(async (projectId: string, enabled: boolean) => {
@@ -18,7 +37,7 @@ export function Projects(): ReactNode {
     receiveProject(project)
   })
   const [refreshing, refresh] = useAsyncFn(async () => {
-    const projects = await postApiNexusProjectsRefresh()
+    const projects = await postApiNexusProjects()
     if (!Array.isArray(projects))
       throw new Error('项目发现失败')
     const panel = await getApiNexusPanel()
@@ -29,7 +48,7 @@ export function Projects(): ReactNode {
   const id = useId()
   const [query, setQuery] = useState('')
   const normalized = query.trim().toLocaleLowerCase()
-  const candidates = projects
+  const candidates = projects.filter(project => project.remoteUrl && project.available !== false)
   const visible = candidates.filter(project => !normalized || [project.name, project.directory].join(' ').toLocaleLowerCase().includes(normalized))
   const enabled = candidates.filter(project => Boolean(project.enabled)).length
   return (
@@ -54,7 +73,7 @@ export function Projects(): ReactNode {
           </time>
         )}
       </div>
-      {(saving.error || refreshing.error) && <p role="alert" className="px-5">{saving.error?.message ?? refreshing.error?.message}</p>}
+      {(saving.error || refreshing.error || opening.error) && <p role="alert" className="px-5">{saving.error?.message ?? refreshing.error?.message ?? opening.error?.message}</p>}
       {visible.length
         ? (
             <ul className="m-0 list-none p-0">
@@ -72,8 +91,8 @@ export function Projects(): ReactNode {
                       </div>
                     </div>
                     <div className="ml-auto flex shrink-0 items-center gap-2">
-                      <Button type="button" size="sm" variant="outline" disabled>{t('settingOpenSession')}</Button>
-                      <Button type="button" size="sm" variant="outline" disabled>{t('settingOpenRepository')}</Button>
+                      <Button type="button" size="sm" variant="outline" disabled={opening.loading} onClick={() => void open('session', project.id)}>{t('settingOpenSession')}</Button>
+                      <Button type="button" size="sm" variant="outline" disabled={opening.loading} onClick={() => void open('repository', project.id)}>{t('settingOpenRepository')}</Button>
                     </div>
                   </li>
                 )
@@ -81,11 +100,9 @@ export function Projects(): ReactNode {
             </ul>
           )
         : (
-            <div className="flex flex-col items-center gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 text-center">
-              <h4 className="m-0 text-xs font-medium">{t(normalized ? 'settingNoMatchingProjects' : 'settingNoProjects')}</h4>
-              <p className="m-0 max-w-md text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(normalized ? 'settingNoMatchingProjectsHelp' : 'settingNoProjectsHelp')}</p>
+            <Empty compact className="items-center !gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 !text-center [&>p:first-of-type]:text-xs [&>p:first-of-type]:leading-4 [&>p:first-of-type]:font-medium [&>p:first-of-type]:text-[var(--dsw-alias-label-primary)] [&>p:nth-of-type(2)]:text-[var(--dsw-alias-label-secondary)]" title={t(normalized ? 'settingNoMatchingProjects' : 'settingNoProjects')} description={t(normalized ? 'settingNoMatchingProjectsHelp' : 'settingNoProjectsHelp')}>
               {normalized && <Button size="sm" variant="ghost" onClick={() => setQuery('')}>{t('settingClearSearch')}</Button>}
-            </div>
+            </Empty>
           )}
     </section>
   )

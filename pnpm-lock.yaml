@@ -77,9 +77,18 @@ catalogs:
       specifier: ^3.2.1
       version: 3.2.1
   default:
+    '@deepseek-ai/dsh-client-ui-chat':
+      specifier: 0.2.2-rc.2
+      version: 0.2.2-rc.2
+    '@deepseek-ai/dsh-http-proxy':
+      specifier: 0.2.2-rc.2
+      version: 0.2.2-rc.2
     h3:
       specifier: ^2.0.8
       version: 2.0.8
+    undici:
+      specifier: 8.11.2
+      version: 8.11.2
     unstorage:
       specifier: 2.0.0-beta.0
       version: 2.0.0-beta.0
@@ -262,6 +271,9 @@ importers:
 
   .:
     dependencies:
+      '@deepseek-ai/dsh-http-proxy':
+        specifier: 'catalog:'
+        version: 0.2.2-rc.2(@deepseek-ai/cordis@4.0.5)
       '@fileshed/kysely-node-sqlite':
         specifier: catalog:database
         version: 0.1.0(kysely@0.29.8)
@@ -292,6 +304,9 @@ importers:
       recharts:
         specifier: catalog:react
         version: 3.10.1(@types/react@19.3.0)(react-dom@18.3.1(react@18.3.1))(react-is@19.3.1)(react@18.3.1)(redux@5.0.1)
+      undici:
+        specifier: 'catalog:'
+        version: 8.11.2
       unstorage:
         specifier: 'catalog:'
         version: 2.0.0-beta.0
@@ -343,6 +358,9 @@ importers:
         version: 0.2.2-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-client-store':
         specifier: catalog:dsh
+        version: 0.2.2-rc.2(@deepseek-ai/cordis@4.0.5)
+      '@deepseek-ai/dsh-client-ui-chat':
+        specifier: 'catalog:'
         version: 0.2.2-rc.2(@deepseek-ai/cordis@4.0.5)
       '@deepseek-ai/dsh-client-ui-conversation':
         specifier: catalog:dsh
@@ -897,6 +915,11 @@ packages:
 
   '@deepseek-ai/dsh-client-store@0.2.2-rc.2':
     resolution: {integrity: sha512-tKNgGdqeTKDC+yvCHxkvS2rEiBNg8HFcolj9WFrum0wdcSqE/8iw0hElxXPqG/4y+4KDBeX5CQTC/dDIYSGuUQ==}
+    peerDependencies:
+      '@deepseek-ai/cordis': ~4.1.0
+
+  '@deepseek-ai/dsh-client-ui-chat@0.2.2-rc.2':
+    resolution: {integrity: sha512-nsVoj3ddh4YVakbzREEl4N2BLm7Mzvg4yjk3lsw5hVRxFHckGsyd5OnxJAhfKEDagK721cy8LQ1v4Ep3m5M6pw==}
     peerDependencies:
       '@deepseek-ai/cordis': ~4.1.0
 
@@ -5187,6 +5210,11 @@ snapshots:
   '@deepseek-ai/dsh-client-store@0.2.2-rc.2(@deepseek-ai/cordis@4.0.5)':
     dependencies:
       '@deepseek-ai/cordis': 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+
+  '@deepseek-ai/dsh-client-ui-chat@0.2.2-rc.2(@deepseek-ai/cordis@4.0.5)':
+    dependencies:
+      '@deepseek-ai/cordis': 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
+      '@deepseek-ai/schemastery': 3.19.0
 
   '@deepseek-ai/dsh-client-ui-conversation@0.2.2-rc.2(@deepseek-ai/cordis@4.0.5)':
     dependencies:

@@ -203,8 +203,6 @@ export type Inbox = {
     seq: number;
     /**
      * 此刻轮到谁处理。
-     * Worker 没有收件箱：它短命、被动、在等的时候是阻塞的，
-     * 所以上级的话必须直接 prompt 进会话，不能进队列等它来取。
      */
     type: InboxTarget;
     /**

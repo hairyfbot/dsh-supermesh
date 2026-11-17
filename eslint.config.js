@@ -11,7 +11,10 @@ export default antfu(
       'antfu/no-top-level-await': 'off',
     },
     ignores: [
-      'soruce/*',
+      'soruce/**',
+      'temp/**',
+      '.temp/**',
+      'docs/specs/**',
       'src/client/apis',
       'src/database/migrations.ts',
       'src/database/types.ts',

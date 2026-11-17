@@ -1,6 +1,8 @@
 import { github } from '../channel/github/channel'
+import { gitlab } from '../channel/gitlab/channel'
 import { scheduler } from '../runtime/scheduler'
 import { defineService } from '../utils/service'
+import { channelAuth } from './channel-auth'
 import { inbox } from './inbox'
 import { project } from './project'
 import { session } from './session'
@@ -50,6 +52,7 @@ async function activate(): Promise<() => Promise<void>> {
     return task
   }
   try {
+    stops.push(() => channelAuth.cleanup())
     stops.push(session.start(), worktree.start(), inbox.start(), worker.start())
     await scheduler.ready()
     await project.sync()
@@ -63,6 +66,13 @@ async function activate(): Promise<() => Promise<void>> {
     unregister.push(scheduler.use({ id: 'nexus:github', cron: '*/30 * * * * *' }, () => track(async () => {
       const collected = await github.collectAll(controller.signal)
       const flushed = await github.flush(controller.signal)
+      const failures = [...collected, ...flushed].filter(result => !result.ok)
+      if (failures.length)
+        throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
+    })))
+    unregister.push(scheduler.use({ id: 'nexus:gitlab', cron: '*/30 * * * * *' }, () => track(async () => {
+      const collected = await gitlab.collectAll(controller.signal)
+      const flushed = await gitlab.flush(controller.signal)
       const failures = [...collected, ...flushed].filter(result => !result.ok)
       if (failures.length)
         throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))

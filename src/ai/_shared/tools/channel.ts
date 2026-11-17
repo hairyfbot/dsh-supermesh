@@ -1,5 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { github } from '../../../channel/github/channel'
+import { gitlab } from '../../../channel/gitlab/channel'
 import { db } from '../../../database'
 import { session } from '../../../service/session'
 
@@ -10,7 +11,7 @@ export const read_channel = defineTool({
     resource: {
       type: 'string',
       required: true,
-      description: '资源路径，前缀决定分发：github/…、feishu/…、trigger/<id>、thread/<id>、ticket/<id>。',
+      description: '资源路径，前缀决定分发：github/…、gitlab/…、gitlab:<项目>:issue|pull:<编号>、渠道原文 URL、trigger/<id>、thread/<id>、ticket/<id>。',
     },
     offset: {
       type: 'integer',
@@ -65,22 +66,35 @@ export const read_channel = defineTool({
       items = [ticket, ...threads.map(link => ({ resource: `thread/${link.threadId}` }))]
     }
     else {
+      const isGitHub = resource.startsWith('github:') || (() => {
+        try {
+          const url = new URL(resource)
+          return url.origin === 'https://github.com' && !url.username && !url.password
+        }
+        catch { return false }
+      })()
+      const isGitLab = !isGitHub && await gitlab.canRead(resource)
+      if (!isGitHub && !isGitLab)
+        throw new Error('不支持的渠道资源')
+      const target = isGitLab ? await gitlab.canonicalResource(resource) : resource
       if (identity.role === 'worker') {
         const threads = await Promise.all(links.map(link => db.thread.findById(link.threadId)))
-        const canonical = (value: string) => {
-          try {
-            const url = new URL(value)
-            return url.origin + url.pathname.replace(/\/$/, '')
+        let allowed = false
+        for (const thread of threads) {
+          if (!thread?.url || thread.channelId !== (isGitLab ? 'gitlab' : 'github') || (identity.projectId && thread.projectId && thread.projectId !== identity.projectId))
+            continue
+          if (isGitLab) {
+            if (await gitlab.canRead(thread.url) && await gitlab.canonicalResource(thread.url) === target)
+              allowed = true
           }
-          catch {
-            const match = /^github:([^:]+):(issue|pull):(\d+)$/.exec(value)
-            return match ? `https://github.com/${match[1]}/${match[2] === 'issue' ? 'issues' : 'pull'}/${match[3]}` : value
+          else if (canonicalGitHub(thread.url) === canonicalGitHub(resource)) {
+            allowed = true
           }
         }
-        if (!threads.some(thread => thread?.url && canonical(thread.url) === canonical(resource)))
+        if (!allowed)
           throw new Error('Worker 只能读取本任务来源')
       }
-      return JSON.stringify(await github.read(resource, offset, limit))
+      return JSON.stringify(isGitLab ? await gitlab.read(target, offset, limit) : await github.read(resource, offset, limit))
     }
     const page = items.slice(offset, offset + limit)
     return JSON.stringify({ items: page, next_offset: offset + page.length < items.length ? offset + page.length : null, next_resource: nextResource })
@@ -131,3 +145,11 @@ export const reply_channel = defineTool({
     return JSON.stringify({ id: row.id, status: 'queued' })
   },
 })
+
+function canonicalGitHub(value: string): string {
+  const match = /^github:([^:]+):(issue|pull):([1-9]\d*)$/.exec(value)
+  if (match)
+    return `https://github.com/${match[1]}/${match[2] === 'issue' ? 'issues' : 'pull'}/${match[3]}`
+  const url = new URL(value)
+  return url.origin + url.pathname.replace(/\/$/, '')
+}

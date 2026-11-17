@@ -119,6 +119,9 @@ export class GitHubChannel {
   }
 
   async collectAll(signal?: AbortSignal): Promise<{ projectId: string, ok: boolean, reason?: string }[]> {
+    signal?.throwIfAborted()
+    if (!(await db.channel.findById('github'))?.enabled)
+      return []
     const result = []
     for (const project of await db.project.listAll()) {
       signal?.throwIfAborted()
@@ -585,6 +588,9 @@ export class GitHubChannel {
   }
 
   async flush(signal?: AbortSignal): Promise<({ id: string } & DeliveryResult)[]> {
+    signal?.throwIfAborted()
+    if (!(await db.channel.findById('github'))?.enabled)
+      return []
     const results = []
     for (const row of await db.inbox.listOutgoing()) {
       signal?.throwIfAborted()

@@ -1,6 +1,6 @@
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
-import { closeDsh, getDshErrors, inDsh, launchDsh, openDshPage } from './test/__setup__/commands'
+import { closeDsh, getDshErrors, launchDsh, nexusRequest, openDshPage, openNexusMainSession } from './test/__setup__/commands'
 
 export default defineConfig({
   test: {
@@ -25,7 +25,8 @@ export default defineConfig({
         openDshPage,
         getDshErrors,
         closeDsh,
-        inDsh,
+        nexusRequest,
+        openNexusMainSession,
       },
     },
     sequence: {

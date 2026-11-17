@@ -1,7 +1,6 @@
 import type { PresetDefinition } from '@deepseek-ai/dsh-agent-preset-registry'
 import process from 'node:process'
 
-/** 一条 preset 子插件行（Cordis 条目）。 */
 type PresetPlugin = PresetDefinition['plugins'][number]
 
 const IS_WINDOWS = process.platform === 'win32'
@@ -33,7 +32,6 @@ export const toolFs: PresetPlugin = {
   id: 'tool-fs',
   name: '@deepseek-ai/dsh-tool-fs',
   config: {
-    // Set true to add the apply_patch tool beside edit.
     applyPatch: false,
   },
 }
@@ -49,11 +47,6 @@ export const toolJobs: PresetPlugin = {
   name: '@deepseek-ai/dsh-tool-jobs',
 }
 
-export const toolSchedule: PresetPlugin = {
-  id: 'tool-schedule',
-  name: '@deepseek-ai/dsh-tool-schedule',
-}
-
 export const skillFilesystem: PresetPlugin = {
   id: 'skill-filesystem',
   name: '@deepseek-ai/dsh-skill-filesystem',
@@ -67,37 +60,6 @@ export const toolSkill: PresetPlugin = {
 export const commandGoal: PresetPlugin = {
   id: 'command-goal',
   name: '@deepseek-ai/dsh-command-goal',
-}
-
-export const toolGoal: PresetPlugin = {
-  id: 'tool-goal',
-  name: '@deepseek-ai/dsh-tool-goal',
-}
-
-export const planning: PresetPlugin = {
-  id: 'planning',
-  name: 'cordis:group',
-  group: true,
-  isolate: { planMode: true },
-  config: [
-    {
-      id: 'plan-mode',
-      name: '@deepseek-ai/dsh-plan-mode',
-      config: {
-        section: `You are in plan mode. Stay in plan mode until the user approves your plan through exit_plan_mode or switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
-
-Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
-
-The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
-
-Resolve discoverable facts by inspection. Use ask_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
-
-Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
-
-When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.`,
-      },
-    },
-  ],
 }
 
 export const compaction: PresetPlugin = {
@@ -161,11 +123,6 @@ export const delegation: PresetPlugin = {
   ],
 }
 
-export const toolAskUser: PresetPlugin = {
-  id: 'tool-ask-user',
-  name: '@deepseek-ai/dsh-tool-ask-user',
-}
-
 export const toolTodo: PresetPlugin = {
   id: 'tool-todo',
   name: '@deepseek-ai/dsh-tool-todo',
@@ -186,16 +143,4 @@ export const toolExecutorPtc: PresetPlugin = {
 export const toolPresent: PresetPlugin = {
   id: 'present',
   name: '@deepseek-ai/dsh-tool-present',
-}
-
-export const toolPluginManager: PresetPlugin = {
-  id: 'tool-plugin-manager',
-  name: '@deepseek-ai/dsh-plugin-manager/tools',
-  disabled: true,
-}
-
-export const toolPluginMarket: PresetPlugin = {
-  id: 'tool-plugin-market',
-  name: '@deepseek-ai/dsh-plugin-market/tools',
-  disabled: true,
 }

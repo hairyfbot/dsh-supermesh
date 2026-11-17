@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { AgentGraphEdge, AgentGraphNode } from '../../../types'
-import { AGENT_GRAPH, AGENT_GRAPH_EDGE_COLORS } from '../../../constants'
+import { AGENT_GRAPH, AGENT_GRAPH_EDGE_COLORS } from '../../../config/constants'
 import { useTranslation } from '../../../hooks/use-translation'
 
 export function GraphEdgePath({ edge, nodes, selectedId }: { edge: AgentGraphEdge, nodes: readonly AgentGraphNode[], selectedId: string | null }): ReactNode {
@@ -11,10 +11,11 @@ export function GraphEdgePath({ edge, nodes, selectedId }: { edge: AgentGraphEdg
     return null
   const vertical = source.x === target.x
   const gap = 6
+  const down = target.y >= source.y
   const sx = source.x + (vertical ? AGENT_GRAPH.nodeWidth / 2 : AGENT_GRAPH.nodeWidth + gap)
-  const sy = source.y + (vertical ? AGENT_GRAPH.nodeHeight + gap : AGENT_GRAPH.nodeHeight / 2)
+  const sy = source.y + (vertical ? down ? AGENT_GRAPH.nodeHeight + gap : -gap : AGENT_GRAPH.nodeHeight / 2)
   const tx = target.x + (vertical ? AGENT_GRAPH.nodeWidth / 2 : -gap)
-  const ty = target.y + (vertical ? -gap : AGENT_GRAPH.nodeHeight / 2)
+  const ty = target.y + (vertical ? down ? -gap : AGENT_GRAPH.nodeHeight + gap : AGENT_GRAPH.nodeHeight / 2)
   const middle = (sx + tx) / 2
   const related = !selectedId || edge.source === selectedId || edge.target === selectedId
   const tone = edge.kind === 'flow' && source.kind === 'route' ? 'dispatch' : edge.kind
@@ -24,7 +25,7 @@ export function GraphEdgePath({ edge, nodes, selectedId }: { edge: AgentGraphEdg
     ? `M ${sx} ${sy} L ${tx} ${ty}`
     : `M ${sx} ${sy} C ${middle} ${sy}, ${middle} ${ty}, ${tx - 16} ${ty} H ${tx}`
   const arrow = vertical
-    ? `M ${tx - 4} ${ty - 7} L ${tx} ${ty} L ${tx + 4} ${ty - 7}`
+    ? `M ${tx - 4} ${ty + (down ? -7 : 7)} L ${tx} ${ty} L ${tx + 4} ${ty + (down ? -7 : 7)}`
     : `M ${tx - 7} ${ty - 4} L ${tx} ${ty} L ${tx - 7} ${ty + 4}`
   return (
     <g opacity={related ? 1 : 0.25} pointerEvents="none" fill="none" stroke={color} strokeWidth={related && selectedId ? 1.8 : 1.4} strokeLinecap="round" strokeLinejoin="round">

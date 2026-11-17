@@ -8,7 +8,7 @@ import { createContext } from 'react'
 export type AppStore = PropsStore<typeof store>
 export type AppStoreState = Parameters<Parameters<AppStore['useStore']>[0]>[0]
 
-export interface PluginContextValue extends AppStore {
+export interface PluginContextValue extends Partial<AppStore> {
   ctx: ClientContext
   t: T
 }

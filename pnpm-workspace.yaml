@@ -24,7 +24,10 @@ allowBuilds:
   prisma: true
   simple-git-hooks: true
 catalog:
+  '@deepseek-ai/dsh-client-ui-chat': 0.2.2-rc.2
+  '@deepseek-ai/dsh-http-proxy': 0.2.2-rc.2
   h3: ^2.0.8
+  undici: 8.11.2
   unstorage: 2.0.0-beta.0
 catalogs:
   cli:
