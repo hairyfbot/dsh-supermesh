@@ -1232,7 +1232,7 @@ var GitLabChannel = class {
 						validateTopic(row, resource);
 						const thread = await this.ensureThread(resource, row);
 						await this.ingest(thread, row, row.state === "closed" || row.state === "merged" ? "close" : "open", baseline, kind);
-						if (kind === "pull") await this.observeMergeRequest(projectId, thread, row, signal);
+						if (kind === "pull") await this.observeMergeRequest(projectId, thread, row);
 					}, signal);
 				} catch (error) {
 					if (signal?.aborted) throw error;
@@ -1248,7 +1248,6 @@ var GitLabChannel = class {
 							await this.acceptAnswers(thread, row);
 							await this.ingest(thread, row, "comment", baseline, "note");
 						}, signal);
-						if (thread.kind === "pull" && (await db.ticketThread.listTicketIds(thread.id)).length) await this.observeMergeRequest(projectId, thread, void 0, signal);
 					} catch (error) {
 						if (signal?.aborted) throw error;
 						errors.push(failure(error));
@@ -1370,22 +1369,20 @@ var GitLabChannel = class {
 			threadId: thread.id
 		});
 	}
-	async observeMergeRequest(projectId, thread, row, signal) {
+	async observeMergeRequest(projectId, thread, row) {
 		const target = parseResource(thread.url, await this.site());
 		if (target.kind !== "pull") return;
-		const remote = row ?? record(await this.request(target.site, apiRoot(target), signal));
-		validateTopic(remote, target);
-		const state = remote.state === "merged" ? "merged" : remote.state === "closed" ? "closed" : remote.state === "opened" ? "open" : null;
+		validateTopic(row, target);
+		const state = row.state === "merged" ? "merged" : row.state === "closed" ? "closed" : row.state === "opened" ? "open" : null;
 		if (!state) throw new GitLabError("invalid_response");
-		const branch = typeof remote.source_branch === "string" ? text(remote.source_branch) : null;
-		if (state === "open") return;
-		const at = timestamp(remote.merged_at ?? remote.closed_at ?? remote.updated_at);
+		const branch = typeof row.source_branch === "string" ? text(row.source_branch) : null;
 		for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
 			const ticket = await db.ticket.findById(ticketId);
-			if (!ticket || ticket.projectId !== projectId || ticket.prUrl && ticket.prUrl !== thread.url) continue;
-			if (!["done", "cancelled"].includes(ticket.status)) await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState);
+			if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ["done", "cancelled"].includes(ticket.status)) continue;
+			await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState);
 		}
-		await this.threadClosed(projectId, thread, state, at, branch);
+		if (state === "open") return;
+		await this.threadClosed(projectId, thread, state, timestamp(row.merged_at ?? row.closed_at ?? row.updated_at), branch);
 	}
 	async threadClosed(projectId, thread, outcome, at, branch) {
 		const ended = await db.ticket.closeThread(thread.id, outcome, at, branch);
@@ -4385,7 +4382,7 @@ async function activate() {
 		stops.push(session.start(), worktree.start(), project.start(), inbox.start(), worker$1.start());
 		await scheduler.ready();
 		await session.workspace();
-		await session.create("main", {});
+		if (await session.findMain()) await session.create("main", {});
 		await project.sync();
 		restoreShell = await shell.start();
 		await worker$1.recover();

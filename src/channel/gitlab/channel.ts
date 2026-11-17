@@ -162,7 +162,7 @@ export class GitLabChannel {
               const thread = await this.ensureThread(resource, row)
               await this.ingest(thread, row, row.state === 'closed' || row.state === 'merged' ? 'close' : 'open', baseline, kind)
               if (kind === 'pull')
-                await this.observeMergeRequest(projectId, thread, row, signal)
+                await this.observeMergeRequest(projectId, thread, row)
             }, signal)
           }
           catch (error) {
@@ -183,8 +183,6 @@ export class GitLabChannel {
               await this.acceptAnswers(thread, row)
               await this.ingest(thread, row, 'comment', baseline, 'note')
             }, signal)
-            if (thread.kind === 'pull' && (await db.ticketThread.listTicketIds(thread.id)).length)
-              await this.observeMergeRequest(projectId, thread, undefined, signal)
           }
           catch (error) {
             if (signal?.aborted)
@@ -273,27 +271,24 @@ export class GitLabChannel {
       await db.inbox.enqueue({ id: `${id}:inbox:${key}`, type: target.projectId ? 'project' : 'main', origin: 'channel', kind: 'trigger', message: body, title: thread.title, projectId: target.projectId, ticketId: target.ticketId, triggerId: id, threadId: thread.id })
   }
 
-  private async observeMergeRequest(projectId: string, thread: Thread, row: Record<string, unknown> | undefined, signal?: AbortSignal): Promise<void> {
+  private async observeMergeRequest(projectId: string, thread: Thread, row: Record<string, unknown>): Promise<void> {
     const target = parseResource(thread.url!, await this.site())
     if (target.kind !== 'pull')
       return
-    const remote = row ?? record(await this.request(target.site, apiRoot(target), signal))
-    validateTopic(remote, target)
-    const state = remote.state === 'merged' ? 'merged' : remote.state === 'closed' ? 'closed' : remote.state === 'opened' ? 'open' : null
+    validateTopic(row, target)
+    const state = row.state === 'merged' ? 'merged' : row.state === 'closed' ? 'closed' : row.state === 'opened' ? 'open' : null
     if (!state)
       throw new GitLabError('invalid_response')
-    const branch = typeof remote.source_branch === 'string' ? text(remote.source_branch) : null
-    if (state === 'open')
-      return
-    const at = timestamp(remote.merged_at ?? remote.closed_at ?? remote.updated_at)
+    const branch = typeof row.source_branch === 'string' ? text(row.source_branch) : null
     for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
       const ticket = await db.ticket.findById(ticketId)
-      if (!ticket || ticket.projectId !== projectId || (ticket.prUrl && ticket.prUrl !== thread.url))
+      if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ['done', 'cancelled'].includes(ticket.status))
         continue
-      if (!['done', 'cancelled'].includes(ticket.status))
-        await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState)
+      await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState)
     }
-    await this.threadClosed(projectId, thread, state, at, branch)
+    if (state === 'open')
+      return
+    await this.threadClosed(projectId, thread, state, timestamp(row.merged_at ?? row.closed_at ?? row.updated_at), branch)
   }
 
   private async threadClosed(projectId: string, thread: Thread, outcome: 'merged' | 'closed', at: string, branch: string | null): Promise<void> {
