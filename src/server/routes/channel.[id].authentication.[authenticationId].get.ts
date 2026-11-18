@@ -2,7 +2,7 @@ import type { ChannelAuthentication } from '../../service/channel-auth.types'
 import { defineHandler, getRouterParam, HTTPError } from 'h3'
 import { channelAuth } from '../../service/channel-auth'
 
-export const getChannelAuthentication = defineHandler((event): ChannelAuthentication => {
+export default defineHandler((event): ChannelAuthentication => {
   const id = getRouterParam(event, 'id')
   const authenticationId = getRouterParam(event, 'authenticationId')
   if (!id || !authenticationId)

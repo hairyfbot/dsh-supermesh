@@ -1,13 +1,13 @@
 import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { ReactNode } from 'react'
+import type { GetApiNexusTriggerResponse } from '../../../apis/index.type'
 import { useId } from 'react'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
-import { useStore } from '../../../hooks/use-store'
 
-export function ActivityChart(): ReactNode {
+export function ActivityChart({ triggers: source }: { triggers: GetApiNexusTriggerResponse }): ReactNode {
   const id = useId().replaceAll(':', '')
   const now = Date.now()
-  const triggers = useStore(state => state.data.panel?.topics.triggers ?? []).filter(trigger => Date.parse(trigger.at) >= now - 86400000 && Date.parse(trigger.at) <= now)
+  const triggers = source.filter(trigger => Date.parse(trigger.at) >= now - 86400000 && Date.parse(trigger.at) <= now)
   const activity = Array.from({ length: 24 }, (_, index) => {
     const end = now - (23 - index) * 3600000
     const start = end - 3600000

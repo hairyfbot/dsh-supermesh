@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { Button, Input, Modal, SegmentedTabs, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useTimeoutPoll } from '@reause/core'
+import { useAsync, useTimeoutPoll } from '@reause/core'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
-import { deleteApiNexusChannelsIdCredentials, getApiNexusChannelsIdAuthenticationsAuthenticationId, getApiNexusPanel, postApiNexusChannelsIdAuthentications, putApiNexusChannelsIdConfiguration } from '../../../../apis'
+import { deleteApiNexusChannelIdCredential, getApiNexusChannel, getApiNexusChannelIdAuthenticationAuthenticationId, postApiNexusChannelIdAuthentication, putApiNexusChannelIdConfiguration } from '../../../../apis'
 import { GitHubIcon } from '../../../../components/icons'
-import { useActions, useStore } from '../../../../hooks/use-store'
+import { keys } from '../../../../config/query-keys'
 import { useTranslation } from '../../../../hooks/use-translation'
 import { Environment } from './environment'
 import { DetailHeader } from './header'
@@ -12,9 +13,10 @@ import { Section } from './section'
 
 export function GithubDetail(): ReactNode {
   const { t } = useTranslation()
-  const channel = useStore(state => state.data.panel?.channels.find(channel => channel.id === 'github'))
+  const client = useQueryClient()
+  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const channel = channels.data?.find(channel => channel.id === 'github')
   const id = useId()
-  const { receivePanel } = useActions()
   const savingRequest = useRef(false)
   const deletingRequest = useRef(false)
   const [saving, setSaving] = useState(false)
@@ -31,7 +33,7 @@ export function GithubDetail(): ReactNode {
   const dirty = token.length > 0 || identityDirty
   const canSave = (hasCredential || Boolean(token.trim())) && (identityDirty || Boolean(token.trim()))
   const [method, setMethod] = useState<'authorize' | 'token'>('authorize')
-  const [authentication, setAuthentication] = useState<Awaited<ReturnType<typeof postApiNexusChannelsIdAuthentications>> | null>(null)
+  const [authentication, setAuthentication] = useState<Awaited<ReturnType<typeof postApiNexusChannelIdAuthentication>> | null>(null)
   const [authenticating, setAuthenticating] = useState(false)
   const [authNotice, setAuthNotice] = useState('')
   const [copyNotice, setCopyNotice] = useState('')
@@ -44,17 +46,32 @@ export function GithubDetail(): ReactNode {
     lifetime.current = controller
     return () => controller.abort()
   }, [])
+  useAsync(async (onCancel) => {
+    if (channels)
+      return
+    const controller = new AbortController()
+    onCancel(() => controller.abort())
+    try {
+      await reload()
+    }
+    catch {
+
+    }
+  }, undefined)
+  async function reload(): Promise<void> {
+    await client.invalidateQueries({ queryKey: keys.channel })
+  }
   const { pause, resume } = useTimeoutPoll(async () => {
     if (!authId.current || lifetime.current.signal.aborted)
       return
     try {
-      await applyAuthentication(await getApiNexusChannelsIdAuthenticationsAuthenticationId({ id: 'github', authenticationId: authId.current }, { signal: lifetime.current.signal }))
+      await applyAuthentication(await getApiNexusChannelIdAuthenticationAuthenticationId({ id: 'github', authenticationId: authId.current }, { signal: lifetime.current.signal }))
     }
     catch {
       failAuthentication()
     }
   }, 1000, { immediate: false })
-  async function applyAuthentication(value: Awaited<ReturnType<typeof postApiNexusChannelsIdAuthentications>>): Promise<void> {
+  async function applyAuthentication(value: Awaited<ReturnType<typeof postApiNexusChannelIdAuthentication>>): Promise<void> {
     if (lifetime.current.signal.aborted)
       return
     if (!value || typeof value.id !== 'string' || !value.id || value.channelId !== 'github' || typeof value.output !== 'string' || !['pending', 'succeeded', 'failed'].includes(value.status) || (authId.current && authId.current !== value.id) || (value.userCode !== undefined && typeof value.userCode !== 'string') || (value.verificationUri !== undefined && typeof value.verificationUri !== 'string'))
@@ -67,14 +84,8 @@ export function GithubDetail(): ReactNode {
     }
     pause()
     setAuthNotice(t(value.status === 'succeeded' ? 'channelAuthSucceeded' : 'channelAuthFailed'))
-    if (value.status === 'succeeded') {
-      const panel = await getApiNexusPanel({ signal: lifetime.current.signal })
-      if (lifetime.current.signal.aborted)
-        return
-      if (!('projects' in panel))
-        throw new Error('channel_reload_failed')
-      receivePanel(panel)
-    }
+    if (value.status === 'succeeded')
+      await reload()
     authRequest.current = false
     setAuthenticating(false)
   }
@@ -96,7 +107,7 @@ export function GithubDetail(): ReactNode {
     setCopyNotice('')
     setAuthNotice(t('channelAuthStarting'))
     try {
-      const value = await postApiNexusChannelsIdAuthentications({ id: 'github' }, {}, { signal: lifetime.current.signal })
+      const value = await postApiNexusChannelIdAuthentication({ id: 'github' }, {}, { signal: lifetime.current.signal })
       await applyAuthentication(value)
       if (!lifetime.current.signal.aborted && value.status === 'pending')
         resume()
@@ -139,15 +150,12 @@ export function GithubDetail(): ReactNode {
     setSaving(true)
     setNotice('')
     try {
-      const result = await putApiNexusChannelsIdConfiguration({ id: 'github' }, toggle
+      const result = await putApiNexusChannelIdConfiguration({ id: 'github' }, toggle
         ? { enabled: !channel.enabled }
         : { commitName: nameValue.trim(), commitEmail: emailValue.trim(), ...(token.trim() ? { token: token.trim(), enabled: hasCredential ? channel.enabled : true } : {}) })
       if (!('channel' in result))
         throw new Error('channel_save_failed')
-      const panel = await getApiNexusPanel()
-      if (!('projects' in panel))
-        throw new Error('channel_reload_failed')
-      receivePanel(panel)
+      await reload()
       if (!toggle)
         cancel()
       setNotice(t('channelSaved'))
@@ -178,17 +186,14 @@ export function GithubDetail(): ReactNode {
     deletingRequest.current = true
     setDeletion('deleting')
     try {
-      const result = await deleteApiNexusChannelsIdCredentials({ id: 'github' }, { signal: lifetime.current.signal })
+      const result = await deleteApiNexusChannelIdCredential({ id: 'github' }, { signal: lifetime.current.signal })
       if (lifetime.current.signal.aborted)
         return
       if (!('channel' in result))
         throw new Error('channel_delete_failed')
-      const panel = await getApiNexusPanel({ signal: lifetime.current.signal })
+      await reload()
       if (lifetime.current.signal.aborted)
         return
-      if (!('projects' in panel))
-        throw new Error('channel_reload_failed')
-      receivePanel(panel)
       cancel()
     }
     catch {

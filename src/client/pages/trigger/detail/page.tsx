@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
 import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useQuery } from '@tanstack/react-query'
+import { getApiNexusDelivery, getApiNexusProject, getApiNexusSubscription, getApiNexusThread, getApiNexusTrigger } from '../../../apis'
 import { Empty } from '../../../components/empty'
 import { ArrowLeftIcon } from '../../../components/icons'
+import { keys } from '../../../config/query-keys'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 import { groupTopics, recordsOf, sourceHref, THREAD_KINDS, TRIAGE } from '../model'
@@ -11,9 +14,31 @@ export function TriggerDetail(): ReactNode {
   const { t } = useTranslation()
   const { go, openTicket } = useActions()
   const id = useStore(state => state.trigger.selectedId)
-  const panel = useStore(state => state.data.panel)
-  const topic = groupTopics(recordsOf(panel)).find(topic => topic.latest.thread.id === id)
+  const project = useQuery({ queryKey: keys.project, queryFn: () => getApiNexusProject() })
+  const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiNexusTrigger(), refetchInterval: 30_000 })
+  const thread = useQuery({ queryKey: keys.thread, queryFn: () => getApiNexusThread() })
+  const subscription = useQuery({ queryKey: keys.subscription, queryFn: () => getApiNexusSubscription() })
+  const delivery = useQuery({ queryKey: keys.delivery, queryFn: () => getApiNexusDelivery() })
+  const error = project.error ?? trigger.error ?? thread.error ?? subscription.error ?? delivery.error
+  const loading = project.isLoading || trigger.isLoading || thread.isLoading || subscription.isLoading || delivery.isLoading
+  const topic = groupTopics(recordsOf({ project: project.data, trigger: trigger.data, thread: thread.data, subscription: subscription.data, delivery: delivery.data })).find(topic => topic.latest.thread.id === id)
   const back = <Button size="sm" variant="ghost" icon={<ArrowLeftIcon width={16} height={16} />} onClick={() => go('trigger')}>{t('triggerBack')}</Button>
+  if (error) {
+    return (
+      <section className="flex flex-col gap-5 pb-10">
+        <div>{back}</div>
+        <p role="alert" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{error.message || '话题详情加载失败，请重试。'}</p>
+      </section>
+    )
+  }
+  if (loading) {
+    return (
+      <section className="flex flex-col gap-5 pb-10">
+        <div>{back}</div>
+        <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">正在载入话题详情…</p>
+      </section>
+    )
+  }
   if (!topic) {
     return (
       <section className="flex flex-col gap-5 pb-10">

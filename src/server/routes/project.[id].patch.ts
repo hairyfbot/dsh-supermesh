@@ -5,7 +5,7 @@ interface ProjectPatch {
   enabled: boolean
 }
 
-export const patchProject = defineHandler(async (event) => {
+export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id', { decode: true })
   const body = await readBody<ProjectPatch>(event)
   if (!id?.trim() || !body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(key => key !== 'enabled') || typeof body.enabled !== 'boolean')

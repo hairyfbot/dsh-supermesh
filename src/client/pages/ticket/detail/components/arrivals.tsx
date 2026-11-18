@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import type { GetApiNexusTicketsidResponse } from '../../../../apis/index.type'
+import type { GetApiNexusTicketidResponse } from '../../../../apis/index.type'
 import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { Empty } from '../../../../components/empty'
 import { useTranslation } from '../../../../hooks/use-translation'
 
-export function Arrivals({ triggers, inbox }: { triggers: GetApiNexusTicketsidResponse['triggers'], inbox: GetApiNexusTicketsidResponse['inbox'] }): ReactNode {
+export function Arrivals({ triggers, inbox }: { triggers: GetApiNexusTicketidResponse['triggers'], inbox: GetApiNexusTicketidResponse['inbox'] }): ReactNode {
   const { t } = useTranslation()
   const arrivals = [
     ...triggers.map(trigger => ({ id: `trigger-${trigger.id}`, message: trigger.text, at: trigger.at, answer: null })),

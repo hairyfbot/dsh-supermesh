@@ -6,7 +6,7 @@ interface AnswerBody {
   answer: string
 }
 
-export const postAnswer = defineHandler(async (event) => {
+export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id', { decode: true })
   const body = await readBody<AnswerBody>(event)
   if (!id?.trim() || !body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(key => key !== 'answer') || typeof body.answer !== 'string' || !body.answer.trim())

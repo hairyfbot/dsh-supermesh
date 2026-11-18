@@ -6,7 +6,7 @@ interface TicketPatch {
   reason: string
 }
 
-export const patchTicket = defineHandler(async (event) => {
+export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id', { decode: true })
   const body = await readBody<TicketPatch>(event)
   if (!id?.trim() || !body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(key => key !== 'reason' && key !== 'paused') || typeof body.paused !== 'boolean' || typeof body.reason !== 'string' || !body.reason.trim())

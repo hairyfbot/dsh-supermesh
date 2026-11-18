@@ -2,7 +2,7 @@ import type { ChannelAuthentication, ChannelAuthenticationRequest } from '../../
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
 import { channelAuth } from '../../service/channel-auth'
 
-export const postChannelAuthentication = defineHandler(async (event): Promise<ChannelAuthentication> => {
+export default defineHandler(async (event): Promise<ChannelAuthentication> => {
   const id = getRouterParam(event, 'id')
   if (!id)
     throw new HTTPError({ status: 400, message: 'invalid_channel' })

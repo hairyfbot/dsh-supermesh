@@ -13,7 +13,7 @@ Downloaded on 2026-11-14 from the immutable revisions below. All components live
 | TasksIcon | [list-checks.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/list-checks.svg) | ISC / MIT |
 | AgentIcon | [bot.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/bot.svg) | ISC / MIT |
 | GitForkIcon | [git-fork.svg](https://unpkg.com/lucide-static@1.74.0/icons/git-fork.svg) | ISC / MIT |
-| UserCheckIcon | [user-check.svg](https://unpkg.com/lucide-static@1.74.0/icons/user-check.svg) | ISC / MIT |
+| UserShieldIcon | [user-shield.svg](https://unpkg.com/lucide-static@1.74.0/icons/user-shield.svg) | ISC / MIT |
 | UsersRoundIcon | [users-round.svg](https://unpkg.com/lucide-static@1.74.0/icons/users-round.svg) | ISC / MIT |
 | ArrowLeftIcon | [arrow-left.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/arrow-left.svg) | ISC / MIT |
 | ZoomInIcon | [zoom-in.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/zoom-in.svg) | ISC / MIT |

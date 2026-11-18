@@ -3,10 +3,11 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
 import type { Page, TabKind } from './store'
 import { Button, SegmentedTabs } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useAsyncFn, useAsyncState } from '@reause/core'
+import { useAsyncFn } from '@reause/core'
+import { useQueryClient } from '@tanstack/react-query'
 import { useId } from 'react'
 import { Case, Switch } from 'react-if-lite'
-import { getApiNexusPanel, putApiNexusSessionsMain } from './apis'
+import { putApiNexusSessionMain } from './apis'
 import { useDshContext } from './hooks/use-dsh-context'
 import { useActions, useStore } from './hooks/use-store'
 import { useTranslation } from './hooks/use-translation'
@@ -36,27 +37,16 @@ export function Panel(): ReactNode {
   const ctx = useDshContext()
   const [opening, openMain] = useAsyncFn(async () => {
     const navigation = ctx.layout.beginNavigation()
-    const result = await putApiNexusSessionsMain()
+    const result = await putApiNexusSessionMain()
     if (!result || typeof result.sessionId !== 'string' || !result.sessionId.trim())
       throw new Error(result && 'message' in result && typeof result.message === 'string' ? result.message : '打开主会话失败')
     if (!navigation.aborted)
       ctx.uiWorkspace.openSession(result.sessionId as SessionId)
   })
-  const { receivePanel, setLoadError, setLoading } = useActions()
-  const loading = useStore(state => state.data.loading)
-  const error = useStore(state => state.data.error)
-  const { execute } = useAsyncState(async () => {
-    setLoading(true)
-    try {
-      const panel = await getApiNexusPanel()
-      if (!panel || !Array.isArray(panel.tickets) || !panel.settings)
-        throw new Error('面板数据加载失败')
-      receivePanel(panel)
-    }
-    catch (error) {
-      setLoadError(error instanceof Error ? error.message : '面板数据加载失败')
-    }
-  }, undefined)
+  const client = useQueryClient()
+  const [refreshing, refresh] = useAsyncFn(async () => {
+    await client.invalidateQueries()
+  })
   const selectedTicketId = useStore(state => state.navigation.ticketId)
   const page = useStore(state => state.navigation.page)
   const { go: navigate } = useActions()
@@ -72,14 +62,14 @@ export function Panel(): ReactNode {
             <p className="mt-1 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]">{t('desc')}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled={loading} onClick={() => void execute()}>{loading ? '加载中…' : '刷新'}</Button>
+            <Button variant="outline" size="sm" disabled={refreshing.loading} onClick={() => void refresh()}>{refreshing.loading ? '刷新中…' : '刷新'}</Button>
             <Button variant="outline" size="sm" disabled={opening.loading} onClick={() => void openMain()}>{t('openMainSession')}</Button>
           </div>
         </div>
         <div className="w-full min-w-0 overflow-x-auto"><SegmentedTabs size="sm" items={items} value={tab} onChange={navigate} label={t('tabsLabel')} className="w-fit" /></div>
       </header>
       <div id={`${tabsId}-${tab}-panel`} role="tabpanel" aria-labelledby={`${tabsId}-${tab}`} className="mt-6 flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-6">
-        {(error || opening.error) && <p role="alert">{error ?? opening.error?.message}</p>}
+        {opening.error && <p role="alert">{opening.error.message}</p>}
         <Switch value={page}>
           <Case cond="overview"><Overview /></Case>
           <Case cond="ticket"><Ticket /></Case>

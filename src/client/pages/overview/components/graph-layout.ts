@@ -1,19 +1,20 @@
 import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
-import type { GetApiNexusPanelResponse } from '../../../apis/index.type'
+import type { GetApiNexusEdgeResponse, GetApiNexusGroupResponse, GetApiNexusNodeResponse } from '../../../apis/index.type'
 import type { AgentGraphNode, GraphNode } from '../../../types'
 import { AGENT_GRAPH } from '../../../config/constants'
 
-export type GraphGroup = GetApiNexusPanelResponse['graph']['groups'][number]
+export type GraphGroup = GetApiNexusGroupResponse[number]
+export interface GraphInput { nodes: GetApiNexusNodeResponse, edges: GetApiNexusEdgeResponse, groups: GetApiNexusGroupResponse }
 
-export function layoutGraph(graph: GetApiNexusPanelResponse['graph']): GraphNode[] {
+export function layoutGraph({ nodes, groups }: GraphInput): GraphNode[] {
   const positions = new Map<string, { x: number, y: number }>()
   let row = 0
-  const membership = (id: string) => graph.groups.filter(group => group.nodeIds.includes(id)).map(group => group.id).sort().join('|')
-  const projects = graph.nodes.filter(node => node.kind === 'project').sort((a, b) => membership(a.id).localeCompare(membership(b.id)))
+  const membership = (id: string) => groups.filter(group => group.nodeIds.includes(id)).map(group => group.id).sort().join('|')
+  const projects = nodes.filter(node => node.kind === 'project').sort((a, b) => membership(a.id).localeCompare(membership(b.id)))
   for (const project of projects) {
     const start = row
-    for (const ticket of graph.nodes.filter(node => node.kind === 'ticket' && node.projectId === project.projectId)) {
-      const workers = graph.nodes.filter(node => node.kind === 'worker' && node.ticketId === ticket.ticketId)
+    for (const ticket of nodes.filter(node => node.kind === 'ticket' && node.projectId === project.projectId)) {
+      const workers = nodes.filter(node => node.kind === 'worker' && node.ticketId === ticket.ticketId)
       positions.set(ticket.id, { x: 620, y: 36 + row * 124 })
       for (const [index, worker] of workers.entries())
         positions.set(worker.id, { x: 896, y: 36 + (row + index) * 124 })
@@ -22,7 +23,7 @@ export function layoutGraph(graph: GetApiNexusPanelResponse['graph']): GraphNode
     row = Math.max(row, start + 1)
     positions.set(project.id, { x: 300, y: 36 + start * 124 + Math.min(row - start - 1, 2) * 62 })
   }
-  for (const node of graph.nodes) {
+  for (const node of nodes) {
     if (positions.has(node.id) || node.kind === 'channel' || node.kind === 'orchestrator')
       continue
     positions.set(node.id, { x: node.kind === 'worker' ? 896 : 620, y: 36 + row++ * 124 })
@@ -30,7 +31,7 @@ export function layoutGraph(graph: GetApiNexusPanelResponse['graph']): GraphNode
   const rootY = 244
   positions.set('channel', { x: 36, y: Math.max(58, rootY - 186) })
   positions.set('orchestrator', { x: 36, y: rootY })
-  return graph.nodes.map(node => ({
+  return nodes.map(node => ({
     id: node.id,
     kind: node.kind === 'project' ? 'route' : node.kind === 'ticket' ? 'task' : node.kind === 'worker' ? 'session' : node.kind === 'channel' ? 'channel' : 'orchestrator',
     label: node.kind === 'project' ? 'graphRoute' : node.kind === 'ticket' ? 'graphTask' : node.kind === 'worker' ? 'graphSession' : node.kind === 'channel' ? 'graphChannel' : 'graphOrchestrator',

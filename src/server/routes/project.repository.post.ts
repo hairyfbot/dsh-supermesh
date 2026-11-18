@@ -1,7 +1,7 @@
 import { defineHandler, HTTPError, readBody } from 'h3'
 import { project } from '../../service/project'
 
-export const postRepository = defineHandler(async (event) => {
+export default defineHandler(async (event) => {
   const body = await readBody<{ remoteUrl: string, name?: string }>(event)
   if (!body || typeof body.remoteUrl !== 'string' || (body.name !== undefined && typeof body.name !== 'string'))
     throw new HTTPError({ status: 400, message: 'invalid_repository_request' })

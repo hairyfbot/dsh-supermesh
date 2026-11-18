@@ -1,15 +1,13 @@
 import type { ReactNode } from 'react'
-import type { DeliveryStatus } from '../model'
+import type { DeliveryStatus, Topic } from '../model'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
-import { filterTopics, groupTopics, recordsOf, STATUSES } from '../model'
+import { filterTopics, STATUSES } from '../model'
 
-export function Summary(): ReactNode {
+export function Summary({ topics }: { topics: readonly Topic[] }): ReactNode {
   const { t } = useTranslation()
   const { setTriggerFilters } = useActions()
   const selected = useStore(state => state.trigger.filters.status)
-  const panel = useStore(state => state.data.panel)
-  const topics = groupTopics(recordsOf(panel))
   const cards: { value: 'all' | DeliveryStatus, label: string, count: number, color: string }[] = [
     { value: 'all', label: t('triggerReceived'), count: topics.length, color: 'var(--dsw-alias-label-primary)' },
     ...(['pending', 'done', 'stalled'] as const).map(value => ({ value, label: t(STATUSES[value].label), count: filterTopics(topics, { query: '', channel: 'all', kind: 'all', mentionedOnly: false, status: value }).length, color: `var(--dsw-alias-state-${value === 'stalled' ? 'error' : value === 'done' ? 'success' : 'business'}-primary)` })),

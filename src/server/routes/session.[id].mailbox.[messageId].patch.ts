@@ -1,7 +1,7 @@
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
 import { inbox } from '../../service/inbox'
 
-export const patchMail = defineHandler(async (event) => {
+export default defineHandler(async (event) => {
   const body = await readBody<{ status: 'done' }>(event)
   if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(key => key !== 'status') || body.status !== 'done')
     throw new HTTPError({ status: 400, message: 'invalid_mail_patch' })

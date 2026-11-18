@@ -1,24 +1,100 @@
 import type { ReactNode } from 'react'
-import { useId } from 'react'
+import type { PatchApiNexusSettingBody } from '../../apis/index.type'
+import type { RuntimeSettings } from '../../store/setting'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Case, Switch } from 'react-if-lite'
+import { getApiNexusSetting, patchApiNexusSetting } from '../../apis'
 import { ActivityIcon, AgentIcon, GitBranchIcon, TasksIcon } from '../../components/icons'
+import { keys } from '../../config/query-keys'
 import { useActions, useStore } from '../../hooks/use-store'
 import { useTranslation } from '../../hooks/use-translation'
-import { administratorSignature, GROUPS } from '../../store/setting'
+import { administratorSignature, GROUPS, LIMITS } from '../../store/setting'
 import { Agents } from './components/agents'
 import { General } from './components/general'
 import { Projects } from './components/projects'
 import { Runtime } from './components/runtime'
 
+export type SettingNotice = 'saved' | 'refreshed' | 'project'
+type Failed = 'general' | 'execution' | 'delivery'
+
+const NUMERIC = ['maxWorkers', 'backgroundLimitMinutes', 'autoMerge', 'autoMergeMaxLines', 'autoArchiveWorkers', 'deliveryMaxAttempts', 'deliveryRetryCeilingSeconds'] as const
+
+function toRuntime(value: { administrators: string[], maxWorkers: number, backgroundLimitMinutes: number, autoMerge: boolean, autoMergeMaxLines: number, autoArchiveWorkers: boolean, deliveryMaxAttempts: number, deliveryRetryCeilingSeconds: number }): RuntimeSettings {
+  const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = value
+  return { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
+}
+
+function sameSettings(left: RuntimeSettings, right: RuntimeSettings): boolean {
+  return administratorSignature(left.administrators) === administratorSignature(right.administrators)
+    && NUMERIC.every(key => left[key] === right[key])
+}
+
+function numbersValid(value: RuntimeSettings): boolean {
+  return Object.entries(LIMITS).every(([key, limits]) => {
+    const current = value[key as keyof typeof LIMITS]
+    return Number.isInteger(current) && current >= limits.min && current <= limits.max
+  })
+}
+
 export function Setting(): ReactNode {
   const { t } = useTranslation()
   const activeSection = useStore(state => state.setting.section)
-  const notice = useStore(state => state.setting.notice)
-  const invalid = useStore(state => state.setting.invalid)
-  const generalDirty = useStore(({ setting: { draft, saved } }) => administratorSignature(draft.administrators) !== administratorSignature(saved.administrators))
-  const executionDirty = useStore(({ setting: { draft, saved } }) => GROUPS.execution.some(key => draft[key] !== saved[key]))
-  const deliveryDirty = useStore(({ setting: { draft, saved } }) => GROUPS.delivery.some(key => draft[key] !== saved[key]))
   const { setSettingSection } = useActions()
+  const setting = useQuery({ queryKey: keys.setting, queryFn: () => getApiNexusSetting() })
+  const client = useQueryClient()
+  const saveSetting = useMutation({
+    mutationFn: (input: PatchApiNexusSettingBody) => patchApiNexusSetting(input),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.setting }),
+  })
+  const baseline = setting.data ? toRuntime(setting.data) : null
+  const [draft, setDraft] = useState<RuntimeSettings | null>(null)
+  const [notice, setNotice] = useState<SettingNotice | null>(null)
+  const [failed, setFailed] = useState<Failed | null>(null)
+  const previous = useRef<RuntimeSettings | null>(null)
+  // keep:effect Follow the refreshed server baseline while the local draft is untouched.
+  useEffect(() => {
+    if (!baseline)
+      return
+    const before = previous.current
+    previous.current = baseline
+    setDraft(current => current === null || before === null || sameSettings(current, before) ? { ...baseline } : current)
+  }, [baseline])
+  // keep:effect Clear the transient notice when the section changes.
+  useEffect(() => {
+    setNotice(null)
+    setFailed(null)
+  }, [activeSection])
+  const change = (patch: Partial<RuntimeSettings>): void => {
+    setDraft(current => current && { ...current, ...patch, ...(patch.autoMerge === false && !numbersValid({ ...current, ...patch, autoMergeMaxLines: current.autoMergeMaxLines }) ? { autoMergeMaxLines: baseline?.autoMergeMaxLines ?? current.autoMergeMaxLines } : {}) })
+    setNotice(null)
+    setFailed(null)
+  }
+  const discard = (section: 'general' | 'execution' | 'delivery'): void => {
+    if (!baseline)
+      return
+    setDraft(current => current && (section === 'general'
+      ? { ...current, administrators: [...baseline.administrators], autoArchiveWorkers: baseline.autoArchiveWorkers }
+      : { ...current, ...Object.fromEntries(GROUPS[section].map(key => [key, baseline[key]])) }))
+    setNotice(null)
+    setFailed(null)
+  }
+  const save = async (patch: PatchApiNexusSettingBody, section: Failed): Promise<void> => {
+    setNotice(null)
+    setFailed(null)
+    try {
+      await saveSetting.mutateAsync(patch)
+      setNotice('saved')
+    }
+    catch {
+      setFailed(section)
+    }
+  }
+  const dirtyOf = (scope: 'execution' | 'delivery'): boolean => draft !== null && baseline !== null && GROUPS[scope].some(key => draft[key] !== baseline[key])
+  const generalDirty = draft !== null && baseline !== null && (administratorSignature(draft.administrators) !== administratorSignature(baseline.administrators) || draft.autoArchiveWorkers !== baseline.autoArchiveWorkers)
+  const executionDirty = dirtyOf('execution')
+  const deliveryDirty = dirtyOf('delivery')
+  const invalid = draft !== null && !numbersValid(draft)
   const id = useId()
   const notices = { saved: 'settingSaved', refreshed: 'settingRefreshed', project: 'settingProjectSaved' } as const
   const sections = [
@@ -29,6 +105,24 @@ export function Setting(): ReactNode {
     { value: 'delivery', label: 'settingDelivery', icon: ActivityIcon },
   ] as const
   const dirty = { general: generalDirty, projects: false, agents: false, execution: executionDirty, delivery: deliveryDirty }
+  let content: ReactNode
+  if (setting.error) {
+    content = <p role="alert" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{setting.error.message || '设置加载失败'}</p>
+  }
+  else if (!draft || !baseline) {
+    content = <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">正在载入设置…</p>
+  }
+  else {
+    content = (
+      <Switch value={activeSection}>
+        <Case cond="general"><General value={draft} baseline={baseline} pending={saveSetting.isPending} failed={failed === 'general'} onChange={change} onDiscard={() => discard('general')} onSave={patch => save(patch, 'general')} /></Case>
+        <Case cond="projects"><Projects onNotice={setNotice} /></Case>
+        <Case cond="agents"><Agents /></Case>
+        <Case cond="execution"><Runtime key="execution" section="execution" value={draft} baseline={baseline} pending={saveSetting.isPending} failed={failed === 'execution'} onChange={change} onDiscard={() => discard('execution')} onSave={patch => save(patch, 'execution')} /></Case>
+        <Case cond="delivery"><Runtime key="delivery" section="delivery" value={draft} baseline={baseline} pending={saveSetting.isPending} failed={failed === 'delivery'} onChange={change} onDiscard={() => discard('delivery')} onSave={patch => save(patch, 'delivery')} /></Case>
+      </Switch>
+    )
+  }
   return (
     <section className="@container flex min-w-0 flex-col gap-4 pb-8" aria-label={t('tabSettings')}>
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -50,14 +144,8 @@ export function Setting(): ReactNode {
           </nav>
         </aside>
         <div id={`${id}-content`} role="region" aria-labelledby={`${id}-${activeSection}`} className="flex min-w-0 flex-col gap-4">
-          <Switch value={activeSection}>
-            <Case cond="general"><General /></Case>
-            <Case cond="projects"><Projects /></Case>
-            <Case cond="agents"><Agents /></Case>
-            <Case cond="execution"><Runtime key="execution" /></Case>
-            <Case cond="delivery"><Runtime key="delivery" /></Case>
-          </Switch>
-          {invalid ? <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p> : notice && <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(notices[notice])}</p>}
+          {content}
+          {invalid ? <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p> : notice && !failed && <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(notices[notice])}</p>}
           <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">
             {t('settingPreview')}
             {(generalDirty || executionDirty || deliveryDirty) && <span className="ml-1">{t('settingUnsaved')}</span>}

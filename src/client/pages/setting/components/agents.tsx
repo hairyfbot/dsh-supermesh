@@ -1,16 +1,17 @@
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactNode } from 'react'
-import type { GetApiNexusAgentsModelsResponse, PatchApiNexusAgentsModelsBody } from '../../../apis/index.type'
+import type { GetApiNexusAgentModelCatalogResponse, GetApiNexusAgentModelResponse, PatchApiNexusAgentModelBody } from '../../../apis/index.type'
 import type { DshNexusKey } from '../../../locale'
 import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useEffect, useState } from 'react'
-import { getApiNexusAgentsModels, patchApiNexusAgentsModels } from '../../../apis'
-import { useStore } from '../../../hooks/use-store'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { getApiNexusAgentModel, getApiNexusAgentModelCatalog, patchApiNexusAgentModel } from '../../../apis'
+import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
 
-type Role = PatchApiNexusAgentsModelsBody['role']
-type Catalog = GetApiNexusAgentsModelsResponse['catalog']
-type Models = GetApiNexusAgentsModelsResponse['models']
+type Role = PatchApiNexusAgentModelBody['role']
+type Catalog = GetApiNexusAgentModelCatalogResponse
+type Models = GetApiNexusAgentModelResponse
 type ModelEntry = NonNullable<Models[Role]>
 type CatalogModel = Catalog['groups'][number]['models'][number]
 
@@ -26,92 +27,62 @@ const INHERIT = 'inherit'
 
 export function Agents(): ReactNode {
   const { t } = useTranslation()
-  const ready = useStore(state => state.data.panel !== null)
-  const [catalog, setCatalog] = useState<Catalog | null>(null)
-  const [models, setModels] = useState<Models | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const client = useQueryClient()
+  const models = useQuery({ queryKey: keys.agentModel, queryFn: () => getApiNexusAgentModel() })
+  const catalog = useQuery({ queryKey: keys.agentModelCatalog, queryFn: () => getApiNexusAgentModelCatalog() })
+  const saveAgentModel = useMutation({
+    mutationFn: (input: PatchApiNexusAgentModelBody) => patchApiNexusAgentModel(input),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.agentModel }),
+  })
   const [open, setOpen] = useState<Role | null>(null)
   const [pending, setPending] = useState<Role | null>(null)
   const [failed, setFailed] = useState<Role | null>(null)
-  useEffect(() => {
-    const controller = new AbortController()
-    const load = async (): Promise<void> => {
-      try {
-        const value = await getApiNexusAgentsModels({ signal: controller.signal })
-        if (controller.signal.aborted)
-          return
-        if (!value?.models || !value.catalog)
-          throw new Error('invalid_agent_models')
-        setModels(value.models)
-        setCatalog(value.catalog)
-      }
-      catch (error) {
-        if (!controller.signal.aborted)
-          setLoadError(error instanceof Error ? error.message : String(error))
-      }
-      finally {
-        if (!controller.signal.aborted)
-          setLoading(false)
-      }
-    }
-    void load()
-    return () => controller.abort()
-  }, [])
-  async function submit(role: Role, change: { provider: string, model: string, reasoningEffort?: string }): Promise<void> {
-    if (!ready || pending !== null)
+  const submit = async (role: Role, change: { provider: string, model: string, reasoningEffort?: string }): Promise<void> => {
+    if (pending !== null)
       return
-    const controller = new AbortController()
     setPending(role)
     setFailed(null)
     try {
-      const result = await patchApiNexusAgentsModels({
+      await saveAgentModel.mutateAsync({
         role,
         provider: change.provider,
         model: change.model,
         ...(change.reasoningEffort ? { reasoningEffort: change.reasoningEffort } : {}),
-      }, { signal: controller.signal })
-      if (controller.signal.aborted)
-        return
-      if (!result?.models)
-        throw new Error('invalid_agent_models')
-      setModels(result.models)
+      })
     }
     catch {
-      if (!controller.signal.aborted)
-        setFailed(role)
+      setFailed(role)
     }
     finally {
-      if (!controller.signal.aborted)
-        setPending(null)
+      setPending(null)
     }
   }
   const currentModel = (role: Role): CatalogModel | undefined => {
-    const entry = models?.[role]
+    const entry = models.data?.[role]
     return entry
-      ? catalog?.groups.find(group => group.id === entry.provider)?.models.find(model => model.id === entry.model)
+      ? catalog.data?.groups.find(group => group.id === entry.provider)?.models.find(model => model.id === entry.model)
       : undefined
   }
   const modelName = (entry: ModelEntry, role: Role): string => currentModel(role)?.name ?? entry.model
   const effortName = (role: Role): string => {
-    const entry = models?.[role]
+    const entry = models.data?.[role]
     if (!entry?.reasoningEffort)
       return t('settingAgentsEffortDefault')
     return currentModel(role)?.reasoning?.efforts.find(effort => effort.id === entry.reasoningEffort)?.name ?? entry.reasoningEffort
   }
   const triggerLabel = (role: Role): string => {
-    const entry = models?.[role]
+    const entry = models.data?.[role]
     return entry ? modelName(entry, role) : t('settingAgentsUnset')
   }
-  const items = (role: Role): MenuEntry[] => {
-    const entry = models?.[role]
+  const items = (role: Role, catalogue: Catalog): MenuEntry[] => {
+    const entry = models.data?.[role]
     const reasoning = currentModel(role)?.reasoning
     return [
       { id: INHERIT, label: t('settingAgentsUnset') },
-      ...(catalog?.groups.flatMap(group => [
+      ...catalogue.groups.flatMap(group => [
         { type: 'label' as const, id: `group:${group.id}`, text: group.name },
         ...group.models.map(model => ({ id: `model:${group.id}/${model.id}`, label: model.name })),
-      ]) ?? []),
+      ]),
       ...(entry && reasoning
         ? [
             { type: 'separator' as const, id: 'effort-separator' },
@@ -122,14 +93,18 @@ export function Agents(): ReactNode {
     ]
   }
   const selectedIds = (role: Role): string[] => {
-    const entry = models?.[role]
+    const entry = models.data?.[role]
     return entry ? [`model:${entry.provider}/${entry.model}`, `effort:${entry.reasoningEffort ?? ''}`] : [INHERIT]
   }
-  if (loading)
+  const failedMessage = models.error?.message ?? catalog.error?.message
+  const loading = models.isLoading || catalog.isLoading
+  if (loading && !failedMessage)
     return <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAgentsLoading')}</p>
-  if (!catalog || !models)
-    return <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAgentsCatalogError', { error: loadError ?? '' })}</p>
-  const fallback = catalog.default
+  if (!models.data || !catalog.data)
+    return <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAgentsCatalogError', { error: failedMessage ?? '' })}</p>
+  const catalogue = catalog.data
+  const current = models.data
+  const fallback = catalogue.default
   return (
     <section className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]" aria-labelledby="nexus-agents">
       <header className="px-4 py-3">
@@ -140,11 +115,11 @@ export function Agents(): ReactNode {
             ? t('settingAgentsDefault', { model: `${fallback.provider} / ${fallback.model}${fallback.reasoningEffort ? ` · ${fallback.reasoningEffort}` : ''}` })
             : t('settingAgentsDefaultUnavailable')}
         </p>
-        {catalog.groups.length === 0 && <p role="status" className="m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('settingAgentsEmpty')}</p>}
-        {loadError && <p role="alert" className="m-0 mt-1.5 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAgentsCatalogError', { error: loadError })}</p>}
+        {catalogue.groups.length === 0 && <p role="status" className="m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('settingAgentsEmpty')}</p>}
+        {catalog.error && <p role="alert" className="m-0 mt-1.5 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAgentsCatalogError', { error: catalog.error.message })}</p>}
       </header>
       {roles.map(({ role, label }) => {
-        const entry = models[role]
+        const entry = current[role]
         return (
           <div key={role} className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3">
             <div className="min-w-0">
@@ -160,7 +135,7 @@ export function Agents(): ReactNode {
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={!ready || pending !== null}
+                  disabled={pending !== null}
                   aria-haspopup="menu"
                   aria-expanded={open === role}
                   aria-label={`${t(label)} · ${t('settingAgentsSelect')}`}
@@ -170,7 +145,7 @@ export function Agents(): ReactNode {
                   {entry?.reasoningEffort && <span className="ml-1.5 text-[11px] text-[var(--dsw-alias-label-tertiary)]">{effortName(role)}</span>}
                 </Button>
               )}
-              items={items(role)}
+              items={items(role, catalogue)}
               selectedIds={selectedIds(role)}
               onSelect={(value) => {
                 if (value === INHERIT) {

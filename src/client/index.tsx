@@ -4,13 +4,16 @@ import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
-
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
+
 import type { ClientContext } from './types/context'
-import { AgentIcon, GitForkIcon, NexusIcon, UserCheckIcon, UsersRoundIcon } from './components/icons'
+import { QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { getApiNexusSessionRole } from './apis'
+import { client } from './client'
+import { AgentIcon, GitForkIcon, NexusIcon, UserShieldIcon, UsersRoundIcon } from './components/icons'
 import { PluginContext } from './config/context'
-import { useStore } from './hooks/use-store'
+import { keys } from './config/query-keys'
 import { dicts } from './locale'
 import { Panel as NexusPanel } from './panel'
 import { store } from './store'
@@ -20,12 +23,12 @@ import { Panel as MailboxPanel } from './ui/mailbox/panel'
 type MailboxNoticeEvent = Extract<SessionEvent, { type: 'user/message' }>
 
 function SessionRoleIcon({ sessionId }: { sessionId: string }) {
-  const sessions = useStore(state => state.data.panel?.sessions)
-  const role = sessions?.find(session => session.sessionId === sessionId)?.role
+  const { data } = useQuery({ queryKey: keys.sessionRole, queryFn: () => getApiNexusSessionRole() })
+  const role = data?.sessions.find(session => session.sessionId === sessionId)?.role
   if (role === 'main')
     return <GitForkIcon />
   if (role === 'project')
-    return <UserCheckIcon />
+    return <UserShieldIcon />
   if (role === 'supervisor')
     return <UsersRoundIcon />
   if (role === 'worker')
@@ -115,7 +118,13 @@ export function apply(ctx: ClientContext): void {
       order: 10,
       locale: NS,
     },
-    ({ sessionId }) => <SessionRoleIcon sessionId={sessionId} />,
+    props => (
+      <QueryClientProvider client={client}>
+        <PluginContext.Provider value={{ ctx, t: props.t }}>
+          <SessionRoleIcon sessionId={props.sessionId} />
+        </PluginContext.Provider>
+      </QueryClientProvider>
+    ),
   ))
 
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register(

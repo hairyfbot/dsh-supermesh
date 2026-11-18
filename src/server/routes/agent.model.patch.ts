@@ -12,7 +12,7 @@ interface RoleModelPatch {
 
 const roles: readonly RoleName[] = ['main', 'manager', 'project', 'worker', 'supervisor']
 
-export const patchAgentModels = defineHandler(async (event): Promise<{ models: RoleModels }> => {
+export default defineHandler(async (event): Promise<RoleModels> => {
   const body = await readBody<RoleModelPatch>(event)
   if (!body || typeof body !== 'object' || Array.isArray(body)
     || Object.keys(body).some(key => !['role', 'provider', 'model', 'reasoningEffort'].includes(key))
@@ -37,5 +37,5 @@ export const patchAgentModels = defineHandler(async (event): Promise<{ models: R
   }
   const current = (await setting.load()).models
   const models: RoleModels = { ...current, [body.role]: entry }
-  return { models: (await setting.save({ models })).models }
+  return (await setting.save({ models })).models
 })

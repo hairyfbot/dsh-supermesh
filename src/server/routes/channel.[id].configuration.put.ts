@@ -2,7 +2,7 @@ import type { ChannelConfiguration, ChannelView } from '../../service/channel.ty
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
 import { channel } from '../../service/channel'
 
-export const putChannelConfiguration = defineHandler(async (event): Promise<{ channel: ChannelView }> => {
+export default defineHandler(async (event): Promise<{ channel: ChannelView }> => {
   const id = getRouterParam(event, 'id')
   const body = await readBody<ChannelConfiguration>(event)
   if (!id || !body)

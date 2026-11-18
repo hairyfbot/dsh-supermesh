@@ -7,193 +7,345 @@
 import type * as Types from "./index.type";
 
 /** @method get */
-export async function getApiNexusPanel(config?: RequestInit) {
-  const response = await fetch("/api/nexus/panel", {
+export async function getApiNexusProject(config?: RequestInit) {
+  const response = await fetch("/api/nexus/project", {
     ...config,
   });
-  return response.json() as Promise<Types.GetApiNexusPanelResponse>;
+  return response.json() as Promise<Types.GetApiNexusProjectResponse>;
 }
 
-/** @method get */
-export async function getApiNexusAgentsModels(config?: RequestInit) {
-  const response = await fetch("/api/nexus/agents/models", {
+/** @method post */
+export async function postApiNexusProject(config?: RequestInit) {
+  const response = await fetch("/api/nexus/project", {
+    method: "POST",
     ...config,
   });
-  return response.json() as Promise<Types.GetApiNexusAgentsModelsResponse>;
+  return response.json() as Promise<Types.PostApiNexusProjectResponse>;
 }
 
 /** @method patch */
-export async function patchApiNexusAgentsModels(body: Types.PatchApiNexusAgentsModelsBody, config?: RequestInit) {
-  const response = await fetch("/api/nexus/agents/models", {
+export async function patchApiNexusProjectId(paths: Types.PatchApiNexusProjectidPath, body: Types.PatchApiNexusProjectidBody, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/project/${paths.id}`, {
     headers: { "Content-Type": "application/json" },
     method: "PATCH",
     body: JSON.stringify(body),
     ...config,
   });
-  return response.json() as Promise<Types.PatchApiNexusAgentsModelsResponse>;
-}
-
-/** @method get */
-export async function getApiNexusTicketsId(paths: Types.GetApiNexusTicketsidPath, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/tickets/${paths.id}`, {
-    ...config,
-  });
-  return response.json() as Promise<Types.GetApiNexusTicketsidResponse>;
-}
-
-/** @method patch */
-export async function patchApiNexusTicketsId(paths: Types.PatchApiNexusTicketsidPath, body: Types.PatchApiNexusTicketsidBody, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/tickets/${paths.id}`, {
-    headers: { "Content-Type": "application/json" },
-    method: "PATCH",
-    body: JSON.stringify(body),
-    ...config,
-  });
-  return response.json() as Promise<Types.PatchApiNexusTicketsidResponse>;
+  return response.json() as Promise<Types.PatchApiNexusProjectidResponse>;
 }
 
 /** @method put */
-export async function putApiNexusChannelsIdConfiguration(paths: Types.PutApiNexusChannelsidConfigurationPath, body: Types.PutApiNexusChannelsidConfigurationBody, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/channels/${paths.id}/configuration`, {
+export async function putApiNexusProjectIdSession(paths: Types.PutApiNexusProjectidSessionPath, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/project/${paths.id}/session`, {
+    method: "PUT",
+    ...config,
+  });
+  return response.json() as Promise<Types.PutApiNexusProjectidSessionResponse>;
+}
+
+/** @method post */
+export async function postApiNexusProjectIdOpening(paths: Types.PostApiNexusProjectidOpeningPath, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/project/${paths.id}/opening`, {
+    method: "POST",
+    ...config,
+  });
+  return response.json() as Promise<Types.PostApiNexusProjectidOpeningResponse>;
+}
+
+/** @method post */
+export async function postApiNexusRepository(body: Types.PostApiNexusRepositoryBody, config?: RequestInit) {
+  const response = await fetch("/api/nexus/repository", {
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+    body: JSON.stringify(body),
+    ...config,
+  });
+  return response.json() as Promise<Types.PostApiNexusRepositoryResponse>;
+}
+
+/** @method get */
+export async function getApiNexusTicket(config?: RequestInit) {
+  const response = await fetch("/api/nexus/ticket", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusTicketResponse>;
+}
+
+/** @method get */
+export async function getApiNexusTicketCurrent(config?: RequestInit) {
+  const response = await fetch("/api/nexus/ticket/current", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusTicketCurrentResponse>;
+}
+
+/** @method get */
+export async function getApiNexusTicketId(paths: Types.GetApiNexusTicketidPath, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/ticket/${paths.id}`, {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusTicketidResponse>;
+}
+
+/** @method patch */
+export async function patchApiNexusTicketId(paths: Types.PatchApiNexusTicketidPath, body: Types.PatchApiNexusTicketidBody, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/ticket/${paths.id}`, {
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+    body: JSON.stringify(body),
+    ...config,
+  });
+  return response.json() as Promise<Types.PatchApiNexusTicketidResponse>;
+}
+
+/** @method post */
+export async function postApiNexusAskIdAnswer(paths: Types.PostApiNexusAskidAnswerPath, body: Types.PostApiNexusAskidAnswerBody, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/ask/${paths.id}/answer`, {
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+    body: JSON.stringify(body),
+    ...config,
+  });
+  return response.json() as Promise<Types.PostApiNexusAskidAnswerResponse>;
+}
+
+/** @method get */
+export async function getApiNexusWorker(config?: RequestInit) {
+  const response = await fetch("/api/nexus/worker", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusWorkerResponse>;
+}
+
+/** @method get */
+export async function getApiNexusSupervisor(config?: RequestInit) {
+  const response = await fetch("/api/nexus/supervisor", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusSupervisorResponse>;
+}
+
+/** @method get */
+export async function getApiNexusScope(config?: RequestInit) {
+  const response = await fetch("/api/nexus/scope", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusScopeResponse>;
+}
+
+/** @method get */
+export async function getApiNexusNode(config?: RequestInit) {
+  const response = await fetch("/api/nexus/node", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusNodeResponse>;
+}
+
+/** @method get */
+export async function getApiNexusEdge(config?: RequestInit) {
+  const response = await fetch("/api/nexus/edge", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusEdgeResponse>;
+}
+
+/** @method get */
+export async function getApiNexusGroup(config?: RequestInit) {
+  const response = await fetch("/api/nexus/group", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusGroupResponse>;
+}
+
+/** @method get */
+export async function getApiNexusStatus(config?: RequestInit) {
+  const response = await fetch("/api/nexus/status", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusStatusResponse>;
+}
+
+/** @method get */
+export async function getApiNexusMessage(config?: RequestInit) {
+  const response = await fetch("/api/nexus/message", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusMessageResponse>;
+}
+
+/** @method get */
+export async function getApiNexusPending(config?: RequestInit) {
+  const response = await fetch("/api/nexus/pending", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusPendingResponse>;
+}
+
+/** @method get */
+export async function getApiNexusDelivery(config?: RequestInit) {
+  const response = await fetch("/api/nexus/delivery", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusDeliveryResponse>;
+}
+
+/** @method get */
+export async function getApiNexusThread(config?: RequestInit) {
+  const response = await fetch("/api/nexus/thread", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusThreadResponse>;
+}
+
+/** @method get */
+export async function getApiNexusTrigger(config?: RequestInit) {
+  const response = await fetch("/api/nexus/trigger", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusTriggerResponse>;
+}
+
+/** @method get */
+export async function getApiNexusSubscription(config?: RequestInit) {
+  const response = await fetch("/api/nexus/subscription", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusSubscriptionResponse>;
+}
+
+/** @method get */
+export async function getApiNexusChannel(config?: RequestInit) {
+  const response = await fetch("/api/nexus/channel", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusChannelResponse>;
+}
+
+/** @method put */
+export async function putApiNexusChannelIdConfiguration(paths: Types.PutApiNexusChannelidConfigurationPath, body: Types.PutApiNexusChannelidConfigurationBody, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/channel/${paths.id}/configuration`, {
     headers: { "Content-Type": "application/json" },
     method: "PUT",
     body: JSON.stringify(body),
     ...config,
   });
-  return response.json() as Promise<Types.PutApiNexusChannelsidConfigurationResponse>;
+  return response.json() as Promise<Types.PutApiNexusChannelidConfigurationResponse>;
 }
 
 /** @method delete */
-export async function deleteApiNexusChannelsIdCredentials(paths: Types.DeleteApiNexusChannelsidCredentialsPath, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/channels/${paths.id}/credentials`, {
+export async function deleteApiNexusChannelIdCredential(paths: Types.DeleteApiNexusChannelidCredentialPath, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/channel/${paths.id}/credential`, {
     method: "DELETE",
     ...config,
   });
-  return response.json() as Promise<Types.DeleteApiNexusChannelsidCredentialsResponse>;
+  return response.json() as Promise<Types.DeleteApiNexusChannelidCredentialResponse>;
 }
 
 /** @method post */
-export async function postApiNexusChannelsIdAuthentications(paths: Types.PostApiNexusChannelsidAuthenticationsPath, body: Types.PostApiNexusChannelsidAuthenticationsBody, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/channels/${paths.id}/authentications`, {
+export async function postApiNexusChannelIdAuthentication(paths: Types.PostApiNexusChannelidAuthenticationPath, body: Types.PostApiNexusChannelidAuthenticationBody, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/channel/${paths.id}/authentication`, {
     headers: { "Content-Type": "application/json" },
     method: "POST",
     body: JSON.stringify(body),
     ...config,
   });
-  return response.json() as Promise<Types.PostApiNexusChannelsidAuthenticationsResponse>;
+  return response.json() as Promise<Types.PostApiNexusChannelidAuthenticationResponse>;
 }
 
 /** @method get */
-export async function getApiNexusChannelsIdAuthenticationsAuthenticationId(paths: Types.GetApiNexusChannelsidAuthenticationsauthenticationIdPath, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/channels/${paths.id}/authentications/${paths.authenticationId}`, {
+export async function getApiNexusChannelIdAuthenticationAuthenticationId(paths: Types.GetApiNexusChannelidAuthenticationauthenticationIdPath, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/channel/${paths.id}/authentication/${paths.authenticationId}`, {
     ...config,
   });
-  return response.json() as Promise<Types.GetApiNexusChannelsidAuthenticationsauthenticationIdResponse>;
+  return response.json() as Promise<Types.GetApiNexusChannelidAuthenticationauthenticationIdResponse>;
+}
+
+/** @method get */
+export async function getApiNexusSetting(config?: RequestInit) {
+  const response = await fetch("/api/nexus/setting", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusSettingResponse>;
 }
 
 /** @method patch */
-export async function patchApiNexusProjectsId(paths: Types.PatchApiNexusProjectsidPath, body: Types.PatchApiNexusProjectsidBody, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/projects/${paths.id}`, {
+export async function patchApiNexusSetting(body: Types.PatchApiNexusSettingBody, config?: RequestInit) {
+  const response = await fetch("/api/nexus/setting", {
     headers: { "Content-Type": "application/json" },
     method: "PATCH",
     body: JSON.stringify(body),
     ...config,
   });
-  return response.json() as Promise<Types.PatchApiNexusProjectsidResponse>;
+  return response.json() as Promise<Types.PatchApiNexusSettingResponse>;
 }
 
-/** @method post */
-export async function postApiNexusProjects(config?: RequestInit) {
-  const response = await fetch("/api/nexus/projects", {
-    method: "POST",
+/** @method get */
+export async function getApiNexusAgentModel(config?: RequestInit) {
+  const response = await fetch("/api/nexus/agent/model", {
     ...config,
   });
-  return response.json() as Promise<Types.PostApiNexusProjectsResponse>;
+  return response.json() as Promise<Types.GetApiNexusAgentModelResponse>;
 }
 
-/** @method post */
-export async function postApiNexusRepositories(body: Types.PostApiNexusRepositoriesBody, config?: RequestInit) {
-  const response = await fetch("/api/nexus/repositories", {
+/** @method patch */
+export async function patchApiNexusAgentModel(body: Types.PatchApiNexusAgentModelBody, config?: RequestInit) {
+  const response = await fetch("/api/nexus/agent/model", {
     headers: { "Content-Type": "application/json" },
-    method: "POST",
+    method: "PATCH",
     body: JSON.stringify(body),
     ...config,
   });
-  return response.json() as Promise<Types.PostApiNexusRepositoriesResponse>;
+  return response.json() as Promise<Types.PatchApiNexusAgentModelResponse>;
+}
+
+/** @method get */
+export async function getApiNexusAgentModelCatalog(config?: RequestInit) {
+  const response = await fetch("/api/nexus/agent/model/catalog", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusAgentModelCatalogResponse>;
 }
 
 /** @method put */
-export async function putApiNexusProjectsIdSession(paths: Types.PutApiNexusProjectsidSessionPath, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/projects/${paths.id}/session`, {
+export async function putApiNexusSessionMain(config?: RequestInit) {
+  const response = await fetch("/api/nexus/session/main", {
     method: "PUT",
     ...config,
   });
-  return response.json() as Promise<Types.PutApiNexusProjectsidSessionResponse>;
+  return response.json() as Promise<Types.PutApiNexusSessionMainResponse>;
 }
 
-/** @method post */
-export async function postApiNexusProjectsIdOpenings(paths: Types.PostApiNexusProjectsidOpeningsPath, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/projects/${paths.id}/openings`, {
-    method: "POST",
+/** @method get */
+export async function getApiNexusSessionRole(config?: RequestInit) {
+  const response = await fetch("/api/nexus/session/role", {
     ...config,
   });
-  return response.json() as Promise<Types.PostApiNexusProjectsidOpeningsResponse>;
+  return response.json() as Promise<Types.GetApiNexusSessionRoleResponse>;
 }
 
-/** @method put */
-export async function putApiNexusSessionsMain(config?: RequestInit) {
-  const response = await fetch("/api/nexus/sessions/main", {
-    method: "PUT",
+/** @method get */
+export async function getApiNexusSessionIdContext(paths: Types.GetApiNexusSessionidContextPath, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/session/${paths.id}/context`, {
     ...config,
   });
-  return response.json() as Promise<Types.PutApiNexusSessionsMainResponse>;
+  return response.json() as Promise<Types.GetApiNexusSessionidContextResponse>;
+}
+
+/** @method get */
+export async function getApiNexusSessionIdMailbox(paths: Types.GetApiNexusSessionidMailboxPath, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/session/${paths.id}/mailbox`, {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiNexusSessionidMailboxResponse>;
 }
 
 /** @method patch */
-export async function patchApiNexusSettings(body: Types.PatchApiNexusSettingsBody, config?: RequestInit) {
-  const response = await fetch("/api/nexus/settings", {
+export async function patchApiNexusSessionIdMailboxMessageId(paths: Types.PatchApiNexusSessionidMailboxmessageIdPath, body: Types.PatchApiNexusSessionidMailboxmessageIdBody, config?: RequestInit) {
+  const response = await fetch(`/api/nexus/session/${paths.id}/mailbox/${paths.messageId}`, {
     headers: { "Content-Type": "application/json" },
     method: "PATCH",
     body: JSON.stringify(body),
     ...config,
   });
-  return response.json() as Promise<Types.PatchApiNexusSettingsResponse>;
-}
-
-/** @method post */
-export async function postApiNexusAsksIdAnswers(paths: Types.PostApiNexusAsksidAnswersPath, body: Types.PostApiNexusAsksidAnswersBody, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/asks/${paths.id}/answers`, {
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-    body: JSON.stringify(body),
-    ...config,
-  });
-  return response.json() as Promise<Types.PostApiNexusAsksidAnswersResponse>;
-}
-
-/** @method get */
-export async function getApiNexusSessionsIdContext(paths: Types.GetApiNexusSessionsidContextPath, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/sessions/${paths.id}/context`, {
-    ...config,
-  });
-  return response.json() as Promise<Types.GetApiNexusSessionsidContextResponse>;
-}
-
-/** @method get */
-export async function getApiNexusSessionsIdMailbox(paths: Types.GetApiNexusSessionsidMailboxPath, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/sessions/${paths.id}/mailbox`, {
-    ...config,
-  });
-  return response.json() as Promise<Types.GetApiNexusSessionsidMailboxResponse>;
-}
-
-/** @method patch */
-export async function patchApiNexusSessionsIdMailboxMessageId(paths: Types.PatchApiNexusSessionsidMailboxmessageIdPath, body: Types.PatchApiNexusSessionsidMailboxmessageIdBody, config?: RequestInit) {
-  const response = await fetch(`/api/nexus/sessions/${paths.id}/mailbox/${paths.messageId}`, {
-    headers: { "Content-Type": "application/json" },
-    method: "PATCH",
-    body: JSON.stringify(body),
-    ...config,
-  });
-  return response.json() as Promise<Types.PatchApiNexusSessionsidMailboxmessageIdResponse>;
+  return response.json() as Promise<Types.PatchApiNexusSessionidMailboxmessageIdResponse>;
 }

@@ -3,26 +3,45 @@ import type { H3Event } from 'h3'
 import { defineWebServer } from 'dsh-h3'
 import { getServerOptions } from 'dsh-h3/utils'
 import { defineHandler, HTTPError } from 'h3'
-import { getAgentModels } from './routes/agent.models.get'
-import { patchAgentModels } from './routes/agent.models.patch'
-import { postAnswer } from './routes/ask.answers.post'
-import { getChannelAuthentication } from './routes/channel.authentication.get'
-import { postChannelAuthentication } from './routes/channel.authentication.post'
-import { putChannelConfiguration } from './routes/channel.configuration'
-import { deleteChannelCredentials } from './routes/channel.credentials.delete'
-import { getPanel } from './routes/panel.get'
-import { postProjectOpening } from './routes/project.opening'
-import { patchProject } from './routes/project.patch'
-import { postProjects } from './routes/project.post'
-import { postRepository } from './routes/project.repository.post'
-import { putProjectSession } from './routes/project.session'
-import { getContext } from './routes/session.context.get'
-import { getMailbox } from './routes/session.mailbox.get'
-import { patchMail } from './routes/session.mailbox.patch'
-import { putMainSession } from './routes/session.open.post'
-import { patchSettings } from './routes/setting.patch'
-import { getTicket } from './routes/ticket.get'
-import { patchTicket } from './routes/ticket.patch'
+import agentModelCatalogGet from './routes/agent.model.catalog.get'
+import agentModelGet from './routes/agent.model.get'
+import agentModelPatch from './routes/agent.model.patch'
+import askAnswerPost from './routes/ask.[id].answer.post'
+import channelAuthenticationGet from './routes/channel.[id].authentication.[authenticationId].get'
+import channelAuthenticationPost from './routes/channel.[id].authentication.post'
+import channelConfigurationPut from './routes/channel.[id].configuration.put'
+import channelCredentialDelete from './routes/channel.[id].credential.delete'
+import channelGet from './routes/channel.get'
+import deliveryGet from './routes/delivery.get'
+import edgeGet from './routes/edge.get'
+import groupGet from './routes/group.get'
+import messageGet from './routes/message.get'
+import nodeGet from './routes/node.get'
+import pendingGet from './routes/pending.get'
+import projectOpeningPost from './routes/project.[id].opening.post'
+import projectPatch from './routes/project.[id].patch'
+import projectSessionPut from './routes/project.[id].session.put'
+import projectGet from './routes/project.get'
+import projectPost from './routes/project.post'
+import repositoryPost from './routes/project.repository.post'
+import scopeGet from './routes/scope.get'
+import sessionContextGet from './routes/session.[id].context.get'
+import sessionMailboxPatch from './routes/session.[id].mailbox.[messageId].patch'
+import sessionMailboxGet from './routes/session.[id].mailbox.get'
+import sessionMainPut from './routes/session.open.post'
+import sessionRoleGet from './routes/session.role.get'
+import settingGet from './routes/setting.get'
+import settingPatch from './routes/setting.patch'
+import statusGet from './routes/status.get'
+import subscriptionGet from './routes/subscription.get'
+import supervisorGet from './routes/supervisor.get'
+import threadGet from './routes/thread.get'
+import ticketGet from './routes/ticket.[id].get'
+import ticketPatch from './routes/ticket.[id].patch'
+import ticketCurrentGet from './routes/ticket.current.get'
+import ticketsGet from './routes/ticket.get'
+import triggerGet from './routes/trigger.get'
+import workerGet from './routes/worker.get'
 
 export interface ServerOptions {
   owner: (event: H3Event) => boolean | Promise<boolean>
@@ -42,24 +61,49 @@ export const authorize = defineHandler(async (event) => {
 
 export const server = defineWebServer<ServerOptions>((app) => {
   app.use(authorize)
-  app.get('/api/nexus/panel', getPanel)
-  app.get('/api/nexus/agents/models', getAgentModels)
-  app.patch('/api/nexus/agents/models', patchAgentModels)
-  app.get('/api/nexus/tickets/:id', getTicket)
-  app.patch('/api/nexus/tickets/:id', patchTicket)
-  app.put('/api/nexus/channels/:id/configuration', putChannelConfiguration)
-  app.delete('/api/nexus/channels/:id/credentials', deleteChannelCredentials)
-  app.post('/api/nexus/channels/:id/authentications', postChannelAuthentication)
-  app.get('/api/nexus/channels/:id/authentications/:authenticationId', getChannelAuthentication)
-  app.patch('/api/nexus/projects/:id', patchProject)
-  app.post('/api/nexus/projects', postProjects)
-  app.post('/api/nexus/repositories', postRepository)
-  app.put('/api/nexus/projects/:id/session', putProjectSession)
-  app.post('/api/nexus/projects/:id/openings', postProjectOpening)
-  app.put('/api/nexus/sessions/main', putMainSession)
-  app.patch('/api/nexus/settings', patchSettings)
-  app.post('/api/nexus/asks/:id/answers', postAnswer)
-  app.get('/api/nexus/sessions/:id/context', getContext)
-  app.get('/api/nexus/sessions/:id/mailbox', getMailbox)
-  app.patch('/api/nexus/sessions/:id/mailbox/:messageId', patchMail)
+
+  app.get('/api/nexus/project', projectGet)
+  app.post('/api/nexus/project', projectPost)
+  app.patch('/api/nexus/project/:id', projectPatch)
+  app.put('/api/nexus/project/:id/session', projectSessionPut)
+  app.post('/api/nexus/project/:id/opening', projectOpeningPost)
+  app.post('/api/nexus/repository', repositoryPost)
+
+  app.get('/api/nexus/ticket', ticketsGet)
+  app.get('/api/nexus/ticket/current', ticketCurrentGet)
+  app.get('/api/nexus/ticket/:id', ticketGet)
+  app.patch('/api/nexus/ticket/:id', ticketPatch)
+  app.post('/api/nexus/ask/:id/answer', askAnswerPost)
+
+  app.get('/api/nexus/worker', workerGet)
+  app.get('/api/nexus/supervisor', supervisorGet)
+  app.get('/api/nexus/scope', scopeGet)
+  app.get('/api/nexus/node', nodeGet)
+  app.get('/api/nexus/edge', edgeGet)
+  app.get('/api/nexus/group', groupGet)
+  app.get('/api/nexus/status', statusGet)
+  app.get('/api/nexus/message', messageGet)
+  app.get('/api/nexus/pending', pendingGet)
+  app.get('/api/nexus/delivery', deliveryGet)
+  app.get('/api/nexus/thread', threadGet)
+  app.get('/api/nexus/trigger', triggerGet)
+  app.get('/api/nexus/subscription', subscriptionGet)
+
+  app.get('/api/nexus/channel', channelGet)
+  app.put('/api/nexus/channel/:id/configuration', channelConfigurationPut)
+  app.delete('/api/nexus/channel/:id/credential', channelCredentialDelete)
+  app.post('/api/nexus/channel/:id/authentication', channelAuthenticationPost)
+  app.get('/api/nexus/channel/:id/authentication/:authenticationId', channelAuthenticationGet)
+
+  app.get('/api/nexus/setting', settingGet)
+  app.patch('/api/nexus/setting', settingPatch)
+  app.get('/api/nexus/agent/model', agentModelGet)
+  app.patch('/api/nexus/agent/model', agentModelPatch)
+  app.get('/api/nexus/agent/model/catalog', agentModelCatalogGet)
+
+  app.put('/api/nexus/session/main', sessionMainPut)
+  app.get('/api/nexus/session/role', sessionRoleGet)
+  app.get('/api/nexus/session/:id/context', sessionContextGet)
+  app.get('/api/nexus/session/:id/mailbox', sessionMailboxGet)
+  app.patch('/api/nexus/session/:id/mailbox/:messageId', sessionMailboxPatch)
 })

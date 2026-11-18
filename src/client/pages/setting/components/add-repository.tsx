@@ -1,30 +1,30 @@
 import type { ReactNode } from 'react'
+import type { PostApiNexusRepositoryBody } from '../../../apis/index.type'
 import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useId, useRef, useState } from 'react'
 import { parseRepositoryRemote } from '../../../../utils/repository'
-import { getApiNexusPanel, postApiNexusRepositories } from '../../../apis'
-import { useActions, useStore } from '../../../hooks/use-store'
+import { getApiNexusChannel, postApiNexusRepository } from '../../../apis'
+import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
 
 export function AddRepository(): ReactNode {
   const { t } = useTranslation()
-  const { receivePanel } = useActions()
-  const gitlabHost = useStore(state => state.data.panel?.channels.find(channel => channel.id === 'gitlab')?.host ?? 'https://gitlab.com')
+  const client = useQueryClient()
+  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const addRepository = useMutation({
+    mutationFn: (input: PostApiNexusRepositoryBody) => postApiNexusRepository(input),
+    onSettled: () => client.invalidateQueries({ queryKey: keys.project }),
+  })
+  const gitlabHost = channels.data?.find(channel => channel.id === 'gitlab')?.host ?? 'https://gitlab.com'
   const [open, setOpen] = useState(false)
   const [remote, setRemote] = useState('')
   const [name, setName] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const pending = useRef(false)
-  const lifetime = useRef(new AbortController())
   const id = useId()
-  // keep:effect Cancel repository creation requests when the settings section is disposed.
-  useEffect(() => {
-    const controller = new AbortController()
-    lifetime.current = controller
-    return () => controller.abort()
-  }, [])
+  const saving = addRepository.isPending
   let repository: ReturnType<typeof parseRepositoryRemote> | null = null
   try {
     if (remote.trim())
@@ -40,39 +40,21 @@ export function AddRepository(): ReactNode {
     if (!repository || !workspaceName.trim() || pending.current)
       return
     pending.current = true
-    setSaving(true)
     setError('')
     try {
-      const result = await postApiNexusRepositories({ remoteUrl: remote.trim(), name: workspaceName.trim() }, { signal: lifetime.current.signal })
-      if (lifetime.current.signal.aborted)
-        return
+      const result = await addRepository.mutateAsync({ remoteUrl: remote.trim(), name: workspaceName.trim() })
       if (!result || !('project' in result))
         throw new Error(t('settingRepositoryAddFailed'))
       setOpen(false)
       setRemote('')
       setName(null)
       setNotice(t('settingRepositoryCreated'))
-      try {
-        const panel = await getApiNexusPanel({ signal: lifetime.current.signal })
-        if (lifetime.current.signal.aborted)
-          return
-        if (!panel || !('projects' in panel))
-          throw new Error('invalid_panel')
-        receivePanel(panel)
-      }
-      catch {
-        if (!lifetime.current.signal.aborted)
-          setNotice(t('settingRepositoryRefreshFailed'))
-      }
     }
     catch (reason) {
-      if (!lifetime.current.signal.aborted)
-        setError(reason instanceof Error ? reason.message : t('settingRepositoryAddFailed'))
+      setError(reason instanceof Error ? reason.message : t('settingRepositoryAddFailed'))
     }
     finally {
       pending.current = false
-      if (!lifetime.current.signal.aborted)
-        setSaving(false)
     }
   }
   return (

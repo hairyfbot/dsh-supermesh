@@ -1,21 +1,26 @@
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
-import type { GetApiNexusPanelResponse } from '../../../apis/index.type'
+import type { GetApiNexusChannelResponse, GetApiNexusNodeResponse, GetApiNexusSubscriptionResponse, GetApiNexusTicketidResponse, GetApiNexusTriggerResponse } from '../../../apis/index.type'
 import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { TasksIcon } from '../../../components/icons'
 import { useDshContext } from '../../../hooks/use-dsh-context'
-import { useActions, useStore } from '../../../hooks/use-store'
+import { useActions } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 
-export function Row({ task }: { task: GetApiNexusPanelResponse['tickets'][number] }): ReactNode {
+export function Row({ task, nodes, channels, triggers, subscriptions, refreshedAt }: {
+  task: GetApiNexusTicketidResponse['ticket']
+  nodes: GetApiNexusNodeResponse
+  channels: GetApiNexusChannelResponse
+  triggers: GetApiNexusTriggerResponse
+  subscriptions: GetApiNexusSubscriptionResponse
+  refreshedAt: string | null
+}): ReactNode {
   const { t } = useTranslation()
   const { openTicket } = useActions()
   const ctx = useDshContext()
-  const panel = useStore(state => state.data.panel)
-  const refreshedAt = useStore(state => state.setting.refreshedAt)
-  const sessions = panel?.graph.nodes.filter(node => node.ticketId === task.id && node.sessionId)
-  const session = sessions?.find(node => node.status === 'running') ?? sessions?.at(-1)
-  const channel = panel?.channels.find(channel => channel.id === task.channelId)
+  const sessions = nodes.filter(node => node.ticketId === task.id && node.sessionId)
+  const session = sessions.find(node => node.status === 'running') ?? sessions.at(-1)
+  const channel = channels.find(channel => channel.id === task.channelId)
   const status = {
     waiting: { label: 'overviewStatusWaiting', tone: 'quiet' },
     queued: { label: 'ticketStatusQueued', tone: 'quiet' },
@@ -25,9 +30,9 @@ export function Row({ task }: { task: GetApiNexusPanelResponse['tickets'][number
     cancelled: { label: 'ticketStatusCancelled', tone: 'quiet' },
   } as const
   const intervention = Boolean(task.prepareError || task.paused)
-  const subscriptions = panel?.topics.subscriptions.filter(subscription => subscription.ticketId === task.id)
-  const trigger = panel?.topics.triggers
-    .filter(trigger => subscriptions?.some(subscription => subscription.threadId === trigger.threadId))
+  const ticketSubscriptions = subscriptions.filter(subscription => subscription.ticketId === task.id)
+  const trigger = triggers
+    .filter(trigger => ticketSubscriptions.some(subscription => subscription.threadId === trigger.threadId))
     .toSorted((a, b) => b.at.localeCompare(a.at))[0]
   const prUrl = task.prUrl && /^https?:\/\//i.test(task.prUrl) ? task.prUrl : null
   const prNumber = prUrl?.match(/\/(?:pull|merge_requests)\/(\d+)(?:[/?#]|$)/)?.[1]

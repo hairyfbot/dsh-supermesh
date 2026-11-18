@@ -3,7 +3,7 @@ import { defineHandler, getRouterParam, HTTPError } from 'h3'
 import { channel } from '../../service/channel'
 import { channelAuth } from '../../service/channel-auth'
 
-export const deleteChannelCredentials = defineHandler(async (event): Promise<{ channel: ChannelView }> => {
+export default defineHandler(async (event): Promise<{ channel: ChannelView }> => {
   const id = getRouterParam(event, 'id')
   if (!id)
     throw new HTTPError({ status: 400, message: 'channel_unsupported' })

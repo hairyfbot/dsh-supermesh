@@ -1,7 +1,7 @@
 import { defineHandler, getRouterParam, HTTPError } from 'h3'
 import { session } from '../../service/session'
 
-export const putProjectSession = defineHandler(async (event) => {
+export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id', { decode: true })
   if (!id?.trim())
     throw new HTTPError({ status: 400, message: 'project_id_required' })

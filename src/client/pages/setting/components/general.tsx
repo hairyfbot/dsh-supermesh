@@ -1,67 +1,34 @@
 import type { ReactNode } from 'react'
+import type { PatchApiNexusSettingBody } from '../../../apis/index.type'
+import type { RuntimeSettings } from '../../../store/setting'
 import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useEffect, useId, useRef, useState } from 'react'
-import { patchApiNexusSettings } from '../../../apis'
-import { useActions, useStore } from '../../../hooks/use-store'
+import { useId } from 'react'
 import { useTranslation } from '../../../hooks/use-translation'
 import { administratorSignature } from '../../../store/setting'
 
-export function General(): ReactNode {
+export function General({ value, baseline, pending, failed, onChange, onDiscard, onSave }: {
+  value: RuntimeSettings
+  baseline: RuntimeSettings
+  pending: boolean
+  failed: boolean
+  onChange: (patch: Partial<RuntimeSettings>) => void
+  onDiscard: () => void
+  onSave: (patch: PatchApiNexusSettingBody) => Promise<void>
+}): ReactNode {
   const { t } = useTranslation()
-  const saved = useStore(state => state.setting.saved.administrators)
-  const draft = useStore(state => state.setting.draft.administrators)
-  const savedArchive = useStore(state => state.setting.saved.autoArchiveWorkers)
-  const draftArchive = useStore(state => state.setting.draft.autoArchiveWorkers)
-  const ready = useStore(state => state.data.panel !== null)
-  const { editSettings, receiveGeneralSettings, clearSettingNotice } = useActions()
-  const [saving, setSaving] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const request = useRef<AbortController | null>(null)
   const id = useId()
-  // keep:effect Cancel saving and ignore its response when this section is disposed.
-  useEffect(() => () => {
-    request.current?.abort()
-    request.current = null
-  }, [])
-  const value = draft.join(',')
-  const names = value.split(/[,\s]+/).filter(Boolean)
+  const administrators = value.administrators.join(',')
+  const names = administrators.split(/[,\s]+/).filter(Boolean)
   const valid = names.length <= 100 && names.every(name => /^[a-z0-9][\w.-]{0,254}$/i.test(name))
-  const dirty = administratorSignature(draft) !== administratorSignature(saved) || draftArchive !== savedArchive
-  async function save(): Promise<void> {
-    if (!ready || !dirty || !valid || request.current)
-      return
-    const controller = new AbortController()
-    request.current = controller
-    setSaving(true)
-    setFailed(false)
-    clearSettingNotice()
-    try {
-      const settings = await patchApiNexusSettings({ administrators: names, autoArchiveWorkers: draftArchive }, { signal: controller.signal })
-      if (controller.signal.aborted || request.current !== controller)
-        return
-      if (!settings || !Array.isArray(settings.administrators))
-        throw new Error('invalid_settings')
-      receiveGeneralSettings(settings.administrators)
-      editSettings({ autoArchiveWorkers: settings.autoArchiveWorkers })
-    }
-    catch {
-      if (!controller.signal.aborted && request.current === controller)
-        setFailed(true)
-    }
-    finally {
-      if (request.current === controller) {
-        request.current = null
-        setSaving(false)
-      }
-    }
-  }
+  const dirty = administratorSignature(value.administrators) !== administratorSignature(baseline.administrators) || value.autoArchiveWorkers !== baseline.autoArchiveWorkers
   return (
     <form
       className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]"
       aria-labelledby={`${id}-title`}
       onSubmit={(event) => {
         event.preventDefault()
-        void save()
+        if (dirty && valid && !pending)
+          void onSave({ administrators: names, autoArchiveWorkers: value.autoArchiveWorkers })
       }}
     >
       <header className="px-4 py-3">
@@ -72,12 +39,9 @@ export function General(): ReactNode {
         <label htmlFor={`${id}-administrators`} className="text-xs font-medium">{t('settingAdministrators')}</label>
         <Input
           id={`${id}-administrators`}
-          value={value}
-          onChange={(event) => {
-            editSettings({ administrators: event.target.value.split(',') })
-            setFailed(false)
-          }}
-          disabled={!ready || saving}
+          value={administrators}
+          onChange={event => onChange({ administrators: event.target.value.split(',') })}
+          disabled={pending}
           autoComplete="off"
           spellCheck={false}
           aria-invalid={!valid}
@@ -92,22 +56,11 @@ export function General(): ReactNode {
           <h4 className="m-0 text-xs font-medium">{t('settingAutoArchiveWorkers')}</h4>
           <p className="m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAutoArchiveWorkersHelp')}</p>
         </div>
-        <Switch disabled={!ready || saving} checked={draftArchive} label={t('settingAutoArchiveWorkers')} onChange={autoArchiveWorkers => editSettings({ autoArchiveWorkers })} />
+        <Switch disabled={pending} checked={value.autoArchiveWorkers} label={t('settingAutoArchiveWorkers')} onChange={autoArchiveWorkers => onChange({ autoArchiveWorkers })} />
       </div>
       <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5">
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          disabled={saving || !dirty}
-          onClick={() => {
-            editSettings({ administrators: [...saved], autoArchiveWorkers: savedArchive })
-            setFailed(false)
-          }}
-        >
-          {t('settingDiscard')}
-        </Button>
-        <Button type="submit" size="sm" variant="primary" disabled={!ready || saving || !dirty || !valid}>{t(saving ? 'channelSaving' : 'settingSave')}</Button>
+        <Button type="button" size="sm" variant="ghost" disabled={pending || !dirty} onClick={onDiscard}>{t('settingDiscard')}</Button>
+        <Button type="submit" size="sm" variant="primary" disabled={pending || !dirty || !valid}>{t(pending ? 'channelSaving' : 'settingSave')}</Button>
       </footer>
     </form>
   )

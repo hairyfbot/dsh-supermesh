@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
-import type { GetApiNexusTicketsidResponse } from '../../../../apis/index.type'
+import type { GetApiNexusTicketidResponse } from '../../../../apis/index.type'
 import { PullRequestClosedIcon, PullRequestIcon, PullRequestMergedIcon } from '../../../../components/icons'
 import { useTranslation } from '../../../../hooks/use-translation'
 
-export function PrStatus({ ticket }: { ticket: Pick<GetApiNexusTicketsidResponse['ticket'], 'prUrl' | 'prState' | 'ciState'> }): ReactNode {
+export function PrStatus({ ticket }: { ticket: Pick<GetApiNexusTicketidResponse['ticket'], 'prUrl' | 'prState' | 'ciState'> }): ReactNode {
   const { t } = useTranslation()
   if (!ticket.prUrl || !/^https?:\/\//i.test(ticket.prUrl))
     return null

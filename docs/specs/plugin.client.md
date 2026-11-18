@@ -35,6 +35,16 @@
 - 官方界面扩展使用公开插槽、消息协议与组件语义；不得用 DOM 查询、手工插入、假 testid 或官方哈希类名伪装接入。
 - 空内容使用符合场景的共享组件，保留既定布局；零值与加载失败分别表达，不能用空状态掩盖错误或伪造非零数据。
 
+### 3.2 数据请求与查询 (`TanStack Query`)
+
+* QueryClient 单例定义在 `src/client/client.ts`，由入口以 `QueryClientProvider` 提供；插槽组件在面板外渲染时各自补 Provider。
+* 页面数据归页面所有。服务响应只经 `useQuery` 持有，**不复制进 Store**；Store 仅存放导航、筛选、表单草稿等通用 UI 状态。
+* 查询定义在 `src/client/queries/<资源>.ts`，key 集中在 `queries/keys.ts`；组件按需调用自己的 hook，不预取其他组件的数据。
+* 列表项等重复渲染的组件由容器统一调用 hook，经 props 下发旁路数据，禁止每行各自发请求。
+* 操作型使用 `useMutation` 管理；需要完成后刷新数据时在 `onSettled` 里 `invalidateQueries`，不写 `onSuccess` 手工改缓存或回填 Store。
+* 实时数据按需设置 `refetchInterval`；加载与失败分别用 `isLoading` / `error` 表达，不能用空状态掩盖错误。
+* 全局刷新由布局刷新按钮调用 `client.invalidateQueries()` 完成，不额外维护刷新状态机。
+
 ## 官方 API 与生命周期
 
 - 使用当前安装版本的公开类型和实现核实 slot name、owner、props、事件与消息来源，不用 any、私有组件导入或兼容存根掩盖版本差异。

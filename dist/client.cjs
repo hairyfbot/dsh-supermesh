@@ -1,9 +1,11 @@
 window.__ModuleLoader__.load({id:"dsh-nexus",factory:(require)=>{var module={exports:{}};var exports=module.exports;
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 // \0rolldown/runtime.js
+var __create$1 = Object.create;
 var __defProp$1 = Object.defineProperty;
 var __getOwnPropDesc$1 = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames$1 = Object.getOwnPropertyNames;
+var __getProtoOf$1 = Object.getPrototypeOf;
 var __hasOwnProp$1 = Object.prototype.hasOwnProperty;
 var __esmMin = (fn, res, err) => () => {
 	if (err) throw err[0];
@@ -33,12 +35,18 @@ var __copyProps$1 = (to, from, except, desc) => {
 	}
 	return to;
 };
+var __toESM$1 = (mod, isNodeMode, target) => (target = mod != null ? __create$1(__getProtoOf$1(mod)) : {}, __copyProps$1(isNodeMode || !mod || !mod.__esModule || !__hasOwnProp$1.call(mod, "default") ? __defProp$1(target, "default", {
+	value: mod,
+	enumerable: true
+}) : target, mod));
 var __toCommonJS$1 = (mod) => __hasOwnProp$1.call(mod, "module.exports") ? mod["module.exports"] : __copyProps$1(__defProp$1({}, "__esModule", { value: true }), mod);
 let react = require("react");
+react = __toESM$1(react, 1);
 let react_jsx_runtime = require("react/jsx-runtime");
 require("react-dom");
 let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
+// node_modules/.pnpm/react-compiler-runtime@1.0.0_react@18.3.1/node_modules/react-compiler-runtime/dist/index.js
 /**
 * Copyright (c) Meta Platforms, Inc. and affiliates.
 *
@@ -51,8 +59,7 @@ let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 * @preventMunge
 * @preserve-invariant-messages
 */
-// src/client/components/icons.tsx
-var import_dist = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
+var require_dist = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	var __create = Object.create;
 	var __defProp = Object.defineProperty;
 	var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -262,7 +269,4576 @@ var import_dist = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
 		renderCounterRegistry,
 		useRenderCounter
 	});
-})))();
+}));
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js
+/**
+* The context that `useQueryClient` reads from. `QueryClientProvider` is the normal way to set it.
+*/
+const QueryClientContext = react.createContext(void 0);
+/**
+* The `useQueryClient` hook returns the current `QueryClient` instance.
+* @param queryClient - Use this to use a custom `QueryClient`. Otherwise, the one from the nearest context will
+* be used.
+* @returns The current `QueryClient` instance.
+* @throws {Error} If no `queryClient` argument is passed and no `QueryClientProvider` is found in the
+* component tree.
+*/
+const useQueryClient = (queryClient) => {
+	const client = react.useContext(QueryClientContext);
+	if (queryClient) return queryClient;
+	if (!client) throw new Error("No QueryClient set, use QueryClientProvider to set one");
+	return client;
+};
+/**
+* Use the `QueryClientProvider` component to connect and provide a `QueryClient` to your application. Also
+* calls `client.mount()`/`client.unmount()` as this component mounts/unmounts, which subscribes the client to
+* focus/online events (resuming any paused mutations and refetching as needed when the app regains focus or
+* comes back online).
+* @param props - The `client` to provide, and the `children` that get access to it.
+* @returns The provided `children`, wrapped so they can read the `QueryClient` via `useQueryClient`.
+* @example
+* ```tsx
+* import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+*
+* const queryClient = new QueryClient()
+*
+* function App() {
+*   return <QueryClientProvider client={queryClient}>...</QueryClientProvider>
+* }
+* ```
+*/
+const QueryClientProvider = ({ client, children }) => {
+	react.useEffect(() => {
+		client.mount();
+		return () => {
+			client.unmount();
+		};
+	}, [client]);
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(QueryClientContext.Provider, {
+		value: client,
+		children
+	});
+};
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/timeoutManager.js
+const defaultTimeoutProvider = {
+	setTimeout: (callback, delay) => setTimeout(callback, delay),
+	clearTimeout: (timeoutId) => clearTimeout(timeoutId),
+	setInterval: (callback, delay) => setInterval(callback, delay),
+	clearInterval: (intervalId) => clearInterval(intervalId)
+};
+/**
+* Allows customization of how timeouts are created.
+*
+* `@tanstack/query-core` makes liberal use of timeouts to implement `staleTime`
+* and `gcTime`. The default TimeoutManager provider uses the platform's global
+* `setTimeout` implementation, which is known to have scalability issues with
+* thousands of timeouts on the event loop.
+*
+* If you hit this limitation, consider providing a custom TimeoutProvider that
+* coalesces timeouts.
+*/
+var TimeoutManager = class {
+	#provider = defaultTimeoutProvider;
+	#providerCalled = false;
+	/**
+	* `setTimeoutProvider` can be used to set a custom implementation of the
+	* `setTimeout`, `clearTimeout`, `setInterval`, `clearInterval` functions,
+	* called a `TimeoutProvider`.
+	*
+	* This may be useful if you notice event loop performance issues with
+	* thousands of queries. A custom TimeoutProvider could also support timer
+	* delays longer than the global `setTimeout` maximum delay value of about
+	* 24 days.
+	*
+	* It is important to call `setTimeoutProvider` before creating a
+	* QueryClient or queries, so that the same provider is used consistently
+	* for all timers in the application, since different TimeoutProviders
+	* cannot cancel each others' timers.
+	* @param provider - The `TimeoutProvider` to use for all timers from now on.
+	* @example
+	* ```ts
+	* import { timeoutManager, QueryClient } from '@tanstack/query-core'
+	* import { CustomTimeoutProvider } from './CustomTimeoutProvider'
+	*
+	* timeoutManager.setTimeoutProvider(new CustomTimeoutProvider())
+	*
+	* export const queryClient = new QueryClient()
+	* ```
+	*/
+	setTimeoutProvider(provider) {
+		this.#provider = provider;
+	}
+	/**
+	* `setTimeout` schedules a callback to run after approximately `delay`
+	* milliseconds, like the global `setTimeout` function. The callback can be
+	* canceled with `clearTimeout`.
+	*
+	* It returns a timer ID, which may be a number or an object that can be
+	* coerced to a number via `Symbol.toPrimitive`.
+	* @param callback - The function to call when the timeout elapses.
+	* @param delay - The time to wait before calling `callback`, in milliseconds.
+	* @returns The timer ID, to pass to {@link TimeoutManager#clearTimeout}.
+	* @example
+	* ```ts
+	* import { timeoutManager } from '@tanstack/query-core'
+	*
+	* const timeoutId = timeoutManager.setTimeout(
+	*   () => console.log('ran at:', new Date()),
+	*   1000,
+	* )
+	*
+	* const timeoutIdNumber: number = Number(timeoutId)
+	* ```
+	*/
+	setTimeout(callback, delay) {
+		return this.#provider.setTimeout(callback, delay);
+	}
+	/**
+	* `clearTimeout` cancels a timeout callback scheduled with `setTimeout`,
+	* like the global `clearTimeout` function. It should be called with a
+	* timer ID returned by `setTimeout`.
+	* @param timeoutId - The timer ID returned by `setTimeout`, or `undefined`.
+	* @example
+	* ```ts
+	* import { timeoutManager } from '@tanstack/query-core'
+	*
+	* const timeoutId = timeoutManager.setTimeout(
+	*   () => console.log('ran at:', new Date()),
+	*   1000,
+	* )
+	*
+	* timeoutManager.clearTimeout(timeoutId)
+	* ```
+	*/
+	clearTimeout(timeoutId) {
+		this.#provider.clearTimeout(timeoutId);
+	}
+	/**
+	* `setInterval` schedules a callback to be called approximately every
+	* `delay` milliseconds, like the global `setInterval` function.
+	*
+	* Like `setTimeout`, it returns a timer ID, which may be a number or an
+	* object that can be coerced to a number via `Symbol.toPrimitive`.
+	* @param callback - The function to call on every interval.
+	* @param delay - The time between calls, in milliseconds.
+	* @returns The timer ID, to pass to {@link TimeoutManager#clearInterval}.
+	* @example
+	* ```ts
+	* import { timeoutManager } from '@tanstack/query-core'
+	*
+	* const intervalId = timeoutManager.setInterval(
+	*   () => console.log('ran at:', new Date()),
+	*   1000,
+	* )
+	* ```
+	*/
+	setInterval(callback, delay) {
+		return this.#provider.setInterval(callback, delay);
+	}
+	/**
+	* `clearInterval` can be used to cancel an interval, like the global
+	* `clearInterval` function. It should be called with an interval ID
+	* returned by `setInterval`.
+	* @param intervalId - The timer ID returned by `setInterval`, or `undefined`.
+	* @example
+	* ```ts
+	* import { timeoutManager } from '@tanstack/query-core'
+	*
+	* const intervalId = timeoutManager.setInterval(
+	*   () => console.log('ran at:', new Date()),
+	*   1000,
+	* )
+	*
+	* timeoutManager.clearInterval(intervalId)
+	* ```
+	*/
+	clearInterval(intervalId) {
+		this.#provider.clearInterval(intervalId);
+	}
+};
+/**
+* Singleton instance of {@link TimeoutManager}, used throughout TanStack Query to schedule and cancel timers.
+*/
+const timeoutManager = new TimeoutManager();
+/**
+* In many cases code wants to delay to the next event loop tick; this is not
+* mediated by {@link timeoutManager}.
+*
+* This function is provided to make auditing the `tanstack/query-core` for
+* incorrect use of system `setTimeout` easier.
+* @param callback - The function to call on the next event loop tick.
+*/
+function systemSetTimeoutZero(callback) {
+	setTimeout(callback, 0);
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/utils.js
+/**
+* @deprecated use `environmentManager.isServer()` instead.
+*/
+const isServer$1 = typeof window === "undefined" || "Deno" in globalThis;
+function noop$3() {}
+/**
+* Resolves an {@link Updater}: calls it with `input` if it is a function, otherwise returns it as
+* is.
+* @param updater - The new value, or a function that receives `input` and returns the new value.
+* @param input - The current value, passed to `updater` if it is a function.
+* @returns The new value.
+*/
+function functionalUpdate(updater, input) {
+	return typeof updater === "function" ? updater(input) : updater;
+}
+/**
+* Checks whether a value can be used as a timeout: a non-negative, finite number.
+* @param value - The value to check.
+* @returns `true` if `value` is a number that is `>= 0` and not `Infinity`.
+*/
+function isValidTimeout(value) {
+	return typeof value === "number" && value >= 0 && value !== 1e400;
+}
+/**
+* Calculates how long until data updated at `updatedAt` becomes stale.
+* @param updatedAt - The timestamp, in milliseconds, at which the data was last updated.
+* @param staleTime - The time, in milliseconds, after which data is considered stale. Defaults to
+* `0`.
+* @returns The remaining time in milliseconds, or `0` if the data is already stale.
+*/
+function timeUntilStale(updatedAt, staleTime) {
+	return Math.max(updatedAt + (staleTime || 0) - Date.now(), 0);
+}
+/**
+* Resolves an option that can be given either as a value or as a function of the query, such as
+* `staleTime`.
+* @param value - The option value, or a function that receives `query` and returns the value.
+* @param query - The query passed to `value` if it is a function.
+* @returns The resolved value, or `undefined` if `value` is `undefined`.
+*/
+function resolveQueryValue(value, query) {
+	return typeof value === "function" ? value(query) : value;
+}
+/**
+* Checks whether a query matches the given {@link QueryFilters}.
+* Every filter that is specified must match; filters that are left unspecified are ignored.
+* @param filters - The filters to check the query against.
+* @param query - The query to check.
+* @returns `true` if the query matches every specified filter.
+* @example
+* ```ts
+* const queryCache = queryClient.getQueryCache()
+*
+* const matchingQueries = queryCache
+*   .getAll()
+*   .filter((query) => matchQuery({ queryKey: ['posts'] }, query))
+* ```
+*/
+function matchQuery(filters, query) {
+	const { type = "all", exact, fetchStatus, predicate, queryKey, stale } = filters;
+	if (queryKey) {
+		if (exact) {
+			if (query.queryHash !== hashQueryKeyByOptions(queryKey, query.options)) return false;
+		} else if (!partialMatchKey(query.queryKey, queryKey)) return false;
+	}
+	if (type !== "all") {
+		const isActive = query.isActive();
+		if (type === "active" && !isActive) return false;
+		if (type === "inactive" && isActive) return false;
+	}
+	if (typeof stale === "boolean" && query.isStale() !== stale) return false;
+	if (fetchStatus && fetchStatus !== query.state.fetchStatus) return false;
+	if (predicate && !predicate(query)) return false;
+	return true;
+}
+/**
+* Checks whether a mutation matches the given {@link MutationFilters}.
+* Every filter that is specified must match; filters that are left unspecified are ignored.
+* If a `mutationKey` filter is provided but the mutation has no `mutationKey` of its own, it does not match.
+* @param filters - The filters to check the mutation against.
+* @param mutation - The mutation to check.
+* @returns `true` if the mutation matches every specified filter.
+* @example
+* ```ts
+* const mutationCache = queryClient.getMutationCache()
+*
+* const matchingMutations = mutationCache
+*   .getAll()
+*   .filter((mutation) => matchMutation({ mutationKey: ['addPost'] }, mutation))
+* ```
+*/
+function matchMutation(filters, mutation) {
+	const { exact, status, predicate, mutationKey } = filters;
+	if (mutationKey) {
+		if (!mutation.options.mutationKey) return false;
+		if (exact) {
+			if (hashKey(mutation.options.mutationKey) !== hashKey(mutationKey)) return false;
+		} else if (!partialMatchKey(mutation.options.mutationKey, mutationKey)) return false;
+	}
+	if (status && mutation.state.status !== status) return false;
+	if (predicate && !predicate(mutation)) return false;
+	return true;
+}
+/**
+* Hashes a query key with the query's `queryKeyHashFn` option, falling back to {@link hashKey}.
+* @param queryKey - The query key to hash.
+* @param options - The query options that may provide a custom `queryKeyHashFn`.
+* @returns The query hash, a string that identifies the query in the cache.
+*/
+function hashQueryKeyByOptions(queryKey, options) {
+	return (options?.queryKeyHashFn || hashKey)(queryKey);
+}
+/**
+* Default query & mutation keys hash function.
+* Hashes the value into a stable hash.
+* @param queryKey - The query or mutation key to hash.
+* @returns The stable hash of the key, as a JSON string.
+* @example
+* ```ts
+* // Object keys are sorted, so key order doesn't affect the hash:
+* hashKey(['todos', { page: 1, filter: 'done' }]) // === '["todos",{"filter":"done","page":1}]'
+* ```
+*/
+function hashKey(queryKey) {
+	return JSON.stringify(queryKey, (_, val) => isPlainObject$2(val) ? Object.keys(val).sort().reduce((result, key) => {
+		result[key] = val[key];
+		return result;
+	}, {}) : val);
+}
+function partialMatchKey(a, b) {
+	if (a === b) return true;
+	if (typeof a !== typeof b) return false;
+	if (a && b && typeof a === "object" && typeof b === "object") {
+		if (Array.isArray(a) && Array.isArray(b)) {
+			if (b.length > a.length) return false;
+			for (let i = 0; i < b.length; i++) if (!partialMatchKey(a[i], b[i])) return false;
+			return true;
+		}
+		const bKeys = Object.keys(b);
+		for (const key of bKeys) if (!partialMatchKey(a[key], b[key])) return false;
+		return true;
+	}
+	return false;
+}
+const hasOwn = Object.prototype.hasOwnProperty;
+function replaceEqualDeep(a, b, depth = 0) {
+	if (a === b) return a;
+	if (depth > 500) return b;
+	const array = isPlainArray(a) && isPlainArray(b);
+	if (!array && !(isPlainObject$2(a) && isPlainObject$2(b))) return b;
+	const aSize = (array ? a : Object.keys(a)).length;
+	const bItems = array ? b : Object.keys(b);
+	const bSize = bItems.length;
+	const copy = array ? new Array(bSize) : {};
+	let equalItems = 0;
+	for (let i = 0; i < bSize; i++) {
+		const key = array ? i : bItems[i];
+		const aItem = a[key];
+		const bItem = b[key];
+		if (aItem === bItem) {
+			copy[key] = aItem;
+			if (array ? i < aSize : hasOwn.call(a, key)) equalItems++;
+			continue;
+		}
+		if (aItem === null || bItem === null || typeof aItem !== "object" || typeof bItem !== "object") {
+			copy[key] = bItem;
+			continue;
+		}
+		const v = replaceEqualDeep(aItem, bItem, depth + 1);
+		copy[key] = v;
+		if (v === aItem) equalItems++;
+	}
+	return aSize === bSize && equalItems === aSize ? a : copy;
+}
+/**
+* Shallow compare objects.
+* @param a - The first object.
+* @param b - The second object, or `undefined`.
+* @returns `true` if both objects have the same keys, with strictly equal values for each key.
+*/
+function shallowEqualObjects(a, b) {
+	if (!b || Object.keys(a).length !== Object.keys(b).length) return false;
+	for (const key of Object.keys(a)) if (!hasOwn.call(b, key) || a[key] !== b[key]) return false;
+	return true;
+}
+/**
+* Checks whether a value is an array with no holes and no extra properties.
+* @param value - The value to check.
+* @returns `true` if `value` is an array whose number of own keys equals its `length`.
+*/
+function isPlainArray(value) {
+	return Array.isArray(value) && value.length === Object.keys(value).length;
+}
+/**
+* Checks whether a value is a plain object, e.g. created with an object literal or
+* `Object.create(null)`.
+* @param o - The value to check.
+* @returns `true` if `o` is a plain object.
+*/
+function isPlainObject$2(o) {
+	if (!hasObjectPrototype(o)) return false;
+	const objectPrototype = Object.getPrototypeOf(o);
+	const ctor = objectPrototype?.constructor;
+	if (ctor === void 0) return true;
+	if (typeof ctor !== "function") return false;
+	const prot = ctor.prototype;
+	if (!hasObjectPrototype(prot)) return false;
+	if (!prot.hasOwnProperty("isPrototypeOf")) return false;
+	if (objectPrototype !== Object.prototype) return false;
+	return true;
+}
+/**
+* Checks whether a value's `Object.prototype.toString` tag is `[object Object]`.
+* @param o - The value to check.
+* @returns `true` if the tag is `[object Object]`.
+*/
+function hasObjectPrototype(o) {
+	return Object.prototype.toString.call(o) === "[object Object]";
+}
+/**
+* Waits for the given time, using the configured {@link timeoutManager}.
+* @param timeout - The time to wait, in milliseconds.
+* @returns A promise that resolves after `timeout` milliseconds.
+*/
+function sleep(timeout) {
+	return new Promise((resolve) => {
+		timeoutManager.setTimeout(resolve, timeout);
+	});
+}
+/**
+* Applies a query's `structuralSharing` option when writing new data.
+* @param prevData - The previously cached data.
+* @param data - The new data.
+* @param options - The query options, whose `structuralSharing` decides how the data is merged.
+* @returns The result of a custom `structuralSharing` function, `data` with its unchanged parts
+* replaced by those of `prevData` by default, or `data` as is if `structuralSharing` is `false`.
+* @throws {Error} The error from the default structural sharing, e.g. when the data is not JSON serializable.
+* Outside production, it is also logged to the console.
+*/
+function replaceData(prevData, data, options) {
+	if (typeof options.structuralSharing === "function") return options.structuralSharing(prevData, data);
+	else if (options.structuralSharing !== false) return replaceEqualDeep(prevData, data);
+	return data;
+}
+/**
+* Returns a new array with `item` added at the end. If that makes the array longer than `max`,
+* excess items are removed from the start.
+* @param items - The current items.
+* @param item - The value to append.
+* @param max - The maximum number of items to keep. `0` (the default) means no limit.
+* @returns A new array with `item` added.
+*/
+function addToEnd(items, item, max = 0) {
+	const newItems = [...items, item];
+	return max && newItems.length > max ? newItems.slice(-max) : newItems;
+}
+/**
+* Returns a new array with `item` added at the start. If that makes the array longer than `max`,
+* excess items are removed from the end.
+* @param items - The current items.
+* @param item - The value to prepend.
+* @param max - The maximum number of items to keep. `0` (the default) means no limit.
+* @returns A new array with `item` added.
+*/
+function addToStart(items, item, max = 0) {
+	const newItems = [item, ...items];
+	return max && newItems.length > max ? newItems.slice(0, max) : newItems;
+}
+/**
+* Sentinel value that can be passed as a query's `queryFn` to conditionally disable the query (equivalent
+* to `enabled: false`) while preserving full type inference for the query's data. Unlike `enabled: false`,
+* a query disabled via `skipToken` cannot be triggered with `refetch`.
+* @example
+* ```ts
+* new QueryObserver(queryClient, {
+*   queryKey: ['post', postId],
+*   queryFn: postId != null ? () => fetchPost(postId) : skipToken,
+* })
+* ```
+*/
+const skipToken = Symbol();
+/**
+* Returns the function to call for a fetch. If there is no `queryFn` but the fetch was started from
+* an `initialPromise`, that promise is returned instead. If there is no usable `queryFn` (missing or
+* {@link skipToken}), the returned function rejects with a `Missing queryFn` error.
+* @param options - The query options with the `queryFn`, and the `queryHash` used in error messages.
+* @param fetchOptions - The fetch options, which may carry an `initialPromise`.
+* @returns The function to call for the fetch.
+*/
+function ensureQueryFn(options, fetchOptions) {
+	if (!options.queryFn && fetchOptions?.initialPromise) return () => fetchOptions.initialPromise;
+	if (!options.queryFn || options.queryFn === skipToken) return () => Promise.reject(/* @__PURE__ */ new Error(`Missing queryFn: '${options.queryHash}'`));
+	return options.queryFn;
+}
+/**
+* Resolves a `throwOnError` option to a boolean.
+* If `throwOnError` is a function, it is called with `params` (e.g. the error and, depending on the caller,
+* additional context such as the query or mutation) and its result is returned, allowing the throwing
+* behavior to be decided per error. Otherwise, `throwOnError` itself is coerced to a boolean (`undefined`
+* resolves to `false`).
+* @param throwOnError - The `throwOnError` option: a boolean, a function that decides per error, or
+* `undefined`.
+* @param params - The arguments passed to `throwOnError` if it is a function.
+* @returns Whether the error should be thrown.
+* @example
+* ```ts
+* const throwOnError =
+*   query.state.error && typeof options.throwOnError === 'function'
+*     ? shouldThrowError(options.throwOnError, [query.state.error, query])
+*     : options.throwOnError
+* ```
+*/
+function shouldThrowError(throwOnError, params) {
+	if (typeof throwOnError === "function") return throwOnError(...params);
+	return !!throwOnError;
+}
+const fetchSignal = Symbol();
+/**
+* Adds a lazy `signal` getter to an object, such as a query function context. The first time
+* `signal` is read, `onCancelled` is registered for the signal's `abort` event (or called right
+* away if it is already aborted), so cancellation is only tracked when the signal is actually used.
+* @param object - The object to add the `signal` property to.
+* @param getSignal - Returns the `AbortSignal`. Called once, when `signal` is first read.
+* @param onCancelled - Called when the signal is aborted, if `signal` was read.
+* @param internalSignal - The fetch signal to forward without consuming the getter.
+* @returns The same object, with the `signal` property added.
+*/
+function addConsumeAwareSignal(object, getSignal, onCancelled, internalSignal) {
+	let consumed = false;
+	let signal;
+	Object.defineProperties(object, {
+		[fetchSignal]: { value: internalSignal },
+		signal: {
+			enumerable: true,
+			get: () => {
+				signal ??= getSignal();
+				if (consumed) return signal;
+				consumed = true;
+				if (signal.aborted) onCancelled();
+				else signal.addEventListener("abort", onCancelled, { once: true });
+				return signal;
+			}
+		}
+	});
+	return object;
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/environmentManager.js
+let isServerFn = () => isServer$1;
+/**
+* Returns whether the current runtime should be treated as a server environment.
+* @returns `true` if the runtime is treated as a server.
+*/
+const isServer = () => isServerFn();
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/subscribable.js
+/**
+* The base class behind everything in Query that you can subscribe to: `QueryCache`, `MutationCache`,
+* the observers, and the `FocusManager`/`OnlineManager` behind `focusManager` and `onlineManager`.
+* Subclasses decide what a listener receives and when it is called.
+*/
+var Subscribable = class {
+	constructor() {
+		this.listeners = /* @__PURE__ */ new Set();
+		this.subscribe = this.subscribe.bind(this);
+	}
+	/**
+	* Registers a listener to be called on every update this object notifies about. Returns a function
+	* that removes the listener again — call it to stop listening. The base class never drops a listener
+	* on its own, though some subclasses clear all of theirs in `destroy()`.
+	* @param listener - Called on each update, with whatever the subclass passes to its subscribers.
+	* @returns A function that removes the listener.
+	* @example
+	* ```ts
+	* const unsubscribe = subscribable.subscribe(() => {
+	*   // react to the update
+	* })
+	*
+	* unsubscribe()
+	* ```
+	*/
+	subscribe(listener) {
+		this.listeners.add(listener);
+		this.onSubscribe();
+		return () => {
+			this.listeners.delete(listener);
+			this.onUnsubscribe();
+		};
+	}
+	/**
+	* Returns `true` while at least one listener is registered, `false` once they have all unsubscribed.
+	* @returns `true` if at least one listener is registered.
+	*/
+	hasListeners() {
+		return this.listeners.size > 0;
+	}
+	/**
+	* Called after a listener is added. Does nothing here; subclasses override it, e.g. to start
+	* tracking what they observe once the first listener subscribes.
+	*/
+	onSubscribe() {}
+	/**
+	* Called after a listener is removed. Does nothing here; subclasses override it, e.g. to clean up
+	* once the last listener unsubscribes.
+	*/
+	onUnsubscribe() {}
+};
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/focusManager.js
+/**
+* The `FocusManager` manages the focus state within TanStack Query.
+*
+* It can be used to change the default event listeners or to manually change the focus state.
+*/
+var FocusManager = class extends Subscribable {
+	#focused;
+	#cleanup;
+	#setup;
+	constructor() {
+		super();
+		this.#setup = (onFocus) => {
+			if (typeof window !== "undefined" && window.addEventListener) {
+				const listener = () => onFocus();
+				window.addEventListener("visibilitychange", listener, false);
+				return () => {
+					window.removeEventListener("visibilitychange", listener);
+				};
+			}
+		};
+	}
+	onSubscribe() {
+		if (!this.#cleanup) this.setEventListener(this.#setup);
+	}
+	onUnsubscribe() {
+		if (!this.hasListeners()) {
+			this.#cleanup?.();
+			this.#cleanup = void 0;
+		}
+	}
+	/**
+	* `setEventListener` can be used to set a custom event listener that will
+	* be used to determine the focus state. The provided `setup` function
+	* receives a `setFocused` callback: call it with a `boolean` to manually
+	* set the focus state, or with no arguments to re-evaluate the current
+	* focus state and notify subscribers.
+	* @param setup - Receives the `setFocused` callback, registers the event listener, and may return
+	* a cleanup function that is called when the listener is replaced or no longer needed.
+	* @example
+	* ```ts
+	* import { focusManager } from '@tanstack/query-core'
+	*
+	* focusManager.setEventListener((handleFocus) => {
+	*   const listener = () => handleFocus()
+	*   // Listen to visibilitychange
+	*   if (typeof window !== 'undefined' && window.addEventListener) {
+	*     window.addEventListener('visibilitychange', listener, false)
+	*   }
+	*
+	*   return () => {
+	*     // Be sure to unsubscribe if a new handler is set
+	*     window.removeEventListener('visibilitychange', listener)
+	*   }
+	* })
+	* ```
+	*/
+	setEventListener(setup) {
+		this.#setup = setup;
+		this.#cleanup?.();
+		this.#cleanup = setup((focused) => {
+			if (typeof focused === "boolean") this.setFocused(focused);
+			else this.onFocus();
+		});
+	}
+	/**
+	* `setFocused` can be used to manually set the focus state. Set `undefined`
+	* to fall back to the default focus check.
+	* @param focused - The focus state, or `undefined` to use the default focus check.
+	* @example
+	* ```ts
+	* import { focusManager } from '@tanstack/query-core'
+	*
+	* // Set focused
+	* focusManager.setFocused(true)
+	*
+	* // Set unfocused
+	* focusManager.setFocused(false)
+	*
+	* // Fallback to the default focus check
+	* focusManager.setFocused(undefined)
+	* ```
+	*/
+	setFocused(focused) {
+		if (this.#focused !== focused) {
+			this.#focused = focused;
+			this.onFocus();
+		}
+	}
+	/**
+	* `onFocus` notifies all subscribed listeners with the current focus state.
+	*/
+	onFocus() {
+		const isFocused = this.isFocused();
+		this.listeners.forEach((listener) => {
+			listener(isFocused);
+		});
+	}
+	/**
+	* `isFocused` can be used to get the current focus state.
+	* @returns The focus state set with `setFocused`, or otherwise whether the document is visible.
+	*/
+	isFocused() {
+		if (typeof this.#focused === "boolean") return this.#focused;
+		return globalThis.document?.visibilityState !== "hidden";
+	}
+};
+/**
+* Singleton instance of {@link FocusManager}, used to manage and observe the focus state within TanStack Query.
+*/
+const focusManager = new FocusManager();
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/notifyManager.js
+/**
+* Default scheduling function used by the notify manager.
+* Schedules the callback with the system's `setTimeout(callback, 0)`.
+*/
+const defaultScheduler = systemSetTimeoutZero;
+/**
+* Creates a notify manager, which schedules and batches notifications to subscribers. Query uses a
+* single instance of it, exported as {@link notifyManager}.
+* @returns A new notify manager.
+*/
+function createNotifyManager() {
+	let queue = [];
+	let transactions = 0;
+	let notifyFn = (callback) => {
+		callback();
+	};
+	let batchNotifyFn = (callback) => {
+		callback();
+	};
+	let scheduleFn = defaultScheduler;
+	const schedule = (callback) => {
+		if (transactions) queue.push(callback);
+		else scheduleFn(() => {
+			notifyFn(callback);
+		});
+	};
+	const flush = () => {
+		const originalQueue = queue;
+		queue = [];
+		if (originalQueue.length) scheduleFn(() => {
+			batchNotifyFn(() => {
+				originalQueue.forEach((callback) => {
+					notifyFn(callback);
+				});
+			});
+		});
+	};
+	return {
+		/**
+		* Batches all updates scheduled inside the passed callback.
+		* This is mainly used internally to optimize query client updating.
+		* Batches can be nested; the queue is only flushed once the outermost `batch` call finishes.
+		* The return value of `callback` is passed through.
+		* @param callback - The function to run in the batch.
+		* @returns The return value of `callback`.
+		*/
+		batch: (callback) => {
+			let result;
+			transactions++;
+			try {
+				result = callback();
+			} finally {
+				transactions--;
+				if (!transactions) flush();
+			}
+			return result;
+		},
+		/**
+		* All calls to the wrapped function will be batched.
+		* @param callback - The function to wrap.
+		* @returns A function that schedules a call to `callback` with the given arguments.
+		*/
+		batchCalls: (callback) => {
+			return (...args) => {
+				schedule(() => {
+					callback(...args);
+				});
+			};
+		},
+		/**
+		* Schedules a function to be run on the next batch.
+		* By default, the batch is run with a `setTimeout`, but this can be configured via `setScheduler`.
+		*/
+		schedule,
+		/**
+		* Use this method to set a custom notify function.
+		* This can be used to for example wrap notifications with `React.act` while running tests.
+		* @param fn - Receives each notification callback and must call it.
+		*/
+		setNotifyFunction: (fn) => {
+			notifyFn = fn;
+		},
+		/**
+		* Use this method to set a custom function to batch notifications together into a single tick.
+		* Framework adapters use this to plug in their own batching primitive, so that a single query
+		* update only triggers one re-render instead of one per subscriber.
+		* @param fn - Receives a function that runs a batch of notifications and must call it.
+		* @example
+		* ```ts
+		* import { notifyManager } from '@tanstack/query-core'
+		* import { batch } from 'solid-js'
+		*
+		* notifyManager.setBatchNotifyFunction(batch)
+		* ```
+		*/
+		setBatchNotifyFunction: (fn) => {
+			batchNotifyFn = fn;
+		},
+		/**
+		* Configures a custom callback that schedules when the next batch runs.
+		* The default behavior is `setTimeout(callback, 0)`.
+		* @param fn - Receives a callback that runs the next batch, and schedules it.
+		* @example
+		* ```ts
+		* import { notifyManager } from '@tanstack/query-core'
+		*
+		* // Schedule batches in the next microtask
+		* notifyManager.setScheduler(queueMicrotask)
+		*
+		* // Schedule batches before the next frame is rendered
+		* notifyManager.setScheduler(requestAnimationFrame)
+		*
+		* // Schedule batches some time in the future
+		* notifyManager.setScheduler((cb) => setTimeout(cb, 10))
+		* ```
+		*/
+		setScheduler: (fn) => {
+			scheduleFn = fn;
+		}
+	};
+}
+/**
+* Handles scheduling and batching callbacks in TanStack Query.
+*/
+const notifyManager = createNotifyManager();
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/onlineManager.js
+/**
+* The `OnlineManager` manages the online state within TanStack Query. It can
+* be used to change the default event listeners or to manually change the
+* online state.
+*
+* By default, the `onlineManager` assumes an active network connection, and
+* listens to the `online` and `offline` events on the `window` object to
+* detect changes.
+*/
+var OnlineManager = class extends Subscribable {
+	#online = true;
+	#cleanup;
+	#setup;
+	constructor() {
+		super();
+		this.#setup = (onOnline) => {
+			if (typeof window !== "undefined" && window.addEventListener) {
+				const onlineListener = () => onOnline(true);
+				const offlineListener = () => onOnline(false);
+				window.addEventListener("online", onlineListener, false);
+				window.addEventListener("offline", offlineListener, false);
+				return () => {
+					window.removeEventListener("online", onlineListener);
+					window.removeEventListener("offline", offlineListener);
+				};
+			}
+		};
+	}
+	onSubscribe() {
+		if (!this.#cleanup) this.setEventListener(this.#setup);
+	}
+	onUnsubscribe() {
+		if (!this.hasListeners()) {
+			this.#cleanup?.();
+			this.#cleanup = void 0;
+		}
+	}
+	/**
+	* `setEventListener` can be used to set a custom event listener that will
+	* be used to determine the online state. The provided `setup` function
+	* receives a `setOnline` callback that should be called with a `boolean`
+	* whenever the online state changes.
+	* @param setup - Receives the `setOnline` callback, registers the event listener, and may return
+	* a cleanup function that is called when the listener is replaced or no longer needed.
+	* @example
+	* ```ts
+	* import NetInfo from '@react-native-community/netinfo'
+	* import { onlineManager } from '@tanstack/query-core'
+	*
+	* onlineManager.setEventListener((setOnline) => {
+	*   return NetInfo.addEventListener((state) => {
+	*     setOnline(!!state.isConnected)
+	*   })
+	* })
+	* ```
+	*/
+	setEventListener(setup) {
+		this.#setup = setup;
+		this.#cleanup?.();
+		this.#cleanup = setup(this.setOnline.bind(this));
+	}
+	/**
+	* `setOnline` can be used to manually set the online state.
+	* @param online - The online state.
+	* @example
+	* ```ts
+	* import { onlineManager } from '@tanstack/query-core'
+	*
+	* // Set to online
+	* onlineManager.setOnline(true)
+	*
+	* // Set to offline
+	* onlineManager.setOnline(false)
+	* ```
+	*/
+	setOnline(online) {
+		if (this.#online !== online) {
+			this.#online = online;
+			this.listeners.forEach((listener) => {
+				listener(online);
+			});
+		}
+	}
+	/**
+	* `isOnline` can be used to get the current online state.
+	* @returns `true` if online.
+	*/
+	isOnline() {
+		return this.#online;
+	}
+};
+/**
+* Singleton instance of {@link OnlineManager}, used to manage and observe the online state within TanStack Query.
+*/
+const onlineManager = new OnlineManager();
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/retryer.js
+/**
+* The default `retryDelay`: doubles with every failure, starting at 1 second, up to 30 seconds.
+* @param failureCount - The number of failures so far.
+* @returns The delay before the next retry, in milliseconds.
+*/
+function defaultRetryDelay(failureCount) {
+	return Math.min(1e3 * 2 ** failureCount, 3e4);
+}
+/**
+* Checks whether a fetch can run for the given network mode.
+* @param networkMode - The `networkMode` option. Defaults to `'online'`.
+* @returns `true` if the network mode is not `'online'`, or if it is and the client is online.
+*/
+function canFetch(networkMode) {
+	return (networkMode ?? "online") === "online" ? onlineManager.isOnline() : true;
+}
+/**
+* The error thrown by a `Retryer` (and surfaced to `query.promise`/`mutation`) when a fetch is cancelled, e.g. via
+* `query.cancel()`. `revert`, if `true`, tells the caller to restore the state the query was in before the fetch
+* started instead of surfacing the error. `silent`, if `true`, tells the caller to suppress this error and instead
+* resolve with the promise of the fetch that triggered the cancellation.
+* @example
+* ```ts
+* query.cancel()
+*
+* try {
+*   await query.promise
+* } catch (error) {
+*   if (error instanceof CancelledError) {
+*     // the fetch was cancelled, e.g. via `query.cancel()`
+*   }
+* }
+* ```
+*/
+var CancelledError = class extends Error {
+	constructor(options) {
+		super("CancelledError");
+		this.revert = options?.revert;
+		this.silent = options?.silent;
+	}
+};
+/**
+* Creates a retryer, which runs a function and retries it on failure according to the `retry` and
+* `retryDelay` options. It pauses while the network mode doesn't allow fetching or `canRun` returns
+* `false`, and can be cancelled. Queries and mutations use it to run their `queryFn` and
+* `mutationFn`.
+* @param config - The function to run, the retry options, and the callbacks for failures, pausing,
+* continuing, and cancellation.
+* @returns The retryer, whose `promise` settles with the result of the function.
+*/
+function createRetryer(config) {
+	let isRetryCancelled = false;
+	let failureCount = 0;
+	let continueFn;
+	let status = "pending";
+	let promiseResolve;
+	let promiseReject;
+	const promise = new Promise((resolve, reject) => {
+		promiseResolve = resolve;
+		promiseReject = reject;
+	});
+	promise.catch(noop$3);
+	const isResolved = () => status !== "pending";
+	const cancel = (cancelOptions) => {
+		if (!isResolved()) {
+			const error = new CancelledError(cancelOptions);
+			reject(error);
+			config.onCancel?.(error);
+		}
+	};
+	const cancelRetry = () => {
+		isRetryCancelled = true;
+	};
+	const continueRetry = () => {
+		isRetryCancelled = false;
+	};
+	const canContinue = () => focusManager.isFocused() && (config.networkMode === "always" || onlineManager.isOnline()) && config.canRun();
+	const canStart = () => canFetch(config.networkMode) && config.canRun();
+	const resolve = (value) => {
+		if (!isResolved()) {
+			continueFn?.();
+			status = "resolved";
+			promiseResolve(value);
+		}
+	};
+	const reject = (value) => {
+		if (!isResolved()) {
+			continueFn?.();
+			status = "rejected";
+			promiseReject(value);
+		}
+	};
+	const pause = (canResume) => {
+		return new Promise((continueResolve) => {
+			continueFn = (value) => {
+				if (isResolved() || canResume()) continueResolve(value);
+			};
+			config.onPause?.();
+		}).then(() => {
+			continueFn = void 0;
+			if (!isResolved()) config.onContinue?.();
+		});
+	};
+	const run = () => {
+		if (isResolved()) return;
+		let promiseOrValue;
+		const initialPromise = failureCount === 0 ? config.initialPromise : void 0;
+		try {
+			promiseOrValue = initialPromise ?? config.fn();
+		} catch (error) {
+			promiseOrValue = Promise.reject(error);
+		}
+		Promise.resolve(promiseOrValue).then(resolve).catch((error) => {
+			if (isResolved()) return;
+			const retry = config.retry ?? (isServer() ? 0 : 3);
+			const retryDelay = config.retryDelay ?? defaultRetryDelay;
+			const delay = typeof retryDelay === "function" ? retryDelay(failureCount, error) : retryDelay;
+			const shouldRetry = retry === true || typeof retry === "number" && failureCount < retry || typeof retry === "function" && retry(failureCount, error);
+			if (isRetryCancelled || !shouldRetry) {
+				reject(error);
+				return;
+			}
+			failureCount++;
+			config.onFail?.(failureCount, error);
+			sleep(delay).then(() => {
+				return isResolved() || canContinue() ? void 0 : pause(canContinue);
+			}).then(() => {
+				if (isRetryCancelled) reject(error);
+				else run();
+			});
+		});
+	};
+	return {
+		promise,
+		status: () => status,
+		cancel,
+		continue: () => {
+			continueFn?.();
+			return promise;
+		},
+		cancelRetry,
+		continueRetry,
+		canStart,
+		start: () => {
+			if (canStart()) run();
+			else pause(canStart).then(run);
+			return promise;
+		}
+	};
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/removable.js
+/**
+* The base class for cache entries that are garbage collected once nothing is using them —
+* `Query` and `Mutation` both extend it. `gcTime` controls how long an unused entry is kept.
+*/
+var Removable = class {
+	#gcTimeout;
+	/**
+	* Clears the pending garbage collection timeout, so the entry is no longer scheduled for removal.
+	* A subclass may override this to release what it holds on to as well — `Query` also cancels any
+	* in-flight fetch.
+	*/
+	destroy() {
+		this.clearGcTimeout();
+	}
+	/**
+	* Schedules the entry to be removed from its cache after `gcTime`, replacing any timeout scheduled
+	* before. Nothing is scheduled if `gcTime` is `Infinity`.
+	*/
+	scheduleGc() {
+		this.clearGcTimeout();
+		if (isValidTimeout(this.gcTime)) this.#gcTimeout = timeoutManager.setTimeout(() => {
+			this.optionalRemove();
+		}, this.gcTime);
+	}
+	/**
+	* Updates `gcTime`, keeping the longest one seen so far. Without a value, it defaults to 5 minutes
+	* on the client and `Infinity` on the server.
+	* @param newGcTime - The `gcTime` from the latest options, if any.
+	*/
+	updateGcTime(newGcTime) {
+		this.gcTime = Math.max(this.gcTime || 0, newGcTime ?? (isServer() ? 1e400 : 3e5));
+	}
+	/**
+	* Cancels the scheduled removal, if there is one.
+	*/
+	clearGcTimeout() {
+		if (this.#gcTimeout !== void 0) {
+			timeoutManager.clearTimeout(this.#gcTimeout);
+			this.#gcTimeout = void 0;
+		}
+	}
+};
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/infiniteQueryBehavior.js
+/**
+* Creates the behavior that fetches the pages of an infinite query: the next or previous page for
+* `fetchNextPage`/`fetchPreviousPage`, or all pages again from the start on a refetch.
+* @param pages - The number of pages to fetch from the start when all pages are fetched again,
+* e.g. from the `pages` option of `queryClient.infiniteQuery`. Defaults to the number of cached
+* pages.
+* @returns The query behavior to set on an infinite query.
+*/
+function infiniteQueryBehavior(pages) {
+	return { onFetch: (context, query) => {
+		const options = context.options;
+		const direction = context.fetchOptions?.meta?.fetchMore?.direction;
+		const oldPages = context.state.data?.pages || [];
+		const oldPageParams = context.state.data?.pageParams || [];
+		let result = {
+			pages: [],
+			pageParams: []
+		};
+		let currentPage = 0;
+		const fetchFn = async () => {
+			let cancelled = false;
+			const signalContext = context;
+			const addSignalProperty = (object) => {
+				addConsumeAwareSignal(object, () => context.signal, () => cancelled = true, signalContext[fetchSignal]);
+			};
+			const queryFn = ensureQueryFn(context.options, context.fetchOptions);
+			const fetchPage = async (data, param, previous) => {
+				if (cancelled) return Promise.reject(context.signal.reason);
+				if (param == null && data.pages.length) return Promise.resolve(data);
+				const createQueryFnContext = () => {
+					const queryFnContext = {
+						client: context.client,
+						queryKey: context.queryKey,
+						pageParam: param,
+						direction: previous ? "backward" : "forward",
+						meta: context.options.meta
+					};
+					addSignalProperty(queryFnContext);
+					return queryFnContext;
+				};
+				const queryFnContext = createQueryFnContext();
+				const page = await queryFn(queryFnContext);
+				const { maxPages } = context.options;
+				const addTo = previous ? addToStart : addToEnd;
+				return {
+					pages: addTo(data.pages, page, maxPages),
+					pageParams: addTo(data.pageParams, param, maxPages)
+				};
+			};
+			if (direction && oldPages.length) {
+				const previous = direction === "backward";
+				const pageParamFn = previous ? getPreviousPageParam : getNextPageParam;
+				const oldData = {
+					pages: oldPages,
+					pageParams: oldPageParams
+				};
+				result = await fetchPage(oldData, pageParamFn(options, oldData), previous);
+			} else {
+				const remainingPages = pages ?? oldPages.length;
+				do {
+					const param = currentPage === 0 ? oldPageParams[0] === void 0 ? options.initialPageParam : oldPageParams[0] : getNextPageParam(options, result);
+					if (currentPage > 0 && param == null) break;
+					result = await fetchPage(result, param);
+					currentPage++;
+				} while (currentPage < remainingPages);
+			}
+			return result;
+		};
+		if (context.options.persister) context.fetchFn = () => {
+			return context.options.persister?.(fetchFn, {
+				client: context.client,
+				queryKey: context.queryKey,
+				meta: context.options.meta,
+				signal: context.signal
+			}, query);
+		};
+		else context.fetchFn = fetchFn;
+	} };
+}
+/**
+* Computes the page param of the page after the last one, with the `getNextPageParam` option.
+* @param options - The infinite query options.
+* @param data - The current pages and page params.
+* @returns The next page param, or `undefined` if there are no pages yet.
+*/
+function getNextPageParam(options, { pages, pageParams }) {
+	const lastIndex = pages.length - 1;
+	return pages.length > 0 ? options.getNextPageParam(pages[lastIndex], pages, pageParams[lastIndex], pageParams) : void 0;
+}
+/**
+* Computes the page param of the page before the first one, with the `getPreviousPageParam`
+* option.
+* @param options - The infinite query options.
+* @param data - The current pages and page params.
+* @returns The previous page param, or `undefined` if there are no pages yet or no
+* `getPreviousPageParam` option.
+*/
+function getPreviousPageParam(options, { pages, pageParams }) {
+	return pages.length > 0 ? options.getPreviousPageParam?.(pages[0], pages, pageParams[0], pageParams) : void 0;
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/query.js
+/**
+* Represents a single cached query. A `Query` holds the query's key, options,
+* state (data/error/status), and the observers currently subscribed to it.
+*
+* Instances are created and managed internally by `QueryCache`; application
+* code typically interacts with queries indirectly through `QueryClient` or
+* a framework hook like `useQuery`. Direct access to a `Query` instance is
+* possible via `queryCache.find()`/`findAll()` for inspecting cache state.
+* @example
+* ```ts
+* const queryCache = queryClient.getQueryCache()
+* const query = queryCache.find({ queryKey: ['posts'] })
+*
+* if (query) {
+*   console.log(query.state.dataUpdatedAt)
+* }
+* ```
+*/
+var Query = class extends Removable {
+	#queryType;
+	#initialState;
+	#revertState;
+	#cache;
+	#client;
+	#retryer;
+	#fetchPromise;
+	#defaultOptions;
+	#abortSignalConsumed;
+	constructor(config) {
+		super();
+		this.#abortSignalConsumed = false;
+		this.#defaultOptions = config.defaultOptions;
+		this.setOptions(config.options);
+		this.observers = [];
+		this.#client = config.client;
+		this.#cache = this.#client.getQueryCache();
+		this.queryKey = config.queryKey;
+		this.queryHash = config.queryHash;
+		this.#initialState = getDefaultState$1(this.options);
+		this.state = config.state ?? this.#initialState;
+		this.scheduleGc();
+	}
+	/**
+	* The `meta` object passed in the query's options, if any.
+	* @returns The query's `meta`, or `undefined` if none was set.
+	*/
+	get meta() {
+		return this.options.meta;
+	}
+	/**
+	* `'infinite'` for an infinite query, otherwise `undefined`.
+	* @internal
+	* @returns The type of the query, set from the `_type` option (e.g. `'infinite'`).
+	*/
+	get queryType() {
+		return this.#queryType;
+	}
+	/**
+	* The promise for the currently in-flight fetch, if the query is fetching.
+	* `undefined` when the query is not fetching.
+	* @returns The promise of the in-flight fetch, or `undefined`.
+	*/
+	get promise() {
+		return this.#retryer?.promise;
+	}
+	/**
+	* Replaces the query's options and applies their `gcTime`. If the query has no data yet, it gets
+	* the `initialData` from the new options, if any.
+	* @internal
+	* @param options - The new query options, merged on top of the query's default options.
+	*/
+	setOptions(options) {
+		this.options = {
+			...this.#defaultOptions,
+			...options
+		};
+		if (options?._type) this.#queryType = options._type;
+		this.updateGcTime(this.options.gcTime);
+		if (this.state && this.state.data === void 0) {
+			const defaultState = getDefaultState$1(this.options);
+			if (defaultState.data !== void 0) {
+				this.setState(successState(defaultState.data, defaultState.dataUpdatedAt));
+				this.#initialState = defaultState;
+			}
+		}
+	}
+	optionalRemove() {
+		if (!this.observers.length && this.state.fetchStatus === "idle") this.#cache.remove(this);
+	}
+	/**
+	* Writes new data to the query and marks it as successfully fetched.
+	* @internal
+	* @param newData - The data to write. Structural sharing with the current data is applied.
+	* @param options - Set `updatedAt` to override the timestamp, and `manual` to mark the write as
+	* manual (e.g. from `queryClient.setQueryData`).
+	* @returns The data that was written.
+	*/
+	setData(newData, options) {
+		const data = replaceData(this.state.data, newData, this.options);
+		this.#dispatch({
+			data,
+			type: "success",
+			dataUpdatedAt: options?.updatedAt,
+			manual: options?.manual
+		});
+		return data;
+	}
+	/**
+	* Merges the given partial state directly into this query's state, notifying observers. Used
+	* by persistence and broadcast plugins to restore a state snapshot, and by devtools to let a
+	* user manually trigger a loading/error state or edit the cached data.
+	* @param state - The partial state to merge into the query's state.
+	*/
+	setState(state) {
+		this.#dispatch({
+			type: "setState",
+			state
+		});
+	}
+	/**
+	* Cancels the query's currently in-flight fetch, if any.
+	* - Returns a promise that resolves once the cancellation has settled.
+	* - If no fetch is in progress, resolves immediately.
+	* @param options - Set `revert` to restore the state from before the fetch started, and `silent`
+	* to suppress the cancellation error when a new fetch replaces the cancelled one.
+	* @returns A promise that resolves once the cancellation has settled.
+	* @example
+	* ```ts
+	* await query.cancel()
+	* ```
+	*/
+	cancel(options) {
+		const promise = this.#retryer?.promise;
+		this.#retryer?.cancel(options);
+		return promise ? promise.then(noop$3).catch(noop$3) : Promise.resolve();
+	}
+	/**
+	* Clears the query's garbage collection timeout and silently cancels any
+	* in-flight fetch. Called by `QueryCache` when the query is removed from
+	* the cache.
+	* @see {@link Query#cancel}
+	*/
+	destroy() {
+		super.destroy();
+		this.cancel({ silent: true });
+	}
+	/**
+	* The state the query was created with.
+	* @internal
+	* @returns The state the query had when it was first created, used by {@link Query#reset}.
+	*/
+	get resetState() {
+		return this.#initialState;
+	}
+	/**
+	* Resets the query back to its initial state (the state it had when it was
+	* first created, e.g. any `initialData`), destroying it first to cancel any
+	* in-flight fetch.
+	*/
+	reset() {
+		this.destroy();
+		this.setState(this.resetState);
+	}
+	/**
+	* Returns `true` if the query has at least one observer for which `enabled`
+	* does not resolve to `false`.
+	* @returns `true` if the query has an enabled observer.
+	*/
+	isActive() {
+		return this.observers.some((observer) => resolveQueryValue(observer.options.enabled, this) !== false);
+	}
+	/**
+	* Returns `true` if the query is disabled, meaning it will not fetch
+	* automatically.
+	* - If the query has observers, it is disabled when none of them are active
+	*   (see `isActive`).
+	* - If the query has no observers, it is disabled when its `queryFn` is
+	*   `skipToken` or it has never been fetched.
+	* @returns `true` if the query is disabled.
+	*/
+	isDisabled() {
+		if (this.getObserversCount() > 0) return !this.isActive();
+		return this.options.queryFn === skipToken || !this.isFetched();
+	}
+	/**
+	* Returns `true` if the query has been fetched, i.e. it has resolved with
+	* either data or an error at least once.
+	* @returns `true` if the query has been fetched.
+	*/
+	isFetched() {
+		return this.state.dataUpdateCount + this.state.errorUpdateCount > 0;
+	}
+	/**
+	* Returns `true` if the query has data and at least one observer configured with
+	* `staleTime: 'static'`, meaning it is treated as never stale.
+	* @returns `true` if the query is static.
+	*/
+	isStatic() {
+		if (this.state.data === void 0) return false;
+		if (this.getObserversCount() > 0) return this.observers.some((observer) => resolveQueryValue(observer.options.staleTime, this) === "static");
+		return false;
+	}
+	/**
+	* Returns `true` if the query is stale.
+	* - If the query has observers, defers to whether any observer's current
+	*   result reports `isStale` (which accounts for each observer's own
+	*   `staleTime` and `enabled` state).
+	* - If the query has no observers, it is considered stale when it has no
+	*   data or has been invalidated.
+	* @returns `true` if the query is stale.
+	* @see {@link Query#isStaleByTime}
+	* @example
+	* ```ts
+	* if (query.isStale()) {
+	*   // refetch or otherwise treat the cached data as outdated
+	* }
+	* ```
+	*/
+	isStale() {
+		if (this.getObserversCount() > 0) return this.observers.some((observer) => observer.getCurrentResult().isStale);
+		return this.state.data === void 0 || this.state.isInvalidated;
+	}
+	/**
+	* Returns `true` if the query's data is stale relative to the given
+	* `staleTime` (defaults to `0`).
+	* - A query with no data is always stale.
+	* - `staleTime: 'static'` is never stale.
+	* - An invalidated query is always stale.
+	* - Otherwise, staleness is based on elapsed time since `dataUpdatedAt`.
+	* @param staleTime - The time, in milliseconds, after which data is considered stale, or
+	* `'static'` to never treat existing data as stale. A query without data is stale either way.
+	* @returns `true` if the query's data is stale.
+	* @see {@link Query#isStale}
+	* @example
+	* ```ts
+	* const isStale = query.isStaleByTime(60 * 1000)
+	* ```
+	*/
+	isStaleByTime(staleTime = 0) {
+		if (this.state.data === void 0) return true;
+		if (staleTime === "static") return false;
+		if (this.state.isInvalidated) return true;
+		return !timeUntilStale(this.state.dataUpdatedAt, staleTime);
+	}
+	/**
+	* Refetches the query when the window regains focus, if an observer wants that, and continues a
+	* paused fetch.
+	* @internal
+	*/
+	onFocus() {
+		this.observers.find((x) => x.shouldFetchOnWindowFocus())?.refetch({ cancelRefetch: false });
+		this.#retryer?.continue();
+	}
+	/**
+	* Refetches the query when the app reconnects, if an observer wants that, and continues a paused
+	* fetch.
+	* @internal
+	*/
+	onOnline() {
+		this.observers.find((x) => x.shouldFetchOnReconnect())?.refetch({ cancelRefetch: false });
+		this.#retryer?.continue();
+	}
+	/**
+	* Subscribes an observer to the query and stops its garbage collection.
+	* @internal
+	* @param observer - The observer to add. Adding an observer that is already subscribed does
+	* nothing.
+	*/
+	addObserver(observer) {
+		if (!this.observers.includes(observer)) {
+			this.observers.push(observer);
+			this.clearGcTimeout();
+			this.#cache.notify({
+				type: "observerAdded",
+				query: this,
+				observer
+			});
+		}
+	}
+	/**
+	* Unsubscribes an observer from the query.
+	* @internal
+	* @param observer - The observer to remove. When the last observer is removed, the in-flight
+	* fetch is cancelled if its abort signal was consumed (otherwise only its retries are stopped),
+	* and garbage collection is scheduled.
+	*/
+	removeObserver(observer) {
+		const index = this.observers.indexOf(observer);
+		if (index !== -1) {
+			this.observers.splice(index, 1);
+			if (!this.observers.length) {
+				if (this.#retryer) {
+					if (this.#abortSignalConsumed || this.state.fetchStatus === "paused" && this.state.status === "pending") this.#retryer.cancel({ revert: true });
+					else this.#retryer.cancelRetry();
+				}
+				this.scheduleGc();
+			}
+			this.#cache.notify({
+				type: "observerRemoved",
+				query: this,
+				observer
+			});
+		}
+	}
+	/**
+	* Returns the number of observers currently subscribed to this query.
+	* @returns The number of observers.
+	* @example
+	* ```ts
+	* if (query.getObserversCount() === 0) {
+	*   // no component is currently watching this query
+	* }
+	* ```
+	*/
+	getObserversCount() {
+		return this.observers.length;
+	}
+	/**
+	* Marks the query as invalidated, unless it is already invalidated. This
+	* updates `state.isInvalidated` and notifies observers, but does not by
+	* itself trigger a refetch.
+	* @example
+	* ```ts
+	* query.invalidate()
+	* ```
+	*/
+	invalidate() {
+		if (!this.state.isInvalidated) this.#dispatch({ type: "invalidate" });
+	}
+	/**
+	* Fetches the query, i.e. runs its `queryFn` (through any configured
+	* retryer/behavior) and updates the query's state with the result.
+	* - If a fetch is already in flight, returns its promise instead of
+	*   starting a new one, unless `fetchOptions.cancelRefetch` is set and the
+	*   query already has data, in which case the current fetch is silently
+	*   cancelled first.
+	* - If `options` is passed, it replaces the query's current options
+	*   before fetching.
+	* @param options - Query options that replace the query's current options before fetching. They
+	* are not applied when an in-flight fetch is reused.
+	* @param fetchOptions - Set `cancelRefetch` to cancel an in-flight fetch first (only if the query
+	* already has data), and `meta` to pass extra information to the query's behavior.
+	* @returns A promise that resolves with the fetched data, or rejects with the fetch error. If the
+	* fetch is cancelled with `revert` while the query has data, it resolves with the restored data
+	* instead.
+	*/
+	async fetch(options, fetchOptions) {
+		if (this.state.fetchStatus !== "idle" && this.#retryer?.status() !== "rejected") {
+			if (this.state.data !== void 0 && fetchOptions?.cancelRefetch) this.cancel({ silent: true });
+			else if (this.#retryer && this.#fetchPromise) {
+				this.#retryer.continueRetry();
+				return this.#fetchPromise;
+			}
+		}
+		if (options) this.setOptions(options);
+		if (!this.options.queryFn) {
+			const observer = this.observers.find((x) => x.options.queryFn);
+			if (observer) this.setOptions(observer.options);
+		}
+		const abortController = new AbortController();
+		const addSignalProperty = (object) => {
+			Object.defineProperties(object, {
+				[fetchSignal]: {
+					value: abortController.signal,
+					enumerable: true
+				},
+				signal: {
+					enumerable: true,
+					get: () => {
+						this.#abortSignalConsumed = true;
+						return abortController.signal;
+					}
+				}
+			});
+		};
+		const fetchFn = () => {
+			const queryFn = ensureQueryFn(this.options, fetchOptions);
+			const createQueryFnContext = () => {
+				const queryFnContext = {
+					client: this.#client,
+					queryKey: this.queryKey,
+					meta: this.meta
+				};
+				addSignalProperty(queryFnContext);
+				return queryFnContext;
+			};
+			const queryFnContext = createQueryFnContext();
+			this.#abortSignalConsumed = false;
+			if (this.options.persister) return this.options.persister(queryFn, queryFnContext, this);
+			return queryFn(queryFnContext);
+		};
+		const createFetchContext = () => {
+			const context = {
+				fetchOptions,
+				options: this.options,
+				queryKey: this.queryKey,
+				client: this.#client,
+				state: this.state,
+				fetchFn
+			};
+			addSignalProperty(context);
+			return context;
+		};
+		const context = createFetchContext();
+		(this.#queryType === "infinite" ? infiniteQueryBehavior(this.options.pages) : this.options.behavior)?.onFetch(context, this);
+		this.#revertState = this.state;
+		if (this.state.fetchStatus === "idle" || this.state.fetchMeta !== context.fetchOptions?.meta) this.#dispatch({
+			type: "fetch",
+			meta: context.fetchOptions?.meta
+		});
+		const retryer = this.#retryer = createRetryer({
+			initialPromise: fetchOptions?.initialPromise,
+			fn: context.fetchFn,
+			onCancel: (error) => {
+				if (error instanceof CancelledError && error.revert) this.setState({
+					...this.#revertState,
+					fetchStatus: "idle"
+				});
+				abortController.abort();
+			},
+			onFail: (failureCount, error) => {
+				this.#dispatch({
+					type: "failed",
+					failureCount,
+					error
+				});
+			},
+			onPause: () => {
+				this.#dispatch({ type: "pause" });
+			},
+			onContinue: () => {
+				this.#dispatch({ type: "continue" });
+			},
+			retry: context.options.retry,
+			retryDelay: context.options.retryDelay,
+			networkMode: context.options.networkMode,
+			canRun: () => true
+		});
+		const fetchPromise = (async () => {
+			try {
+				const data = await retryer.promise;
+				if (data === void 0) throw new Error(`${this.queryHash} data is undefined`);
+				this.setData(data);
+				this.#cache.config.onSuccess?.(data, this);
+				this.#cache.config.onSettled?.(data, this.state.error, this);
+				return data;
+			} catch (error) {
+				if (error instanceof CancelledError) {
+					if (error.silent) {
+						if (this.#retryer !== retryer && this.#fetchPromise) return this.#fetchPromise;
+						throw error;
+					} else if (error.revert) {
+						if (this.state.data === void 0) throw error;
+						return this.state.data;
+					}
+				}
+				this.#dispatch({
+					type: "error",
+					error
+				});
+				this.#cache.config.onError?.(error, this);
+				this.#cache.config.onSettled?.(this.state.data, error, this);
+				throw error;
+			} finally {
+				if (this.#retryer === retryer) {
+					this.#retryer = void 0;
+					this.#fetchPromise = void 0;
+				}
+				this.scheduleGc();
+			}
+		})();
+		this.#fetchPromise = fetchPromise;
+		retryer.start();
+		return fetchPromise;
+	}
+	#dispatch(action) {
+		const reducer = (state) => {
+			switch (action.type) {
+				case "failed": return {
+					...state,
+					fetchFailureCount: action.failureCount,
+					fetchFailureReason: action.error
+				};
+				case "pause": return {
+					...state,
+					fetchStatus: "paused"
+				};
+				case "continue": return {
+					...state,
+					fetchStatus: "fetching"
+				};
+				case "fetch": return {
+					...state,
+					...fetchState(state.data, this.options),
+					fetchMeta: action.meta ?? null
+				};
+				case "success":
+					const newState = {
+						...state,
+						...successState(action.data, action.dataUpdatedAt),
+						dataUpdateCount: state.dataUpdateCount + 1,
+						...!action.manual && {
+							fetchStatus: "idle",
+							fetchFailureCount: 0,
+							fetchFailureReason: null
+						}
+					};
+					this.#revertState = action.manual ? newState : void 0;
+					return newState;
+				case "error":
+					const error = action.error;
+					return {
+						...state,
+						error,
+						errorUpdateCount: state.errorUpdateCount + 1,
+						errorUpdatedAt: Date.now(),
+						fetchFailureCount: state.fetchFailureCount + 1,
+						fetchFailureReason: error,
+						fetchStatus: "idle",
+						status: "error",
+						isInvalidated: true
+					};
+				case "invalidate": return {
+					...state,
+					isInvalidated: true
+				};
+				case "setState": return {
+					...state,
+					...action.state
+				};
+			}
+		};
+		this.state = reducer(this.state);
+		notifyManager.batch(() => {
+			this.observers.slice().forEach((observer) => {
+				observer.onQueryUpdate();
+			});
+			this.#cache.notify({
+				query: this,
+				type: "updated",
+				action
+			});
+		});
+	}
+};
+/**
+* Returns the state changes applied when a query starts fetching.
+* @param data - The query's current data. If it is `undefined`, the query is also reset to
+* `'pending'` with no error.
+* @param options - The query options, whose `networkMode` decides whether the query is `'fetching'`
+* or `'paused'`.
+* @returns The partial query state for a starting fetch.
+*/
+function fetchState(data, options) {
+	return {
+		fetchFailureCount: 0,
+		fetchFailureReason: null,
+		fetchStatus: canFetch(options.networkMode) ? "fetching" : "paused",
+		...data === void 0 && {
+			error: null,
+			status: "pending"
+		}
+	};
+}
+/**
+* Returns the state changes applied when a query receives data.
+* @param data - The new data.
+* @param dataUpdatedAt - The timestamp the data is recorded with. Defaults to the current time.
+* @returns The partial query state for a successful update.
+*/
+function successState(data, dataUpdatedAt) {
+	return {
+		data,
+		dataUpdatedAt: dataUpdatedAt ?? Date.now(),
+		error: null,
+		isInvalidated: false,
+		status: "success"
+	};
+}
+/**
+* Returns the initial state of a query, based on its `initialData` and `initialDataUpdatedAt`
+* options.
+* @param options - The query options.
+* @returns The initial query state: `'success'` if `initialData` is set, otherwise `'pending'`.
+*/
+function getDefaultState$1(options) {
+	const data = typeof options.initialData === "function" ? options.initialData() : options.initialData;
+	const hasData = data !== void 0;
+	const initialDataUpdatedAt = hasData ? typeof options.initialDataUpdatedAt === "function" ? options.initialDataUpdatedAt() : options.initialDataUpdatedAt : 0;
+	return {
+		data,
+		dataUpdateCount: 0,
+		dataUpdatedAt: hasData ? initialDataUpdatedAt ?? Date.now() : 0,
+		error: null,
+		errorUpdateCount: 0,
+		errorUpdatedAt: 0,
+		fetchFailureCount: 0,
+		fetchFailureReason: null,
+		fetchMeta: null,
+		isInvalidated: false,
+		status: hasData ? "success" : "pending",
+		fetchStatus: "idle"
+	};
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/queryObserver.js
+/**
+* A `QueryObserver` watches a single query in the `QueryCache` and computes a
+* `QueryObserverResult` from its state, recomputing and notifying subscribers
+* whenever the underlying query (or the observer's options) changes. It is
+* the primitive that framework adapters (e.g. `useQuery`) build their hooks
+* on top of, but it can also be used directly to observe and switch between
+* queries outside of any framework.
+* @example
+* ```ts
+* const observer = new QueryObserver(queryClient, {
+*   queryKey: ['posts'],
+*   queryFn: fetchPosts,
+* })
+*
+* const unsubscribe = observer.subscribe((result) => {
+*   console.log(result.data)
+* })
+* ```
+*/
+var QueryObserver = class extends Subscribable {
+	#client;
+	#currentQuery = void 0;
+	#currentQueryInitialState = void 0;
+	#currentResult = void 0;
+	#currentResultState;
+	#currentResultOptions;
+	#selectError;
+	#selectFn;
+	#selectResult;
+	#lastQueryWithDefinedData;
+	#staleTimeoutId;
+	#refetchIntervalId;
+	#currentRefetchInterval;
+	#trackedProps = /* @__PURE__ */ new Set();
+	constructor(client, options) {
+		super();
+		this.options = options;
+		this.#client = client;
+		this.#selectError = null;
+		this.bindMethods();
+		this.setOptions(options);
+	}
+	/**
+	* Binds the methods of the result (`refetch`) to the observer, so they keep working when destructured
+	* from it. Subclasses override it to bind their own result methods as well.
+	*/
+	bindMethods() {
+		this.refetch = this.refetch.bind(this);
+	}
+	onSubscribe() {
+		if (this.listeners.size === 1) {
+			this.#currentQuery.addObserver(this);
+			if (shouldFetchOnMount(this.#currentQuery, this.options)) this.#executeFetch();
+			else this.updateResult();
+			this.#updateTimers();
+		}
+	}
+	onUnsubscribe() {
+		if (!this.hasListeners()) this.destroy();
+	}
+	/**
+	* Returns whether the observed query is currently stale and configured
+	* (via the `refetchOnReconnect` option) to refetch when the network
+	* reconnects.
+	* @returns `true` if the observer should refetch the query on reconnect.
+	*/
+	shouldFetchOnReconnect() {
+		return shouldFetchOn(this.#currentQuery, this.options, this.options.refetchOnReconnect);
+	}
+	/**
+	* Returns whether the observed query is currently stale and configured
+	* (via the `refetchOnWindowFocus` option) to refetch when the window
+	* regains focus.
+	* @returns `true` if the observer should refetch the query on window focus.
+	*/
+	shouldFetchOnWindowFocus() {
+		return shouldFetchOn(this.#currentQuery, this.options, this.options.refetchOnWindowFocus);
+	}
+	/**
+	* Stops observing the current query: clears all listeners, cancels the
+	* stale and refetch-interval timers, and removes this observer from the
+	* query it was observing.
+	*/
+	destroy() {
+		this.listeners = /* @__PURE__ */ new Set();
+		this.#clearStaleTimeout();
+		this.#clearRefetchInterval();
+		this.#currentQuery.removeObserver(this);
+	}
+	/**
+	* Updates the observer's options. This will re-resolve the query being
+	* observed (switching to a different query if the `queryKey` changed),
+	* trigger a fetch if the new options require one and the observer has
+	* subscribers, recompute the current result, and reschedule the stale and
+	* refetch-interval timers as needed.
+	* @param options - The new observer options. They are defaulted with {@link
+	* QueryClient#defaultQueryOptions} before being applied.
+	* @throws {Error} If `enabled` is neither a boolean nor a function.
+	* @example
+	* ```ts
+	* observer.setOptions({ queryKey: ['posts', 1], queryFn: () => fetchPost(1) })
+	* // later: switch to a different query, reusing the same observer
+	* observer.setOptions({ queryKey: ['posts', 2], queryFn: () => fetchPost(2) })
+	* ```
+	*/
+	setOptions(options) {
+		const prevOptions = this.options;
+		const prevQuery = this.#currentQuery;
+		this.options = this.#client.defaultQueryOptions(options);
+		if (this.options.enabled !== void 0 && typeof this.options.enabled !== "boolean" && typeof this.options.enabled !== "function" && typeof resolveQueryValue(this.options.enabled, this.#currentQuery) !== "boolean") throw new Error("Expected enabled to be a boolean or a callback that returns a boolean");
+		this.#updateQuery();
+		this.#currentQuery.setOptions(this.options);
+		if (prevOptions._defaulted && !shallowEqualObjects(this.options, prevOptions)) this.#client.getQueryCache().notify({
+			type: "observerOptionsUpdated",
+			query: this.#currentQuery,
+			observer: this
+		});
+		const mounted = this.hasListeners();
+		if (mounted && shouldFetchOptionally(this.#currentQuery, prevQuery, this.options, prevOptions)) this.#executeFetch();
+		this.updateResult();
+		if (mounted && (this.#currentQuery !== prevQuery || resolveQueryValue(this.options.enabled, this.#currentQuery) !== resolveQueryValue(prevOptions.enabled, this.#currentQuery) || resolveQueryValue(this.options.staleTime, this.#currentQuery) !== resolveQueryValue(prevOptions.staleTime, this.#currentQuery))) this.#updateStaleTimeout();
+		const nextRefetchInterval = this.#computeRefetchInterval();
+		if (mounted && (this.#currentQuery !== prevQuery || resolveQueryValue(this.options.enabled, this.#currentQuery) !== resolveQueryValue(prevOptions.enabled, this.#currentQuery) || nextRefetchInterval !== this.#currentRefetchInterval)) this.#updateRefetchInterval(nextRefetchInterval);
+	}
+	/**
+	* Computes the result the observer would produce for the given (already-defaulted) options
+	* right now, building the underlying `Query` if it doesn't exist yet, without waiting for a
+	* subscription callback. Called by framework adapters on every render (e.g. `useQuery`) so the
+	* returned value is available synchronously, ahead of `setOptions` triggering an actual fetch.
+	* @param options - The defaulted observer options to compute the result for.
+	* @returns The result for the given options.
+	*/
+	getOptimisticResult(options) {
+		const query = this.#client.getQueryCache().build(this.#client, options);
+		const result = this.createResult(query, options);
+		if (!shallowEqualObjects(this.getCurrentResult(), result)) {
+			this.#currentResult = result;
+			this.#currentResultOptions = this.options;
+			this.#currentResultState = this.#currentQuery.state;
+		}
+		return result;
+	}
+	/**
+	* Returns the most recently computed `QueryObserverResult` for the
+	* observed query. This is a point-in-time read; to be notified of updates
+	* as they happen, subscribe to the observer instead (its inherited
+	* `subscribe` method).
+	* @returns The observer's latest result.
+	* @example
+	* ```ts
+	* const result = observer.getCurrentResult()
+	* console.log(result.status, result.data)
+	* ```
+	*/
+	getCurrentResult() {
+		return this.#currentResult;
+	}
+	/**
+	* Wraps a `QueryObserverResult` in a `Proxy` that records which properties are read, via
+	* {@link QueryObserver#trackProp} (and an optional `onPropTracked` callback). Used by framework
+	* adapters when `notifyOnChangeProps` is not set, to implement its default "only re-render on
+	* properties you actually read" behavior.
+	* @param result - The result to wrap.
+	* @param onPropTracked - Called with the name of each property that is read.
+	* @returns A proxy of `result` that tracks property reads.
+	*/
+	trackResult(result, onPropTracked) {
+		return new Proxy(result, { get: (target, key) => {
+			this.trackProp(key);
+			onPropTracked?.(key);
+			return Reflect.get(target, key);
+		} });
+	}
+	/**
+	* Records that the given `QueryObserverResult` property was read, so a subsequent update only
+	* notifies this observer if a tracked property actually changed. Normally called indirectly via
+	* {@link QueryObserver#trackResult}'s proxy; exposed directly for adapters that track property
+	* access themselves (e.g. through their own reactivity system) instead of via the proxy.
+	* @param key - The name of the property that was read.
+	*/
+	trackProp(key) {
+		this.#trackedProps.add(key);
+	}
+	/**
+	* Returns the `Query` instance this observer is currently observing.
+	* @returns The observed query.
+	*/
+	getCurrentQuery() {
+		return this.#currentQuery;
+	}
+	/**
+	* Refetches the observed query and returns a promise that resolves with
+	* the resulting `QueryObserverResult`.
+	* @param options - Set `cancelRefetch` to `false` to keep a running fetch instead of cancelling
+	* it, and `throwOnError` to `true` to reject when the refetch fails.
+	* @returns A promise that resolves with the result after the refetch.
+	* @example
+	* ```ts
+	* const result = await observer.refetch({ cancelRefetch: false })
+	* console.log(result.data)
+	* ```
+	*/
+	refetch({ ...options } = {}) {
+		return this.fetch({ ...options });
+	}
+	/**
+	* Fetches a query defined by the given options without affecting this
+	* observer's own tracked query or result, and returns a promise that
+	* resolves with the `QueryObserverResult` for that fetch. This is useful
+	* for prefetching data that another observer (e.g. a query about to be
+	* navigated to) will need, ahead of time.
+	* @param options - The observer options of the query to fetch.
+	* @returns A promise that resolves with the result for the fetched query.
+	* @example
+	* ```ts
+	* const result = await observer.fetchOptimistic({
+	*   queryKey: ['posts', 2],
+	*   queryFn: () => fetchPost(2),
+	* })
+	* console.log(result.data)
+	* ```
+	*/
+	fetchOptimistic(options) {
+		const defaultedOptions = this.#client.defaultQueryOptions(options);
+		const query = this.#client.getQueryCache().build(this.#client, defaultedOptions);
+		let unsubscribe = () => {};
+		let resolveEarly;
+		const cachePromise = new Promise((resolve) => {
+			resolveEarly = resolve;
+			unsubscribe = this.#client.getQueryCache().subscribe((event) => {
+				if (event.type === "updated" && event.query.queryHash === query.queryHash && query.state.data !== void 0) {
+					unsubscribe();
+					resolve(this.createResult(query, defaultedOptions));
+				}
+			});
+		});
+		return Promise.race([query.fetch(defaultedOptions).then(() => {
+			const result = this.createResult(query, defaultedOptions);
+			resolveEarly?.(result);
+			return result;
+		}).finally(() => {
+			unsubscribe();
+		}), cachePromise]);
+	}
+	/**
+	* Fetches the observed query and updates the result once the fetch settles. Used by `refetch` and,
+	* in `InfiniteQueryObserver`, to fetch more pages.
+	* @param fetchOptions - Options for this fetch. `cancelRefetch` defaults to `true`.
+	* @returns A promise that resolves with the updated result.
+	*/
+	fetch(fetchOptions) {
+		return this.#executeFetch({
+			...fetchOptions,
+			cancelRefetch: fetchOptions.cancelRefetch ?? true
+		}).then(() => {
+			this.updateResult();
+			return this.#currentResult;
+		});
+	}
+	#executeFetch(fetchOptions) {
+		this.#updateQuery();
+		let promise = this.#currentQuery.fetch(this.options, fetchOptions);
+		if (!fetchOptions?.throwOnError) promise = promise.catch(noop$3);
+		return promise;
+	}
+	#shouldScheduleTimer(timeout) {
+		return !isServer() && resolveQueryValue(this.options.enabled, this.#currentQuery) !== false && isValidTimeout(timeout);
+	}
+	#updateStaleTimeout() {
+		this.#clearStaleTimeout();
+		const staleTime = resolveQueryValue(this.options.staleTime, this.#currentQuery);
+		if (this.#currentResult.isStale || !this.#shouldScheduleTimer(staleTime)) return;
+		const timeout = timeUntilStale(this.#currentResult.dataUpdatedAt, staleTime) + 1;
+		this.#staleTimeoutId = timeoutManager.setTimeout(() => {
+			if (!this.#currentResult.isStale) this.updateResult();
+		}, timeout);
+	}
+	#computeRefetchInterval() {
+		return resolveQueryValue(this.options.refetchInterval, this.#currentQuery) ?? false;
+	}
+	#updateRefetchInterval(nextInterval) {
+		this.#clearRefetchInterval();
+		this.#currentRefetchInterval = nextInterval;
+		if (this.#currentRefetchInterval === 0 || !this.#shouldScheduleTimer(this.#currentRefetchInterval)) return;
+		this.#refetchIntervalId = timeoutManager.setInterval(() => {
+			if (this.options.refetchIntervalInBackground || focusManager.isFocused()) this.#executeFetch();
+		}, this.#currentRefetchInterval);
+	}
+	#updateTimers() {
+		this.#updateStaleTimeout();
+		this.#updateRefetchInterval(this.#computeRefetchInterval());
+	}
+	#clearStaleTimeout() {
+		if (this.#staleTimeoutId !== void 0) {
+			timeoutManager.clearTimeout(this.#staleTimeoutId);
+			this.#staleTimeoutId = void 0;
+		}
+	}
+	#clearRefetchInterval() {
+		if (this.#refetchIntervalId !== void 0) {
+			timeoutManager.clearInterval(this.#refetchIntervalId);
+			this.#refetchIntervalId = void 0;
+		}
+	}
+	/**
+	* Computes the result for a query and options from the query's state, applying `select`,
+	* `placeholderData`, and the derived flags. Subclasses override it to add their own fields.
+	* @param query - The query to compute the result for.
+	* @param options - The observer options to compute the result with.
+	* @returns The computed result.
+	*/
+	createResult(query, options) {
+		const prevQuery = this.#currentQuery;
+		const prevOptions = this.options;
+		const prevResult = this.#currentResult;
+		const prevResultState = this.#currentResultState;
+		const prevResultOptions = this.#currentResultOptions;
+		const queryInitialState = query !== prevQuery ? query.state : this.#currentQueryInitialState;
+		const { state } = query;
+		let newState = { ...state };
+		let isPlaceholderData = false;
+		let data;
+		if (options._optimisticResults) {
+			const mounted = this.hasListeners();
+			const fetchOnMount = !mounted && shouldFetchOnMount(query, options);
+			const fetchOptionally = mounted && shouldFetchOptionally(query, prevQuery, options, prevOptions);
+			if (fetchOnMount || fetchOptionally) newState = {
+				...newState,
+				...fetchState(state.data, query.options)
+			};
+			if (options._optimisticResults === "isRestoring") newState.fetchStatus = "idle";
+		}
+		let { error, errorUpdatedAt, status } = newState;
+		data = newState.data;
+		let skipSelect = false;
+		if (options.placeholderData !== void 0 && data === void 0 && status === "pending") {
+			let placeholderData;
+			if (prevResult?.isPlaceholderData && options.placeholderData === prevResultOptions?.placeholderData) {
+				placeholderData = prevResult.data;
+				skipSelect = true;
+			} else placeholderData = typeof options.placeholderData === "function" ? options.placeholderData(this.#lastQueryWithDefinedData?.state.data, this.#lastQueryWithDefinedData) : options.placeholderData;
+			if (placeholderData !== void 0) {
+				status = "success";
+				data = replaceData(prevResult?.data, placeholderData, options);
+				isPlaceholderData = true;
+			}
+		}
+		if (options.select && data !== void 0 && !skipSelect) {
+			if (prevResult && data === prevResultState?.data && options.select === this.#selectFn) data = this.#selectResult;
+			else try {
+				this.#selectFn = options.select;
+				data = options.select(data);
+				data = replaceData(prevResult?.data, data, options);
+				this.#selectResult = data;
+				this.#selectError = null;
+			} catch (selectError) {
+				this.#selectError = selectError;
+			}
+		} else if (data === void 0) this.#selectError = null;
+		if (this.#selectError) {
+			error = this.#selectError;
+			data = this.#selectResult;
+			errorUpdatedAt = prevResult?.error === error ? prevResult.errorUpdatedAt : Date.now();
+			status = "error";
+			isPlaceholderData = false;
+		}
+		const isFetching = newState.fetchStatus === "fetching";
+		const isPending = status === "pending";
+		const isError = status === "error";
+		const isLoading = isPending && isFetching;
+		const hasData = data !== void 0;
+		return {
+			status,
+			fetchStatus: newState.fetchStatus,
+			isPending,
+			isSuccess: status === "success",
+			isError,
+			isInitialLoading: isLoading,
+			isLoading,
+			data,
+			dataUpdatedAt: newState.dataUpdatedAt,
+			error,
+			errorUpdatedAt,
+			failureCount: newState.fetchFailureCount,
+			failureReason: newState.fetchFailureReason,
+			errorUpdateCount: newState.errorUpdateCount,
+			isFetched: query.isFetched(),
+			isFetchedAfterMount: newState.dataUpdateCount > queryInitialState.dataUpdateCount || newState.errorUpdateCount > queryInitialState.errorUpdateCount,
+			isFetching,
+			isRefetching: isFetching && !isPending,
+			isLoadingError: isError && !hasData,
+			isPaused: newState.fetchStatus === "paused",
+			isPlaceholderData,
+			isRefetchError: isError && hasData,
+			isStale: isStale(query, options),
+			refetch: this.refetch,
+			isEnabled: resolveQueryValue(options.enabled, query) !== false
+		};
+	}
+	/**
+	* Recomputes and stores the current result from the current query/options, notifying listeners
+	* if it changed. Framework adapters call this right after subscribing to make sure no query
+	* update was missed in the gap between creating the observer and subscribing to it.
+	*/
+	updateResult() {
+		const prevResult = this.#currentResult;
+		const nextResult = this.createResult(this.#currentQuery, this.options);
+		this.#currentResultState = this.#currentQuery.state;
+		this.#currentResultOptions = this.options;
+		if (this.#currentResultState.data !== void 0) this.#lastQueryWithDefinedData = this.#currentQuery;
+		if (shallowEqualObjects(nextResult, prevResult)) return;
+		this.#currentResult = nextResult;
+		const shouldNotifyListeners = () => {
+			if (!prevResult) return true;
+			const { notifyOnChangeProps } = this.options;
+			const notifyOnChangePropsValue = typeof notifyOnChangeProps === "function" ? notifyOnChangeProps() : notifyOnChangeProps;
+			if (notifyOnChangePropsValue === "all" || !notifyOnChangePropsValue && !this.#trackedProps.size) return true;
+			if (this.options.throwOnError && this.#currentResult.error !== prevResult.error) return true;
+			for (const key of notifyOnChangePropsValue ?? this.#trackedProps) if (this.#currentResult[key] !== prevResult[key]) return true;
+			return false;
+		};
+		const notifyListeners = shouldNotifyListeners();
+		notifyManager.batch(() => {
+			if (notifyListeners) this.listeners.forEach((listener) => {
+				listener(this.#currentResult);
+			});
+			this.#client.getQueryCache().notify({
+				query: this.#currentQuery,
+				type: "observerResultsUpdated"
+			});
+		});
+	}
+	#updateQuery() {
+		const query = this.#client.getQueryCache().build(this.#client, this.options);
+		if (query === this.#currentQuery) return;
+		const prevQuery = this.#currentQuery;
+		this.#currentQuery = query;
+		this.#currentQueryInitialState = query.state;
+		if (this.hasListeners()) {
+			prevQuery?.removeObserver(this);
+			query.addObserver(this);
+		}
+	}
+	/**
+	* Updates the observer's result when the observed query changes, and reschedules its timers if it
+	* has listeners.
+	* @internal
+	*/
+	onQueryUpdate() {
+		this.updateResult();
+		if (this.hasListeners()) this.#updateTimers();
+	}
+};
+/**
+* Checks whether a query has no data yet and should do its initial load when an observer mounts.
+* @param query - The query to check.
+* @param options - The observer options.
+* @returns `true` if the query is enabled, has no data, and isn't in an error state with
+* `retryOnMount: false`.
+*/
+function shouldLoadOnMount(query, options) {
+	return resolveQueryValue(options.enabled, query) !== false && query.state.data === void 0 && !(query.state.status === "error" && resolveQueryValue(options.retryOnMount, query) === false);
+}
+/**
+* Checks whether a query should fetch when an observer mounts: either for its initial load, or
+* because it has data and `refetchOnMount` asks for a refetch.
+* @param query - The query to check.
+* @param options - The observer options.
+* @returns `true` if the query should fetch on mount.
+*/
+function shouldFetchOnMount(query, options) {
+	return shouldLoadOnMount(query, options) || query.state.data !== void 0 && shouldFetchOn(query, options, options.refetchOnMount);
+}
+/**
+* Checks whether a query should fetch for a `refetchOnMount`, `refetchOnWindowFocus`, or
+* `refetchOnReconnect` option.
+* @param query - The query to check.
+* @param options - The observer options.
+* @param field - The value of the option to check.
+* @returns `true` if the query is enabled, not static, and the option is `'always'`, or is not
+* `false` and the query is stale.
+*/
+function shouldFetchOn(query, options, field) {
+	if (resolveQueryValue(options.enabled, query) !== false && resolveQueryValue(options.staleTime, query) !== "static") {
+		const value = resolveQueryValue(field, query);
+		return value === "always" || value !== false && isStale(query, options);
+	}
+	return false;
+}
+/**
+* Checks whether a query should fetch after the observer's options change.
+* @param query - The query observed with the new options.
+* @param prevQuery - The query observed with the previous options.
+* @param options - The new observer options.
+* @param prevOptions - The previous observer options.
+* @returns `true` if the query changed or was disabled before, it isn't a suspense query in an
+* error state, and it is stale.
+*/
+function shouldFetchOptionally(query, prevQuery, options, prevOptions) {
+	return (query !== prevQuery || resolveQueryValue(prevOptions.enabled, query) === false) && (!options.suspense || query.state.status !== "error") && isStale(query, options);
+}
+/**
+* Checks whether a query is stale for the given observer options.
+* @param query - The query to check.
+* @param options - The observer options, whose `enabled` and `staleTime` are used.
+* @returns `true` if the query is enabled and its data is stale for `staleTime`.
+*/
+function isStale(query, options) {
+	return resolveQueryValue(options.enabled, query) !== false && query.isStaleByTime(resolveQueryValue(options.staleTime, query));
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/mutation.js
+/**
+* Represents a single mutation attempt. A `Mutation` holds the mutation's
+* options, state (data/error/status), and the `MutationObserver`s currently
+* subscribed to it.
+*
+* Instances are created and managed internally by `MutationCache`; application
+* code typically interacts with mutations indirectly through `QueryClient` or
+* a framework hook like `useMutation`. Direct access to a `Mutation` instance
+* is possible via `mutationCache.find()`/`getAll()` for inspecting cache state.
+* @example
+* ```ts
+* const mutationCache = queryClient.getMutationCache()
+*
+* const mutation = mutationCache.find({ mutationKey: ['addPost'] })
+* ```
+*/
+var Mutation = class extends Removable {
+	#client;
+	#observers;
+	#mutationCache;
+	#retryer;
+	constructor(config) {
+		super();
+		this.#client = config.client;
+		this.mutationId = config.mutationId;
+		this.#mutationCache = config.mutationCache;
+		this.#observers = [];
+		this.state = config.state || getDefaultState();
+		this.setOptions(config.options);
+		this.scheduleGc();
+	}
+	/**
+	* Replaces the mutation's options and applies their `gcTime`.
+	* @internal
+	* @param options - The new mutation options.
+	*/
+	setOptions(options) {
+		this.options = options;
+		this.updateGcTime(this.options.gcTime);
+	}
+	/**
+	* The `meta` object passed in the mutation's options, if any.
+	* @returns The mutation's `meta`, or `undefined` if none was set.
+	*/
+	get meta() {
+		return this.options.meta;
+	}
+	/**
+	* Subscribes an observer to the mutation and stops its garbage collection.
+	* @internal
+	* @param observer - The observer to add. Adding an observer that is already subscribed does
+	* nothing.
+	*/
+	addObserver(observer) {
+		if (!this.#observers.includes(observer)) {
+			this.#observers.push(observer);
+			this.clearGcTimeout();
+			this.#mutationCache.notify({
+				type: "observerAdded",
+				mutation: this,
+				observer
+			});
+		}
+	}
+	/**
+	* Unsubscribes an observer from the mutation.
+	* @internal
+	* @param observer - The observer to remove. Garbage collection is scheduled afterwards.
+	*/
+	removeObserver(observer) {
+		this.#observers = this.#observers.filter((x) => x !== observer);
+		this.scheduleGc();
+		this.#mutationCache.notify({
+			type: "observerRemoved",
+			mutation: this,
+			observer
+		});
+	}
+	optionalRemove() {
+		if (!this.#observers.length) {
+			if (this.state.status === "pending") this.scheduleGc();
+			else this.#mutationCache.remove(this);
+		}
+	}
+	/**
+	* Resumes a mutation that is currently paused or was restored from a
+	* dehydrated, still-`pending` state.
+	*
+	* - If this mutation has an active retryer (it paused mid-attempt, e.g. due
+	*   to the network mode or scope-based queuing), its retryer is resumed.
+	* - Otherwise, if the mutation's status is still `pending` (e.g. it was
+	*   dehydrated while an attempt was in flight and never got a retryer in
+	*   this instance), `execute` is called again with the last known variables.
+	* - Otherwise the mutation has already settled and this resolves immediately
+	*   without running anything again.
+	* @returns A promise that settles with the resumed mutation: it rejects if the mutation fails.
+	* It resolves immediately if the mutation has already settled.
+	* @see {@link Mutation#execute}
+	* @example
+	* ```ts
+	* // typically driven by reconnect handling, e.g. queryClient.resumePausedMutations()
+	* const mutation = mutationCache.find({ mutationKey: ['addPost'] })
+	* await mutation?.continue()
+	* ```
+	*/
+	continue() {
+		return this.#retryer?.continue() ?? (this.state.status === "pending" ? this.execute(this.state.variables) : Promise.resolve());
+	}
+	/**
+	* Runs the mutation function for the given variables through a retryer, and
+	* drives the mutation's state and lifecycle callbacks through to settlement.
+	*
+	* If this mutation's state is already `pending` when `execute` is called
+	* (i.e. it was restored, still in-flight, from a dehydrated state), the
+	* `onMutate` step is skipped and a `continue` action is dispatched to
+	* unpause it; otherwise a `pending` action is dispatched first, then the
+	* mutation cache's `onMutate` and the mutation's own `onMutate` option are
+	* awaited in that order, and the resulting context is stored.
+	*
+	* The mutation function is then run (subject to `retry`/`retryDelay`/
+	* `networkMode`, and to the mutation cache's scope-based serialization).
+	* On success, the cache's `onSuccess`/`onSettled` callbacks run before the
+	* mutation's own `onSuccess`/`onSettled` options, a `success` action is
+	* dispatched, and the resolved data is returned. On failure, the same
+	* cache-then-option ordering is used for `onError`/`onSettled`, but each of
+	* those four callbacks is individually caught so that a throwing callback
+	* cannot mask the original error; an `error` action is then dispatched and
+	* the original error is re-thrown.
+	* @param variables - The variables passed to the `mutationFn`.
+	* @returns A promise that resolves with the mutation's data, or rejects with its error.
+	* @see {@link Mutation#continue}
+	* @example
+	* ```ts
+	* // Called internally by `MutationObserver.mutate` and `Mutation.continue` —
+	* // applications normally trigger mutations through those, not this method.
+	* const data = await mutation.execute(variables)
+	* ```
+	*/
+	async execute(variables) {
+		const onContinue = () => {
+			this.#dispatch({ type: "continue" });
+		};
+		const mutationFnContext = {
+			client: this.#client,
+			meta: this.options.meta,
+			mutationKey: this.options.mutationKey
+		};
+		const retryer = this.#retryer = createRetryer({
+			fn: () => {
+				if (!this.options.mutationFn) return Promise.reject(/* @__PURE__ */ new Error("No mutationFn found"));
+				return this.options.mutationFn(variables, mutationFnContext);
+			},
+			onFail: (failureCount, error) => {
+				this.#dispatch({
+					type: "failed",
+					failureCount,
+					error
+				});
+			},
+			onPause: () => {
+				this.#dispatch({ type: "pause" });
+			},
+			onContinue,
+			retry: this.options.retry ?? 0,
+			retryDelay: this.options.retryDelay,
+			networkMode: this.options.networkMode,
+			canRun: () => this.#mutationCache.canRun(this)
+		});
+		const restored = this.state.status === "pending";
+		const isPaused = !retryer.canStart();
+		try {
+			if (restored) onContinue();
+			else {
+				this.#dispatch({
+					type: "pending",
+					variables,
+					isPaused
+				});
+				if (this.#mutationCache.config.onMutate) await this.#mutationCache.config.onMutate(variables, this, mutationFnContext);
+				const context = await this.options.onMutate?.(variables, mutationFnContext);
+				if (context !== this.state.context) this.#dispatch({
+					type: "pending",
+					context,
+					variables,
+					isPaused
+				});
+			}
+			if (this.state.isPaused && retryer.canStart()) onContinue();
+			const data = await retryer.start();
+			await this.#mutationCache.config.onSuccess?.(data, variables, this.state.context, this, mutationFnContext);
+			await this.options.onSuccess?.(data, variables, this.state.context, mutationFnContext);
+			await this.#mutationCache.config.onSettled?.(data, null, this.state.variables, this.state.context, this, mutationFnContext);
+			await this.options.onSettled?.(data, null, variables, this.state.context, mutationFnContext);
+			this.#dispatch({
+				type: "success",
+				data
+			});
+			return data;
+		} catch (error) {
+			try {
+				await this.#mutationCache.config.onError?.(error, variables, this.state.context, this, mutationFnContext);
+			} catch (e) {
+				Promise.reject(e);
+			}
+			try {
+				await this.options.onError?.(error, variables, this.state.context, mutationFnContext);
+			} catch (e) {
+				Promise.reject(e);
+			}
+			try {
+				await this.#mutationCache.config.onSettled?.(void 0, error, this.state.variables, this.state.context, this, mutationFnContext);
+			} catch (e) {
+				Promise.reject(e);
+			}
+			try {
+				await this.options.onSettled?.(void 0, error, variables, this.state.context, mutationFnContext);
+			} catch (e) {
+				Promise.reject(e);
+			}
+			this.#dispatch({
+				type: "error",
+				error
+			});
+			throw error;
+		} finally {
+			if (this.#retryer === retryer) this.#retryer = void 0;
+			this.#mutationCache.runNext(this);
+		}
+	}
+	#dispatch(action) {
+		const reducer = (state) => {
+			switch (action.type) {
+				case "failed": return {
+					...state,
+					failureCount: action.failureCount,
+					failureReason: action.error
+				};
+				case "pause": return {
+					...state,
+					isPaused: true
+				};
+				case "continue": return {
+					...state,
+					isPaused: false
+				};
+				case "pending": return {
+					...state,
+					context: action.context,
+					data: void 0,
+					failureCount: 0,
+					failureReason: null,
+					error: null,
+					isPaused: action.isPaused,
+					status: "pending",
+					variables: action.variables,
+					submittedAt: Date.now()
+				};
+				case "success": return {
+					...state,
+					data: action.data,
+					failureCount: 0,
+					failureReason: null,
+					error: null,
+					status: "success",
+					isPaused: false
+				};
+				case "error": return {
+					...state,
+					data: void 0,
+					error: action.error,
+					failureCount: state.failureCount + 1,
+					failureReason: action.error,
+					isPaused: false,
+					status: "error"
+				};
+			}
+		};
+		this.state = reducer(this.state);
+		notifyManager.batch(() => {
+			this.#observers.forEach((observer) => {
+				observer.onMutationUpdate(action);
+			});
+			this.#mutationCache.notify({
+				mutation: this,
+				type: "updated",
+				action
+			});
+		});
+	}
+};
+/**
+* Returns the initial state of a mutation: `'idle'`, with no data, error, or variables.
+* @returns The initial mutation state.
+*/
+function getDefaultState() {
+	return {
+		context: void 0,
+		data: void 0,
+		error: null,
+		failureCount: 0,
+		failureReason: null,
+		isPaused: false,
+		status: "idle",
+		variables: void 0,
+		submittedAt: 0
+	};
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/mutationCache.js
+/**
+* The `MutationCache` is the storage for mutations.
+*
+* Normally, you will not interact with the `MutationCache` directly and instead use a
+* `QueryClient`. You can subscribe to it (inherited from `Subscribable`) to be informed of
+* safe/known updates to the cache, such as mutations being added, removed, or updated.
+* @example
+* ```ts
+* const unsubscribe = mutationCache.subscribe((event) => {
+*   console.log(event.type, event.mutation)
+* })
+* ```
+*/
+var MutationCache = class extends Subscribable {
+	#mutations;
+	#scopes;
+	#mutationId;
+	constructor(config = {}) {
+		super();
+		this.config = config;
+		this.#mutations = /* @__PURE__ */ new Set();
+		this.#scopes = /* @__PURE__ */ new Map();
+		this.#mutationId = 0;
+	}
+	/**
+	* Creates a mutation and adds it to the cache.
+	* @internal
+	* @param client - The client the mutation belongs to, used to default its options.
+	* @param options - The mutation options. They are defaulted with {@link
+	* QueryClient#defaultMutationOptions}.
+	* @param state - The initial state of the mutation, e.g. when restoring a dehydrated mutation.
+	* @returns The new mutation, already added to the cache.
+	*/
+	build(client, options, state) {
+		const mutation = new Mutation({
+			client,
+			mutationCache: this,
+			mutationId: ++this.#mutationId,
+			options: client.defaultMutationOptions(options),
+			state
+		});
+		this.add(mutation);
+		return mutation;
+	}
+	/**
+	* Adds a mutation to the cache.
+	* @internal
+	* @param mutation - The mutation to add. If it has a `scope`, it is queued in that scope.
+	*/
+	add(mutation) {
+		this.#mutations.add(mutation);
+		const scope = scopeFor(mutation);
+		if (typeof scope === "string") {
+			const scopedMutations = this.#scopes.get(scope);
+			if (scopedMutations) scopedMutations.push(mutation);
+			else this.#scopes.set(scope, [mutation]);
+		}
+		this.notify({
+			type: "added",
+			mutation
+		});
+	}
+	/**
+	* Removes a mutation from the cache.
+	* @internal
+	* @param mutation - The mutation to remove, also from its scope's queue.
+	*/
+	remove(mutation) {
+		if (this.#mutations.delete(mutation)) {
+			const scope = scopeFor(mutation);
+			if (typeof scope === "string") {
+				const scopedMutations = this.#scopes.get(scope);
+				if (scopedMutations) {
+					if (scopedMutations.length > 1) {
+						const index = scopedMutations.indexOf(mutation);
+						if (index !== -1) scopedMutations.splice(index, 1);
+					} else if (scopedMutations[0] === mutation) this.#scopes.delete(scope);
+				}
+			}
+		}
+		this.notify({
+			type: "removed",
+			mutation
+		});
+	}
+	/**
+	* Checks whether a mutation can run now, given the other mutations in its `scope`.
+	* @internal
+	* @param mutation - The mutation to check.
+	* @returns `true` if the mutation has no `scope`, or no other mutation in its scope is pending
+	* ahead of it.
+	*/
+	canRun(mutation) {
+		const scope = scopeFor(mutation);
+		if (typeof scope === "string") {
+			const firstPendingMutation = this.#scopes.get(scope)?.find((m) => m.state.status === "pending");
+			return !firstPendingMutation || firstPendingMutation === mutation;
+		} else return true;
+	}
+	/**
+	* Continues the next paused mutation in the same `scope` after a mutation finishes.
+	* @internal
+	* @param mutation - The mutation that finished.
+	* @returns A promise that resolves once the next paused mutation in the same scope has continued,
+	* or immediately if there is none.
+	*/
+	runNext(mutation) {
+		const scope = scopeFor(mutation);
+		if (typeof scope === "string") return (this.#scopes.get(scope)?.find((m) => m !== mutation && m.state.isPaused))?.continue() ?? Promise.resolve();
+		else return Promise.resolve();
+	}
+	/**
+	* Removes all mutations from the cache.
+	* @example
+	* ```ts
+	* const mutationCache = queryClient.getMutationCache()
+	*
+	* mutationCache.clear()
+	* ```
+	*/
+	clear() {
+		notifyManager.batch(() => {
+			const mutations = this.getAll();
+			this.#mutations.clear();
+			this.#scopes.clear();
+			mutations.forEach((mutation) => {
+				this.notify({
+					type: "removed",
+					mutation
+				});
+			});
+		});
+	}
+	/**
+	* Returns all mutations within the cache.
+	*
+	* This is not typically needed for most applications, but can come in handy when needing more
+	* information about a mutation in rare scenarios.
+	* @returns Every mutation in the cache.
+	* @example
+	* ```ts
+	* const mutationCache = queryClient.getMutationCache()
+	*
+	* const mutations = mutationCache.getAll()
+	* ```
+	*/
+	getAll() {
+		return Array.from(this.#mutations);
+	}
+	/**
+	* A slightly more advanced method that can be used to get an existing mutation instance from
+	* the cache. If the mutation does not exist, `undefined` is returned.
+	*
+	* This is not typically needed for most applications, but can come in handy when needing more
+	* information about a mutation in rare scenarios.
+	* @param filters - The filters to match. `exact` defaults to `true`.
+	* @returns The first matching mutation, or `undefined`.
+	* @see {@link MutationCache#findAll}
+	* @example
+	* ```ts
+	* const mutationCache = queryClient.getMutationCache()
+	*
+	* const mutation = mutationCache.find({ mutationKey: ['addPost'] })
+	* ```
+	*/
+	find(filters) {
+		const defaultedFilters = {
+			exact: true,
+			...filters
+		};
+		return this.getAll().find((mutation) => matchMutation(defaultedFilters, mutation));
+	}
+	/**
+	* An even more advanced method that can be used to get existing mutation instances from the
+	* cache that match the given filters. If no mutations match, an empty array is returned.
+	*
+	* This is not typically needed for most applications, but can come in handy when needing more
+	* information about mutations in rare scenarios.
+	* @param filters - The filters to match. Without filters, every mutation is returned.
+	* @returns The matching mutations.
+	* @see {@link MutationCache#find}
+	* @example
+	* ```ts
+	* const mutationCache = queryClient.getMutationCache()
+	*
+	* const mutations = mutationCache.findAll({ mutationKey: ['addPost'] })
+	* ```
+	*/
+	findAll(filters = {}) {
+		return this.getAll().filter((mutation) => matchMutation(filters, mutation));
+	}
+	/**
+	* Notifies every cache listener of an event, in one batch.
+	* @internal
+	* @param event - The event passed to every listener.
+	*/
+	notify(event) {
+		notifyManager.batch(() => {
+			this.listeners.forEach((listener) => {
+				listener(event);
+			});
+		});
+	}
+	/**
+	* Continues every paused mutation, e.g. when the app comes back online.
+	* @internal
+	* @returns A promise that resolves once every paused mutation has continued and settled.
+	*/
+	resumePausedMutations() {
+		const pausedMutations = this.getAll().filter((x) => x.state.isPaused);
+		return notifyManager.batch(() => Promise.all(pausedMutations.map((mutation) => mutation.continue().catch(noop$3))));
+	}
+};
+/**
+* Returns the scope id of a mutation, used to run mutations with the same scope one after another.
+* @param mutation - The mutation to read the scope of.
+* @returns The mutation's `scope.id`, or `undefined` if it has no scope.
+*/
+function scopeFor(mutation) {
+	return mutation.options.scope?.id;
+}
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/mutationObserver.js
+/**
+* Observes a single mutation and derives a `MutationObserverResult` from it.
+* A framework hook like `useMutation` creates one `MutationObserver` per hook
+* call, keeps it stable across re-renders, calls `setOptions` when the options
+* passed to the hook change, subscribes to it to re-render on updates, and
+* reads `getCurrentResult()` for the value to return. Calling `mutate()`
+* builds a new underlying `Mutation` in the `MutationCache` and executes it.
+* @example
+* ```ts
+* const observer = new MutationObserver(queryClient, {
+*   mutationFn: (variables: { title: string }) => addPost(variables),
+* })
+* ```
+*/
+var MutationObserver$1 = class extends Subscribable {
+	#client;
+	#currentResult = void 0;
+	#currentMutation;
+	#mutateOptions;
+	constructor(client, options) {
+		super();
+		this.#client = client;
+		this.setOptions(options);
+		this.bindMethods();
+		this.#updateResult();
+	}
+	/**
+	* Binds the methods of the result (`mutate` and `reset`) to the observer, so they keep working when
+	* destructured from it.
+	*/
+	bindMethods() {
+		this.mutate = this.mutate.bind(this);
+		this.reset = this.reset.bind(this);
+	}
+	/**
+	* Updates the observer's options.
+	*
+	* If the new `mutationKey` differs from the previous one (and both were
+	* defined), the observer is reset, detaching it from the mutation it was
+	* observing. Otherwise, if the currently observed mutation is still
+	* `pending`, its options are updated in place as well.
+	* @param options - The new mutation observer options. They are defaulted with {@link
+	* QueryClient#defaultMutationOptions} before being applied.
+	* @example
+	* ```ts
+	* observer.setOptions({
+	*   mutationFn: (variables: { title: string }) => addPost(variables),
+	*   onSuccess: (data) => console.log(data),
+	* })
+	* ```
+	*/
+	setOptions(options) {
+		const prevOptions = this.options;
+		this.options = this.#client.defaultMutationOptions(options);
+		if (!shallowEqualObjects(this.options, prevOptions)) this.#client.getMutationCache().notify({
+			type: "observerOptionsUpdated",
+			mutation: this.#currentMutation,
+			observer: this
+		});
+		if (prevOptions?.mutationKey && this.options.mutationKey && hashKey(prevOptions.mutationKey) !== hashKey(this.options.mutationKey)) this.reset();
+		else if (this.#currentMutation?.state.status === "pending") this.#currentMutation.setOptions(this.options);
+	}
+	onSubscribe() {
+		if (this.listeners.size === 1 && this.#currentMutation) {
+			this.#currentMutation.addObserver(this);
+			this.#updateResult();
+		}
+	}
+	onUnsubscribe() {
+		if (!this.hasListeners()) this.#currentMutation?.removeObserver(this);
+	}
+	/**
+	* Updates the observer's result when the observed mutation changes, and notifies its listeners.
+	* @internal
+	* @param action - The action that updated the observed mutation, passed on to the observer's
+	* callbacks.
+	*/
+	onMutationUpdate(action) {
+		this.#updateResult();
+		this.#notify(action);
+	}
+	/**
+	* Returns the observer's current result, derived from the observed
+	* mutation's state (or the default, `idle` state if no mutation has been
+	* built yet, e.g. before the first `mutate()` call or after `reset()`).
+	* @returns The observer's latest result.
+	*/
+	getCurrentResult() {
+		return this.#currentResult;
+	}
+	/**
+	* Detaches the observer from the mutation it is currently observing (if
+	* any) and resets the observed result back to its default, `idle` state.
+	*
+	* This does not cancel an in-flight mutation; the mutation itself keeps
+	* running to completion and its own callbacks still fire, but this
+	* observer stops reflecting its state and a subsequent `mutate()` call
+	* will build a brand new mutation.
+	* @see {@link MutationObserver#mutate}
+	* @example
+	* ```ts
+	* observer.reset()
+	* ```
+	*/
+	reset() {
+		this.#currentMutation?.removeObserver(this);
+		this.#currentMutation = void 0;
+		this.#updateResult();
+		this.#notify();
+	}
+	/**
+	* Builds a new `Mutation` in the `MutationCache` using the observer's
+	* current options, detaches this observer from any previously observed
+	* mutation, attaches it to the new one, and executes it with the given
+	* variables.
+	*
+	* The optional per-call `options` (`onSuccess`/`onError`/`onSettled`) are
+	* invoked once the mutation settles, in addition to any callbacks defined
+	* on the observer's own options.
+	* @param variables - The variables passed to the `mutationFn`.
+	* @param options - Per-call `onSuccess`, `onError`, and `onSettled` callbacks.
+	* @returns A promise that resolves with the mutation's data, or rejects with its error.
+	* @example
+	* ```ts
+	* await observer.mutate(
+	*   { title: 'New post' },
+	*   { onSuccess: (data) => console.log(data) },
+	* )
+	* ```
+	*/
+	mutate(variables, options) {
+		this.#mutateOptions = options;
+		this.#currentMutation?.removeObserver(this);
+		this.#currentMutation = this.#client.getMutationCache().build(this.#client, this.options);
+		this.#currentMutation.addObserver(this);
+		return this.#currentMutation.execute(variables);
+	}
+	#updateResult() {
+		const state = this.#currentMutation?.state ?? getDefaultState();
+		this.#currentResult = {
+			...state,
+			isPending: state.status === "pending",
+			isSuccess: state.status === "success",
+			isError: state.status === "error",
+			isIdle: state.status === "idle",
+			mutate: this.mutate,
+			reset: this.reset
+		};
+	}
+	#notify(action) {
+		notifyManager.batch(() => {
+			const mutateOptions = this.#mutateOptions;
+			if (mutateOptions && this.hasListeners()) {
+				const variables = this.#currentResult.variables;
+				const onMutateResult = this.#currentResult.context;
+				const context = {
+					client: this.#client,
+					meta: this.options.meta,
+					mutationKey: this.options.mutationKey
+				};
+				if (action?.type === "success") {
+					try {
+						mutateOptions.onSuccess?.(action.data, variables, onMutateResult, context);
+					} catch (e) {
+						Promise.reject(e);
+					}
+					try {
+						mutateOptions.onSettled?.(action.data, null, variables, onMutateResult, context);
+					} catch (e) {
+						Promise.reject(e);
+					}
+				} else if (action?.type === "error") {
+					try {
+						mutateOptions.onError?.(action.error, variables, onMutateResult, context);
+					} catch (e) {
+						Promise.reject(e);
+					}
+					try {
+						mutateOptions.onSettled?.(void 0, action.error, variables, onMutateResult, context);
+					} catch (e) {
+						Promise.reject(e);
+					}
+				}
+			}
+			this.listeners.forEach((listener) => {
+				listener(this.#currentResult);
+			});
+		});
+	}
+};
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/queryCache.js
+/**
+* The `QueryCache` is the storage mechanism for TanStack Query. It stores all the data, meta
+* information, and state of the queries it contains.
+*
+* Normally, you will not interact with the `QueryCache` directly and instead use a `QueryClient`
+* for a specific cache. You can subscribe to it (inherited from `Subscribable`) to be informed of
+* safe/known updates to the cache, such as queries being added, removed, or updated — updates made
+* outside of the cache's own tracked mechanisms (e.g. mutating a query's state object directly) do
+* not notify subscribers.
+* @example
+* ```ts
+* const unsubscribe = queryCache.subscribe((event) => {
+*   console.log(event.type, event.query)
+* })
+* ```
+*/
+var QueryCache = class extends Subscribable {
+	#queries;
+	constructor(config = {}) {
+		super();
+		this.config = config;
+		this.#queries = /* @__PURE__ */ new Map();
+	}
+	/**
+	* Returns the existing `Query` instance for the given options' `queryKey`/`queryHash`, or
+	* builds and adds a new one to the cache if none exists yet. Used by framework adapters and
+	* plugins (e.g. broadcast/persistence) that need to get-or-create a `Query` directly, bypassing
+	* the reactive `QueryObserver` machinery.
+	* @param client - The client the query belongs to, used to default its options.
+	* @param options - The query options, including the `queryKey`. A new query is created with the
+	* options defaulted by {@link QueryClient#defaultQueryOptions}.
+	* @param state - The initial state of a newly created query, e.g. when hydrating. Ignored if the
+	* query already exists.
+	* @returns The existing or newly created query.
+	* @example
+	* ```ts
+	* const queryCache = queryClient.getQueryCache()
+	*
+	* const query = queryCache.build(queryClient, {
+	*   queryKey: ['posts'],
+	*   queryFn: fetchPosts,
+	* })
+	* ```
+	*/
+	build(client, options, state) {
+		const queryKey = options.queryKey;
+		const queryHash = options.queryHash ?? hashQueryKeyByOptions(queryKey, options);
+		let query = this.get(queryHash);
+		if (!query) {
+			query = new Query({
+				client,
+				queryKey,
+				queryHash,
+				options: client.defaultQueryOptions(options),
+				state,
+				defaultOptions: client.getQueryDefaults(queryKey)
+			});
+			this.add(query);
+		}
+		return query;
+	}
+	/**
+	* Adds a query to the cache.
+	* @internal
+	* @param query - The query to add. If a query with the same hash is already cached, nothing
+	* happens.
+	*/
+	add(query) {
+		if (!this.#queries.has(query.queryHash)) {
+			this.#queries.set(query.queryHash, query);
+			this.notify({
+				type: "added",
+				query
+			});
+		}
+	}
+	/**
+	* Destroys the given `Query` and removes it from the cache, notifying subscribers with a
+	* `'removed'` event. A no-op if the query is no longer the one currently stored under its hash
+	* (e.g. it was already replaced). Used by plugins (e.g. the broadcast client) that mirror
+	* removals across `QueryCache` instances.
+	* @param query - The query to remove.
+	* @example
+	* ```ts
+	* const queryCache = queryClient.getQueryCache()
+	* const query = queryCache.find({ queryKey: ['posts'] })
+	*
+	* if (query) {
+	*   queryCache.remove(query)
+	* }
+	* ```
+	*/
+	remove(query) {
+		if (this.#queries.get(query.queryHash) === query) {
+			query.destroy();
+			this.#queries.delete(query.queryHash);
+			this.notify({
+				type: "removed",
+				query
+			});
+		}
+	}
+	/**
+	* Removes all queries from the cache.
+	* @example
+	* ```ts
+	* const queryCache = queryClient.getQueryCache()
+	*
+	* queryCache.clear()
+	* ```
+	*/
+	clear() {
+		notifyManager.batch(() => {
+			this.getAll().forEach((query) => {
+				this.remove(query);
+			});
+		});
+	}
+	/**
+	* Returns the `Query` instance stored under the given `queryHash`, or `undefined` if none
+	* exists. Unlike {@link QueryCache#find}, this looks up by the already-computed hash rather
+	* than by `QueryFilters`. Used by plugins (e.g. broadcast/hydration) that already have a hash
+	* to look up directly.
+	* @param queryHash - The hash of the query to look up.
+	* @returns The query stored under the hash, or `undefined`.
+	* @example
+	* ```ts
+	* const queryCache = queryClient.getQueryCache()
+	* const queryHash = hashKey(['posts'])
+	*
+	* const query = queryCache.get(queryHash)
+	* ```
+	*/
+	get(queryHash) {
+		return this.#queries.get(queryHash);
+	}
+	/**
+	* Returns all queries within the cache.
+	* @returns Every query in the cache.
+	* @example
+	* ```ts
+	* const queryCache = queryClient.getQueryCache()
+	*
+	* const queries = queryCache.getAll()
+	* ```
+	*/
+	getAll() {
+		return [...this.#queries.values()];
+	}
+	/**
+	* A slightly more advanced method that can be used to get an existing query instance from the
+	* cache. This instance not only contains all the state for the query, but all of the instances,
+	* and underlying guts of the query as well. If the query does not exist, `undefined` is
+	* returned.
+	*
+	* This is not typically needed for most applications, but can come in handy when needing more
+	* information about a query in rare scenarios (e.g. looking at `query.state.dataUpdatedAt` to
+	* decide whether a query is fresh enough to be used as an initial value).
+	* @param filters - The filters to match, including the required `queryKey`. `exact` defaults to
+	* `true`.
+	* @returns The first matching query, or `undefined`.
+	* @see {@link QueryCache#findAll}
+	* @example
+	* ```ts
+	* const queryCache = queryClient.getQueryCache()
+	*
+	* const query = queryCache.find({ queryKey: ['posts'] })
+	* ```
+	*/
+	find(filters) {
+		const defaultedFilters = {
+			exact: true,
+			...filters
+		};
+		return this.getAll().find((query) => matchQuery(defaultedFilters, query));
+	}
+	/**
+	* An even more advanced method that can be used to get existing query instances from the cache
+	* that partially match a query key. If no queries match, an empty array is returned.
+	*
+	* This is not typically needed for most applications, but can come in handy when needing more
+	* information about queries in rare scenarios.
+	* @param filters - The filters to match. Without filters, every query is returned.
+	* @returns The matching queries.
+	* @see {@link QueryCache#find}
+	* @example
+	* ```ts
+	* const queryCache = queryClient.getQueryCache()
+	*
+	* const queries = queryCache.findAll({ queryKey: ['posts'] })
+	* ```
+	*/
+	findAll(filters = {}) {
+		const queries = this.getAll();
+		return Object.keys(filters).length > 0 ? queries.filter((query) => matchQuery(filters, query)) : queries;
+	}
+	/**
+	* Notifies every cache listener of an event, in one batch.
+	* @internal
+	* @param event - The event passed to every listener.
+	*/
+	notify(event) {
+		notifyManager.batch(() => {
+			this.listeners.forEach((listener) => {
+				listener(event);
+			});
+		});
+	}
+	/**
+	* Calls {@link Query#onFocus} on every cached query, in one batch.
+	* @internal
+	*/
+	onFocus() {
+		notifyManager.batch(() => {
+			this.getAll().forEach((query) => {
+				query.onFocus();
+			});
+		});
+	}
+	/**
+	* Calls {@link Query#onOnline} on every cached query, in one batch.
+	* @internal
+	*/
+	onOnline() {
+		notifyManager.batch(() => {
+			this.getAll().forEach((query) => {
+				query.onOnline();
+			});
+		});
+	}
+};
+// node_modules/.pnpm/@tanstack+query-core@5.107.1/node_modules/@tanstack/query-core/build/modern/queryClient.js
+/**
+* `QueryClient` is used to interact with a cache of queries and mutations. It owns a
+* `QueryCache` and a `MutationCache` (creating default ones if none are passed in) and holds
+* the default options that are applied to queries and mutations created through it.
+* @example
+* ```ts
+* const queryClient = new QueryClient({
+*   defaultOptions: {
+*     queries: {
+*       staleTime: Infinity,
+*     },
+*   },
+* })
+*
+* await queryClient.query({ queryKey: ['posts'], queryFn: fetchPosts })
+* ```
+*/
+var QueryClient = class {
+	#queryCache;
+	#mutationCache;
+	#defaultOptions;
+	#queryDefaults;
+	#mutationDefaults;
+	#mountCount;
+	#unsubscribeFocus;
+	#unsubscribeOnline;
+	constructor(config = {}) {
+		this.#queryCache = config.queryCache || new QueryCache();
+		this.#mutationCache = config.mutationCache || new MutationCache();
+		this.#defaultOptions = config.defaultOptions || {};
+		this.#queryDefaults = /* @__PURE__ */ new Map();
+		this.#mutationDefaults = /* @__PURE__ */ new Map();
+		this.#mountCount = 0;
+	}
+	/**
+	* Called by a framework adapter's `QueryClientProvider`-equivalent when it mounts, to start
+	* listening for focus/online events and resume paused mutations. Ref-counted via an internal
+	* mount count, so nested or multiple providers sharing the same `QueryClient` don't tear down
+	* the shared listeners until the last one unmounts.
+	*/
+	mount() {
+		this.#mountCount++;
+		if (this.#mountCount !== 1) return;
+		this.#unsubscribeFocus = focusManager.subscribe(async (focused) => {
+			if (focused) {
+				await this.resumePausedMutations();
+				this.#queryCache.onFocus();
+			}
+		});
+		this.#unsubscribeOnline = onlineManager.subscribe(async (online) => {
+			if (online) {
+				await this.resumePausedMutations();
+				this.#queryCache.onOnline();
+			}
+		});
+	}
+	/**
+	* The inverse of {@link QueryClient#mount} — called by a framework adapter's
+	* `QueryClientProvider`-equivalent when it unmounts. Only tears down the focus/online
+	* listeners once the mount count returns to `0`.
+	*/
+	unmount() {
+		this.#mountCount--;
+		if (this.#mountCount !== 0) return;
+		this.#unsubscribeFocus?.();
+		this.#unsubscribeFocus = void 0;
+		this.#unsubscribeOnline?.();
+		this.#unsubscribeOnline = void 0;
+	}
+	/**
+	* Returns the number of queries in the cache that are currently fetching, optionally
+	* matching a set of filters. This includes background-fetching, loading new pages, and
+	* loading more infinite query results.
+	* @param filters - Narrows down which fetching queries are counted. Without filters, every
+	* fetching query is counted.
+	* @returns The number of matching queries whose `fetchStatus` is `'fetching'`.
+	* @example
+	* ```ts
+	* if (queryClient.isFetching()) {
+	*   console.log('At least one query is fetching!')
+	* }
+	* ```
+	*/
+	isFetching(filters) {
+		return this.#queryCache.findAll({
+			...filters,
+			fetchStatus: "fetching"
+		}).length;
+	}
+	/**
+	* Returns the number of mutations in the cache that are currently pending, optionally
+	* matching a set of filters.
+	* @param filters - Narrows down which pending mutations are counted. Without filters, every
+	* pending mutation is counted.
+	* @returns The number of matching mutations whose `status` is `'pending'`.
+	* @example
+	* ```ts
+	* if (queryClient.isMutating()) {
+	*   console.log('At least one mutation is pending!')
+	* }
+	* ```
+	*/
+	isMutating(filters) {
+		return this.#mutationCache.findAll({
+			...filters,
+			status: "pending"
+		}).length;
+	}
+	/**
+	* Imperative (non-reactive) way to retrieve data for a QueryKey.
+	* Should only be used in callbacks or functions where reading the latest data is necessary, e.g. for optimistic updates.
+	*
+	* Hint: Do not use this function inside a component, because it won't receive updates.
+	* Use `useQuery` to create a `QueryObserver` that subscribes to changes.
+	* @param queryKey - The query key of the query to read.
+	* @returns The cached data for the query, or `undefined` if no query with this key has been observed yet.
+	* @see {@link QueryClient#getQueriesData}
+	*/
+	getQueryData(queryKey) {
+		const options = this.defaultQueryOptions({ queryKey });
+		return this.#queryCache.get(options.queryHash)?.state.data;
+	}
+	/**
+	* Returns the cached data of a query, or fetches it if there is none. With `revalidateIfStale`,
+	* stale cached data is also refetched in the background.
+	* @param options - The query options. If the query has no cached data yet, it is fetched with
+	* these options.
+	* @returns A promise that resolves to the cached data, or to the fetched data if nothing was
+	* cached yet.
+	* @deprecated Use queryClient.query({ ...options, staleTime: 'static' }) instead. This method will be removed in the next major version.
+	*/
+	ensureQueryData(options) {
+		const defaultedOptions = this.defaultQueryOptions(options);
+		const query = this.#queryCache.build(this, defaultedOptions);
+		const cachedData = query.state.data;
+		if (cachedData === void 0) return this.fetchQuery(options);
+		if (options.revalidateIfStale && query.isStaleByTime(resolveQueryValue(defaultedOptions.staleTime, query))) this.prefetchQuery(defaultedOptions);
+		return Promise.resolve(cachedData);
+	}
+	/**
+	* Imperative (non-reactive) way to retrieve the cached data of multiple queries at once.
+	* Only queries matching the given filters are returned; if none match, an empty array is
+	* returned.
+	*
+	* Because the matched queries can hold data of different shapes (e.g. a broad filter can match
+	* queries with unrelated data types), the `TQueryFnData` generic defaults to `unknown` rather
+	* than being inferred. Passing a more specific type is a convenience for call sites that know
+	* every matched query holds the same shape — it is not checked against the actual cache
+	* contents.
+	* @param filters - The filters that select which queries to read.
+	* @returns An array of query key and data pairs. The data is `undefined` for a query with no cached data.
+	* @see {@link QueryClient#getQueryData}
+	* @example
+	* ```ts
+	* const data = queryClient.getQueriesData({ queryKey: ['posts'] })
+	* ```
+	*/
+	getQueriesData(filters) {
+		return this.#queryCache.findAll(filters).map(({ queryKey, state }) => {
+			return [queryKey, state.data];
+		});
+	}
+	/**
+	* Synchronous way to immediately update a query's cached data. If the updater (or the value
+	* passed) resolves to `undefined`, the cache is left untouched and no query is created;
+	* otherwise, if the query does not exist yet, it will be created. To update multiple queries
+	* at once by partially matching query keys, use {@link QueryClient#setQueriesData} instead.
+	*
+	* Updates must be performed immutably: do not mutate `oldData`, or data previously retrieved
+	* via {@link QueryClient#getQueryData}, in place.
+	* @param queryKey - The query key to set data for.
+	* @param updater - Either the new data, or a function that receives the current data (which
+	* may be `undefined`) and returns the new data.
+	* @param options - Set `updatedAt` to override the timestamp the written data is recorded with.
+	* @returns The data that was written, or `undefined` if the updater returned `undefined` — in that case
+	* the write is skipped and the cache is left unchanged.
+	* @example
+	* ```ts
+	* queryClient.setQueryData(['posts'], newPosts)
+	*
+	* // Or, using an updater function that receives the current data:
+	* queryClient.setQueryData(['posts'], (oldPosts) => [...oldPosts, newPost])
+	* ```
+	*/
+	setQueryData(queryKey, updater, options) {
+		const defaultedOptions = this.defaultQueryOptions({ queryKey });
+		const prevData = this.#queryCache.get(defaultedOptions.queryHash)?.state.data;
+		const data = functionalUpdate(updater, prevData);
+		if (data === void 0) return;
+		return this.#queryCache.build(this, defaultedOptions).setData(data, {
+			...options,
+			manual: true
+		});
+	}
+	/**
+	* Synchronous way to immediately update the cached data of multiple queries at once, using
+	* filters or partial query key matching. Only queries that already exist and match the given
+	* filters are updated; no new cache entries are created. Internally this calls
+	* {@link QueryClient#setQueryData} for each matching query.
+	* @param filters - The filters that select which existing queries to update.
+	* @param updater - Either the new data, or a function that receives each matched query's current
+	* data (which may be `undefined`) and returns the new data.
+	* @param options - Set `updatedAt` to override the timestamp the written data is recorded with.
+	* @returns One `[queryKey, data]` tuple per matched query, in the same shape and with the same
+	* `undefined` case as {@link QueryClient#setQueryData}.
+	* @example
+	* ```ts
+	* queryClient.setQueriesData({ queryKey: ['posts'] }, (oldPosts) =>
+	*   oldPosts ? oldPosts.filter((post) => post.id !== deletedId) : oldPosts,
+	* )
+	* ```
+	*/
+	setQueriesData(filters, updater, options) {
+		return notifyManager.batch(() => this.#queryCache.findAll(filters).map(({ queryKey }) => [queryKey, this.setQueryData(queryKey, updater, options)]));
+	}
+	/**
+	* Imperative (non-reactive) way to retrieve an existing query's state. If the query does not
+	* exist, `undefined` is returned.
+	* @param queryKey - The query key of the query to read.
+	* @returns The query's state, or `undefined` if no query with this key exists.
+	* @example
+	* ```ts
+	* const state = queryClient.getQueryState(['posts'])
+	* console.log(state?.dataUpdatedAt)
+	* ```
+	*/
+	getQueryState(queryKey) {
+		const options = this.defaultQueryOptions({ queryKey });
+		return this.#queryCache.get(options.queryHash)?.state;
+	}
+	/**
+	* Removes queries from the cache that match the given filters. Unlike
+	* {@link QueryClient#invalidateQueries} or {@link QueryClient#refetchQueries}, this removes
+	* matching queries from the cache instead of refetching them. Without filters, every query in
+	* the cache is removed.
+	* @param filters - The filters that select which queries to remove. Without filters, every query
+	* is removed.
+	* @example
+	* ```ts
+	* queryClient.removeQueries({ queryKey: ['posts'], exact: true })
+	* ```
+	*/
+	removeQueries(filters) {
+		const queryCache = this.#queryCache;
+		notifyManager.batch(() => {
+			queryCache.findAll(filters).forEach((query) => {
+				queryCache.remove(query);
+			});
+		});
+	}
+	/**
+	* Resets queries matching the given filters back to their initial state (e.g. any
+	* `initialData`), notifying subscribers rather than removing them. Active queries among the
+	* matched set are then refetched, and the returned promise resolves once that refetch settles.
+	* @param filters - The filters that select which queries to reset. Without filters, every query
+	* is reset.
+	* @param options - Passed to the refetch of the active matched queries, e.g. `cancelRefetch` and
+	* `throwOnError`.
+	* @returns A promise that resolves once the refetch of the active matched queries settles.
+	* @example
+	* ```ts
+	* await queryClient.resetQueries({ queryKey: ['posts'], exact: true })
+	* ```
+	*/
+	resetQueries(filters, options) {
+		const queryCache = this.#queryCache;
+		return notifyManager.batch(() => {
+			const matched = queryCache.findAll(filters);
+			const queriesToRefetch = new Set(matched);
+			matched.forEach((query) => {
+				query.reset();
+			});
+			return this.refetchQueries({
+				type: "active",
+				predicate: (query) => queriesToRefetch.has(query)
+			}, options);
+		});
+	}
+	/**
+	* Cancels outgoing fetches for queries matching the given filters. Most useful when performing
+	* optimistic updates, since any outgoing refetch that resolves afterwards would otherwise
+	* overwrite the optimistic update. By default (`revert: true`), a cancelled query's data is
+	* reverted to its state before the outgoing fetch started.
+	*
+	* The returned promise never rejects, even if individual cancellations fail.
+	* @param filters - The filters that select which queries to cancel. Without filters, every query
+	* is cancelled.
+	* @param cancelOptions - Passed to each matched query's cancellation. `revert` defaults to
+	* `true`.
+	* @returns A promise that resolves once every cancellation has settled.
+	* @example
+	* ```ts
+	* await queryClient.cancelQueries({ queryKey: ['posts'], exact: true })
+	* ```
+	*/
+	cancelQueries(filters, cancelOptions = {}) {
+		const defaultedCancelOptions = {
+			revert: true,
+			...cancelOptions
+		};
+		const promises = notifyManager.batch(() => this.#queryCache.findAll(filters).map((query) => query.cancel(defaultedCancelOptions)));
+		return Promise.all(promises).then(noop$3).catch(noop$3);
+	}
+	/**
+	* Marks queries matching the given filters as invalidated. Unlike
+	* {@link QueryClient#removeQueries}, invalidated queries stay in the cache.
+	*
+	* Unless `filters.refetchType` is `'none'`, matching queries are then refetched via
+	* {@link QueryClient#refetchQueries}, using `filters.refetchType` if set, otherwise
+	* `filters.type`, otherwise `'active'`.
+	* @param filters - The filters that select which queries to invalidate, plus `refetchType` to
+	* control which of them to refetch afterwards. Without filters, every query is invalidated.
+	* @param options - Passed to {@link QueryClient#refetchQueries}, e.g. `cancelRefetch` and
+	* `throwOnError`.
+	* @returns A promise that resolves once the refetch settles, or immediately if `refetchType` is
+	* `'none'`.
+	* @example
+	* ```ts
+	* await queryClient.invalidateQueries({ queryKey: ['posts'], refetchType: 'active' })
+	* ```
+	*/
+	invalidateQueries(filters, options = {}) {
+		return notifyManager.batch(() => {
+			this.#queryCache.findAll(filters).forEach((query) => {
+				query.invalidate();
+			});
+			if (filters?.refetchType === "none") return Promise.resolve();
+			return this.refetchQueries({
+				...filters,
+				type: filters?.refetchType ?? filters?.type ?? "active"
+			}, options);
+		});
+	}
+	/**
+	* Refetches queries matching the given filters, regardless of whether they are stale. Without
+	* filters, every query in the cache is refetched. Queries that are disabled, or static (only
+	* have observers with a static `staleTime`), are never refetched.
+	*
+	* By default (`cancelRefetch: true`), a currently running fetch is cancelled before the new
+	* one starts. The returned promise does not reject on individual query failures unless
+	* `throwOnError` is `true`.
+	*
+	* Initially paused fetches do not delay the returned promise. Their later errors are handled
+	* even when `throwOnError` is `true`.
+	* @param filters - The filters that select which queries to refetch. Without filters, every query
+	* in the cache is included.
+	* @param options - Set `cancelRefetch` to `false` to keep a running fetch instead of cancelling
+	* it, and `throwOnError` to `true` to reject when a refetch that was not initially paused fails.
+	* @returns A promise that resolves once all matching refetches that were not initially paused
+	* have settled.
+	* @example
+	* ```ts
+	* // refetch all active queries partially matching a query key:
+	* await queryClient.refetchQueries({ queryKey: ['posts'], type: 'active' })
+	* ```
+	*/
+	refetchQueries(filters, options = {}) {
+		const fetchOptions = {
+			...options,
+			cancelRefetch: options.cancelRefetch ?? true
+		};
+		const promises = notifyManager.batch(() => this.#queryCache.findAll(filters).filter((query) => !query.isDisabled() && !query.isStatic()).map((query) => {
+			let promise = query.fetch(void 0, fetchOptions);
+			const isPaused = query.state.fetchStatus === "paused";
+			if (!fetchOptions.throwOnError || isPaused) promise = promise.catch(noop$3);
+			return isPaused ? Promise.resolve() : promise;
+		}));
+		return Promise.all(promises).then(noop$3);
+	}
+	/**
+	* Asynchronous method to fetch and cache a query, resolving with the data or throwing with
+	* the error.
+	*
+	* If the query already exists in the cache and its data is not stale (per the given
+	* `staleTime`), the cached data is returned without fetching. Otherwise, the query is fetched
+	* and the promise resolves once the fetch settles. If a `select` function is provided, it is
+	* applied to the data in both cases (cached or freshly fetched) before it is returned.
+	*
+	* Unlike a reactive observer, retries are disabled by default here (`retry: false`) unless
+	* explicitly configured, since there is no component to catch a thrown error and retry through
+	* re-render.
+	*
+	* The accepted options are `QueryObserverOptions` minus the fields that only make sense for a
+	* reactive observer — `enabled`, `refetchInterval`, `refetchIntervalInBackground`,
+	* `refetchOnWindowFocus`, `refetchOnReconnect`, `refetchOnMount`, `retryOnMount`,
+	* `notifyOnChangeProps`, `throwOnError`, `suspense`, and `placeholderData` are not part of this
+	* method's options.
+	*
+	* This method replaces the deprecated `fetchQuery`, and — combined with
+	* `{ staleTime: 'static' }` — the deprecated `ensureQueryData`.
+	* @param options - The query options, including the `queryKey` and the `queryFn` used if the
+	* query needs to fetch.
+	* @returns A promise that resolves to the data, or to the result of `select` if provided. It
+	* rejects with the error from the fetch or from `select`.
+	* @example
+	* ```ts
+	* try {
+	*   const data = await queryClient.query({ queryKey, queryFn, staleTime: 10000 })
+	* } catch (error) {
+	*   console.log(error)
+	* }
+	* ```
+	*/
+	async query(options) {
+		const defaultedOptions = this.defaultQueryOptions(options);
+		if (defaultedOptions.retry === void 0) defaultedOptions.retry = false;
+		const query = this.#queryCache.build(this, defaultedOptions);
+		const queryData = query.isStaleByTime(resolveQueryValue(defaultedOptions.staleTime, query)) ? await query.fetch(defaultedOptions) : query.state.data;
+		const select = defaultedOptions.select;
+		if (select) return select(queryData);
+		return queryData;
+	}
+	/**
+	* Fetches and caches a query, or returns its cached data if it isn't stale. Unlike in observers,
+	* the fetch isn't retried unless `retry` is set.
+	* @param options - The query options, including the `queryKey` and the `queryFn` used if the
+	* query needs to fetch.
+	* @returns A promise that resolves to the cached or fetched data, or rejects with the fetch
+	* error.
+	* @deprecated Use queryClient.query(options) instead. This method will be removed in the next major version.
+	*/
+	fetchQuery(options) {
+		const defaultedOptions = this.defaultQueryOptions(options);
+		if (defaultedOptions.retry === void 0) defaultedOptions.retry = false;
+		const query = this.#queryCache.build(this, defaultedOptions);
+		return query.isStaleByTime(resolveQueryValue(defaultedOptions.staleTime, query)) ? query.fetch(defaultedOptions) : Promise.resolve(query.state.data);
+	}
+	/**
+	* Fetches and caches a query like {@link QueryClient#fetchQuery}, but ignores the result and any
+	* error.
+	* @param options - The query options, including the `queryKey` and the `queryFn` used if the
+	* query needs to fetch.
+	* @returns A promise that resolves once the fetch settles. It never rejects.
+	* @deprecated Use queryClient.query(options) instead. You can swallow errors with `.catch(noop)`. This method will be removed in the next major version.
+	*/
+	prefetchQuery(options) {
+		return this.fetchQuery(options).then(noop$3).catch(noop$3);
+	}
+	/**
+	* Asynchronous method to fetch and cache an infinite query, resolving with an
+	* {@link InfiniteData} object or throwing with the error.
+	*
+	* Behaves like {@link QueryClient#query}, accepting the same options (minus
+	* `initialPageParam`), plus the required `initialPageParam`, and an optional `pages` /
+	* `getNextPageParam` pair used to refetch a fixed number of pages from the start.
+	*
+	* This method replaces the deprecated `fetchInfiniteQuery`, and — combined with
+	* `{ staleTime: 'static' }` — the deprecated `ensureInfiniteQueryData`.
+	* @param options - The infinite query options, including the `queryKey`, the `queryFn`, and the
+	* `initialPageParam`.
+	* @returns A promise that resolves to the {@link InfiniteData}, or to the result of `select` if
+	* provided. It rejects with the error from the fetch or from `select`.
+	* @example
+	* ```ts
+	* try {
+	*   const data = await queryClient.infiniteQuery({ queryKey, queryFn, initialPageParam: 0 })
+	*   console.log(data.pages)
+	* } catch (error) {
+	*   console.log(error)
+	* }
+	* ```
+	*/
+	infiniteQuery(options) {
+		options._type = "infinite";
+		return this.query(options);
+	}
+	/**
+	* Fetches and caches an infinite query, or returns its cached data if it isn't stale.
+	* @param options - The infinite query options, including the `queryKey`, the `queryFn`, and the
+	* `initialPageParam`.
+	* @returns A promise that resolves to the cached or fetched {@link InfiniteData}, or rejects with
+	* the fetch error.
+	* @deprecated Use queryClient.infiniteQuery(options) instead. This method will be removed in the next major version.
+	*/
+	fetchInfiniteQuery(options) {
+		options._type = "infinite";
+		return this.fetchQuery(options);
+	}
+	/**
+	* Fetches and caches an infinite query like {@link QueryClient#fetchInfiniteQuery}, but ignores
+	* the result and any error.
+	* @param options - The infinite query options, including the `queryKey`, the `queryFn`, and the
+	* `initialPageParam`.
+	* @returns A promise that resolves once the fetch settles. It never rejects.
+	* @deprecated Use queryClient.infiniteQuery(options) instead. You can swallow errors with `.catch(noop)`. This method will be removed in the next major version.
+	*/
+	prefetchInfiniteQuery(options) {
+		return this.fetchInfiniteQuery(options).then(noop$3).catch(noop$3);
+	}
+	/**
+	* Returns the cached data of an infinite query, or fetches it if there is none. With
+	* `revalidateIfStale`, stale cached data is also refetched in the background.
+	* @param options - The infinite query options. If the query has no cached data yet, it is fetched
+	* with these options.
+	* @returns A promise that resolves to the cached {@link InfiniteData}, or to the fetched data if
+	* nothing was cached yet.
+	* @deprecated Use queryClient.infiniteQuery({ ...options, staleTime: 'static' }) instead. This method will be removed in the next major version.
+	*/
+	ensureInfiniteQueryData(options) {
+		options._type = "infinite";
+		return this.ensureQueryData(options);
+	}
+	/**
+	* Resumes mutations that were paused because there was no network connection. Does nothing
+	* (resolving immediately) if the client is currently offline.
+	* @returns A promise that resolves once the resumed mutations have settled.
+	* @example
+	* ```ts
+	* import { QueryClient } from '@tanstack/query-core'
+	*
+	* const queryClient = new QueryClient()
+	* await queryClient.resumePausedMutations()
+	* ```
+	*/
+	resumePausedMutations() {
+		if (onlineManager.isOnline()) return this.#mutationCache.resumePausedMutations();
+		return Promise.resolve();
+	}
+	/**
+	* Returns the query cache this client is connected to.
+	* @returns The {@link QueryCache} instance.
+	* @example
+	* ```ts
+	* import { QueryClient } from '@tanstack/query-core'
+	*
+	* const queryClient = new QueryClient()
+	* const queryCache = queryClient.getQueryCache()
+	* const queries = queryCache.findAll({ queryKey: ['posts'] })
+	* ```
+	*/
+	getQueryCache() {
+		return this.#queryCache;
+	}
+	/**
+	* Returns the mutation cache this client is connected to.
+	* @returns The {@link MutationCache} instance.
+	* @example
+	* ```ts
+	* import { QueryClient } from '@tanstack/query-core'
+	*
+	* const queryClient = new QueryClient()
+	* const mutationCache = queryClient.getMutationCache()
+	* const mutations = mutationCache.findAll({ status: 'pending' })
+	* ```
+	*/
+	getMutationCache() {
+		return this.#mutationCache;
+	}
+	/**
+	* Returns the default options that were set when creating the client, or via
+	* {@link QueryClient#setDefaultOptions}.
+	* @returns The client's current default options.
+	* @example
+	* ```ts
+	* import { QueryClient } from '@tanstack/query-core'
+	*
+	* const queryClient = new QueryClient()
+	* const defaultOptions = queryClient.getDefaultOptions()
+	* ```
+	*/
+	getDefaultOptions() {
+		return this.#defaultOptions;
+	}
+	/**
+	* Dynamically sets the default options for this client, overwriting any previously defined
+	* default options.
+	* @param options - The new default options for queries and mutations.
+	* @see {@link QueryClient#getDefaultOptions}
+	* @example
+	* ```ts
+	* import { QueryClient } from '@tanstack/query-core'
+	*
+	* const queryClient = new QueryClient()
+	* queryClient.setDefaultOptions({
+	*   queries: {
+	*     staleTime: Infinity,
+	*   },
+	* })
+	* ```
+	*/
+	setDefaultOptions(options) {
+		this.#defaultOptions = options;
+	}
+	/**
+	* Sets default options for queries whose query key partially matches the given `queryKey`.
+	*
+	* If several registered query defaults match a given query key, they are merged together in
+	* registration order by {@link QueryClient#getQueryDefaults}, so register defaults from the
+	* most generic key to the least generic one — more specific defaults should be registered
+	* after more generic ones so they take precedence.
+	* @param queryKey - The query key that query keys are partially matched against.
+	* @param options - The default options applied to matching queries.
+	* @example
+	* ```ts
+	* queryClient.setQueryDefaults(['posts'], { queryFn: fetchPosts })
+	*
+	* await queryClient.query({ queryKey: ['posts'] })
+	* ```
+	*/
+	setQueryDefaults(queryKey, options) {
+		this.#queryDefaults.set(hashKey(queryKey), {
+			queryKey,
+			defaultOptions: options
+		});
+	}
+	/**
+	* Returns the default options registered for queries whose query key partially matches the
+	* given `queryKey`, via {@link QueryClient#setQueryDefaults}. If multiple registered defaults
+	* match, they are merged together in registration order.
+	* @param queryKey - The query key to look up registered defaults for.
+	* @returns The merged default options of every registration that matches, or an empty object if
+	* none match.
+	* @example
+	* ```ts
+	* const defaultOptions = queryClient.getQueryDefaults(['posts'])
+	* ```
+	*/
+	getQueryDefaults(queryKey) {
+		const defaults = [...this.#queryDefaults.values()];
+		const result = {};
+		defaults.forEach((queryDefault) => {
+			if (partialMatchKey(queryKey, queryDefault.queryKey)) Object.assign(result, queryDefault.defaultOptions);
+		});
+		return result;
+	}
+	/**
+	* Sets default options for mutations whose mutation key partially matches the given
+	* `mutationKey`. As with {@link QueryClient#setQueryDefaults}, the order of registration
+	* matters when several registered defaults match the same mutation key.
+	* @param mutationKey - The mutation key that mutation keys are partially matched against.
+	* @param options - The default options applied to matching mutations.
+	* @see {@link QueryClient#getMutationDefaults}
+	* @example
+	* ```ts
+	* queryClient.setMutationDefaults(['addPost'], { mutationFn: addPost })
+	* ```
+	*/
+	setMutationDefaults(mutationKey, options) {
+		this.#mutationDefaults.set(hashKey(mutationKey), {
+			mutationKey,
+			defaultOptions: options
+		});
+	}
+	/**
+	* Returns the default options registered for mutations whose mutation key partially matches
+	* the given `mutationKey`, via {@link QueryClient#setMutationDefaults}. If multiple registered
+	* defaults match, they are merged together in registration order.
+	* @param mutationKey - The mutation key to look up registered defaults for.
+	* @returns The merged default options of every registration that matches, or an empty object if
+	* none match.
+	* @example
+	* ```ts
+	* const defaultOptions = queryClient.getMutationDefaults(['addPost'])
+	* ```
+	*/
+	getMutationDefaults(mutationKey) {
+		const defaults = [...this.#mutationDefaults.values()];
+		const result = {};
+		defaults.forEach((queryDefault) => {
+			if (partialMatchKey(mutationKey, queryDefault.mutationKey)) Object.assign(result, queryDefault.defaultOptions);
+		});
+		return result;
+	}
+	/**
+	* Called by framework adapters (e.g. inside `useQuery`) to resolve the options passed by the
+	* caller into their final, defaulted form: merging the client's own `defaultOptions.queries`,
+	* then `queryClient.setQueryDefaults` for the given `queryKey`, then the caller's options on
+	* top. A no-op if the options are already defaulted (`_defaulted: true`).
+	* @param options - The query options passed by the caller.
+	* @returns The defaulted options, with `queryHash` and dependent defaults (e.g.
+	* `refetchOnReconnect`) filled in.
+	*/
+	defaultQueryOptions(options) {
+		if (options._defaulted) return options;
+		const defaultedOptions = {
+			...this.#defaultOptions.queries,
+			...this.getQueryDefaults(options.queryKey),
+			...options,
+			_defaulted: true
+		};
+		if (!defaultedOptions.queryHash) defaultedOptions.queryHash = hashQueryKeyByOptions(defaultedOptions.queryKey, defaultedOptions);
+		if (defaultedOptions.refetchOnReconnect === void 0) defaultedOptions.refetchOnReconnect = defaultedOptions.networkMode !== "always";
+		if (defaultedOptions.throwOnError === void 0) defaultedOptions.throwOnError = !!defaultedOptions.suspense;
+		if (!defaultedOptions.networkMode && defaultedOptions.persister) defaultedOptions.networkMode = "offlineFirst";
+		if (defaultedOptions.queryFn === skipToken) defaultedOptions.enabled = false;
+		return defaultedOptions;
+	}
+	/**
+	* The mutation counterpart of {@link QueryClient#defaultQueryOptions}. Called by framework
+	* adapters (e.g. inside `useMutation`) to merge the client's `defaultOptions.mutations`, then
+	* `queryClient.setMutationDefaults` for the given `mutationKey`, then the caller's options on
+	* top. A no-op if the options are already defaulted (`_defaulted: true`).
+	* @param options - The mutation options passed by the caller.
+	* @returns The defaulted options.
+	*/
+	defaultMutationOptions(options) {
+		if (options?._defaulted) return options;
+		return {
+			...this.#defaultOptions.mutations,
+			...options?.mutationKey && this.getMutationDefaults(options.mutationKey),
+			...options,
+			_defaulted: true
+		};
+	}
+	/**
+	* Clears both the query cache and the mutation cache this client is connected to.
+	* @example
+	* ```ts
+	* import { QueryClient } from '@tanstack/query-core'
+	*
+	* const queryClient = new QueryClient()
+	* queryClient.clear()
+	* ```
+	*/
+	clear() {
+		this.#queryCache.clear();
+		this.#mutationCache.clear();
+	}
+};
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js
+const IsRestoringContext = react.createContext(false);
+/**
+* If you are using `PersistQueryClientProvider`, you can also use the `useIsRestoring` hook alongside it to
+* check if a restore is currently in progress. `useQuery` and friends also check this internally to avoid
+* race conditions between the restore and mounting queries.
+* @returns `true` while a persisted client is being restored, `false` otherwise.
+*/
+const useIsRestoring = () => react.useContext(IsRestoringContext);
+IsRestoringContext.Provider;
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js
+/**
+* Creates the value shared through the boundary's context, which tracks whether a reset was
+* requested.
+* @returns The `clearReset`, `isReset`, and `reset` functions of the boundary.
+*/
+function createValue() {
+	let isReset = false;
+	return {
+		/**
+		* Clears the reset state, so queries know not to try again until the boundary is reset again.
+		*/
+		clearReset: () => {
+			isReset = false;
+		},
+		/**
+		* Resets any query errors within the boundary, so queries know they can try again.
+		*/
+		reset: () => {
+			isReset = true;
+		},
+		/**
+		* Returns whether the boundary has been reset and not yet cleared.
+		* @returns `true` if the boundary has been reset and not yet cleared.
+		*/
+		isReset: () => {
+			return isReset;
+		}
+	};
+}
+const QueryErrorResetBoundaryContext = react.createContext(createValue());
+/**
+* This hook will reset any query errors within the closest `QueryErrorResetBoundary`. If there is no boundary
+* defined it will reset them globally.
+* @returns The boundary's {@link QueryErrorResetBoundaryValue}.
+* @example
+* ```tsx
+* import { ErrorBoundary } from 'react-error-boundary'
+* import { useQueryErrorResetBoundary } from '@tanstack/react-query'
+*
+* function App({ children }: { children: React.ReactNode }) {
+*   const { reset } = useQueryErrorResetBoundary()
+*
+*   return (
+*     <ErrorBoundary
+*       onReset={reset}
+*       fallbackRender={({ resetErrorBoundary }) => (
+*         <div>
+*           There was an error!
+*           <button onClick={() => resetErrorBoundary()}>Try again</button>
+*         </div>
+*       )}
+*     >
+*       {children}
+*     </ErrorBoundary>
+*   )
+* }
+* ```
+*/
+const useQueryErrorResetBoundary = () => react.useContext(QueryErrorResetBoundaryContext);
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js
+/**
+* Turns off `retryOnMount` for a query that throws its errors (with `suspense` or `throwOnError`),
+* unless the error boundary has been reset, so a remount doesn't retry the failed query before the
+* user resets the boundary. Mutates the options.
+* @param options - The defaulted query options to adjust.
+* @param errorResetBoundary - The value of the nearest `QueryErrorResetBoundary`.
+* @param query - The query, used to evaluate a `throwOnError` function against its error.
+*/
+const ensurePreventErrorBoundaryRetry = (options, errorResetBoundary, query) => {
+	const throwOnError = query?.state.status === "error" && typeof options.throwOnError === "function" ? shouldThrowError(options.throwOnError, [query.state.error, query]) : options.throwOnError;
+	if (options.suspense || throwOnError) {
+		if (!errorResetBoundary.isReset()) options.retryOnMount = false;
+	}
+};
+/**
+* Clears the reset state of the error boundary after the component mounts, so later errors are
+* thrown to the boundary again.
+* @param errorResetBoundary - The value of the nearest `QueryErrorResetBoundary`.
+*/
+const useClearResetErrorBoundary = (errorResetBoundary) => {
+	react.useEffect(() => {
+		errorResetBoundary.clearReset();
+	}, [errorResetBoundary]);
+};
+/**
+* Checks whether the query error should be thrown to the nearest error boundary: the query errored
+* and isn't fetching, the boundary hasn't been reset, and either `suspense` is enabled with no data
+* or `throwOnError` says so.
+* @param params - The observer `result`, the `errorResetBoundary`, the `throwOnError` option, the
+* `query`, and the `suspense` option.
+* @returns `true` if the error should be thrown.
+*/
+const getHasError = ({ result, errorResetBoundary, throwOnError, query, suspense }) => {
+	return result.isError && !errorResetBoundary.isReset() && !result.isFetching && query && (suspense && result.data === void 0 || shouldThrowError(throwOnError, [result.error, query]));
+};
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/suspense.js
+/**
+* Raises `staleTime` and a numeric `gcTime` to at least 1000ms when `suspense` is enabled, so a
+* component that remounts after suspending doesn't refetch right away or find the query garbage
+* collected. A `'static'` `staleTime` is kept as is. Mutates the options.
+* @param defaultedOptions - The defaulted query options to adjust.
+*/
+const ensureSuspenseTimers = (defaultedOptions) => {
+	if (defaultedOptions.suspense) {
+		const MIN_SUSPENSE_TIME_MS = 1e3;
+		const clamp = (value) => value === "static" ? value : Math.max(value ?? MIN_SUSPENSE_TIME_MS, MIN_SUSPENSE_TIME_MS);
+		const originalStaleTime = defaultedOptions.staleTime;
+		defaultedOptions.staleTime = typeof originalStaleTime === "function" ? (...args) => clamp(originalStaleTime(...args)) : clamp(originalStaleTime);
+		if (typeof defaultedOptions.gcTime === "number") defaultedOptions.gcTime = Math.max(defaultedOptions.gcTime, MIN_SUSPENSE_TIME_MS);
+	}
+};
+/**
+* Checks whether a query should suspend: `suspense` is enabled and the result is still `pending`.
+* @param defaultedOptions - The defaulted query options, if any.
+* @param result - The current result of the observer.
+* @returns `true` if the component should suspend.
+*/
+const shouldSuspend = (defaultedOptions, result) => defaultedOptions?.suspense && result.isPending;
+/**
+* Fetches the query for a suspending component, without affecting the observer's own result. If
+* the fetch fails, the reset state of the error boundary is cleared, so the error is thrown to it.
+* @param defaultedOptions - The defaulted query options to fetch with.
+* @param observer - The observer of the query.
+* @param errorResetBoundary - The value of the nearest `QueryErrorResetBoundary`.
+* @returns A promise that resolves once the fetch settles. It never rejects.
+*/
+const fetchOptimistic = (defaultedOptions, observer, errorResetBoundary) => observer.fetchOptimistic(defaultedOptions).catch(() => {
+	errorResetBoundary.clearReset();
+});
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/useBaseQuery.js
+/**
+* Base implementation shared by `useQuery`, `useInfiniteQuery`, `useSuspenseQuery`, and
+* `useSuspenseInfiniteQuery`.
+* @param options - The options passed to the calling hook.
+* @param Observer - The observer class from query-core (`QueryObserver` or
+* `InfiniteQueryObserver`).
+* @param queryClient - Use this to use a custom `QueryClient`. Otherwise, the one from the nearest
+* context will be used.
+* @returns The query result, tracking which properties are read unless `notifyOnChangeProps` is
+* set.
+* @throws {Error} If `options` is not an object (outside production), or the query error when it should be
+* thrown to the nearest error boundary (see `throwOnError`). While suspending, it throws a promise instead.
+*/
+function useBaseQuery(options, Observer, queryClient) {
+	const isRestoring = useIsRestoring();
+	const errorResetBoundary = useQueryErrorResetBoundary();
+	const client = useQueryClient(queryClient);
+	const defaultedOptions = client.defaultQueryOptions(options);
+	const query = client.getQueryCache().get(defaultedOptions.queryHash);
+	const subscribed = options.subscribed !== false;
+	defaultedOptions._optimisticResults = isRestoring ? "isRestoring" : subscribed ? "optimistic" : void 0;
+	ensureSuspenseTimers(defaultedOptions);
+	ensurePreventErrorBoundaryRetry(defaultedOptions, errorResetBoundary, query);
+	useClearResetErrorBoundary(errorResetBoundary);
+	const [observer] = react.useState(() => new Observer(client, defaultedOptions));
+	const result = observer.getOptimisticResult(defaultedOptions);
+	react.useEffect(() => {
+		observer.setOptions(defaultedOptions);
+	}, [defaultedOptions, observer]);
+	const shouldSubscribe = !isRestoring && subscribed;
+	react.useSyncExternalStore(react.useCallback((onStoreChange) => {
+		const unsubscribe = shouldSubscribe ? observer.subscribe(notifyManager.batchCalls(onStoreChange)) : noop$3;
+		observer.updateResult();
+		return unsubscribe;
+	}, [observer, shouldSubscribe]), () => observer.getCurrentResult(), () => observer.getCurrentResult());
+	if (shouldSuspend(defaultedOptions, result)) throw fetchOptimistic(defaultedOptions, observer, errorResetBoundary);
+	if (getHasError({
+		result,
+		errorResetBoundary,
+		throwOnError: defaultedOptions.throwOnError,
+		query,
+		suspense: defaultedOptions.suspense
+	})) throw result.error;
+	return !defaultedOptions.notifyOnChangeProps ? observer.trackResult(result) : result;
+}
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/useQuery.js
+function useQuery(options, queryClient) {
+	return useBaseQuery(options, QueryObserver, queryClient);
+}
+// node_modules/.pnpm/@tanstack+react-query@5.107_304e4b457c1f69aa40b2b8c23f0965b9/node_modules/@tanstack/react-query/build/modern/useMutation.js
+/**
+* Unlike queries, mutations are typically used to create/update/delete data or perform server side-effects.
+* `useMutation` is the hook for that.
+* @param options - The {@link UseMutationOptions} to use — everything you can pass to `useMutation`.
+* @param queryClient - Use this to use a custom `QueryClient`. Otherwise, the one from the nearest context will
+* be used.
+* @returns `mutate`/`mutateAsync` also accept per-call `onSuccess`/`onError`/`onSettled` callbacks as a second
+* argument, useful for triggering call-site side effects (e.g. navigation) without coupling them to the shared
+* mutation definition. Hook-level callbacks (passed to `options`) fire for every mutation; per-call callbacks
+* fire only for the latest call you've made, and only while the component is still mounted — unmounting before
+* the mutation settles removes the subscription and prevents them from firing.
+* @throws {Error} The mutation error, when `throwOnError` is `true` or returns `true` for it, so that it is
+* thrown to the nearest error boundary.
+* @see {@link mutationOptions} to share these options across multiple `useMutation` call sites, or to look
+* the mutation up elsewhere via its `mutationKey` (e.g. with `useMutationState`).
+* @example
+* ```tsx
+* import { useMutation, useQueryClient } from '@tanstack/react-query'
+*
+* function AddTodo() {
+*   const queryClient = useQueryClient()
+*
+*   const addMutation = useMutation({
+*     mutationFn: addTodo,
+*     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+*   })
+*
+*   return (
+*     <button
+*       onClick={() =>
+*         addMutation.mutate('Item', {
+*           onError: (error) => console.error('Failed to add item:', error),
+*         })
+*       }
+*     >
+*       Add
+*     </button>
+*   )
+* }
+* ```
+* @example
+* Rendering the mutation's own state, rather than just firing it off:
+* ```tsx
+* import { useMutation, useQueryClient } from '@tanstack/react-query'
+*
+* function AddTodo() {
+*   const queryClient = useQueryClient()
+*
+*   const addMutation = useMutation({
+*     mutationFn: addTodo,
+*     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+*   })
+*
+*   return (
+*     <div>
+*       {addMutation.isPending ? (
+*         'Adding todo...'
+*       ) : (
+*         <>
+*           {addMutation.isError ? (
+*             <div>An error occurred: {addMutation.error.message}</div>
+*           ) : null}
+*           <button onClick={() => addMutation.mutate('Item')}>Add</button>
+*         </>
+*       )}
+*     </div>
+*   )
+* }
+* ```
+* @example
+* Optimistic update via `onMutate`, rolling back on `onError`:
+* ```tsx
+* import { useMutation, useQueryClient } from '@tanstack/react-query'
+*
+* function AddTodo() {
+*   const queryClient = useQueryClient()
+*
+*   const addMutation = useMutation({
+*     mutationFn: addTodo,
+*     onMutate: async (newTodo) => {
+*       await queryClient.cancelQueries({ queryKey: ['todos'] })
+*       const previousTodos = queryClient.getQueryData<Array<string>>(['todos'])
+*
+*       queryClient.setQueryData<Array<string>>(['todos'], (old) => [
+*         ...(old ?? []),
+*         newTodo,
+*       ])
+*
+*       // Passed to `onError` as `onMutateResult` if the mutation fails.
+*       return { previousTodos }
+*     },
+*     onError: (_err, _newTodo, onMutateResult) => {
+*       queryClient.setQueryData(['todos'], onMutateResult?.previousTodos)
+*     },
+*     onSettled: () => {
+*       queryClient.invalidateQueries({ queryKey: ['todos'] })
+*     },
+*   })
+*
+*   return (
+*     <button onClick={() => addMutation.mutate('Item')}>Add</button>
+*   )
+* }
+* ```
+* @example
+* Callbacks passed per call to `mutate` only fire for the last call — `mutateAsync` gives you a
+* promise per call instead, so you can wait for all of them when they succeed:
+* ```tsx
+* import { useMutation, useQueryClient } from '@tanstack/react-query'
+*
+* function AddTodos() {
+*   const queryClient = useQueryClient()
+*
+*   const addMutation = useMutation({
+*     mutationFn: addTodo,
+*     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+*   })
+*
+*   async function handleAddAll(todos: Array<string>) {
+*     try {
+*       await Promise.all(todos.map((todo) => addMutation.mutateAsync(todo)))
+*     } catch (error) {
+*       console.error('Failed to add todos:', error)
+*     }
+*   }
+*
+*   return (
+*     <button onClick={() => handleAddAll(['Todo 1', 'Todo 2', 'Todo 3'])}>
+*       Add all
+*     </button>
+*   )
+* }
+* ```
+* @example
+* If some of the mutations above can fail independently of the others, and you want to know which ones
+* did — rather than losing that information the moment the first one rejects — swap `Promise.all` for
+* `Promise.allSettled`:
+* ```tsx
+* import { useMutation, useQueryClient } from '@tanstack/react-query'
+*
+* function AddTodos() {
+*   const queryClient = useQueryClient()
+*
+*   const addMutation = useMutation({
+*     mutationFn: addTodo,
+*     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+*   })
+*
+*   async function handleAddAll(todos: Array<string>) {
+*     const addResults = await Promise.allSettled(
+*       todos.map((todo) => addMutation.mutateAsync(todo)),
+*     )
+*
+*     addResults.forEach((addResult, index) => {
+*       if (addResult.status === 'rejected') {
+*         console.error(`Failed to add "${todos[index]}":`, addResult.reason)
+*       }
+*     })
+*   }
+*
+*   return (
+*     <button onClick={() => handleAddAll(['Todo 1', 'Todo 2', 'Todo 3'])}>
+*       Add all
+*     </button>
+*   )
+* }
+* ```
+*/
+function useMutation(options, queryClient) {
+	const client = useQueryClient(queryClient);
+	const [observer] = react.useState(() => new MutationObserver$1(client, options));
+	react.useEffect(() => {
+		observer.setOptions(options);
+	}, [observer, options]);
+	const result = react.useSyncExternalStore(react.useCallback((onStoreChange) => observer.subscribe(notifyManager.batchCalls(onStoreChange)), [observer]), () => observer.getCurrentResult(), () => observer.getCurrentResult());
+	const mutate = react.useCallback((...args) => {
+		observer.mutate(args[0], args[1]).catch(noop$3);
+	}, [observer]);
+	if (result.error && shouldThrowError(observer.options.throwOnError, [result.error])) throw result.error;
+	return {
+		...result,
+		mutate,
+		mutateAsync: result.mutate
+	};
+}
+// src/client/apis/index.ts
+var import_dist = require_dist();
+/** @method get */
+async function getApiNexusProject(config) {
+	return (await fetch("/api/nexus/project", { ...config })).json();
+}
+/** @method post */
+async function postApiNexusProject(config) {
+	return (await fetch("/api/nexus/project", {
+		method: "POST",
+		...config
+	})).json();
+}
+/** @method patch */
+async function patchApiNexusProjectId(paths, body, config) {
+	return (await fetch(`/api/nexus/project/${paths.id}`, {
+		headers: { "Content-Type": "application/json" },
+		method: "PATCH",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method post */
+async function postApiNexusRepository(body, config) {
+	return (await fetch("/api/nexus/repository", {
+		headers: { "Content-Type": "application/json" },
+		method: "POST",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method get */
+async function getApiNexusTicket(config) {
+	return (await fetch("/api/nexus/ticket", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusTicketId(paths, config) {
+	return (await fetch(`/api/nexus/ticket/${paths.id}`, { ...config })).json();
+}
+/** @method post */
+async function postApiNexusAskIdAnswer(paths, body, config) {
+	return (await fetch(`/api/nexus/ask/${paths.id}/answer`, {
+		headers: { "Content-Type": "application/json" },
+		method: "POST",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method get */
+async function getApiNexusNode(config) {
+	return (await fetch("/api/nexus/node", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusEdge(config) {
+	return (await fetch("/api/nexus/edge", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusGroup(config) {
+	return (await fetch("/api/nexus/group", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusStatus(config) {
+	return (await fetch("/api/nexus/status", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusPending(config) {
+	return (await fetch("/api/nexus/pending", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusDelivery(config) {
+	return (await fetch("/api/nexus/delivery", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusThread(config) {
+	return (await fetch("/api/nexus/thread", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusTrigger(config) {
+	return (await fetch("/api/nexus/trigger", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusSubscription(config) {
+	return (await fetch("/api/nexus/subscription", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusChannel(config) {
+	return (await fetch("/api/nexus/channel", { ...config })).json();
+}
+/** @method put */
+async function putApiNexusChannelIdConfiguration(paths, body, config) {
+	return (await fetch(`/api/nexus/channel/${paths.id}/configuration`, {
+		headers: { "Content-Type": "application/json" },
+		method: "PUT",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method delete */
+async function deleteApiNexusChannelIdCredential(paths, config) {
+	return (await fetch(`/api/nexus/channel/${paths.id}/credential`, {
+		method: "DELETE",
+		...config
+	})).json();
+}
+/** @method post */
+async function postApiNexusChannelIdAuthentication(paths, body, config) {
+	return (await fetch(`/api/nexus/channel/${paths.id}/authentication`, {
+		headers: { "Content-Type": "application/json" },
+		method: "POST",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method get */
+async function getApiNexusChannelIdAuthenticationAuthenticationId(paths, config) {
+	return (await fetch(`/api/nexus/channel/${paths.id}/authentication/${paths.authenticationId}`, { ...config })).json();
+}
+/** @method get */
+async function getApiNexusSetting(config) {
+	return (await fetch("/api/nexus/setting", { ...config })).json();
+}
+/** @method patch */
+async function patchApiNexusSetting(body, config) {
+	return (await fetch("/api/nexus/setting", {
+		headers: { "Content-Type": "application/json" },
+		method: "PATCH",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method get */
+async function getApiNexusAgentModel(config) {
+	return (await fetch("/api/nexus/agent/model", { ...config })).json();
+}
+/** @method patch */
+async function patchApiNexusAgentModel(body, config) {
+	return (await fetch("/api/nexus/agent/model", {
+		headers: { "Content-Type": "application/json" },
+		method: "PATCH",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
+/** @method get */
+async function getApiNexusAgentModelCatalog(config) {
+	return (await fetch("/api/nexus/agent/model/catalog", { ...config })).json();
+}
+/** @method put */
+async function putApiNexusSessionMain(config) {
+	return (await fetch("/api/nexus/session/main", {
+		method: "PUT",
+		...config
+	})).json();
+}
+/** @method get */
+async function getApiNexusSessionRole(config) {
+	return (await fetch("/api/nexus/session/role", { ...config })).json();
+}
+/** @method get */
+async function getApiNexusSessionIdMailbox(paths, config) {
+	return (await fetch(`/api/nexus/session/${paths.id}/mailbox`, { ...config })).json();
+}
+// src/client/client.ts
+const client = new QueryClient({ defaultOptions: { queries: {
+	staleTime: 3e4,
+	retry: false,
+	refetchOnWindowFocus: false
+} } });
+// src/client/components/icons.tsx
 function GitHubIcon(props) {
 	const $ = (0, import_dist.c)(3);
 	let t0;
@@ -677,14 +5253,14 @@ function GitForkIcon(props) {
 	} else t5 = $[6];
 	return t5;
 }
-function UserCheckIcon(props) {
+function UserShieldIcon(props) {
 	const $ = (0, import_dist.c)(5);
 	let t0;
 	let t1;
 	let t2;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m16 11 2 2 4-4" });
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" });
+		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 15H6a4 4 0 0 0-4 4v2" });
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 17.5c0 2.499-1.75 3.749-3.83 4.474a.5.5 0 0 1-.335-.005c-2.085-.72-3.835-1.97-3.835-4.47V14a.5.5 0 0 1 .5-.499c1 0 2.25-.6 3.12-1.36a.6.6 0 0 1 .76-.001c.875.765 2.12 1.36 3.12 1.36a.5.5 0 0 1 .5.5z" });
 		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
 			cx: "9",
 			cy: "7",
@@ -1181,6 +5757,57 @@ function promiseTimeout(ms, throwOnTimeout = false, reason = "Timeout") {
 		else setTimeout(resolve, ms);
 	});
 }
+const assert = (condition, ...infos) => {
+	if (!condition) console.warn(...infos);
+};
+function toValue(value) {
+	if (Array.isArray(value) && value.length === 2 && typeof value[1] === "function") return value[0];
+	if (value !== null && value !== void 0 && typeof value === "object" && "value" in value && !("addEventListener" in value)) return value.value;
+	if (typeof value === "function") return value();
+	return value;
+}
+function isTuple(state) {
+	return Array.isArray(state) && state.length === 2 && typeof state[1] === "function";
+}
+function isObjectState$1(state) {
+	return typeof state === "object" && state !== null && !Array.isArray(state) && "value" in state;
+}
+/**
+* Combine controlled and uncontrolled state sources.
+*
+*/
+function useControllableState(state, options = {}) {
+	const { defaultValue, shouldUpdate = (prev, next) => !Object.is(prev, next), passive = false } = options;
+	const controlled = isTuple(state) || isObjectState$1(state) || !passive;
+	const externalValue = toValue(state);
+	const initial = defaultValue === void 0 ? externalValue : typeof defaultValue === "function" ? defaultValue() : defaultValue;
+	const [internal, setInternal] = (0, react.useState)(initial);
+	const value = controlled ? externalValue : internal;
+	const valueRef = (0, react.useRef)(value);
+	const previousExternalRef = (0, react.useRef)(externalValue);
+	valueRef.current = value;
+	const stateRef = (0, react.useRef)(state);
+	stateRef.current = state;
+	(0, react.useEffect)(() => {
+		if (passive && (typeof state === "function" || externalValue === null || typeof externalValue !== "object") && !isTuple(state) && !isObjectState$1(state) && !Object.is(previousExternalRef.current, externalValue) && shouldUpdate(valueRef.current, externalValue)) setInternal(externalValue);
+		previousExternalRef.current = externalValue;
+	}, [
+		externalValue,
+		passive,
+		shouldUpdate
+	]);
+	return [value, (0, react.useCallback)((action) => {
+		var _currentState$onChang;
+		const prev = valueRef.current;
+		const next = typeof action === "function" ? action(prev) : action;
+		if (!shouldUpdate(prev, next)) return;
+		const currentState = stateRef.current;
+		if (isTuple(currentState)) currentState[1](next);
+		else if (isObjectState$1(currentState)) (_currentState$onChang = currentState.onChange) === null || _currentState$onChang === void 0 || _currentState$onChang.call(currentState, next);
+		else if (!controlled) setInternal(next);
+		else assert(false, "useControllableState: `setValue` on a controlled source without a write channel (a plain value or getter with `passive: false`) is ignored. Pass a [value, setter] tuple, a { value, onChange } pair, or use `passive: true`.");
+	}, [controlled, shouldUpdate])];
+}
 /**
 * Map from react-use `useLatest`.
 *
@@ -1204,6 +5831,84 @@ Map.prototype;
 Set.prototype;
 function noop$2() {}
 // node_modules/.pnpm/@reause+core@0.1.9_react@18.3.1/node_modules/@reause/core/dist/index.js
+/**
+* Default `onError` — mirrors upstream's `globalThis.reportError` fallback. `reportError` must be
+* invoked with the global object as `this`, otherwise Chromium throws "Illegal invocation" for a
+* detached call.
+*/
+function defaultOnError$3(e) {
+	if (typeof globalThis.reportError === "function") globalThis.reportError(e);
+}
+function isPromiseLike(value) {
+	return typeof (value === null || value === void 0 ? void 0 : value.then) === "function";
+}
+const EMPTY_DEPS = [];
+function useAsync(evaluationCallback, initialState, options) {
+	const { deps = EMPTY_DEPS, skipInitial: skipInitialOption, lazy = false, onEvaluating = noop$2, onError = defaultOnError$3 } = options !== null && options !== void 0 ? options : {};
+	const skipInitial = skipInitialOption !== null && skipInitialOption !== void 0 ? skipInitialOption : lazy;
+	const [state, setState] = useControllableState(initialState, { passive: true });
+	const evaluationCallbackRef = (0, react.useRef)(evaluationCallback);
+	evaluationCallbackRef.current = evaluationCallback;
+	const skipInitialRef = (0, react.useRef)(skipInitial);
+	skipInitialRef.current = skipInitial;
+	const onEvaluatingRef = (0, react.useRef)(onEvaluating);
+	onEvaluatingRef.current = onEvaluating;
+	const onErrorRef = (0, react.useRef)(onError);
+	onErrorRef.current = onError;
+	const evaluationIdRef = (0, react.useRef)(0);
+	const isMountedRef = (0, react.useRef)(true);
+	const hasEvaluatedRef = (0, react.useRef)(false);
+	(0, react.useEffect)(() => {
+		const isFirstRun = !hasEvaluatedRef.current;
+		hasEvaluatedRef.current = true;
+		if (isFirstRun && skipInitialRef.current) return;
+		const id = evaluationIdRef.current += 1;
+		let hasFinished = false;
+		let settled = false;
+		const cancelCallbacks = [];
+		const settle = () => {
+			if (settled || !isMountedRef.current) return;
+			settled = true;
+			onEvaluatingRef.current(false);
+		};
+		const invalidate = () => {
+			settle();
+			if (!hasFinished) cancelCallbacks.splice(0, cancelCallbacks.length).forEach((cancelCallback) => cancelCallback());
+		};
+		onEvaluatingRef.current(true);
+		try {
+			const result = evaluationCallbackRef.current((cancelCallback) => {
+				cancelCallbacks.push(cancelCallback);
+			});
+			if (isPromiseLike(result)) result.then((value) => {
+				hasFinished = true;
+				if (id === evaluationIdRef.current && isMountedRef.current) setState(value);
+				settle();
+			}, (error) => {
+				hasFinished = true;
+				onErrorRef.current(error);
+				settle();
+			});
+			else {
+				hasFinished = true;
+				setState(result);
+				settle();
+			}
+		} catch (error) {
+			hasFinished = true;
+			onErrorRef.current(error);
+			settle();
+		}
+		return invalidate;
+	}, deps);
+	(0, react.useEffect)(() => {
+		isMountedRef.current = true;
+		return () => {
+			isMountedRef.current = false;
+		};
+	}, []);
+	return state;
+}
 /**
 * Map from @vueuse/core `useMounted`
 * (`source/vueuse/packages/core/useMounted/`).
@@ -1492,13 +6197,51 @@ const PluginContext = (0, react.createContext)({
 	useStore: {},
 	actions: {}
 });
-// src/client/hooks/use-store.ts
-function useStore(select) {
-	return (0, react.useContext)(PluginContext).useStore(select);
-}
-function useActions() {
-	return (0, react.useContext)(PluginContext).actions;
-}
+// src/client/config/query-keys.ts
+const keys = {
+	project: ["project"],
+	ticket: ["ticket"],
+	ticketCurrent: ["ticket", "current"],
+	ticketDetail: (id) => ["ticket", id],
+	worker: ["worker"],
+	supervisor: ["supervisor"],
+	scope: ["scope"],
+	node: ["node"],
+	edge: ["edge"],
+	group: ["group"],
+	status: ["status"],
+	message: ["message"],
+	pending: ["pending"],
+	delivery: ["delivery"],
+	thread: ["thread"],
+	trigger: ["trigger"],
+	subscription: ["subscription"],
+	channel: ["channel"],
+	setting: ["setting"],
+	agentModel: ["agent", "model"],
+	agentModelCatalog: [
+		"agent",
+		"model",
+		"catalog"
+	],
+	sessionRole: ["session", "role"],
+	sessionContext: (id) => [
+		"session",
+		id,
+		"context"
+	],
+	sessionMailbox: (id) => [
+		"session",
+		id,
+		"mailbox"
+	],
+	channelAuthentication: (id, authenticationId) => [
+		"channel",
+		id,
+		"authentication",
+		authenticationId
+	]
+};
 // src/client/locale/index.ts
 const dicts = {
 	zh: {
@@ -2346,114 +7089,16 @@ function Switch$2(props) {
 	});
 	return wrapper(as, rest, matchingCase ?? defaultCase ?? null);
 }
-// src/client/apis/index.ts
-/** @method get */
-async function getApiNexusPanel(config) {
-	return (await fetch("/api/nexus/panel", { ...config })).json();
-}
-/** @method get */
-async function getApiNexusAgentsModels(config) {
-	return (await fetch("/api/nexus/agents/models", { ...config })).json();
-}
-/** @method patch */
-async function patchApiNexusAgentsModels(body, config) {
-	return (await fetch("/api/nexus/agents/models", {
-		headers: { "Content-Type": "application/json" },
-		method: "PATCH",
-		body: JSON.stringify(body),
-		...config
-	})).json();
-}
-/** @method get */
-async function getApiNexusTicketsId(paths, config) {
-	return (await fetch(`/api/nexus/tickets/${paths.id}`, { ...config })).json();
-}
-/** @method put */
-async function putApiNexusChannelsIdConfiguration(paths, body, config) {
-	return (await fetch(`/api/nexus/channels/${paths.id}/configuration`, {
-		headers: { "Content-Type": "application/json" },
-		method: "PUT",
-		body: JSON.stringify(body),
-		...config
-	})).json();
-}
-/** @method delete */
-async function deleteApiNexusChannelsIdCredentials(paths, config) {
-	return (await fetch(`/api/nexus/channels/${paths.id}/credentials`, {
-		method: "DELETE",
-		...config
-	})).json();
-}
-/** @method post */
-async function postApiNexusChannelsIdAuthentications(paths, body, config) {
-	return (await fetch(`/api/nexus/channels/${paths.id}/authentications`, {
-		headers: { "Content-Type": "application/json" },
-		method: "POST",
-		body: JSON.stringify(body),
-		...config
-	})).json();
-}
-/** @method get */
-async function getApiNexusChannelsIdAuthenticationsAuthenticationId(paths, config) {
-	return (await fetch(`/api/nexus/channels/${paths.id}/authentications/${paths.authenticationId}`, { ...config })).json();
-}
-/** @method patch */
-async function patchApiNexusProjectsId(paths, body, config) {
-	return (await fetch(`/api/nexus/projects/${paths.id}`, {
-		headers: { "Content-Type": "application/json" },
-		method: "PATCH",
-		body: JSON.stringify(body),
-		...config
-	})).json();
-}
-/** @method post */
-async function postApiNexusProjects(config) {
-	return (await fetch("/api/nexus/projects", {
-		method: "POST",
-		...config
-	})).json();
-}
-/** @method post */
-async function postApiNexusRepositories(body, config) {
-	return (await fetch("/api/nexus/repositories", {
-		headers: { "Content-Type": "application/json" },
-		method: "POST",
-		body: JSON.stringify(body),
-		...config
-	})).json();
-}
-/** @method put */
-async function putApiNexusSessionsMain(config) {
-	return (await fetch("/api/nexus/sessions/main", {
-		method: "PUT",
-		...config
-	})).json();
-}
-/** @method patch */
-async function patchApiNexusSettings(body, config) {
-	return (await fetch("/api/nexus/settings", {
-		headers: { "Content-Type": "application/json" },
-		method: "PATCH",
-		body: JSON.stringify(body),
-		...config
-	})).json();
-}
-/** @method post */
-async function postApiNexusAsksIdAnswers(paths, body, config) {
-	return (await fetch(`/api/nexus/asks/${paths.id}/answers`, {
-		headers: { "Content-Type": "application/json" },
-		method: "POST",
-		body: JSON.stringify(body),
-		...config
-	})).json();
-}
-/** @method get */
-async function getApiNexusSessionsIdMailbox(paths, config) {
-	return (await fetch(`/api/nexus/sessions/${paths.id}/mailbox`, { ...config })).json();
-}
 // src/client/hooks/use-dsh-context.ts
 function useDshContext() {
 	return (0, react.useContext)(PluginContext).ctx;
+}
+// src/client/hooks/use-store.ts
+function useStore(select) {
+	return (0, react.useContext)(PluginContext).useStore(select);
+}
+function useActions() {
+	return (0, react.useContext)(PluginContext).actions;
 }
 // src/client/hooks/use-translation.ts
 function useTranslation() {
@@ -2540,65 +7185,95 @@ function DetailHeader({ name, icon, supported = true, actions }) {
 }
 // src/client/pages/channel/detail/components/feishu.tsx
 function FeishuDetail() {
-	const $ = (0, import_dist.c)(13);
+	const $ = (0, import_dist.c)(19);
 	const { t } = useTranslation();
-	const t0 = useStore(_temp2$14) ?? "飞书";
-	let t1;
+	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeishuIcon, {
+		t0 = {
+			queryKey: keys.channel,
+			queryFn: _temp$28
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const { data: channels, error } = useQuery(t0);
+	let t1;
+	if ($[1] !== channels) {
+		t1 = channels?.find(_temp2$16)?.name;
+		$[1] = channels;
+		$[2] = t1;
+	} else t1 = $[2];
+	const t2 = t1 ?? "飞书";
+	let t3;
+	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(FeishuIcon, {
 			width: 27,
 			height: 27
 		});
-		$[0] = t1;
-	} else t1 = $[0];
-	let t2;
-	if ($[1] !== t0) {
-		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailHeader, {
-			name: t0,
-			icon: t1,
+		$[3] = t3;
+	} else t3 = $[3];
+	let t4;
+	if ($[4] !== t2) {
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailHeader, {
+			name: t2,
+			icon: t3,
 			supported: false
 		});
-		$[1] = t0;
-		$[2] = t2;
-	} else t2 = $[2];
-	let t3;
-	if ($[3] !== t) {
-		t3 = t("channelUnsupported");
-		$[3] = t;
-		$[4] = t3;
-	} else t3 = $[4];
-	let t4;
-	if ($[5] !== t) {
-		t4 = t("channelFeishuUnavailable");
-		$[5] = t;
-		$[6] = t4;
-	} else t4 = $[6];
+		$[4] = t2;
+		$[5] = t4;
+	} else t4 = $[5];
 	let t5;
-	if ($[7] !== t3 || $[8] !== t4) {
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+	if ($[6] !== error) {
+		t5 = error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			children: `渠道列表加载失败：${error.message}`
+		});
+		$[6] = error;
+		$[7] = t5;
+	} else t5 = $[7];
+	let t6;
+	if ($[8] !== t) {
+		t6 = t("channelUnsupported");
+		$[8] = t;
+		$[9] = t6;
+	} else t6 = $[9];
+	let t7;
+	if ($[10] !== t) {
+		t7 = t("channelFeishuUnavailable");
+		$[10] = t;
+		$[11] = t7;
+	} else t7 = $[11];
+	let t8;
+	if ($[12] !== t6 || $[13] !== t7) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			compact: true,
-			title: t3,
-			description: t4,
+			title: t6,
+			description: t7,
 			className: "rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-6"
 		});
-		$[7] = t3;
-		$[8] = t4;
-		$[9] = t5;
-	} else t5 = $[9];
-	let t6;
-	if ($[10] !== t2 || $[11] !== t5) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [t2, t5] });
-		$[10] = t2;
-		$[11] = t5;
 		$[12] = t6;
-	} else t6 = $[12];
-	return t6;
+		$[13] = t7;
+		$[14] = t8;
+	} else t8 = $[14];
+	let t9;
+	if ($[15] !== t4 || $[16] !== t5 || $[17] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+			t4,
+			t5,
+			t8
+		] });
+		$[15] = t4;
+		$[16] = t5;
+		$[17] = t8;
+		$[18] = t9;
+	} else t9 = $[18];
+	return t9;
 }
-function _temp2$14(state) {
-	return state.data.panel?.channels.find(_temp$20)?.name;
-}
-function _temp$20(channel) {
+function _temp2$16(channel) {
 	return channel.id === "feishu";
+}
+function _temp$28() {
+	return getApiNexusChannel();
 }
 // src/client/pages/channel/detail/components/section.tsx
 function Section$1(t0) {
@@ -2765,9 +7440,13 @@ function Environment(t0) {
 // src/client/pages/channel/detail/components/github.tsx
 function GithubDetail() {
 	const { t } = useTranslation();
-	const channel_0 = useStore((state) => state.data.panel?.channels.find((channel) => channel.id === "github"));
+	const client = useQueryClient();
+	const channels = useQuery({
+		queryKey: keys.channel,
+		queryFn: () => getApiNexusChannel()
+	});
+	const channel_0 = channels.data?.find((channel) => channel.id === "github");
 	const id = (0, react.useId)();
-	const { receivePanel } = useActions();
 	const savingRequest = (0, react.useRef)(false);
 	const deletingRequest = (0, react.useRef)(false);
 	const [saving, setSaving] = (0, react.useState)(false);
@@ -2796,10 +7475,21 @@ function GithubDetail() {
 		lifetime.current = controller;
 		return () => controller.abort();
 	}, []);
+	useAsync(async (onCancel) => {
+		if (channels) return;
+		const controller_0 = new AbortController();
+		onCancel(() => controller_0.abort());
+		try {
+			await reload();
+		} catch {}
+	}, void 0);
+	async function reload() {
+		await client.invalidateQueries({ queryKey: keys.channel });
+	}
 	const { pause, resume } = useTimeoutPoll(async () => {
 		if (!authId.current || lifetime.current.signal.aborted) return;
 		try {
-			await applyAuthentication(await getApiNexusChannelsIdAuthenticationsAuthenticationId({
+			await applyAuthentication(await getApiNexusChannelIdAuthenticationAuthenticationId({
 				id: "github",
 				authenticationId: authId.current
 			}, { signal: lifetime.current.signal }));
@@ -2822,12 +7512,7 @@ function GithubDetail() {
 		}
 		pause();
 		setAuthNotice(t(value.status === "succeeded" ? "channelAuthSucceeded" : "channelAuthFailed"));
-		if (value.status === "succeeded") {
-			const panel = await getApiNexusPanel({ signal: lifetime.current.signal });
-			if (lifetime.current.signal.aborted) return;
-			if (!("projects" in panel)) throw new Error("channel_reload_failed");
-			receivePanel(panel);
-		}
+		if (value.status === "succeeded") await reload();
 		authRequest.current = false;
 		setAuthenticating(false);
 	}
@@ -2847,7 +7532,7 @@ function GithubDetail() {
 		setCopyNotice("");
 		setAuthNotice(t("channelAuthStarting"));
 		try {
-			const value_0 = await postApiNexusChannelsIdAuthentications({ id: "github" }, {}, { signal: lifetime.current.signal });
+			const value_0 = await postApiNexusChannelIdAuthentication({ id: "github" }, {}, { signal: lifetime.current.signal });
 			await applyAuthentication(value_0);
 			if (!lifetime.current.signal.aborted && value_0.status === "pending") resume();
 		} catch {
@@ -2882,7 +7567,7 @@ function GithubDetail() {
 		setSaving(true);
 		setNotice("");
 		try {
-			if (!("channel" in await putApiNexusChannelsIdConfiguration({ id: "github" }, toggle ? { enabled: !channel_0.enabled } : {
+			if (!("channel" in await putApiNexusChannelIdConfiguration({ id: "github" }, toggle ? { enabled: !channel_0.enabled } : {
 				commitName: nameValue.trim(),
 				commitEmail: emailValue.trim(),
 				...token.trim() ? {
@@ -2890,9 +7575,7 @@ function GithubDetail() {
 					enabled: hasCredential ? channel_0.enabled : true
 				} : {}
 			}))) throw new Error("channel_save_failed");
-			const panel_0 = await getApiNexusPanel();
-			if (!("projects" in panel_0)) throw new Error("channel_reload_failed");
-			receivePanel(panel_0);
+			await reload();
 			if (!toggle) cancel();
 			setNotice(t("channelSaved"));
 		} catch {
@@ -2917,13 +7600,11 @@ function GithubDetail() {
 		deletingRequest.current = true;
 		setDeletion("deleting");
 		try {
-			const result_0 = await deleteApiNexusChannelsIdCredentials({ id: "github" }, { signal: lifetime.current.signal });
+			const result_0 = await deleteApiNexusChannelIdCredential({ id: "github" }, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
 			if (!("channel" in result_0)) throw new Error("channel_delete_failed");
-			const panel_1 = await getApiNexusPanel({ signal: lifetime.current.signal });
+			await reload();
 			if (lifetime.current.signal.aborted) return;
-			if (!("projects" in panel_1)) throw new Error("channel_reload_failed");
-			receivePanel(panel_1);
 			cancel();
 		} catch {
 			if (!lifetime.current.signal.aborted) setDeleteNotice(t("channelDeleteFailed"));
@@ -3175,10 +7856,14 @@ function GithubDetail() {
 // src/client/pages/channel/detail/components/gitlab.tsx
 function GitlabDetail() {
 	const { t } = useTranslation();
-	const channel_0 = useStore((state) => state.data.panel?.channels.find((channel) => channel.id === "gitlab"));
+	const client = useQueryClient();
+	const channels = useQuery({
+		queryKey: keys.channel,
+		queryFn: () => getApiNexusChannel()
+	});
+	const channel_0 = channels.data?.find((channel) => channel.id === "gitlab");
 	const [expectedAccount, setExpectedAccount] = (0, react.useState)(channel_0?.expectedAccount ?? "");
 	const id = (0, react.useId)();
-	const { receivePanel } = useActions();
 	const savingRequest = (0, react.useRef)(false);
 	const [saving, setSaving] = (0, react.useState)(false);
 	const [deleteConfirming, setDeleteConfirming] = (0, react.useState)(false);
@@ -3203,10 +7888,30 @@ function GitlabDetail() {
 		lifetime.current = controller;
 		return () => controller.abort();
 	}, []);
+	useAsync(async (onCancel) => {
+		if (channels) return;
+		const controller_0 = new AbortController();
+		onCancel(() => controller_0.abort());
+		try {
+			await reload(controller_0.signal);
+		} catch {}
+	}, void 0);
+	async function reload(signal) {
+		const value = await getApiNexusChannel(signal ? { signal } : void 0);
+		if (signal?.aborted) return null;
+		if (!Array.isArray(value)) throw new Error("channel_reload_failed");
+		client.setQueryData(keys.channel, value);
+		return value;
+	}
+	async function reloadSaved(signal_0) {
+		const saved = (await reload(signal_0))?.find((channel_1) => channel_1.id === "gitlab");
+		if (!saved) throw new Error("channel_reload_failed");
+		return saved;
+	}
 	const { pause, resume } = useTimeoutPoll(async () => {
 		if (!authId.current || lifetime.current.signal.aborted) return;
 		try {
-			await applyAuthentication(await getApiNexusChannelsIdAuthenticationsAuthenticationId({
+			await applyAuthentication(await getApiNexusChannelIdAuthenticationAuthenticationId({
 				id: "gitlab",
 				authenticationId: authId.current
 			}, { signal: lifetime.current.signal }));
@@ -3214,27 +7919,22 @@ function GitlabDetail() {
 			failAuthentication();
 		}
 	}, 1e3, { immediate: false });
-	async function applyAuthentication(value) {
+	async function applyAuthentication(value_0) {
 		if (lifetime.current.signal.aborted) return;
-		if (!value || typeof value.id !== "string" || !value.id || value.channelId !== "gitlab" || typeof value.output !== "string" || ![
+		if (!value_0 || typeof value_0.id !== "string" || !value_0.id || value_0.channelId !== "gitlab" || typeof value_0.output !== "string" || ![
 			"pending",
 			"succeeded",
 			"failed"
-		].includes(value.status) || authId.current && authId.current !== value.id || value.userCode !== void 0 && typeof value.userCode !== "string" || value.verificationUri !== void 0 && typeof value.verificationUri !== "string") throw new Error("invalid_authentication");
-		authId.current = value.id;
-		setAuthentication(value);
-		if (value.status === "pending") {
+		].includes(value_0.status) || authId.current && authId.current !== value_0.id || value_0.userCode !== void 0 && typeof value_0.userCode !== "string" || value_0.verificationUri !== void 0 && typeof value_0.verificationUri !== "string") throw new Error("invalid_authentication");
+		authId.current = value_0.id;
+		setAuthentication(value_0);
+		if (value_0.status === "pending") {
 			setAuthNotice(t("channelAuthPending"));
 			return;
 		}
 		pause();
-		setAuthNotice(t(value.status === "succeeded" ? "channelAuthSucceeded" : "channelAuthFailed"));
-		if (value.status === "succeeded") {
-			const panel = await getApiNexusPanel({ signal: lifetime.current.signal });
-			if (lifetime.current.signal.aborted) return;
-			if (!("projects" in panel)) throw new Error("channel_reload_failed");
-			receivePanel(panel);
-		}
+		setAuthNotice(t(value_0.status === "succeeded" ? "channelAuthSucceeded" : "channelAuthFailed"));
+		if (value_0.status === "succeeded") await reload(lifetime.current.signal);
 		authRequest.current = false;
 		setAuthenticating(false);
 	}
@@ -3255,9 +7955,9 @@ function GitlabDetail() {
 		setCopyNotice("");
 		setAuthNotice(t("channelAuthStarting"));
 		try {
-			const value_0 = await postApiNexusChannelsIdAuthentications({ id: "gitlab" }, { host: host.trim() }, { signal: lifetime.current.signal });
-			await applyAuthentication(value_0);
-			if (!lifetime.current.signal.aborted && value_0.status === "pending") resume();
+			const value_1 = await postApiNexusChannelIdAuthentication({ id: "gitlab" }, { host: host.trim() }, { signal: lifetime.current.signal });
+			await applyAuthentication(value_1);
+			if (!lifetime.current.signal.aborted && value_1.status === "pending") resume();
 		} catch {
 			failAuthentication();
 		}
@@ -3281,7 +7981,7 @@ function GitlabDetail() {
 		setSaving(true);
 		setNotice("");
 		try {
-			const result = await putApiNexusChannelsIdConfiguration({ id: "gitlab" }, {
+			const result = await putApiNexusChannelIdConfiguration({ id: "gitlab" }, {
 				host: host.trim(),
 				...expectedAccount.trim() !== (channel_0?.expectedAccount ?? "").trim() ? { expectedAccount: expectedAccount.trim() } : {},
 				...token.trim() && !channel_0?.hasCredential ? { enabled: true } : {},
@@ -3291,13 +7991,9 @@ function GitlabDetail() {
 			}, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
 			if (!("channel" in result)) throw new Error("channel_save_failed");
-			const panel_0 = await getApiNexusPanel({ signal: lifetime.current.signal });
+			const saved_0 = await reloadSaved(lifetime.current.signal);
 			if (lifetime.current.signal.aborted) return;
-			if (!("projects" in panel_0)) throw new Error("channel_reload_failed");
-			const saved = panel_0.channels.find((channel_1) => channel_1.id === "gitlab");
-			if (!saved) throw new Error("channel_reload_failed");
-			receivePanel(panel_0);
-			reset(saved);
+			reset(saved_0);
 			setNotice(t("channelGitlabSaved"));
 		} catch {
 			if (!lifetime.current.signal.aborted) setNotice(t("channelSaveFailed"));
@@ -3306,11 +8002,11 @@ function GitlabDetail() {
 			if (!lifetime.current.signal.aborted) setSaving(false);
 		}
 	};
-	function reset(saved_0 = channel_0) {
-		setHost(saved_0?.host ?? "https://gitlab.com");
-		setExpectedAccount(saved_0?.expectedAccount ?? "");
-		setCommitName(saved_0?.commitName ?? "");
-		setCommitEmail(saved_0?.commitEmail ?? "");
+	function reset(saved_1 = channel_0) {
+		setHost(saved_1?.host ?? "https://gitlab.com");
+		setExpectedAccount(saved_1?.expectedAccount ?? "");
+		setCommitName(saved_1?.commitName ?? "");
+		setCommitEmail(saved_1?.commitEmail ?? "");
 		setToken("");
 		setHostInvalid(false);
 		setNotice("");
@@ -3324,13 +8020,10 @@ function GitlabDetail() {
 		setSaving(true);
 		setNotice("");
 		try {
-			const result_0 = await putApiNexusChannelsIdConfiguration({ id: "gitlab" }, { enabled: !channel_0.enabled }, { signal: lifetime.current.signal });
+			const result_0 = await putApiNexusChannelIdConfiguration({ id: "gitlab" }, { enabled: !channel_0.enabled }, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
 			if (!("channel" in result_0)) throw new Error("channel_save_failed");
-			const panel_1 = await getApiNexusPanel({ signal: lifetime.current.signal });
-			if (lifetime.current.signal.aborted) return;
-			if (!("projects" in panel_1)) throw new Error("channel_reload_failed");
-			receivePanel(panel_1);
+			await reload(lifetime.current.signal);
 		} catch {
 			if (!lifetime.current.signal.aborted) setNotice(t("channelSaveFailed"));
 		} finally {
@@ -3354,16 +8047,12 @@ function GitlabDetail() {
 		setDeleting(true);
 		setNotice("");
 		try {
-			const result_1 = await deleteApiNexusChannelsIdCredentials({ id: "gitlab" }, { signal: lifetime.current.signal });
+			const result_1 = await deleteApiNexusChannelIdCredential({ id: "gitlab" }, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
 			if (!("channel" in result_1)) throw new Error("channel_delete_failed");
-			const panel_2 = await getApiNexusPanel({ signal: lifetime.current.signal });
+			const saved_2 = await reloadSaved(lifetime.current.signal);
 			if (lifetime.current.signal.aborted) return;
-			if (!("projects" in panel_2)) throw new Error("channel_reload_failed");
-			const saved_1 = panel_2.channels.find((channel_2) => channel_2.id === "gitlab");
-			if (!saved_1) throw new Error("channel_reload_failed");
-			receivePanel(panel_2);
-			reset(saved_1);
+			reset(saved_2);
 		} catch {
 			if (!lifetime.current.signal.aborted) setNotice(t("channelDeleteFailed"));
 		} finally {
@@ -3375,8 +8064,8 @@ function GitlabDetail() {
 			}
 		}
 	};
-	function normalizeHost(value_1) {
-		return URL.canParse(value_1.trim()) ? new URL(value_1.trim()).href : value_1.trim();
+	function normalizeHost(value_2) {
+		return URL.canParse(value_2.trim()) ? new URL(value_2.trim()).href : value_2.trim();
 	}
 	const dirty = normalizeHost(host) !== normalizeHost(channel_0?.host ?? "https://gitlab.com") || expectedAccount.trim() !== (channel_0?.expectedAccount ?? "").trim() || commitName.trim() !== (channel_0?.commitName ?? "").trim() || commitEmail.trim() !== (channel_0?.commitEmail ?? "").trim() || Boolean(token.trim());
 	function validateHost() {
@@ -3690,7 +8379,7 @@ function ChannelDetail() {
 	const $ = (0, import_dist.c)(21);
 	const { t } = useTranslation();
 	const { go } = useActions();
-	const kind = useStore(_temp$19);
+	const kind = useStore(_temp$27);
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
@@ -3793,213 +8482,226 @@ function ChannelDetail() {
 	} else t10 = $[20];
 	return t10;
 }
-function _temp$19(state) {
+function _temp$27(state) {
 	return state.channel.selected;
 }
 // src/client/pages/channel/components/card.tsx
 function Card(t0) {
-	const $ = (0, import_dist.c)(58);
+	const $ = (0, import_dist.c)(60);
 	const { kind } = t0;
 	const { t } = useTranslation();
 	const { openChannel } = useActions();
 	let t1;
-	if ($[0] !== kind) {
-		t1 = (state) => state.data.panel?.channels.find((channel) => channel.id === kind);
-		$[0] = kind;
-		$[1] = t1;
-	} else t1 = $[1];
-	const channel_0 = useStore(t1);
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.channel,
+			queryFn: _temp$26
+		};
+		$[0] = t1;
+	} else t1 = $[0];
+	const { data: channels, error, isLoading } = useQuery(t1);
+	let t2;
+	if ($[1] !== channels || $[2] !== kind) {
+		t2 = channels?.find((channel) => channel.id === kind);
+		$[1] = channels;
+		$[2] = kind;
+		$[3] = t2;
+	} else t2 = $[3];
+	const channel_0 = t2;
 	const connected = channel_0?.status === "online";
 	const configured = channel_0?.configured ?? Boolean(channel_0?.accounts.length);
-	const t2 = kind === "feishu" ? "channelUnsupported" : !configured ? "channelNotConfigured" : channel_0?.supported === false || channel_0?.status === "unsupported" ? "channelUnsupported" : connected ? "channelConnected" : channel_0?.status === "disabled" ? "channelDisabled" : "overviewDisconnected";
-	let t3;
-	if ($[2] !== t || $[3] !== t2) {
-		t3 = t(t2);
-		$[2] = t;
-		$[3] = t2;
-		$[4] = t3;
-	} else t3 = $[4];
-	const status = t3;
+	const t3 = kind === "feishu" ? "channelUnsupported" : !configured ? "channelNotConfigured" : channel_0?.supported === false || channel_0?.status === "unsupported" ? "channelUnsupported" : connected ? "channelConnected" : channel_0?.status === "disabled" ? "channelDisabled" : "overviewDisconnected";
 	let t4;
-	if ($[5] !== channel_0?.name || $[6] !== kind) {
-		t4 = channel_0?.name ?? {
+	if ($[4] !== t || $[5] !== t3) {
+		t4 = t(t3);
+		$[4] = t;
+		$[5] = t3;
+		$[6] = t4;
+	} else t4 = $[6];
+	const status = t4;
+	let t5;
+	if ($[7] !== channel_0?.name || $[8] !== kind) {
+		t5 = channel_0?.name ?? {
 			github: "GitHub",
 			feishu: "飞书",
 			gitlab: "GitLab"
 		}[kind];
-		$[5] = channel_0?.name;
-		$[6] = kind;
-		$[7] = t4;
-	} else t4 = $[7];
-	const name = t4;
-	let t5;
-	if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
-		t5 = {
+		$[7] = channel_0?.name;
+		$[8] = kind;
+		$[9] = t5;
+	} else t5 = $[9];
+	const name = t5;
+	let t6;
+	if ($[10] === Symbol.for("react.memo_cache_sentinel")) {
+		t6 = {
 			github: GitHubIcon,
 			gitlab: GitLabIcon,
 			feishu: FeishuIcon
 		};
-		$[8] = t5;
-	} else t5 = $[8];
-	const Icon = t5[kind];
+		$[10] = t6;
+	} else t6 = $[10];
+	const Icon = t6[kind];
 	let t10;
 	let t11;
 	let t12;
 	let t13;
 	let t14;
-	let t6;
+	let t15;
 	let t7;
 	let t8;
 	let t9;
-	if ($[9] !== Icon || $[10] !== kind || $[11] !== name || $[12] !== openChannel || $[13] !== status || $[14] !== t) {
+	if ($[11] !== Icon || $[12] !== isLoading || $[13] !== kind || $[14] !== name || $[15] !== openChannel || $[16] !== status || $[17] !== t) {
 		const description = {
 			github: "channelGithubDescription",
 			gitlab: "channelGitlabDescription",
 			feishu: "channelFeishuDescription"
 		};
-		t10 = "button";
-		if ($[24] !== kind || $[25] !== openChannel) {
-			t11 = () => openChannel(kind);
-			$[24] = kind;
-			$[25] = openChannel;
-			$[26] = t11;
-		} else t11 = $[26];
-		let t15;
-		if ($[27] !== t) {
-			t15 = t("channelSettings");
-			$[27] = t;
-			$[28] = t15;
-		} else t15 = $[28];
-		t12 = `${name} · ${t15}`;
-		t13 = "group flex min-h-48 min-w-0 cursor-pointer flex-col gap-4 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-5 text-left font-[inherit] outline-none transition-colors hover:border-[var(--dsw-alias-border-l1)] hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]";
+		t11 = "button";
+		if ($[27] !== kind || $[28] !== openChannel) {
+			t12 = () => openChannel(kind);
+			$[27] = kind;
+			$[28] = openChannel;
+			$[29] = t12;
+		} else t12 = $[29];
 		let t16;
-		if ($[29] !== Icon) {
-			t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+		if ($[30] !== t) {
+			t16 = t("channelSettings");
+			$[30] = t;
+			$[31] = t16;
+		} else t16 = $[31];
+		t13 = `${name} · ${t16}`;
+		t14 = "group flex min-h-48 min-w-0 cursor-pointer flex-col gap-4 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-5 text-left font-[inherit] outline-none transition-colors hover:border-[var(--dsw-alias-border-l1)] hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]";
+		let t17;
+		if ($[32] !== Icon) {
+			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				className: "flex size-11 items-center justify-center rounded-xl bg-[var(--dsw-alias-card-fill)]",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 					width: 27,
 					height: 27
 				})
 			});
-			$[29] = Icon;
-			$[30] = t16;
-		} else t16 = $[30];
-		let t17;
-		if ($[31] !== status) {
-			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+			$[32] = Icon;
+			$[33] = t17;
+		} else t17 = $[33];
+		const t18 = isLoading ? "加载中…" : status;
+		let t19;
+		if ($[34] !== t18) {
+			t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
 				tone: "quiet",
-				children: status
+				children: t18
 			});
-			$[31] = status;
-			$[32] = t17;
-		} else t17 = $[32];
-		if ($[33] !== t16 || $[34] !== t17) {
-			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+			$[34] = t18;
+			$[35] = t19;
+		} else t19 = $[35];
+		if ($[36] !== t17 || $[37] !== t19) {
+			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: "flex w-full items-center justify-between gap-3",
-				children: [t16, t17]
+				children: [t17, t19]
 			});
-			$[33] = t16;
-			$[34] = t17;
-			$[35] = t14;
-		} else t14 = $[35];
-		t8 = "flex min-w-0 flex-col gap-1.5";
-		if ($[36] !== name) {
-			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			$[36] = t17;
+			$[37] = t19;
+			$[38] = t15;
+		} else t15 = $[38];
+		t9 = "flex min-w-0 flex-col gap-1.5";
+		if ($[39] !== name) {
+			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				className: "text-sm font-medium text-[var(--dsw-alias-label-primary)]",
 				children: name
 			});
-			$[36] = name;
-			$[37] = t9;
-		} else t9 = $[37];
-		t6 = "text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
-		t7 = t(description[kind]);
-		$[9] = Icon;
-		$[10] = kind;
-		$[11] = name;
-		$[12] = openChannel;
-		$[13] = status;
-		$[14] = t;
-		$[15] = t10;
-		$[16] = t11;
-		$[17] = t12;
-		$[18] = t13;
-		$[19] = t14;
-		$[20] = t6;
-		$[21] = t7;
-		$[22] = t8;
-		$[23] = t9;
+			$[39] = name;
+			$[40] = t10;
+		} else t10 = $[40];
+		t7 = "text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
+		t8 = t(description[kind]);
+		$[11] = Icon;
+		$[12] = isLoading;
+		$[13] = kind;
+		$[14] = name;
+		$[15] = openChannel;
+		$[16] = status;
+		$[17] = t;
+		$[18] = t10;
+		$[19] = t11;
+		$[20] = t12;
+		$[21] = t13;
+		$[22] = t14;
+		$[23] = t15;
+		$[24] = t7;
+		$[25] = t8;
+		$[26] = t9;
 	} else {
-		t10 = $[15];
-		t11 = $[16];
-		t12 = $[17];
-		t13 = $[18];
-		t14 = $[19];
-		t6 = $[20];
-		t7 = $[21];
-		t8 = $[22];
-		t9 = $[23];
+		t10 = $[18];
+		t11 = $[19];
+		t12 = $[20];
+		t13 = $[21];
+		t14 = $[22];
+		t15 = $[23];
+		t7 = $[24];
+		t8 = $[25];
+		t9 = $[26];
 	}
-	let t15;
-	if ($[38] !== t6 || $[39] !== t7) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: t6,
-			children: t7
-		});
-		$[38] = t6;
-		$[39] = t7;
-		$[40] = t15;
-	} else t15 = $[40];
 	let t16;
-	if ($[41] !== t15 || $[42] !== t8 || $[43] !== t9) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-			className: t8,
-			children: [t9, t15]
+	if ($[41] !== t7 || $[42] !== t8) {
+		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: t7,
+			children: t8
 		});
-		$[41] = t15;
+		$[41] = t7;
 		$[42] = t8;
-		$[43] = t9;
-		$[44] = t16;
-	} else t16 = $[44];
-	const t17 = kind === "feishu" ? "channelUnsupported" : "channelConfigure";
-	let t18;
-	if ($[45] !== t || $[46] !== t17) {
-		t18 = t(t17);
-		$[45] = t;
-		$[46] = t17;
-		$[47] = t18;
-	} else t18 = $[47];
-	let t19;
-	if ($[48] !== t18) {
-		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "mt-auto text-xs text-[var(--dsw-alias-state-business-primary)] underline-offset-4 group-hover:underline",
-			children: t18
+		$[43] = t16;
+	} else t16 = $[43];
+	let t17;
+	if ($[44] !== t10 || $[45] !== t16 || $[46] !== t9) {
+		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+			className: t9,
+			children: [t10, t16]
 		});
-		$[48] = t18;
-		$[49] = t19;
-	} else t19 = $[49];
-	let t20;
-	if ($[50] !== t10 || $[51] !== t11 || $[52] !== t12 || $[53] !== t13 || $[54] !== t14 || $[55] !== t16 || $[56] !== t19) {
-		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-			type: t10,
-			onClick: t11,
-			"aria-label": t12,
-			className: t13,
+		$[44] = t10;
+		$[45] = t16;
+		$[46] = t9;
+		$[47] = t17;
+	} else t17 = $[47];
+	let t18;
+	if ($[48] !== error || $[49] !== kind || $[50] !== t) {
+		t18 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			role: "alert",
+			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			children: `渠道列表加载失败：${error.message}`
+		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "mt-auto text-xs text-[var(--dsw-alias-state-business-primary)] underline-offset-4 group-hover:underline",
+			children: t(kind === "feishu" ? "channelUnsupported" : "channelConfigure")
+		});
+		$[48] = error;
+		$[49] = kind;
+		$[50] = t;
+		$[51] = t18;
+	} else t18 = $[51];
+	let t19;
+	if ($[52] !== t11 || $[53] !== t12 || $[54] !== t13 || $[55] !== t14 || $[56] !== t15 || $[57] !== t17 || $[58] !== t18) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+			type: t11,
+			onClick: t12,
+			"aria-label": t13,
+			className: t14,
 			children: [
-				t14,
-				t16,
-				t19
+				t15,
+				t17,
+				t18
 			]
 		});
-		$[50] = t10;
-		$[51] = t11;
-		$[52] = t12;
-		$[53] = t13;
-		$[54] = t14;
-		$[55] = t16;
-		$[56] = t19;
-		$[57] = t20;
-	} else t20 = $[57];
-	return t20;
+		$[52] = t11;
+		$[53] = t12;
+		$[54] = t13;
+		$[55] = t14;
+		$[56] = t15;
+		$[57] = t17;
+		$[58] = t18;
+		$[59] = t19;
+	} else t19 = $[59];
+	return t19;
+}
+function _temp$26() {
+	return getApiNexusChannel();
 }
 // src/client/pages/channel/page.tsx
 function Channel() {
@@ -4087,357 +8789,6 @@ function Channel() {
 		$[18] = t8;
 	} else t8 = $[18];
 	return t8;
-}
-// src/client/pages/ticket/components/row.tsx
-function Row$1(t0) {
-	const $ = (0, import_dist.c)(102);
-	const { task } = t0;
-	const { t } = useTranslation();
-	const { openTicket } = useActions();
-	const ctx = useDshContext();
-	const panel = useStore(_temp$18);
-	const refreshedAt = useStore(_temp2$13);
-	let t1;
-	if ($[0] !== panel?.graph.nodes || $[1] !== task.id) {
-		const sessions = panel?.graph.nodes.filter((node) => node.ticketId === task.id && node.sessionId);
-		t1 = sessions?.find(_temp3$8) ?? sessions?.at(-1);
-		$[0] = panel?.graph.nodes;
-		$[1] = task.id;
-		$[2] = t1;
-	} else t1 = $[2];
-	const session = t1;
-	let t2;
-	if ($[3] !== panel?.channels || $[4] !== task.channelId) {
-		t2 = panel?.channels.find((channel) => channel.id === task.channelId);
-		$[3] = panel?.channels;
-		$[4] = task.channelId;
-		$[5] = t2;
-	} else t2 = $[5];
-	const channel_0 = t2;
-	let T0;
-	let duration;
-	let event;
-	let intervention;
-	let prUrl;
-	let t10;
-	let t3;
-	let t4;
-	let t5;
-	let t6;
-	let t7;
-	let t8;
-	let t9;
-	if ($[6] !== panel?.topics.subscriptions || $[7] !== panel?.topics.triggers || $[8] !== refreshedAt || $[9] !== t || $[10] !== task.endedAt || $[11] !== task.id || $[12] !== task.paused || $[13] !== task.prState || $[14] !== task.prUrl || $[15] !== task.prepareError || $[16] !== task.startedAt || $[17] !== task.status || $[18] !== task.title) {
-		const status = {
-			waiting: {
-				label: "overviewStatusWaiting",
-				tone: "quiet"
-			},
-			queued: {
-				label: "ticketStatusQueued",
-				tone: "quiet"
-			},
-			running: {
-				label: "overviewStatusRunning",
-				tone: "info"
-			},
-			review: {
-				label: "overviewStatusReview",
-				tone: "warning"
-			},
-			done: {
-				label: "overviewCompleted",
-				tone: "success"
-			},
-			cancelled: {
-				label: "ticketStatusCancelled",
-				tone: "quiet"
-			}
-		};
-		intervention = Boolean(task.prepareError || task.paused);
-		let t11;
-		if ($[32] !== panel?.topics.subscriptions || $[33] !== panel?.topics.triggers || $[34] !== task.id) {
-			const subscriptions = panel?.topics.subscriptions.filter((subscription) => subscription.ticketId === task.id);
-			t11 = panel?.topics.triggers.filter((trigger) => subscriptions?.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp4$6)[0];
-			$[32] = panel?.topics.subscriptions;
-			$[33] = panel?.topics.triggers;
-			$[34] = task.id;
-			$[35] = t11;
-		} else t11 = $[35];
-		const trigger_0 = t11;
-		prUrl = task.prUrl && /^https?:\/\//i.test(task.prUrl) ? task.prUrl : null;
-		let t12;
-		if ($[36] !== prUrl) {
-			t12 = prUrl?.match(/\/(?:pull|merge_requests)\/(\d+)(?:[/?#]|$)/)?.[1];
-			$[36] = prUrl;
-			$[37] = t12;
-		} else t12 = $[37];
-		const prNumber = t12;
-		let t13;
-		if ($[38] !== prNumber || $[39] !== task.prState || $[40] !== trigger_0) {
-			t13 = prNumber ? `PR #${prNumber}${task.prState ? ` ${task.prState}` : ""}` : trigger_0 ? `${trigger_0.ref ?? ""} ${trigger_0.kind}`.trim() : null;
-			$[38] = prNumber;
-			$[39] = task.prState;
-			$[40] = trigger_0;
-			$[41] = t13;
-		} else t13 = $[41];
-		event = t13;
-		const start = task.status === "waiting" ? null : task.startedAt;
-		const end = task.endedAt ?? (start ? refreshedAt : null);
-		const seconds = start && end ? Math.max(0, Math.floor((Date.parse(end) - Date.parse(start)) / 1e3)) : NaN;
-		let t14;
-		if ($[42] !== seconds) {
-			t14 = Number.isFinite(seconds) ? `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ` : ""}${seconds >= 60 ? `${Math.floor(seconds / 60) % 60}m ` : ""}${seconds % 60}s` : null;
-			$[42] = seconds;
-			$[43] = t14;
-		} else t14 = $[43];
-		duration = t14;
-		t10 = "flex flex-col gap-3 border-b border-[var(--dsw-alias-border-l3)] py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5";
-		t8 = "flex min-w-0 items-start gap-3";
-		if ($[44] === Symbol.for("react.memo_cache_sentinel")) {
-			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "mt-0.5 text-[var(--dsw-alias-label-tertiary)]",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
-					width: 17,
-					height: 17
-				})
-			});
-			$[44] = t9;
-		} else t9 = $[44];
-		t6 = "min-w-0";
-		let t15;
-		if ($[45] !== task.id) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "mr-2 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
-				children: task.id
-			});
-			$[45] = task.id;
-			$[46] = t15;
-		} else t15 = $[46];
-		if ($[47] !== t15 || $[48] !== task.title) {
-			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
-				className: "text-[13px] leading-5 font-medium [overflow-wrap:anywhere] m-0",
-				children: [t15, task.title]
-			});
-			$[47] = t15;
-			$[48] = task.title;
-			$[49] = t7;
-		} else t7 = $[49];
-		t5 = "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
-		T0 = _deepseek_ai_dsh_client_ui_primitives.Tag;
-		t3 = intervention ? "danger" : status[task.status].tone;
-		t4 = t(task.paused ? "ticketStatusPaused" : task.prepareError ? "overviewStatusIntervention" : status[task.status].label);
-		$[6] = panel?.topics.subscriptions;
-		$[7] = panel?.topics.triggers;
-		$[8] = refreshedAt;
-		$[9] = t;
-		$[10] = task.endedAt;
-		$[11] = task.id;
-		$[12] = task.paused;
-		$[13] = task.prState;
-		$[14] = task.prUrl;
-		$[15] = task.prepareError;
-		$[16] = task.startedAt;
-		$[17] = task.status;
-		$[18] = task.title;
-		$[19] = T0;
-		$[20] = duration;
-		$[21] = event;
-		$[22] = intervention;
-		$[23] = prUrl;
-		$[24] = t10;
-		$[25] = t3;
-		$[26] = t4;
-		$[27] = t5;
-		$[28] = t6;
-		$[29] = t7;
-		$[30] = t8;
-		$[31] = t9;
-	} else {
-		T0 = $[19];
-		duration = $[20];
-		event = $[21];
-		intervention = $[22];
-		prUrl = $[23];
-		t10 = $[24];
-		t3 = $[25];
-		t4 = $[26];
-		t5 = $[27];
-		t6 = $[28];
-		t7 = $[29];
-		t8 = $[30];
-		t9 = $[31];
-	}
-	let t11;
-	if ($[50] !== T0 || $[51] !== t3 || $[52] !== t4) {
-		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(T0, {
-			tone: t3,
-			children: t4
-		});
-		$[50] = T0;
-		$[51] = t3;
-		$[52] = t4;
-		$[53] = t11;
-	} else t11 = $[53];
-	let t12;
-	if ($[54] !== channel_0?.name || $[55] !== duration || $[56] !== event || $[57] !== intervention || $[58] !== session?.status || $[59] !== t || $[60] !== task.channelId || $[61] !== task.prepareError || $[62] !== task.status) {
-		t12 = intervention ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: task.prepareError ?? t("ticketStatusPaused") }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: `${t("overviewSource")}: ${channel_0?.name ?? task.channelId}` }),
-			event && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				"aria-hidden": "true",
-				children: "·"
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: event })] }),
-			task.status === "waiting" && session?.status === "running" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				"aria-hidden": "true",
-				children: "·"
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("overviewTriggerRunning") })] }),
-			(duration || task.status === "waiting") && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				"aria-hidden": "true",
-				children: "·"
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: `${t(task.status === "waiting" ? "ticketWaitDuration" : "ticketExecutionDuration")}: ${duration ?? t("ticketDurationUnknown")}` })] })
-		] });
-		$[54] = channel_0?.name;
-		$[55] = duration;
-		$[56] = event;
-		$[57] = intervention;
-		$[58] = session?.status;
-		$[59] = t;
-		$[60] = task.channelId;
-		$[61] = task.prepareError;
-		$[62] = task.status;
-		$[63] = t12;
-	} else t12 = $[63];
-	let t13;
-	if ($[64] !== t11 || $[65] !== t12 || $[66] !== t5) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t5,
-			children: [t11, t12]
-		});
-		$[64] = t11;
-		$[65] = t12;
-		$[66] = t5;
-		$[67] = t13;
-	} else t13 = $[67];
-	let t14;
-	if ($[68] !== t13 || $[69] !== t6 || $[70] !== t7) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t6,
-			children: [t7, t13]
-		});
-		$[68] = t13;
-		$[69] = t6;
-		$[70] = t7;
-		$[71] = t14;
-	} else t14 = $[71];
-	let t15;
-	if ($[72] !== t14 || $[73] !== t8 || $[74] !== t9) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t8,
-			children: [t9, t14]
-		});
-		$[72] = t14;
-		$[73] = t8;
-		$[74] = t9;
-		$[75] = t15;
-	} else t15 = $[75];
-	let t16;
-	if ($[76] !== prUrl || $[77] !== t) {
-		t16 = prUrl && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			size: "sm",
-			variant: "outline",
-			onClick: () => window.open(prUrl, "_blank", "noopener,noreferrer"),
-			children: t("overviewOpenPr")
-		});
-		$[76] = prUrl;
-		$[77] = t;
-		$[78] = t16;
-	} else t16 = $[78];
-	let t17;
-	if ($[79] !== ctx || $[80] !== session || $[81] !== t) {
-		t17 = session?.sessionId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			size: "sm",
-			variant: "outline",
-			onClick: () => ctx.uiWorkspace.openSession(session.sessionId),
-			children: t("overviewOpenSession")
-		});
-		$[79] = ctx;
-		$[80] = session;
-		$[81] = t;
-		$[82] = t17;
-	} else t17 = $[82];
-	let t18;
-	if ($[83] !== t) {
-		t18 = t("overviewOpenDetails");
-		$[83] = t;
-		$[84] = t18;
-	} else t18 = $[84];
-	const t19 = `${t18} ${task.id}`;
-	let t20;
-	if ($[85] !== openTicket || $[86] !== task.id) {
-		t20 = () => openTicket(task.id);
-		$[85] = openTicket;
-		$[86] = task.id;
-		$[87] = t20;
-	} else t20 = $[87];
-	let t21;
-	if ($[88] !== t) {
-		t21 = t("overviewOpenDetails");
-		$[88] = t;
-		$[89] = t21;
-	} else t21 = $[89];
-	let t22;
-	if ($[90] !== t19 || $[91] !== t20 || $[92] !== t21) {
-		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			size: "sm",
-			variant: "primary",
-			"aria-label": t19,
-			onClick: t20,
-			children: t21
-		});
-		$[90] = t19;
-		$[91] = t20;
-		$[92] = t21;
-		$[93] = t22;
-	} else t22 = $[93];
-	let t23;
-	if ($[94] !== t16 || $[95] !== t17 || $[96] !== t22) {
-		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex shrink-0 flex-wrap items-center gap-2 pl-[29px] @min-[640px]:pl-0",
-			children: [
-				t16,
-				t17,
-				t22
-			]
-		});
-		$[94] = t16;
-		$[95] = t17;
-		$[96] = t22;
-		$[97] = t23;
-	} else t23 = $[97];
-	let t24;
-	if ($[98] !== t10 || $[99] !== t15 || $[100] !== t23) {
-		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-			className: t10,
-			children: [t15, t23]
-		});
-		$[98] = t10;
-		$[99] = t15;
-		$[100] = t23;
-		$[101] = t24;
-	} else t24 = $[101];
-	return t24;
-}
-function _temp4$6(a, b) {
-	return b.at.localeCompare(a.at);
-}
-function _temp3$8(node_0) {
-	return node_0.status === "running";
-}
-function _temp2$13(state_0) {
-	return state_0.setting.refreshedAt;
-}
-function _temp$18(state) {
-	return state.data.panel;
 }
 // node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.js
 var require_clsx = /* @__PURE__ */ __commonJSMin(((exports, module) => {
@@ -54768,26 +59119,26 @@ var import_lib = (/* @__PURE__ */ __commonJSMin(((exports) => {
 	var _lightTheme = require_lightTheme();
 	var _legacyTheme = require_legacyTheme();
 })))();
-function ActivityChart() {
+function ActivityChart(t0) {
 	const $ = (0, import_dist.c)(17);
-	const t0 = (0, react.useId)();
-	let t1;
-	if ($[0] !== t0) {
-		t1 = t0.replaceAll(":", "");
-		$[0] = t0;
-		$[1] = t1;
-	} else t1 = $[1];
-	const id = t1;
+	const { triggers: source } = t0;
+	const t1 = (0, react.useId)();
+	let t2;
+	if ($[0] !== t1) {
+		t2 = t1.replaceAll(":", "");
+		$[0] = t1;
+		$[1] = t2;
+	} else t2 = $[1];
+	const id = t2;
 	const now = Date.now();
-	const t2 = useStore(_temp$17);
 	let t3;
-	if ($[2] !== t2) {
+	if ($[2] !== source) {
 		let t4;
 		if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
 			t4 = (trigger) => Date.parse(trigger.at) >= now - 864e5 && Date.parse(trigger.at) <= now;
 			$[4] = t4;
 		} else t4 = $[4];
-		const triggers = t2.filter(t4);
+		const triggers = source.filter(t4);
 		t3 = Array.from({ length: 24 }, (_, index) => {
 			const end = now - (23 - index) * 36e5;
 			const start = end - 36e5;
@@ -54796,7 +59147,7 @@ function ActivityChart() {
 				messages: triggers.filter((trigger_0) => Date.parse(trigger_0.at) >= start && (index === 23 ? Date.parse(trigger_0.at) <= end : Date.parse(trigger_0.at) < end)).length
 			};
 		});
-		$[2] = t2;
+		$[2] = source;
 		$[3] = t3;
 	} else t3 = $[3];
 	const activity = t3;
@@ -54886,8 +59237,420 @@ function ActivityChart() {
 	} else t11 = $[16];
 	return t11;
 }
-function _temp$17(state) {
-	return state.data.panel?.topics.triggers ?? [];
+// src/client/pages/overview/components/summary-card.tsx
+function SummaryCard(t0) {
+	const $ = (0, import_dist.c)(23);
+	const { title, meta, icon, actionLabel, onMore, children, background } = t0;
+	const { t } = useTranslation();
+	let t1;
+	if ($[0] !== title) {
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: title });
+		$[0] = title;
+		$[1] = t1;
+	} else t1 = $[1];
+	let t2;
+	if ($[2] !== meta) {
+		t2 = meta && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			className: "shrink-0 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
+			children: meta
+		});
+		$[2] = meta;
+		$[3] = t2;
+	} else t2 = $[3];
+	let t3;
+	if ($[4] !== icon || $[5] !== t1 || $[6] !== t2) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h2", {
+			className: "flex min-w-0 items-center gap-2 text-[13px] leading-5 font-medium",
+			children: [
+				icon,
+				t1,
+				t2
+			]
+		});
+		$[4] = icon;
+		$[5] = t1;
+		$[6] = t2;
+		$[7] = t3;
+	} else t3 = $[7];
+	let t4;
+	if ($[8] !== t) {
+		t4 = t("overviewMore");
+		$[8] = t;
+		$[9] = t4;
+	} else t4 = $[9];
+	let t5;
+	if ($[10] !== actionLabel || $[11] !== onMore || $[12] !== t4) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "ghost",
+			"aria-label": actionLabel,
+			onClick: onMore,
+			className: "shrink-0 text-xs! text-[var(--dsw-alias-label-tertiary)]!",
+			children: t4
+		});
+		$[10] = actionLabel;
+		$[11] = onMore;
+		$[12] = t4;
+		$[13] = t5;
+	} else t5 = $[13];
+	let t6;
+	if ($[14] !== t3 || $[15] !== t5) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+			className: "relative z-10 flex items-center justify-between gap-2",
+			children: [t3, t5]
+		});
+		$[14] = t3;
+		$[15] = t5;
+		$[16] = t6;
+	} else t6 = $[16];
+	let t7;
+	if ($[17] !== children) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "relative z-10 flex min-h-0 flex-1 flex-col",
+			children
+		});
+		$[17] = children;
+		$[18] = t7;
+	} else t7 = $[18];
+	let t8;
+	if ($[19] !== background || $[20] !== t6 || $[21] !== t7) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "relative isolate flex min-w-0 flex-col overflow-hidden @min-[800px]:min-h-[161px] rounded-[20px] border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-2 px-5 shadow-[0_1px_2px_#00000004]",
+			children: [
+				background,
+				t6,
+				t7
+			]
+		});
+		$[19] = background;
+		$[20] = t6;
+		$[21] = t7;
+		$[22] = t8;
+	} else t8 = $[22];
+	return t8;
+}
+// src/client/pages/overview/components/activity-card.tsx
+function ActivityCard(t0) {
+	const $ = (0, import_dist.c)(33);
+	const { onMore } = t0;
+	const { t } = useTranslation();
+	let t1;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.trigger,
+			queryFn: _temp$25,
+			refetchInterval: 3e4
+		};
+		$[0] = t1;
+	} else t1 = $[0];
+	const { data: triggers, isLoading, error } = useQuery(t1);
+	const now = Date.now();
+	let t2;
+	let t3;
+	let t4;
+	if ($[1] !== triggers) {
+		let t5;
+		if ($[5] === Symbol.for("react.memo_cache_sentinel")) {
+			t5 = (trigger) => Date.parse(trigger.at) >= now - 864e5 && Date.parse(trigger.at) <= now;
+			$[5] = t5;
+		} else t5 = $[5];
+		const recent = (triggers ?? []).filter(t5);
+		t2 = recent.length;
+		t3 = recent.filter(_temp2$15).length;
+		let t6;
+		if ($[6] === Symbol.for("react.memo_cache_sentinel")) {
+			t6 = (trigger_1) => Date.parse(trigger_1.at) >= now - 36e5;
+			$[6] = t6;
+		} else t6 = $[6];
+		t4 = recent.filter(t6);
+		$[1] = triggers;
+		$[2] = t2;
+		$[3] = t3;
+		$[4] = t4;
+	} else {
+		t2 = $[2];
+		t3 = $[3];
+		t4 = $[4];
+	}
+	let t5;
+	if ($[7] !== t2 || $[8] !== t3 || $[9] !== t4.length) {
+		t5 = {
+			received: t2,
+			filtered: t3,
+			rate: t4.length
+		};
+		$[7] = t2;
+		$[8] = t3;
+		$[9] = t4.length;
+		$[10] = t5;
+	} else t5 = $[10];
+	const metrics = t5;
+	let t6;
+	if ($[11] !== t) {
+		t6 = t("overviewReceived");
+		$[11] = t;
+		$[12] = t6;
+	} else t6 = $[12];
+	let t7;
+	if ($[13] !== t) {
+		t7 = t("overviewLastDay");
+		$[13] = t;
+		$[14] = t7;
+	} else t7 = $[14];
+	let t8;
+	if ($[15] === Symbol.for("react.memo_cache_sentinel")) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
+			width: 18,
+			height: 18,
+			className: "shrink-0"
+		});
+		$[15] = t8;
+	} else t8 = $[15];
+	let t9;
+	if ($[16] !== t) {
+		t9 = t("overviewMoreActivity");
+		$[16] = t;
+		$[17] = t9;
+	} else t9 = $[17];
+	let t10;
+	if ($[18] !== error || $[19] !== triggers) {
+		t10 = error ? void 0 : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityChart, { triggers: triggers ?? [] });
+		$[18] = error;
+		$[19] = triggers;
+		$[20] = t10;
+	} else t10 = $[20];
+	let t11;
+	if ($[21] !== error || $[22] !== isLoading || $[23] !== metrics || $[24] !== t) {
+		t11 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			children: error instanceof Error ? error.message : "触发记录加载失败"
+		}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "status",
+			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: "加载中…"
+		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+			"aria-label": `${t("overviewReceived")} ${metrics.rate}${t("overviewPerHour")}`,
+			className: "flex items-baseline gap-1.5 tabular-nums",
+			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				className: "text-[32px] leading-10 font-semibold tracking-tight",
+				children: metrics.rate
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				className: "text-sm text-[var(--dsw-alias-label-secondary)]",
+				children: t("overviewPerHour")
+			})]
+		}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
+			className: "mt-auto flex flex-col gap-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex gap-2",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t("overviewTotalMessages") }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+					className: "tabular-nums",
+					children: `${metrics.received} ${t("overviewItems")}`
+				})]
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex gap-2",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t("overviewFiltered") }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+					className: "tabular-nums",
+					children: `${metrics.filtered} ${t("overviewItems")}`
+				})]
+			})]
+		})] });
+		$[21] = error;
+		$[22] = isLoading;
+		$[23] = metrics;
+		$[24] = t;
+		$[25] = t11;
+	} else t11 = $[25];
+	let t12;
+	if ($[26] !== onMore || $[27] !== t10 || $[28] !== t11 || $[29] !== t6 || $[30] !== t7 || $[31] !== t9) {
+		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SummaryCard, {
+			title: t6,
+			meta: t7,
+			icon: t8,
+			actionLabel: t9,
+			onMore,
+			background: t10,
+			children: t11
+		});
+		$[26] = onMore;
+		$[27] = t10;
+		$[28] = t11;
+		$[29] = t6;
+		$[30] = t7;
+		$[31] = t9;
+		$[32] = t12;
+	} else t12 = $[32];
+	return t12;
+}
+function _temp2$15(trigger_0) {
+	return !trigger_0.mentioned;
+}
+function _temp$25() {
+	return getApiNexusTrigger();
+}
+// src/client/pages/overview/components/ask-card.tsx
+function AskCard() {
+	const $ = (0, import_dist.c)(29);
+	const client = useQueryClient();
+	let t0;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.pending,
+			queryFn: _temp$24,
+			refetchInterval: 15e3
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const { data: pending, error: pendingError } = useQuery(t0);
+	let t1;
+	if ($[1] !== client) {
+		t1 = {
+			mutationFn: _temp2$14,
+			onSettled: () => client.invalidateQueries({ queryKey: keys.pending })
+		};
+		$[1] = client;
+		$[2] = t1;
+	} else t1 = $[2];
+	const answer = useMutation(t1);
+	const [failure, setFailure] = (0, react.useState)(null);
+	let t2;
+	let t3;
+	let t4;
+	let t5;
+	let t6;
+	if ($[3] !== answer || $[4] !== failure || $[5] !== pending || $[6] !== pendingError) {
+		t6 = Symbol.for("react.early_return_sentinel");
+		bb0: {
+			const asks = pending?.filter(_temp3$10) ?? [];
+			let t7;
+			if ($[12] !== answer) {
+				t7 = (id, text) => {
+					setFailure(null);
+					answer.mutateAsync({
+						id,
+						answer: text
+					}).then((result) => {
+						if (!result || result.id !== id || result.answeredBy !== "user") throw new Error("答复提交失败，问题可能已处理");
+					}).catch((error) => {
+						setFailure(error instanceof Error ? error.message : "答复提交失败");
+					});
+				};
+				$[12] = answer;
+				$[13] = t7;
+			} else t7 = $[13];
+			const submit = t7;
+			if (!asks.length && !failure && !pendingError) {
+				t6 = null;
+				break bb0;
+			}
+			t2 = "flex flex-col rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5";
+			t3 = "待答问题";
+			if ($[14] === Symbol.for("react.memo_cache_sentinel")) {
+				t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", {
+					className: "cursor-pointer text-sm font-medium",
+					children: "待答问题"
+				});
+				$[14] = t4;
+			} else t4 = $[14];
+			let t8;
+			if ($[15] !== answer || $[16] !== submit) {
+				t8 = (message_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+					className: "mt-3 flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3",
+					onSubmit: (event) => {
+						event.preventDefault();
+						const form = event.currentTarget;
+						submit(message_0.id, String(new FormData(form).get("answer") ?? ""));
+					},
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						className: "m-0 whitespace-pre-wrap",
+						children: message_0.message
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "flex gap-2",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+							name: "answer",
+							required: true,
+							"aria-label": "答复内容",
+							disabled: answer.isPending
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							type: "submit",
+							size: "sm",
+							variant: "primary",
+							disabled: answer.isPending,
+							children: "提交答复"
+						})]
+					})]
+				}, message_0.id);
+				$[15] = answer;
+				$[16] = submit;
+				$[17] = t8;
+			} else t8 = $[17];
+			t5 = asks.map(t8);
+		}
+		$[3] = answer;
+		$[4] = failure;
+		$[5] = pending;
+		$[6] = pendingError;
+		$[7] = t2;
+		$[8] = t3;
+		$[9] = t4;
+		$[10] = t5;
+		$[11] = t6;
+	} else {
+		t2 = $[7];
+		t3 = $[8];
+		t4 = $[9];
+		t5 = $[10];
+		t6 = $[11];
+	}
+	if (t6 !== Symbol.for("react.early_return_sentinel")) return t6;
+	let t7;
+	if ($[18] !== pendingError) {
+		t7 = pendingError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			children: pendingError instanceof Error ? pendingError.message : "待答问题加载失败"
+		});
+		$[18] = pendingError;
+		$[19] = t7;
+	} else t7 = $[19];
+	let t8;
+	if ($[20] !== failure) {
+		t8 = failure && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			children: failure
+		});
+		$[20] = failure;
+		$[21] = t8;
+	} else t8 = $[21];
+	let t9;
+	if ($[22] !== t2 || $[23] !== t3 || $[24] !== t4 || $[25] !== t5 || $[26] !== t7 || $[27] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
+			className: t2,
+			"aria-label": t3,
+			children: [
+				t4,
+				t5,
+				t7,
+				t8
+			]
+		});
+		$[22] = t2;
+		$[23] = t3;
+		$[24] = t4;
+		$[25] = t5;
+		$[26] = t7;
+		$[27] = t8;
+		$[28] = t9;
+	} else t9 = $[28];
+	return t9;
+}
+function _temp3$10(message) {
+	return message.kind === "ask";
+}
+function _temp2$14(input) {
+	return postApiNexusAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer });
+}
+function _temp$24() {
+	return getApiNexusPending();
 }
 // src/client/pages/overview/components/channel-tile.tsx
 function ChannelTile(t0) {
@@ -54974,6 +59737,367 @@ function ChannelTile(t0) {
 		$[18] = t10;
 	} else t10 = $[18];
 	return t10;
+}
+// src/client/pages/overview/components/channel-card.tsx
+function ChannelCard(t0) {
+	const $ = (0, import_dist.c)(31);
+	const { onMore } = t0;
+	const { t } = useTranslation();
+	let t1;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.channel,
+			queryFn: _temp$23
+		};
+		$[0] = t1;
+	} else t1 = $[0];
+	const { data: channels, isLoading, error } = useQuery(t1);
+	let T0;
+	let t2;
+	let t3;
+	let t4;
+	let t5;
+	let t6;
+	let t7;
+	if ($[1] !== channels || $[2] !== error || $[3] !== isLoading || $[4] !== onMore || $[5] !== t) {
+		const items = (channels ?? []).map(_temp2$13);
+		T0 = SummaryCard;
+		if ($[13] !== t) {
+			t2 = t("overviewChannels");
+			$[13] = t;
+			$[14] = t2;
+		} else t2 = $[14];
+		t3 = `${items.filter(_temp3$9).length}/${items.length}`;
+		if ($[15] === Symbol.for("react.memo_cache_sentinel")) {
+			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
+				width: 18,
+				height: 18,
+				className: "shrink-0"
+			});
+			$[15] = t4;
+		} else t4 = $[15];
+		if ($[16] !== t) {
+			t5 = t("overviewMoreChannels");
+			$[16] = t;
+			$[17] = t5;
+		} else t5 = $[17];
+		t6 = onMore;
+		t7 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			children: error instanceof Error ? error.message : "渠道列表加载失败"
+		}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "status",
+			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: "加载中…"
+		}) : items.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "mt-auto grid min-h-[83px] grid-cols-3 gap-2.5",
+			children: items.slice(0, 3).map(_temp4$7)
+		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+			title: t("overviewChannelsEmpty"),
+			description: t("overviewChannelsEmptyDescription"),
+			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
+				width: 24,
+				height: 24
+			})
+		});
+		$[1] = channels;
+		$[2] = error;
+		$[3] = isLoading;
+		$[4] = onMore;
+		$[5] = t;
+		$[6] = T0;
+		$[7] = t2;
+		$[8] = t3;
+		$[9] = t4;
+		$[10] = t5;
+		$[11] = t6;
+		$[12] = t7;
+	} else {
+		T0 = $[6];
+		t2 = $[7];
+		t3 = $[8];
+		t4 = $[9];
+		t5 = $[10];
+		t6 = $[11];
+		t7 = $[12];
+	}
+	let t8;
+	if ($[18] !== t) {
+		t8 = t("overviewOtherChannel");
+		$[18] = t;
+		$[19] = t8;
+	} else t8 = $[19];
+	let t9;
+	if ($[20] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "mt-auto pt-3 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: t8
+		});
+		$[20] = t8;
+		$[21] = t9;
+	} else t9 = $[21];
+	let t10;
+	if ($[22] !== T0 || $[23] !== t2 || $[24] !== t3 || $[25] !== t4 || $[26] !== t5 || $[27] !== t6 || $[28] !== t7 || $[29] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(T0, {
+			title: t2,
+			meta: t3,
+			icon: t4,
+			actionLabel: t5,
+			onMore: t6,
+			children: [t7, t9]
+		});
+		$[22] = T0;
+		$[23] = t2;
+		$[24] = t3;
+		$[25] = t4;
+		$[26] = t5;
+		$[27] = t6;
+		$[28] = t7;
+		$[29] = t9;
+		$[30] = t10;
+	} else t10 = $[30];
+	return t10;
+}
+function _temp4$7(channel_1) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelTile, { channel: channel_1 }, channel_1.name);
+}
+function _temp3$9(channel_0) {
+	return channel_0.connected;
+}
+function _temp2$13(channel) {
+	return {
+		kind: channel.kind,
+		name: channel.name,
+		connected: channel.status === "online"
+	};
+}
+function _temp$23() {
+	return getApiNexusChannel();
+}
+// src/client/pages/overview/components/task-chart.tsx
+function TaskChart(t0) {
+	const $ = (0, import_dist.c)(10);
+	const { segments } = t0;
+	const { t } = useTranslation();
+	let t1;
+	if ($[0] !== segments || $[1] !== t) {
+		let t2;
+		if ($[3] !== t) {
+			t2 = (segment) => `${t(segment.name)} ${segment.value}`;
+			$[3] = t;
+			$[4] = t2;
+		} else t2 = $[4];
+		t1 = segments.map(t2).join(" · ");
+		$[0] = segments;
+		$[1] = t;
+		$[2] = t1;
+	} else t1 = $[2];
+	let t2;
+	if ($[5] !== segments) {
+		t2 = segments.some(_temp$22) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
+			width: "100%",
+			height: "100%",
+			minWidth: 0,
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.PieChart, {
+				accessibilityLayer: false,
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Pie, {
+					rootTabIndex: -1,
+					data: segments,
+					dataKey: "value",
+					nameKey: "name",
+					cx: "50%",
+					cy: "50%",
+					innerRadius: 35,
+					outerRadius: 46,
+					startAngle: 90,
+					endAngle: -270,
+					paddingAngle: 4,
+					cornerRadius: 4,
+					stroke: "none",
+					isAnimationActive: false,
+					children: segments.map(_temp2$12)
+				})
+			})
+		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
+			width: "100%",
+			height: "100%",
+			viewBox: "0 0 100 100",
+			"aria-hidden": "true",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+				cx: 50,
+				cy: 50,
+				r: 40.5,
+				fill: "none",
+				stroke: "var(--dsw-alias-border-l3)",
+				strokeWidth: 11
+			})
+		});
+		$[5] = segments;
+		$[6] = t2;
+	} else t2 = $[6];
+	let t3;
+	if ($[7] !== t1 || $[8] !== t2) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figure", {
+			className: "pointer-events-none size-[100px] shrink-0 [&_*]:outline-none",
+			role: "img",
+			"aria-label": t1,
+			children: t2
+		});
+		$[7] = t1;
+		$[8] = t2;
+		$[9] = t3;
+	} else t3 = $[9];
+	return t3;
+}
+function _temp2$12(segment_0) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment_0.color }, segment_0.name);
+}
+function _temp$22(segment_1) {
+	return segment_1.value > 0;
+}
+// src/client/pages/overview/components/task-card.tsx
+const SEGMENTS = [
+	{
+		name: "overviewInProgress",
+		color: "var(--dsw-alias-state-business-primary)"
+	},
+	{
+		name: "overviewCompleted",
+		color: "var(--dsw-alias-state-success-primary)"
+	},
+	{
+		name: "overviewBlocked",
+		color: "var(--dsw-alias-state-error-primary)"
+	}
+];
+function TaskCard(t0) {
+	const $ = (0, import_dist.c)(20);
+	const { onMore } = t0;
+	const { t } = useTranslation();
+	let t1;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.ticket,
+			queryFn: _temp$21
+		};
+		$[0] = t1;
+	} else t1 = $[0];
+	const { data: tickets, isLoading, error } = useQuery(t1);
+	let t2;
+	if ($[1] !== tickets) {
+		t2 = tickets ?? [];
+		$[1] = tickets;
+		$[2] = t2;
+	} else t2 = $[2];
+	const list = t2;
+	const now = Date.now();
+	let t3;
+	if ($[3] !== list) {
+		let t4;
+		if ($[5] === Symbol.for("react.memo_cache_sentinel")) {
+			t4 = (ticket) => Date.parse(ticket.createdAt) >= now - 864e5;
+			$[5] = t4;
+		} else t4 = $[5];
+		t3 = list.filter(t4);
+		$[3] = list;
+		$[4] = t3;
+	} else t3 = $[4];
+	const added = t3.length;
+	let t4;
+	if ($[6] !== added || $[7] !== error || $[8] !== isLoading || $[9] !== list || $[10] !== onMore || $[11] !== t) {
+		let t5;
+		if ($[13] !== list) {
+			t5 = (segment) => ({
+				...segment,
+				value: list.filter((ticket_0) => segment.name === "overviewCompleted" ? ticket_0.status === "done" : segment.name === "overviewBlocked" ? Boolean(ticket_0.paused || ticket_0.prepareError) : [
+					"running",
+					"queued",
+					"review"
+				].includes(ticket_0.status) && !ticket_0.paused && !ticket_0.prepareError).length
+			});
+			$[13] = list;
+			$[14] = t5;
+		} else t5 = $[14];
+		const segments = SEGMENTS.map(t5);
+		let t6;
+		if ($[15] !== t) {
+			t6 = t("overviewTaskSummary");
+			$[15] = t;
+			$[16] = t6;
+		} else t6 = $[16];
+		let t7;
+		if ($[17] === Symbol.for("react.memo_cache_sentinel")) {
+			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
+				width: 18,
+				height: 18,
+				className: "shrink-0"
+			});
+			$[17] = t7;
+		} else t7 = $[17];
+		let t8;
+		if ($[18] !== t) {
+			t8 = t("overviewMoreTasks");
+			$[18] = t;
+			$[19] = t8;
+		} else t8 = $[19];
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SummaryCard, {
+			title: t6,
+			icon: t7,
+			actionLabel: t8,
+			onMore,
+			children: error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+				children: error instanceof Error ? error.message : "任务列表加载失败"
+			}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "status",
+				className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+				children: "加载中…"
+			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex min-h-0 flex-1 items-center justify-between gap-3",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "flex h-full min-w-0 flex-col",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+						className: "flex items-baseline gap-1.5 tabular-nums",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: "text-[32px] leading-10 font-semibold tracking-tight",
+							children: added
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: "text-xs text-[var(--dsw-alias-label-secondary)]",
+							children: t("overviewAdded")
+						})]
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dl", {
+						className: "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: segments.map((segment_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: "col-span-2 grid grid-cols-subgrid items-center whitespace-nowrap",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dt", {
+								className: "flex items-center gap-2",
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									className: "size-1.5 shrink-0 rounded-full",
+									style: { background: segment_0.color }
+								}), t(segment_0.name)]
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+								className: "m-0 text-right tabular-nums",
+								children: segment_0.value
+							})]
+						}, segment_0.name))
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskChart, { segments })]
+			})
+		});
+		$[6] = added;
+		$[7] = error;
+		$[8] = isLoading;
+		$[9] = list;
+		$[10] = onMore;
+		$[11] = t;
+		$[12] = t4;
+	} else t4 = $[12];
+	return t4;
+}
+function _temp$21() {
+	return getApiNexusTicket();
 }
 // src/client/config/constants.ts
 const AGENT_GRAPH = {
@@ -55113,15 +60237,15 @@ function GraphEdgePath(t0) {
 	return t10;
 }
 // src/client/pages/overview/components/graph-layout.ts
-function layoutGraph(graph) {
+function layoutGraph({ nodes, groups }) {
 	const positions = /* @__PURE__ */ new Map();
 	let row = 0;
-	const membership = (id) => graph.groups.filter((group) => group.nodeIds.includes(id)).map((group) => group.id).sort().join("|");
-	const projects = graph.nodes.filter((node) => node.kind === "project").sort((a, b) => membership(a.id).localeCompare(membership(b.id)));
+	const membership = (id) => groups.filter((group) => group.nodeIds.includes(id)).map((group) => group.id).sort().join("|");
+	const projects = nodes.filter((node) => node.kind === "project").sort((a, b) => membership(a.id).localeCompare(membership(b.id)));
 	for (const project of projects) {
 		const start = row;
-		for (const ticket of graph.nodes.filter((node) => node.kind === "ticket" && node.projectId === project.projectId)) {
-			const workers = graph.nodes.filter((node) => node.kind === "worker" && node.ticketId === ticket.ticketId);
+		for (const ticket of nodes.filter((node) => node.kind === "ticket" && node.projectId === project.projectId)) {
+			const workers = nodes.filter((node) => node.kind === "worker" && node.ticketId === ticket.ticketId);
 			positions.set(ticket.id, {
 				x: 620,
 				y: 36 + row * 124
@@ -55138,7 +60262,7 @@ function layoutGraph(graph) {
 			y: 36 + start * 124 + Math.min(row - start - 1, 2) * 62
 		});
 	}
-	for (const node of graph.nodes) {
+	for (const node of nodes) {
 		if (positions.has(node.id) || node.kind === "channel" || node.kind === "orchestrator") continue;
 		positions.set(node.id, {
 			x: node.kind === "worker" ? 896 : 620,
@@ -55154,7 +60278,7 @@ function layoutGraph(graph) {
 		x: 36,
 		y: rootY
 	});
-	return graph.nodes.map((node) => ({
+	return nodes.map((node) => ({
 		id: node.id,
 		kind: node.kind === "project" ? "route" : node.kind === "ticket" ? "task" : node.kind === "worker" ? "session" : node.kind === "channel" ? "channel" : "orchestrator",
 		label: node.kind === "project" ? "graphRoute" : node.kind === "ticket" ? "graphTask" : node.kind === "worker" ? "graphSession" : node.kind === "channel" ? "graphChannel" : "graphOrchestrator",
@@ -55378,7 +60502,7 @@ function GraphCanvas(t0) {
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { zoomGraph, panGraph, resetGraph, selectAgent, openTicket } = useActions();
-	const { zoom, x, y, selectedId } = useStore(_temp$16);
+	const { zoom, x, y, selectedId } = useStore(_temp$20);
 	const drag = (0, react.useRef)(null);
 	const [fit, setFit] = (0, react.useState)(false);
 	let t1;
@@ -55426,14 +60550,14 @@ function GraphCanvas(t0) {
 					const members = nodes.filter((node_0) => group.nodeIds.includes(node_0.id));
 					if (!members.length) return [];
 					const inset = 16 + index * 6;
-					const x_0 = Math.min(...members.map(_temp2$12)) - inset;
-					const y_0 = Math.min(...members.map(_temp3$7)) - 12 - index * 6;
+					const x_0 = Math.min(...members.map(_temp2$11)) - inset;
+					const y_0 = Math.min(...members.map(_temp3$8)) - 12 - index * 6;
 					return [{
 						...group,
 						x: x_0,
 						y: y_0,
-						width: Math.max(...members.map(_temp4$5)) + AGENT_GRAPH.nodeWidth + inset - x_0,
-						height: Math.max(...members.map(_temp5$4)) + AGENT_GRAPH.nodeHeight + 16 + index * 6 - y_0
+						width: Math.max(...members.map(_temp4$6)) + AGENT_GRAPH.nodeWidth + inset - x_0,
+						height: Math.max(...members.map(_temp5$5)) + AGENT_GRAPH.nodeHeight + 16 + index * 6 - y_0
 					}];
 				};
 				$[50] = nodes;
@@ -55929,1016 +61053,730 @@ function GraphCanvas(t0) {
 	} else t2 = $[22];
 	return t2;
 }
-function _temp5$4(node_4) {
+function _temp5$5(node_4) {
 	return node_4.y;
 }
-function _temp4$5(node_3) {
+function _temp4$6(node_3) {
 	return node_3.x;
 }
-function _temp3$7(node_2) {
+function _temp3$8(node_2) {
 	return node_2.y;
 }
-function _temp2$12(node_1) {
+function _temp2$11(node_1) {
 	return node_1.x;
 }
-function _temp$16(state) {
+function _temp$20(state) {
 	return state.graph;
 }
 // src/client/pages/overview/components/graph.tsx
 function Graph() {
-	const $ = (0, import_dist.c)(27);
+	const $ = (0, import_dist.c)(32);
 	const { t } = useTranslation();
-	const { panel, loading, error } = useStore(_temp$15);
-	const graph = panel?.graph;
 	let t0;
-	if ($[0] !== graph) {
-		t0 = graph ? layoutGraph(graph) : [];
-		$[0] = graph;
-		$[1] = t0;
-	} else t0 = $[1];
-	const nodes = t0;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.node,
+			queryFn: _temp$19,
+			refetchInterval: 15e3
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const { data: nodes, isLoading, error } = useQuery(t0);
 	let t1;
-	if ($[2] !== graph?.edges) {
-		t1 = graph?.edges ?? [];
-		$[2] = graph?.edges;
-		$[3] = t1;
-	} else t1 = $[3];
+	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.edge,
+			queryFn: _temp2$10,
+			refetchInterval: 15e3
+		};
+		$[1] = t1;
+	} else t1 = $[1];
+	const { data: edges } = useQuery(t1);
 	let t2;
-	if ($[4] !== t1) {
-		t2 = t1.map(_temp2$11);
-		$[4] = t1;
-		$[5] = t2;
-	} else t2 = $[5];
-	const edges = t2;
+	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
+		t2 = {
+			queryKey: keys.group,
+			queryFn: _temp3$7,
+			refetchInterval: 15e3
+		};
+		$[2] = t2;
+	} else t2 = $[2];
+	const { data: groups } = useQuery(t2);
 	let t3;
-	if ($[6] !== t) {
-		t3 = t("graphTitle");
-		$[6] = t;
-		$[7] = t3;
-	} else t3 = $[7];
-	let t4;
-	if ($[8] !== t3) {
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-			className: "text-[13px] font-medium mb-0 mt-1",
-			children: t3
-		});
-		$[8] = t3;
-		$[9] = t4;
-	} else t4 = $[9];
-	let t5;
-	if ($[10] !== t) {
-		t5 = t("graphDescription");
-		$[10] = t;
-		$[11] = t5;
-	} else t5 = $[11];
-	let t6;
-	if ($[12] !== t5) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mt-1 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)] mb-0",
-			children: t5
-		});
-		$[12] = t5;
-		$[13] = t6;
-	} else t6 = $[13];
-	let t7;
-	if ($[14] !== t4 || $[15] !== t6) {
-		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-			className: "border-b border-[var(--dsw-alias-border-l3)] px-5 py-2",
-			children: [t4, t6]
-		});
-		$[14] = t4;
-		$[15] = t6;
-		$[16] = t7;
-	} else t7 = $[16];
-	let t8;
-	if ($[17] !== edges || $[18] !== error || $[19] !== graph?.groups || $[20] !== loading || $[21] !== nodes || $[22] !== t) {
-		t8 = nodes.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphCanvas, {
+	if ($[3] !== edges || $[4] !== groups || $[5] !== nodes) {
+		t3 = nodes ? layoutGraph({
 			nodes,
-			edges,
-			groups: graph?.groups ?? []
+			edges: edges ?? [],
+			groups: groups ?? []
+		}) : [];
+		$[3] = edges;
+		$[4] = groups;
+		$[5] = nodes;
+		$[6] = t3;
+	} else t3 = $[6];
+	const laid = t3;
+	let t4;
+	if ($[7] !== edges) {
+		t4 = edges ?? [];
+		$[7] = edges;
+		$[8] = t4;
+	} else t4 = $[8];
+	let t5;
+	if ($[9] !== t4) {
+		t5 = t4.map(_temp4$5);
+		$[9] = t4;
+		$[10] = t5;
+	} else t5 = $[10];
+	const list = t5;
+	let t6;
+	if ($[11] !== t) {
+		t6 = t("graphTitle");
+		$[11] = t;
+		$[12] = t6;
+	} else t6 = $[12];
+	let t7;
+	if ($[13] !== t6) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+			className: "mb-0 mt-1 text-[13px] font-medium",
+			children: t6
+		});
+		$[13] = t6;
+		$[14] = t7;
+	} else t7 = $[14];
+	let t8;
+	if ($[15] !== t) {
+		t8 = t("graphDescription");
+		$[15] = t;
+		$[16] = t8;
+	} else t8 = $[16];
+	let t9;
+	if ($[17] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "mb-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: t8
+		});
+		$[17] = t8;
+		$[18] = t9;
+	} else t9 = $[18];
+	let t10;
+	if ($[19] !== t7 || $[20] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+			className: "border-b border-[var(--dsw-alias-border-l3)] px-5 py-2",
+			children: [t7, t9]
+		});
+		$[19] = t7;
+		$[20] = t9;
+		$[21] = t10;
+	} else t10 = $[21];
+	let t11;
+	if ($[22] !== error || $[23] !== groups || $[24] !== isLoading || $[25] !== laid || $[26] !== list || $[27] !== t) {
+		t11 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+			className: "min-h-[380px]",
+			title: t("graphUnavailable"),
+			description: error instanceof Error ? error.message : t("graphUnavailableDescription"),
+			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {
+				width: 28,
+				height: 28
+			})
+		}) : laid.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GraphCanvas, {
+			nodes: laid,
+			edges: list,
+			groups: groups ?? []
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			className: "min-h-[380px]",
-			title: t(loading ? "graphLoading" : error ? "graphUnavailable" : "graphEmpty"),
-			description: loading ? void 0 : t(error ? "graphUnavailableDescription" : "graphEmptyDescription"),
+			title: t(isLoading ? "graphLoading" : "graphEmpty"),
+			description: isLoading ? void 0 : t("graphEmptyDescription"),
 			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {
 				width: 28,
 				height: 28
 			})
 		});
-		$[17] = edges;
-		$[18] = error;
-		$[19] = graph?.groups;
-		$[20] = loading;
-		$[21] = nodes;
-		$[22] = t;
-		$[23] = t8;
-	} else t8 = $[23];
-	let t9;
-	if ($[24] !== t7 || $[25] !== t8) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[22] = error;
+		$[23] = groups;
+		$[24] = isLoading;
+		$[25] = laid;
+		$[26] = list;
+		$[27] = t;
+		$[28] = t11;
+	} else t11 = $[28];
+	let t12;
+	if ($[29] !== t10 || $[30] !== t11) {
+		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "mt-4 overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
-			children: [t7, t8]
+			children: [t10, t11]
 		});
-		$[24] = t7;
-		$[25] = t8;
-		$[26] = t9;
-	} else t9 = $[26];
-	return t9;
+		$[29] = t10;
+		$[30] = t11;
+		$[31] = t12;
+	} else t12 = $[31];
+	return t12;
 }
-function _temp2$11(edge) {
+function _temp4$5(edge) {
 	return {
 		...edge,
 		kind: edge.kind === "dependency" ? "dependency" : edge.kind === "association" ? "association" : "flow"
 	};
 }
-function _temp$15(state) {
-	return state.data;
+function _temp3$7() {
+	return getApiNexusGroup();
 }
-// src/client/pages/overview/components/summary-card.tsx
-function SummaryCard(t0) {
-	const $ = (0, import_dist.c)(23);
-	const { title, meta, icon, actionLabel, onMore, children, background } = t0;
+function _temp2$10() {
+	return getApiNexusEdge();
+}
+function _temp$19() {
+	return getApiNexusNode();
+}
+// src/client/pages/overview/components/status-tag.tsx
+function StatusTag() {
+	const $ = (0, import_dist.c)(17);
 	const { t } = useTranslation();
-	let t1;
-	if ($[0] !== title) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: title });
-		$[0] = title;
-		$[1] = t1;
-	} else t1 = $[1];
-	let t2;
-	if ($[2] !== meta) {
-		t2 = meta && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "shrink-0 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
-			children: meta
-		});
-		$[2] = meta;
-		$[3] = t2;
-	} else t2 = $[3];
-	let t3;
-	if ($[4] !== icon || $[5] !== t1 || $[6] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h2", {
-			className: "flex min-w-0 items-center gap-2 text-[13px] leading-5 font-medium",
-			children: [
-				icon,
-				t1,
-				t2
-			]
-		});
-		$[4] = icon;
-		$[5] = t1;
-		$[6] = t2;
-		$[7] = t3;
-	} else t3 = $[7];
+	let t0;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.status,
+			queryFn: _temp$18,
+			refetchInterval: 1e4
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const { data: status, isLoading, error } = useQuery(t0);
+	if (error) {
+		const t1 = error instanceof Error ? error.message : void 0;
+		let t2;
+		if ($[1] !== t) {
+			t2 = t("graphUnavailable");
+			$[1] = t;
+			$[2] = t2;
+		} else t2 = $[2];
+		let t3;
+		if ($[3] !== t2) {
+			t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+				tone: "danger",
+				children: t2
+			});
+			$[3] = t2;
+			$[4] = t3;
+		} else t3 = $[4];
+		let t4;
+		if ($[5] !== t1 || $[6] !== t3) {
+			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				title: t1,
+				role: "alert",
+				children: t3
+			});
+			$[5] = t1;
+			$[6] = t3;
+			$[7] = t4;
+		} else t4 = $[7];
+		return t4;
+	}
+	const t1 = status?.reason ?? void 0;
+	const t2 = status?.state === "delivery_failed" ? "danger" : "quiet";
+	const t3 = isLoading ? "graphLoading" : status?.state === "running" ? "graphRunning" : status?.state === "queued" ? "graphQueued" : status?.state === "delivery_failed" ? "graphDeliveryFailed" : "graphIdle";
 	let t4;
-	if ($[8] !== t) {
-		t4 = t("overviewMore");
+	if ($[8] !== t || $[9] !== t3) {
+		t4 = t(t3);
 		$[8] = t;
-		$[9] = t4;
-	} else t4 = $[9];
+		$[9] = t3;
+		$[10] = t4;
+	} else t4 = $[10];
 	let t5;
-	if ($[10] !== actionLabel || $[11] !== onMore || $[12] !== t4) {
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			size: "sm",
-			variant: "ghost",
-			"aria-label": actionLabel,
-			onClick: onMore,
-			className: "shrink-0 text-xs! text-[var(--dsw-alias-label-tertiary)]!",
+	if ($[11] !== t2 || $[12] !== t4) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+			tone: t2,
 			children: t4
 		});
-		$[10] = actionLabel;
-		$[11] = onMore;
+		$[11] = t2;
 		$[12] = t4;
 		$[13] = t5;
 	} else t5 = $[13];
 	let t6;
-	if ($[14] !== t3 || $[15] !== t5) {
-		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-			className: "relative z-10 flex items-center justify-between gap-2",
-			children: [t3, t5]
+	if ($[14] !== t1 || $[15] !== t5) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			title: t1,
+			children: t5
 		});
-		$[14] = t3;
+		$[14] = t1;
 		$[15] = t5;
 		$[16] = t6;
 	} else t6 = $[16];
-	let t7;
-	if ($[17] !== children) {
-		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: "relative z-10 flex min-h-0 flex-1 flex-col",
-			children
-		});
-		$[17] = children;
-		$[18] = t7;
-	} else t7 = $[18];
-	let t8;
-	if ($[19] !== background || $[20] !== t6 || $[21] !== t7) {
-		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "relative isolate flex min-w-0 flex-col overflow-hidden @min-[800px]:min-h-[161px] rounded-[20px] border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-2 px-5 shadow-[0_1px_2px_#00000004]",
-			children: [
-				background,
-				t6,
-				t7
-			]
-		});
-		$[19] = background;
-		$[20] = t6;
-		$[21] = t7;
-		$[22] = t8;
-	} else t8 = $[22];
-	return t8;
+	return t6;
 }
-// src/client/pages/overview/components/task-chart.tsx
-function TaskChart(t0) {
-	const $ = (0, import_dist.c)(10);
-	const { segments } = t0;
+function _temp$18() {
+	return getApiNexusStatus();
+}
+// src/client/pages/ticket/components/row.tsx
+function Row$1(t0) {
+	const $ = (0, import_dist.c)(108);
+	const { task, nodes, channels, triggers, subscriptions, refreshedAt } = t0;
 	const { t } = useTranslation();
+	const { openTicket } = useActions();
+	const ctx = useDshContext();
 	let t1;
-	if ($[0] !== segments || $[1] !== t) {
+	if ($[0] !== nodes || $[1] !== task.id) {
 		let t2;
-		if ($[3] !== t) {
-			t2 = (segment) => `${t(segment.name)} ${segment.value}`;
-			$[3] = t;
+		if ($[3] !== task.id) {
+			t2 = (node) => node.ticketId === task.id && node.sessionId;
+			$[3] = task.id;
 			$[4] = t2;
 		} else t2 = $[4];
-		t1 = segments.map(t2).join(" · ");
-		$[0] = segments;
-		$[1] = t;
+		const sessions = nodes.filter(t2);
+		t1 = sessions.find(_temp$17) ?? sessions.at(-1);
+		$[0] = nodes;
+		$[1] = task.id;
 		$[2] = t1;
 	} else t1 = $[2];
+	const session = t1;
 	let t2;
-	if ($[5] !== segments) {
-		t2 = segments.some(_temp$14) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
-			width: "100%",
-			height: "100%",
-			minWidth: 0,
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.PieChart, {
-				accessibilityLayer: false,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Pie, {
-					rootTabIndex: -1,
-					data: segments,
-					dataKey: "value",
-					nameKey: "name",
-					cx: "50%",
-					cy: "50%",
-					innerRadius: 35,
-					outerRadius: 46,
-					startAngle: 90,
-					endAngle: -270,
-					paddingAngle: 4,
-					cornerRadius: 4,
-					stroke: "none",
-					isAnimationActive: false,
-					children: segments.map(_temp2$10)
-				})
-			})
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-			width: "100%",
-			height: "100%",
-			viewBox: "0 0 100 100",
-			"aria-hidden": "true",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-				cx: 50,
-				cy: 50,
-				r: 40.5,
-				fill: "none",
-				stroke: "var(--dsw-alias-border-l3)",
-				strokeWidth: 11
-			})
-		});
-		$[5] = segments;
-		$[6] = t2;
-	} else t2 = $[6];
-	let t3;
-	if ($[7] !== t1 || $[8] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figure", {
-			className: "pointer-events-none size-[100px] shrink-0 [&_*]:outline-none",
-			role: "img",
-			"aria-label": t1,
-			children: t2
-		});
-		$[7] = t1;
-		$[8] = t2;
-		$[9] = t3;
-	} else t3 = $[9];
-	return t3;
-}
-function _temp2$10(segment_0) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment_0.color }, segment_0.name);
-}
-function _temp$14(segment_1) {
-	return segment_1.value > 0;
-}
-// src/client/pages/overview/page.tsx
-const OVERVIEW_TASK_SEGMENTS = [
-	{
-		name: "overviewInProgress",
-		value: 2,
-		color: "var(--dsw-alias-state-business-primary)"
-	},
-	{
-		name: "overviewCompleted",
-		value: 1,
-		color: "var(--dsw-alias-state-success-primary)"
-	},
-	{
-		name: "overviewBlocked",
-		value: 1,
-		color: "var(--dsw-alias-state-error-primary)"
-	}
-];
-function Overview() {
-	const $ = (0, import_dist.c)(191);
-	const { t } = useTranslation();
-	const { go: navigate, setOverviewView, receivePanel } = useActions();
-	let t0;
-	if ($[0] !== receivePanel) {
-		t0 = async (id, text) => {
-			const result = await postApiNexusAsksIdAnswers({ id: encodeURIComponent(id) }, { answer: text });
-			if (!result || result.id !== id || result.answeredBy !== "user") throw new Error("答复提交失败，问题可能已处理");
-			const next = await getApiNexusPanel();
-			if (!next || !next.inbox) throw new Error("答复已提交，刷新问题列表失败");
-			receivePanel(next);
-		};
-		$[0] = receivePanel;
-		$[1] = t0;
-	} else t0 = $[1];
-	const [answerState, answer] = useAsyncFn(t0);
-	const view = useStore(_temp$13);
-	const panel = useStore(_temp2$9);
-	let t1;
-	if ($[2] !== panel?.tickets) {
-		t1 = panel?.tickets ?? [];
-		$[2] = panel?.tickets;
-		$[3] = t1;
-	} else t1 = $[3];
-	const tickets = t1;
-	const channels = (panel?.channels ?? []).map(_temp3$6);
-	const now = Date.now();
-	let t2;
+	if ($[5] !== channels || $[6] !== task.channelId) {
+		let t3;
+		if ($[8] !== task.channelId) {
+			t3 = (channel) => channel.id === task.channelId;
+			$[8] = task.channelId;
+			$[9] = t3;
+		} else t3 = $[9];
+		t2 = channels.find(t3);
+		$[5] = channels;
+		$[6] = task.channelId;
+		$[7] = t2;
+	} else t2 = $[7];
+	const channel_0 = t2;
+	let T0;
+	let duration;
+	let event;
+	let intervention;
+	let prUrl;
+	let t10;
 	let t3;
 	let t4;
-	if ($[4] !== panel?.topics.triggers) {
-		let t5;
-		if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
-			t5 = (trigger) => Date.parse(trigger.at) >= now - 864e5 && Date.parse(trigger.at) <= now;
-			$[8] = t5;
-		} else t5 = $[8];
-		const triggers = (panel?.topics.triggers ?? []).filter(t5);
-		t2 = triggers.length;
-		t3 = triggers.filter(_temp4$4).length;
-		let t6;
-		if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
-			t6 = (trigger_1) => Date.parse(trigger_1.at) >= now - 36e5;
-			$[9] = t6;
-		} else t6 = $[9];
-		t4 = triggers.filter(t6);
-		$[4] = panel?.topics.triggers;
-		$[5] = t2;
-		$[6] = t3;
-		$[7] = t4;
-	} else {
-		t2 = $[5];
-		t3 = $[6];
-		t4 = $[7];
-	}
-	const t5 = t4.length;
+	let t5;
 	let t6;
-	if ($[10] !== tickets) {
-		let t7;
-		if ($[12] === Symbol.for("react.memo_cache_sentinel")) {
-			t7 = (ticket) => Date.parse(ticket.createdAt) >= now - 864e5;
-			$[12] = t7;
-		} else t7 = $[12];
-		t6 = tickets.filter(t7);
-		$[10] = tickets;
+	let t7;
+	let t8;
+	let t9;
+	if ($[10] !== refreshedAt || $[11] !== subscriptions || $[12] !== t || $[13] !== task.endedAt || $[14] !== task.id || $[15] !== task.paused || $[16] !== task.prState || $[17] !== task.prUrl || $[18] !== task.prepareError || $[19] !== task.startedAt || $[20] !== task.status || $[21] !== task.title || $[22] !== triggers) {
+		const status = {
+			waiting: {
+				label: "overviewStatusWaiting",
+				tone: "quiet"
+			},
+			queued: {
+				label: "ticketStatusQueued",
+				tone: "quiet"
+			},
+			running: {
+				label: "overviewStatusRunning",
+				tone: "info"
+			},
+			review: {
+				label: "overviewStatusReview",
+				tone: "warning"
+			},
+			done: {
+				label: "overviewCompleted",
+				tone: "success"
+			},
+			cancelled: {
+				label: "ticketStatusCancelled",
+				tone: "quiet"
+			}
+		};
+		intervention = Boolean(task.prepareError || task.paused);
+		let t11;
+		if ($[36] !== subscriptions || $[37] !== task.id || $[38] !== triggers) {
+			let t12;
+			if ($[40] !== task.id) {
+				t12 = (subscription) => subscription.ticketId === task.id;
+				$[40] = task.id;
+				$[41] = t12;
+			} else t12 = $[41];
+			const ticketSubscriptions = subscriptions.filter(t12);
+			t11 = triggers.filter((trigger) => ticketSubscriptions.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp2$9);
+			$[36] = subscriptions;
+			$[37] = task.id;
+			$[38] = triggers;
+			$[39] = t11;
+		} else t11 = $[39];
+		const trigger_0 = t11[0];
+		prUrl = task.prUrl && /^https?:\/\//i.test(task.prUrl) ? task.prUrl : null;
+		let t12;
+		if ($[42] !== prUrl) {
+			t12 = prUrl?.match(/\/(?:pull|merge_requests)\/(\d+)(?:[/?#]|$)/)?.[1];
+			$[42] = prUrl;
+			$[43] = t12;
+		} else t12 = $[43];
+		const prNumber = t12;
+		let t13;
+		if ($[44] !== prNumber || $[45] !== task.prState || $[46] !== trigger_0) {
+			t13 = prNumber ? `PR #${prNumber}${task.prState ? ` ${task.prState}` : ""}` : trigger_0 ? `${trigger_0.ref ?? ""} ${trigger_0.kind}`.trim() : null;
+			$[44] = prNumber;
+			$[45] = task.prState;
+			$[46] = trigger_0;
+			$[47] = t13;
+		} else t13 = $[47];
+		event = t13;
+		const start = task.status === "waiting" ? null : task.startedAt;
+		const end = task.endedAt ?? (start ? refreshedAt : null);
+		const seconds = start && end ? Math.max(0, Math.floor((Date.parse(end) - Date.parse(start)) / 1e3)) : NaN;
+		let t14;
+		if ($[48] !== seconds) {
+			t14 = Number.isFinite(seconds) ? `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ` : ""}${seconds >= 60 ? `${Math.floor(seconds / 60) % 60}m ` : ""}${seconds % 60}s` : null;
+			$[48] = seconds;
+			$[49] = t14;
+		} else t14 = $[49];
+		duration = t14;
+		t10 = "flex flex-col gap-3 border-b border-[var(--dsw-alias-border-l3)] py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5";
+		t8 = "flex min-w-0 items-start gap-3";
+		if ($[50] === Symbol.for("react.memo_cache_sentinel")) {
+			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				className: "mt-0.5 text-[var(--dsw-alias-label-tertiary)]",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
+					width: 17,
+					height: 17
+				})
+			});
+			$[50] = t9;
+		} else t9 = $[50];
+		t6 = "min-w-0";
+		let t15;
+		if ($[51] !== task.id) {
+			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				className: "mr-2 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
+				children: task.id
+			});
+			$[51] = task.id;
+			$[52] = t15;
+		} else t15 = $[52];
+		if ($[53] !== t15 || $[54] !== task.title) {
+			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("h3", {
+				className: "text-[13px] leading-5 font-medium [overflow-wrap:anywhere] m-0",
+				children: [t15, task.title]
+			});
+			$[53] = t15;
+			$[54] = task.title;
+			$[55] = t7;
+		} else t7 = $[55];
+		t5 = "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
+		T0 = _deepseek_ai_dsh_client_ui_primitives.Tag;
+		t3 = intervention ? "danger" : status[task.status].tone;
+		t4 = t(task.paused ? "ticketStatusPaused" : task.prepareError ? "overviewStatusIntervention" : status[task.status].label);
+		$[10] = refreshedAt;
+		$[11] = subscriptions;
+		$[12] = t;
+		$[13] = task.endedAt;
+		$[14] = task.id;
+		$[15] = task.paused;
+		$[16] = task.prState;
+		$[17] = task.prUrl;
+		$[18] = task.prepareError;
+		$[19] = task.startedAt;
+		$[20] = task.status;
+		$[21] = task.title;
+		$[22] = triggers;
+		$[23] = T0;
+		$[24] = duration;
+		$[25] = event;
+		$[26] = intervention;
+		$[27] = prUrl;
+		$[28] = t10;
+		$[29] = t3;
+		$[30] = t4;
+		$[31] = t5;
+		$[32] = t6;
+		$[33] = t7;
+		$[34] = t8;
+		$[35] = t9;
+	} else {
+		T0 = $[23];
+		duration = $[24];
+		event = $[25];
+		intervention = $[26];
+		prUrl = $[27];
+		t10 = $[28];
+		t3 = $[29];
+		t4 = $[30];
+		t5 = $[31];
+		t6 = $[32];
+		t7 = $[33];
+		t8 = $[34];
+		t9 = $[35];
+	}
+	let t11;
+	if ($[56] !== T0 || $[57] !== t3 || $[58] !== t4) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(T0, {
+			tone: t3,
+			children: t4
+		});
+		$[56] = T0;
+		$[57] = t3;
+		$[58] = t4;
+		$[59] = t11;
+	} else t11 = $[59];
+	let t12;
+	if ($[60] !== channel_0?.name || $[61] !== duration || $[62] !== event || $[63] !== intervention || $[64] !== session?.status || $[65] !== t || $[66] !== task.channelId || $[67] !== task.prepareError || $[68] !== task.status) {
+		t12 = intervention ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: task.prepareError ?? t("ticketStatusPaused") }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: `${t("overviewSource")}: ${channel_0?.name ?? task.channelId}` }),
+			event && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				"aria-hidden": "true",
+				children: "·"
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: event })] }),
+			task.status === "waiting" && session?.status === "running" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				"aria-hidden": "true",
+				children: "·"
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("overviewTriggerRunning") })] }),
+			(duration || task.status === "waiting") && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				"aria-hidden": "true",
+				children: "·"
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: `${t(task.status === "waiting" ? "ticketWaitDuration" : "ticketExecutionDuration")}: ${duration ?? t("ticketDurationUnknown")}` })] })
+		] });
+		$[60] = channel_0?.name;
+		$[61] = duration;
+		$[62] = event;
+		$[63] = intervention;
+		$[64] = session?.status;
+		$[65] = t;
+		$[66] = task.channelId;
+		$[67] = task.prepareError;
+		$[68] = task.status;
+		$[69] = t12;
+	} else t12 = $[69];
+	let t13;
+	if ($[70] !== t11 || $[71] !== t12 || $[72] !== t5) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t5,
+			children: [t11, t12]
+		});
+		$[70] = t11;
+		$[71] = t12;
+		$[72] = t5;
+		$[73] = t13;
+	} else t13 = $[73];
+	let t14;
+	if ($[74] !== t13 || $[75] !== t6 || $[76] !== t7) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t6,
+			children: [t7, t13]
+		});
+		$[74] = t13;
+		$[75] = t6;
+		$[76] = t7;
+		$[77] = t14;
+	} else t14 = $[77];
+	let t15;
+	if ($[78] !== t14 || $[79] !== t8 || $[80] !== t9) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t8,
+			children: [t9, t14]
+		});
+		$[78] = t14;
+		$[79] = t8;
+		$[80] = t9;
+		$[81] = t15;
+	} else t15 = $[81];
+	let t16;
+	if ($[82] !== prUrl || $[83] !== t) {
+		t16 = prUrl && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "outline",
+			onClick: () => window.open(prUrl, "_blank", "noopener,noreferrer"),
+			children: t("overviewOpenPr")
+		});
+		$[82] = prUrl;
+		$[83] = t;
+		$[84] = t16;
+	} else t16 = $[84];
+	let t17;
+	if ($[85] !== ctx || $[86] !== session || $[87] !== t) {
+		t17 = session?.sessionId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "outline",
+			onClick: () => ctx.uiWorkspace.openSession(session.sessionId),
+			children: t("overviewOpenSession")
+		});
+		$[85] = ctx;
+		$[86] = session;
+		$[87] = t;
+		$[88] = t17;
+	} else t17 = $[88];
+	let t18;
+	if ($[89] !== t) {
+		t18 = t("overviewOpenDetails");
+		$[89] = t;
+		$[90] = t18;
+	} else t18 = $[90];
+	const t19 = `${t18} ${task.id}`;
+	let t20;
+	if ($[91] !== openTicket || $[92] !== task.id) {
+		t20 = () => openTicket(task.id);
+		$[91] = openTicket;
+		$[92] = task.id;
+		$[93] = t20;
+	} else t20 = $[93];
+	let t21;
+	if ($[94] !== t) {
+		t21 = t("overviewOpenDetails");
+		$[94] = t;
+		$[95] = t21;
+	} else t21 = $[95];
+	let t22;
+	if ($[96] !== t19 || $[97] !== t20 || $[98] !== t21) {
+		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "primary",
+			"aria-label": t19,
+			onClick: t20,
+			children: t21
+		});
+		$[96] = t19;
+		$[97] = t20;
+		$[98] = t21;
+		$[99] = t22;
+	} else t22 = $[99];
+	let t23;
+	if ($[100] !== t16 || $[101] !== t17 || $[102] !== t22) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex shrink-0 flex-wrap items-center gap-2 pl-[29px] @min-[640px]:pl-0",
+			children: [
+				t16,
+				t17,
+				t22
+			]
+		});
+		$[100] = t16;
+		$[101] = t17;
+		$[102] = t22;
+		$[103] = t23;
+	} else t23 = $[103];
+	let t24;
+	if ($[104] !== t10 || $[105] !== t15 || $[106] !== t23) {
+		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+			className: t10,
+			children: [t15, t23]
+		});
+		$[104] = t10;
+		$[105] = t15;
+		$[106] = t23;
+		$[107] = t24;
+	} else t24 = $[107];
+	return t24;
+}
+function _temp2$9(a, b) {
+	return b.at.localeCompare(a.at);
+}
+function _temp$17(node_0) {
+	return node_0.status === "running";
+}
+// src/client/pages/overview/components/task-list.tsx
+function TaskList() {
+	const $ = (0, import_dist.c)(20);
+	const { t } = useTranslation();
+	let t0;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.ticket,
+			queryFn: _temp$16
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const ticket = useQuery(t0);
+	let t1;
+	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.node,
+			queryFn: _temp2$8,
+			refetchInterval: 15e3
+		};
+		$[1] = t1;
+	} else t1 = $[1];
+	const node = useQuery(t1);
+	let t2;
+	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
+		t2 = {
+			queryKey: keys.channel,
+			queryFn: _temp3$6
+		};
+		$[2] = t2;
+	} else t2 = $[2];
+	const channel = useQuery(t2);
+	let t3;
+	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
+		t3 = {
+			queryKey: keys.trigger,
+			queryFn: _temp4$4,
+			refetchInterval: 3e4
+		};
+		$[3] = t3;
+	} else t3 = $[3];
+	const trigger = useQuery(t3);
+	let t4;
+	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = {
+			queryKey: keys.subscription,
+			queryFn: _temp5$4
+		};
+		$[4] = t4;
+	} else t4 = $[4];
+	const subscription = useQuery(t4);
+	const queries = [
+		ticket,
+		node,
+		channel,
+		trigger,
+		subscription
+	];
+	const failure = queries.find(_temp6$4)?.error;
+	if (failure) {
+		const t5 = failure instanceof Error ? failure.message : "任务列表加载失败";
+		let t6;
+		if ($[5] !== t5) {
+			t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+				children: t5
+			});
+			$[5] = t5;
+			$[6] = t6;
+		} else t6 = $[6];
+		return t6;
+	}
+	if (queries.some(_temp7$4)) {
+		let t5;
+		if ($[7] === Symbol.for("react.memo_cache_sentinel")) {
+			t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "status",
+				className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+				children: "加载中…"
+			});
+			$[7] = t5;
+		} else t5 = $[7];
+		return t5;
+	}
+	let t5;
+	if ($[8] !== ticket.data) {
+		t5 = ticket.data ?? [];
+		$[8] = ticket.data;
+		$[9] = t5;
+	} else t5 = $[9];
+	const list = t5;
+	let t6;
+	if ($[10] !== ticket.dataUpdatedAt) {
+		t6 = ticket.dataUpdatedAt ? new Date(ticket.dataUpdatedAt).toISOString() : null;
+		$[10] = ticket.dataUpdatedAt;
 		$[11] = t6;
 	} else t6 = $[11];
+	const refreshedAt = t6;
 	let t7;
-	if ($[13] !== t2 || $[14] !== t3 || $[15] !== t4.length || $[16] !== t6.length) {
-		t7 = {
-			received: t2,
-			filtered: t3,
-			rate: t5,
-			added: t6.length
-		};
-		$[13] = t2;
-		$[14] = t3;
-		$[15] = t4.length;
-		$[16] = t6.length;
-		$[17] = t7;
-	} else t7 = $[17];
-	const metrics = t7;
-	let t8;
-	if ($[18] !== tickets) {
-		t8 = (segment) => ({
-			...segment,
-			value: tickets.filter((ticket_0) => segment.name === "overviewCompleted" ? ticket_0.status === "done" : segment.name === "overviewBlocked" ? Boolean(ticket_0.paused || ticket_0.prepareError) : [
-				"running",
-				"queued",
-				"review"
-			].includes(ticket_0.status) && !ticket_0.paused && !ticket_0.prepareError).length
-		});
-		$[18] = tickets;
-		$[19] = t8;
-	} else t8 = $[19];
-	const segments = OVERVIEW_TASK_SEGMENTS.map(t8);
-	const t9 = (0, react.useId)();
-	let t10;
-	if ($[20] !== t9) {
-		t10 = t9.replaceAll(":", "");
-		$[20] = t9;
-		$[21] = t10;
-	} else t10 = $[21];
-	const id_0 = t10;
-	let t11;
-	if ($[22] !== t) {
-		t11 = t("overviewRecent");
-		$[22] = t;
-		$[23] = t11;
-	} else t11 = $[23];
-	const t12 = `${id_0}-recent`;
-	const t13 = `${id_0}-recent-panel`;
-	let t14;
-	if ($[24] !== t11 || $[25] !== t12 || $[26] !== t13) {
-		t14 = {
-			value: "recent",
-			label: t11,
-			id: t12,
-			panelId: t13
-		};
-		$[24] = t11;
-		$[25] = t12;
-		$[26] = t13;
-		$[27] = t14;
-	} else t14 = $[27];
-	let t15;
-	if ($[28] !== t) {
-		t15 = t("overviewHierarchy");
-		$[28] = t;
-		$[29] = t15;
-	} else t15 = $[29];
-	const t16 = `${id_0}-hierarchy`;
-	const t17 = `${id_0}-hierarchy-panel`;
-	let t18;
-	if ($[30] !== t15 || $[31] !== t16 || $[32] !== t17) {
-		t18 = {
-			value: "hierarchy",
-			label: t15,
-			id: t16,
-			panelId: t17
-		};
-		$[30] = t15;
-		$[31] = t16;
-		$[32] = t17;
-		$[33] = t18;
-	} else t18 = $[33];
-	let t19;
-	if ($[34] !== t14 || $[35] !== t18) {
-		t19 = [t14, t18];
-		$[34] = t14;
-		$[35] = t18;
-		$[36] = t19;
-	} else t19 = $[36];
-	const tabs = t19;
-	const t20 = "@container flex flex-col gap-7 pb-10";
-	const t21 = "grid grid-cols-1 gap-4 @min-[800px]:grid-cols-3";
-	let t22;
-	if ($[37] !== t) {
-		t22 = t("overviewChannels");
-		$[37] = t;
-		$[38] = t22;
-	} else t22 = $[38];
-	const t23 = `${channels.filter(_temp5$3).length}/${channels.length}`;
-	let t24;
-	if ($[39] === Symbol.for("react.memo_cache_sentinel")) {
-		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
-			width: 18,
-			height: 18,
-			className: "shrink-0"
-		});
-		$[39] = t24;
-	} else t24 = $[39];
-	let t25;
-	if ($[40] !== t) {
-		t25 = t("overviewMoreChannels");
-		$[40] = t;
-		$[41] = t25;
-	} else t25 = $[41];
-	let t26;
-	if ($[42] !== navigate) {
-		t26 = () => navigate("channel");
-		$[42] = navigate;
-		$[43] = t26;
-	} else t26 = $[43];
-	const t27 = !panel || channels.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-		className: "mt-auto grid min-h-[83px] grid-cols-3 gap-2.5",
-		children: channels.slice(0, 3).map(_temp6$3)
-	}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-		title: t("overviewChannelsEmpty"),
-		description: t("overviewChannelsEmptyDescription"),
-		icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
-			width: 24,
-			height: 24
-		})
-	});
-	let t28;
-	if ($[44] !== t) {
-		t28 = t("overviewOtherChannel");
-		$[44] = t;
-		$[45] = t28;
-	} else t28 = $[45];
-	let t29;
-	if ($[46] !== t28) {
-		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mt-auto pt-3 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t28
-		});
-		$[46] = t28;
-		$[47] = t29;
-	} else t29 = $[47];
-	let t30;
-	if ($[48] !== t22 || $[49] !== t23 || $[50] !== t25 || $[51] !== t26 || $[52] !== t27 || $[53] !== t29) {
-		t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(SummaryCard, {
-			title: t22,
-			meta: t23,
-			icon: t24,
-			actionLabel: t25,
-			onMore: t26,
-			children: [t27, t29]
-		});
-		$[48] = t22;
-		$[49] = t23;
-		$[50] = t25;
-		$[51] = t26;
-		$[52] = t27;
-		$[53] = t29;
-		$[54] = t30;
-	} else t30 = $[54];
-	let t31;
-	if ($[55] !== t) {
-		t31 = t("overviewReceived");
-		$[55] = t;
-		$[56] = t31;
-	} else t31 = $[56];
-	let t32;
-	if ($[57] !== t) {
-		t32 = t("overviewLastDay");
-		$[57] = t;
-		$[58] = t32;
-	} else t32 = $[58];
-	let t33;
-	if ($[59] === Symbol.for("react.memo_cache_sentinel")) {
-		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
-			width: 18,
-			height: 18,
-			className: "shrink-0"
-		});
-		$[59] = t33;
-	} else t33 = $[59];
-	let t34;
-	if ($[60] !== t) {
-		t34 = t("overviewMoreActivity");
-		$[60] = t;
-		$[61] = t34;
-	} else t34 = $[61];
-	let t35;
-	if ($[62] !== navigate) {
-		t35 = () => navigate("trigger");
-		$[62] = navigate;
-		$[63] = t35;
-	} else t35 = $[63];
-	let t36;
-	if ($[64] === Symbol.for("react.memo_cache_sentinel")) {
-		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityChart, {});
-		$[64] = t36;
-	} else t36 = $[64];
-	let t37;
-	if ($[65] !== t) {
-		t37 = t("overviewReceived");
-		$[65] = t;
-		$[66] = t37;
-	} else t37 = $[66];
-	const t38 = metrics.rate;
-	let t39;
-	if ($[67] !== t) {
-		t39 = t("overviewPerHour");
-		$[67] = t;
-		$[68] = t39;
-	} else t39 = $[68];
-	const t40 = `${t37} ${t38}${t39}`;
-	let t41;
-	if ($[69] !== metrics.rate) {
-		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-[32px] leading-10 font-semibold tracking-tight",
-			children: metrics.rate
-		});
-		$[69] = metrics.rate;
-		$[70] = t41;
-	} else t41 = $[70];
-	let t42;
-	if ($[71] !== t) {
-		t42 = t("overviewPerHour");
-		$[71] = t;
-		$[72] = t42;
-	} else t42 = $[72];
-	let t43;
-	if ($[73] !== t42) {
-		t43 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-sm text-[var(--dsw-alias-label-secondary)]",
-			children: t42
-		});
-		$[73] = t42;
-		$[74] = t43;
-	} else t43 = $[74];
-	let t44;
-	if ($[75] !== t40 || $[76] !== t41 || $[77] !== t43) {
-		t44 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-			"aria-label": t40,
-			className: "flex items-baseline gap-1.5 tabular-nums",
-			children: [t41, t43]
-		});
-		$[75] = t40;
-		$[76] = t41;
-		$[77] = t43;
-		$[78] = t44;
-	} else t44 = $[78];
-	let t45;
-	if ($[79] !== t) {
-		t45 = t("overviewTotalMessages");
-		$[79] = t;
-		$[80] = t45;
-	} else t45 = $[80];
-	let t46;
-	if ($[81] !== t45) {
-		t46 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t45 });
-		$[81] = t45;
-		$[82] = t46;
-	} else t46 = $[82];
-	const t47 = metrics.received;
-	let t48;
-	if ($[83] !== t) {
-		t48 = t("overviewItems");
-		$[83] = t;
-		$[84] = t48;
-	} else t48 = $[84];
-	const t49 = `${t47} ${t48}`;
-	let t50;
-	if ($[85] !== t49) {
-		t50 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-			className: "tabular-nums",
-			children: t49
-		});
-		$[85] = t49;
-		$[86] = t50;
-	} else t50 = $[86];
-	let t51;
-	if ($[87] !== t46 || $[88] !== t50) {
-		t51 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex gap-2",
-			children: [t46, t50]
-		});
-		$[87] = t46;
-		$[88] = t50;
-		$[89] = t51;
-	} else t51 = $[89];
-	let t52;
-	if ($[90] !== t) {
-		t52 = t("overviewFiltered");
-		$[90] = t;
-		$[91] = t52;
-	} else t52 = $[91];
-	let t53;
-	if ($[92] !== t52) {
-		t53 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t52 });
-		$[92] = t52;
-		$[93] = t53;
-	} else t53 = $[93];
-	const t54 = metrics.filtered;
-	let t55;
-	if ($[94] !== t) {
-		t55 = t("overviewItems");
-		$[94] = t;
-		$[95] = t55;
-	} else t55 = $[95];
-	const t56 = `${t54} ${t55}`;
-	let t57;
-	if ($[96] !== t56) {
-		t57 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-			className: "tabular-nums",
-			children: t56
-		});
-		$[96] = t56;
-		$[97] = t57;
-	} else t57 = $[97];
-	let t58;
-	if ($[98] !== t53 || $[99] !== t57) {
-		t58 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex gap-2",
-			children: [t53, t57]
-		});
-		$[98] = t53;
-		$[99] = t57;
-		$[100] = t58;
-	} else t58 = $[100];
-	let t59;
-	if ($[101] !== t51 || $[102] !== t58) {
-		t59 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
-			className: "mt-auto flex flex-col gap-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-			children: [t51, t58]
-		});
-		$[101] = t51;
-		$[102] = t58;
-		$[103] = t59;
-	} else t59 = $[103];
-	let t60;
-	if ($[104] !== t31 || $[105] !== t32 || $[106] !== t34 || $[107] !== t35 || $[108] !== t44 || $[109] !== t59) {
-		t60 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(SummaryCard, {
-			title: t31,
-			meta: t32,
-			icon: t33,
-			actionLabel: t34,
-			onMore: t35,
-			background: t36,
-			children: [t44, t59]
-		});
-		$[104] = t31;
-		$[105] = t32;
-		$[106] = t34;
-		$[107] = t35;
-		$[108] = t44;
-		$[109] = t59;
-		$[110] = t60;
-	} else t60 = $[110];
-	const T0 = SummaryCard;
-	let t61;
-	if ($[111] !== t) {
-		t61 = t("overviewTaskSummary");
-		$[111] = t;
-		$[112] = t61;
-	} else t61 = $[112];
-	let t62;
-	if ($[113] === Symbol.for("react.memo_cache_sentinel")) {
-		t62 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
-			width: 18,
-			height: 18,
-			className: "shrink-0"
-		});
-		$[113] = t62;
-	} else t62 = $[113];
-	let t63;
-	if ($[114] !== t) {
-		t63 = t("overviewMoreTasks");
-		$[114] = t;
-		$[115] = t63;
-	} else t63 = $[115];
-	let t64;
-	if ($[116] !== navigate) {
-		t64 = () => navigate("ticket");
-		$[116] = navigate;
-		$[117] = t64;
-	} else t64 = $[117];
-	const t65 = "flex min-h-0 flex-1 items-center justify-between gap-3";
-	const t66 = "flex h-full min-w-0 flex-col";
-	let t67;
-	if ($[118] !== metrics.added) {
-		t67 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-[32px] leading-10 font-semibold tracking-tight",
-			children: metrics.added
-		});
-		$[118] = metrics.added;
-		$[119] = t67;
-	} else t67 = $[119];
-	let t68;
-	if ($[120] !== t) {
-		t68 = t("overviewAdded");
-		$[120] = t;
-		$[121] = t68;
-	} else t68 = $[121];
-	let t69;
-	if ($[122] !== t68) {
-		t69 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-xs text-[var(--dsw-alias-label-secondary)]",
-			children: t68
-		});
-		$[122] = t68;
-		$[123] = t69;
-	} else t69 = $[123];
-	let t70;
-	if ($[124] !== t67 || $[125] !== t69) {
-		t70 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-			className: "flex items-baseline gap-1.5 tabular-nums",
-			children: [t67, t69]
-		});
-		$[124] = t67;
-		$[125] = t69;
-		$[126] = t70;
-	} else t70 = $[126];
-	const t71 = "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
-	let t72;
-	if ($[127] !== t) {
-		t72 = (segment_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "col-span-2 grid grid-cols-subgrid items-center whitespace-nowrap",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dt", {
-				className: "flex items-center gap-2",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: "size-1.5 shrink-0 rounded-full",
-					style: { background: segment_0.color }
-				}), t(segment_0.name)]
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-				className: "m-0 text-right tabular-nums",
-				children: segment_0.value
-			})]
-		}, segment_0.name);
-		$[127] = t;
-		$[128] = t72;
-	} else t72 = $[128];
-	const t73 = segments.map(t72);
-	let t74;
-	if ($[129] !== t73) {
-		t74 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dl", {
-			className: t71,
-			children: t73
-		});
-		$[129] = t73;
-		$[130] = t74;
-	} else t74 = $[130];
-	let t75;
-	if ($[131] !== t70 || $[132] !== t74) {
-		t75 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t66,
-			children: [t70, t74]
-		});
-		$[131] = t70;
-		$[132] = t74;
-		$[133] = t75;
-	} else t75 = $[133];
-	let t76;
-	if ($[134] !== segments) {
-		t76 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskChart, { segments });
-		$[134] = segments;
-		$[135] = t76;
-	} else t76 = $[135];
-	let t77;
-	if ($[136] !== t75 || $[137] !== t76) {
-		t77 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t65,
-			children: [t75, t76]
-		});
-		$[136] = t75;
-		$[137] = t76;
-		$[138] = t77;
-	} else t77 = $[138];
-	let t78;
-	if ($[139] !== T0 || $[140] !== t61 || $[141] !== t62 || $[142] !== t63 || $[143] !== t64 || $[144] !== t77) {
-		t78 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(T0, {
-			title: t61,
-			icon: t62,
-			actionLabel: t63,
-			onMore: t64,
-			children: t77
-		});
-		$[139] = T0;
-		$[140] = t61;
-		$[141] = t62;
-		$[142] = t63;
-		$[143] = t64;
-		$[144] = t77;
-		$[145] = t78;
-	} else t78 = $[145];
-	let t79;
-	if ($[146] !== t30 || $[147] !== t60 || $[148] !== t78) {
-		t79 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t21,
-			children: [
-				t30,
-				t60,
-				t78
-			]
-		});
-		$[146] = t30;
-		$[147] = t60;
-		$[148] = t78;
-		$[149] = t79;
-	} else t79 = $[149];
-	let t80;
-	if ($[150] !== answer || $[151] !== answerState || $[152] !== panel?.inbox.pending) {
-		t80 = (panel?.inbox.pending.some(_temp7$2) || answerState.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
-			className: "flex flex-col rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5",
-			"aria-label": "待答问题",
-			children: [
-				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", {
-					className: "cursor-pointer text-sm font-medium",
-					children: "待答问题"
-				}),
-				panel?.inbox.pending.filter(_temp8$1).map((message_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-					className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3 mt-3",
-					onSubmit: (event) => {
-						event.preventDefault();
-						answer(message_0.id, String(new FormData(event.currentTarget).get("answer") ?? ""));
-					},
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "m-0 whitespace-pre-wrap",
-						children: message_0.message
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: "flex gap-2",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-							name: "answer",
-							required: true,
-							"aria-label": "答复内容",
-							disabled: answerState.loading
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							type: "submit",
-							size: "sm",
-							variant: "primary",
-							disabled: answerState.loading,
-							children: "提交答复"
-						})]
-					})]
-				}, message_0.id)),
-				answerState.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					role: "alert",
-					children: answerState.error.message
-				})
-			]
-		});
-		$[150] = answer;
-		$[151] = answerState;
-		$[152] = panel?.inbox.pending;
-		$[153] = t80;
-	} else t80 = $[153];
-	let t81;
-	if ($[154] !== t) {
-		t81 = t("overviewTaskViews");
-		$[154] = t;
-		$[155] = t81;
-	} else t81 = $[155];
-	let t82;
-	if ($[156] !== t) {
-		t82 = t("overviewTaskViews");
-		$[156] = t;
-		$[157] = t82;
-	} else t82 = $[157];
-	let t83;
-	if ($[158] !== setOverviewView || $[159] !== t82 || $[160] !== tabs || $[161] !== view) {
-		t83 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
-			size: "sm",
-			value: view,
-			onChange: setOverviewView,
-			items: tabs,
-			label: t82
-		});
-		$[158] = setOverviewView;
-		$[159] = t82;
-		$[160] = tabs;
-		$[161] = view;
-		$[162] = t83;
-	} else t83 = $[162];
-	const t84 = panel?.run.reason ?? void 0;
-	const t85 = panel?.run.state === "delivery_failed" ? "danger" : "quiet";
-	const t86 = panel?.run.state === "running" ? "graphRunning" : panel?.run.state === "queued" ? "graphQueued" : panel?.run.state === "delivery_failed" ? "graphDeliveryFailed" : "graphIdle";
-	let t87;
-	if ($[163] !== t || $[164] !== t86) {
-		t87 = t(t86);
-		$[163] = t;
-		$[164] = t86;
-		$[165] = t87;
-	} else t87 = $[165];
-	let t88;
-	if ($[166] !== t85 || $[167] !== t87) {
-		t88 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-			tone: t85,
-			children: t87
-		});
-		$[166] = t85;
-		$[167] = t87;
-		$[168] = t88;
-	} else t88 = $[168];
-	let t89;
-	if ($[169] !== t84 || $[170] !== t88) {
-		t89 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			title: t84,
-			children: t88
-		});
-		$[169] = t84;
-		$[170] = t88;
-		$[171] = t89;
-	} else t89 = $[171];
-	let t90;
-	if ($[172] !== t83 || $[173] !== t89) {
-		t90 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "mb-2 flex flex-wrap items-center justify-between gap-3",
-			children: [t83, t89]
-		});
-		$[172] = t83;
-		$[173] = t89;
-		$[174] = t90;
-	} else t90 = $[174];
-	const t91 = `${id_0}-${view}-panel`;
-	const t92 = `${id_0}-${view}`;
-	let t93;
-	if ($[175] !== t || $[176] !== tickets || $[177] !== view) {
-		t93 = view === "recent" ? tickets.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+	if ($[12] !== channel || $[13] !== list || $[14] !== node || $[15] !== refreshedAt || $[16] !== subscription || $[17] !== t || $[18] !== trigger) {
+		t7 = list.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "pl-0",
-			children: tickets.map(_temp9$1)
+			children: list.map((task) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, {
+				task,
+				nodes: node.data ?? [],
+				channels: channel.data ?? [],
+				triggers: trigger.data ?? [],
+				subscriptions: subscription.data ?? [],
+				refreshedAt
+			}, task.id))
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			title: t("overviewTasksEmpty"),
 			description: t("overviewTasksEmptyDescription"),
@@ -56946,85 +61784,245 @@ function Overview() {
 				width: 28,
 				height: 28
 			})
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Graph, {});
-		$[175] = t;
-		$[176] = tickets;
-		$[177] = view;
-		$[178] = t93;
-	} else t93 = $[178];
-	let t94;
-	if ($[179] !== t91 || $[180] !== t92 || $[181] !== t93) {
-		t94 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			id: t91,
+		});
+		$[12] = channel;
+		$[13] = list;
+		$[14] = node;
+		$[15] = refreshedAt;
+		$[16] = subscription;
+		$[17] = t;
+		$[18] = trigger;
+		$[19] = t7;
+	} else t7 = $[19];
+	return t7;
+}
+function _temp7$4(query_0) {
+	return query_0.isLoading;
+}
+function _temp6$4(query) {
+	return query.error;
+}
+function _temp5$4() {
+	return getApiNexusSubscription();
+}
+function _temp4$4() {
+	return getApiNexusTrigger();
+}
+function _temp3$6() {
+	return getApiNexusChannel();
+}
+function _temp2$8() {
+	return getApiNexusNode();
+}
+function _temp$16() {
+	return getApiNexusTicket();
+}
+// src/client/pages/overview/components/task-view-card.tsx
+function TaskViewCard() {
+	const $ = (0, import_dist.c)(39);
+	const { t } = useTranslation();
+	const { setOverviewView } = useActions();
+	const view = useStore(_temp$15);
+	const t0 = (0, react.useId)();
+	let t1;
+	if ($[0] !== t0) {
+		t1 = t0.replaceAll(":", "");
+		$[0] = t0;
+		$[1] = t1;
+	} else t1 = $[1];
+	const id = t1;
+	let t2;
+	if ($[2] !== t) {
+		t2 = t("overviewRecent");
+		$[2] = t;
+		$[3] = t2;
+	} else t2 = $[3];
+	const t3 = `${id}-recent`;
+	const t4 = `${id}-recent-panel`;
+	let t5;
+	if ($[4] !== t2 || $[5] !== t3 || $[6] !== t4) {
+		t5 = {
+			value: "recent",
+			label: t2,
+			id: t3,
+			panelId: t4
+		};
+		$[4] = t2;
+		$[5] = t3;
+		$[6] = t4;
+		$[7] = t5;
+	} else t5 = $[7];
+	let t6;
+	if ($[8] !== t) {
+		t6 = t("overviewHierarchy");
+		$[8] = t;
+		$[9] = t6;
+	} else t6 = $[9];
+	const t7 = `${id}-hierarchy`;
+	const t8 = `${id}-hierarchy-panel`;
+	let t9;
+	if ($[10] !== t6 || $[11] !== t7 || $[12] !== t8) {
+		t9 = {
+			value: "hierarchy",
+			label: t6,
+			id: t7,
+			panelId: t8
+		};
+		$[10] = t6;
+		$[11] = t7;
+		$[12] = t8;
+		$[13] = t9;
+	} else t9 = $[13];
+	let t10;
+	if ($[14] !== t5 || $[15] !== t9) {
+		t10 = [t5, t9];
+		$[14] = t5;
+		$[15] = t9;
+		$[16] = t10;
+	} else t10 = $[16];
+	const tabs = t10;
+	let t11;
+	if ($[17] !== t) {
+		t11 = t("overviewTaskViews");
+		$[17] = t;
+		$[18] = t11;
+	} else t11 = $[18];
+	let t12;
+	if ($[19] !== t) {
+		t12 = t("overviewTaskViews");
+		$[19] = t;
+		$[20] = t12;
+	} else t12 = $[20];
+	let t13;
+	if ($[21] !== setOverviewView || $[22] !== t12 || $[23] !== tabs || $[24] !== view) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
+			size: "sm",
+			value: view,
+			onChange: setOverviewView,
+			items: tabs,
+			label: t12
+		});
+		$[21] = setOverviewView;
+		$[22] = t12;
+		$[23] = tabs;
+		$[24] = view;
+		$[25] = t13;
+	} else t13 = $[25];
+	let t14;
+	if ($[26] === Symbol.for("react.memo_cache_sentinel")) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(StatusTag, {});
+		$[26] = t14;
+	} else t14 = $[26];
+	let t15;
+	if ($[27] !== t13) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "mb-2 flex flex-wrap items-center justify-between gap-3",
+			children: [t13, t14]
+		});
+		$[27] = t13;
+		$[28] = t15;
+	} else t15 = $[28];
+	const t16 = `${id}-${view}-panel`;
+	const t17 = `${id}-${view}`;
+	let t18;
+	if ($[29] !== view) {
+		t18 = view === "recent" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskList, {}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Graph, {});
+		$[29] = view;
+		$[30] = t18;
+	} else t18 = $[30];
+	let t19;
+	if ($[31] !== t16 || $[32] !== t17 || $[33] !== t18) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			id: t16,
 			role: "tabpanel",
-			"aria-labelledby": t92,
+			"aria-labelledby": t17,
 			tabIndex: 0,
 			className: "rounded-2xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
-			children: t93
+			children: t18
 		});
-		$[179] = t91;
-		$[180] = t92;
-		$[181] = t93;
-		$[182] = t94;
-	} else t94 = $[182];
-	let t95;
-	if ($[183] !== t81 || $[184] !== t90 || $[185] !== t94) {
-		t95 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			"aria-label": t81,
-			children: [t90, t94]
+		$[31] = t16;
+		$[32] = t17;
+		$[33] = t18;
+		$[34] = t19;
+	} else t19 = $[34];
+	let t20;
+	if ($[35] !== t11 || $[36] !== t15 || $[37] !== t19) {
+		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			"aria-label": t11,
+			children: [t15, t19]
 		});
-		$[183] = t81;
-		$[184] = t90;
-		$[185] = t94;
-		$[186] = t95;
-	} else t95 = $[186];
-	let t96;
-	if ($[187] !== t79 || $[188] !== t80 || $[189] !== t95) {
-		t96 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t20,
+		$[35] = t11;
+		$[36] = t15;
+		$[37] = t19;
+		$[38] = t20;
+	} else t20 = $[38];
+	return t20;
+}
+function _temp$15(state) {
+	return state.overview.view;
+}
+// src/client/pages/overview/page.tsx
+function Overview() {
+	const $ = (0, import_dist.c)(14);
+	const { go: navigate } = useActions();
+	let t0;
+	if ($[0] !== navigate) {
+		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelCard, { onMore: () => navigate("channel") });
+		$[0] = navigate;
+		$[1] = t0;
+	} else t0 = $[1];
+	let t1;
+	if ($[2] !== navigate) {
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityCard, { onMore: () => navigate("trigger") });
+		$[2] = navigate;
+		$[3] = t1;
+	} else t1 = $[3];
+	let t2;
+	if ($[4] !== navigate) {
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskCard, { onMore: () => navigate("ticket") });
+		$[4] = navigate;
+		$[5] = t2;
+	} else t2 = $[5];
+	let t3;
+	if ($[6] !== t0 || $[7] !== t1 || $[8] !== t2) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "grid grid-cols-1 gap-4 @min-[800px]:grid-cols-3",
 			children: [
-				t79,
-				t80,
-				t95
+				t0,
+				t1,
+				t2
 			]
 		});
-		$[187] = t79;
-		$[188] = t80;
-		$[189] = t95;
-		$[190] = t96;
-	} else t96 = $[190];
-	return t96;
-}
-function _temp9$1(task) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, { task }, task.id);
-}
-function _temp8$1(message) {
-	return message.kind === "ask";
-}
-function _temp7$2(message_1) {
-	return message_1.kind === "ask";
-}
-function _temp6$3(channel_1) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelTile, { channel: channel_1 }, channel_1.name);
-}
-function _temp5$3(channel_0) {
-	return channel_0.connected;
-}
-function _temp4$4(trigger_0) {
-	return !trigger_0.mentioned;
-}
-function _temp3$6(channel) {
-	return {
-		kind: channel.kind,
-		name: channel.name,
-		connected: channel.status === "online"
-	};
-}
-function _temp2$9(state_0) {
-	return state_0.data.panel;
-}
-function _temp$13(state) {
-	return state.overview.view;
+		$[6] = t0;
+		$[7] = t1;
+		$[8] = t2;
+		$[9] = t3;
+	} else t3 = $[9];
+	let t4;
+	let t5;
+	if ($[10] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AskCard, {});
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskViewCard, {});
+		$[10] = t4;
+		$[11] = t5;
+	} else {
+		t4 = $[10];
+		t5 = $[11];
+	}
+	let t6;
+	if ($[12] !== t3) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "@container flex flex-col gap-7 pb-10",
+			children: [
+				t3,
+				t4,
+				t5
+			]
+		});
+		$[12] = t3;
+		$[13] = t6;
+	} else t6 = $[13];
+	return t6;
 }
 // src/client/store/setting.ts
 const GROUPS = {
@@ -57093,83 +62091,69 @@ const roles = [
 const INHERIT = "inherit";
 function Agents() {
 	const { t } = useTranslation();
-	const ready = useStore((state) => state.data.panel !== null);
-	const [catalog, setCatalog] = (0, react.useState)(null);
-	const [models, setModels] = (0, react.useState)(null);
-	const [loading, setLoading] = (0, react.useState)(true);
-	const [loadError, setLoadError] = (0, react.useState)(null);
+	const client = useQueryClient();
+	const models = useQuery({
+		queryKey: keys.agentModel,
+		queryFn: () => getApiNexusAgentModel()
+	});
+	const catalog = useQuery({
+		queryKey: keys.agentModelCatalog,
+		queryFn: () => getApiNexusAgentModelCatalog()
+	});
+	const saveAgentModel = useMutation({
+		mutationFn: (input) => patchApiNexusAgentModel(input),
+		onSettled: () => client.invalidateQueries({ queryKey: keys.agentModel })
+	});
 	const [open, setOpen] = (0, react.useState)(null);
 	const [pending, setPending] = (0, react.useState)(null);
 	const [failed, setFailed] = (0, react.useState)(null);
-	(0, react.useEffect)(() => {
-		const controller = new AbortController();
-		const load = async () => {
-			try {
-				const value = await getApiNexusAgentsModels({ signal: controller.signal });
-				if (controller.signal.aborted) return;
-				if (!value?.models || !value.catalog) throw new Error("invalid_agent_models");
-				setModels(value.models);
-				setCatalog(value.catalog);
-			} catch (error) {
-				if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : String(error));
-			} finally {
-				if (!controller.signal.aborted) setLoading(false);
-			}
-		};
-		load();
-		return () => controller.abort();
-	}, []);
-	async function submit(role, change) {
-		if (!ready || pending !== null) return;
-		const controller_0 = new AbortController();
+	const submit = async (role, change) => {
+		if (pending !== null) return;
 		setPending(role);
 		setFailed(null);
 		try {
-			const result = await patchApiNexusAgentsModels({
+			await saveAgentModel.mutateAsync({
 				role,
 				provider: change.provider,
 				model: change.model,
 				...change.reasoningEffort ? { reasoningEffort: change.reasoningEffort } : {}
-			}, { signal: controller_0.signal });
-			if (controller_0.signal.aborted) return;
-			if (!result?.models) throw new Error("invalid_agent_models");
-			setModels(result.models);
+			});
 		} catch {
-			if (!controller_0.signal.aborted) setFailed(role);
+			setFailed(role);
 		} finally {
-			if (!controller_0.signal.aborted) setPending(null);
+			setPending(null);
 		}
-	}
+	};
 	const currentModel = (role_0) => {
-		const entry = models?.[role_0];
-		return entry ? catalog?.groups.find((group) => group.id === entry.provider)?.models.find((model) => model.id === entry.model) : void 0;
+		const entry = models.data?.[role_0];
+		return entry ? catalog.data?.groups.find((group) => group.id === entry.provider)?.models.find((model) => model.id === entry.model) : void 0;
 	};
 	const modelName = (entry_0, role_1) => currentModel(role_1)?.name ?? entry_0.model;
 	const effortName = (role_2) => {
-		const entry_1 = models?.[role_2];
+		const entry_1 = models.data?.[role_2];
 		if (!entry_1?.reasoningEffort) return t("settingAgentsEffortDefault");
 		return currentModel(role_2)?.reasoning?.efforts.find((effort) => effort.id === entry_1.reasoningEffort)?.name ?? entry_1.reasoningEffort;
 	};
 	const triggerLabel = (role_3) => {
-		const entry_2 = models?.[role_3];
+		const entry_2 = models.data?.[role_3];
 		return entry_2 ? modelName(entry_2, role_3) : t("settingAgentsUnset");
 	};
-	const items = (role_4) => {
-		const entry_3 = models?.[role_4];
+	const items = (role_4, catalogue) => {
+		const entry_3 = models.data?.[role_4];
 		const reasoning = currentModel(role_4)?.reasoning;
 		return [
 			{
 				id: INHERIT,
 				label: t("settingAgentsUnset")
 			},
-			...catalog?.groups.flatMap((group_0) => [{
+			...catalogue.groups.flatMap((group_0) => [{
 				type: "label",
 				id: `group:${group_0.id}`,
 				text: group_0.name
 			}, ...group_0.models.map((model_0) => ({
 				id: `model:${group_0.id}/${model_0.id}`,
 				label: model_0.name
-			}))]) ?? [],
+			}))]),
 			...entry_3 && reasoning ? [
 				{
 					type: "separator",
@@ -57185,20 +62169,23 @@ function Agents() {
 		];
 	};
 	const selectedIds = (role_5) => {
-		const entry_4 = models?.[role_5];
+		const entry_4 = models.data?.[role_5];
 		return entry_4 ? [`model:${entry_4.provider}/${entry_4.model}`, `effort:${entry_4.reasoningEffort ?? ""}`] : [INHERIT];
 	};
-	if (loading) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+	const failedMessage = models.error?.message ?? catalog.error?.message;
+	if ((models.isLoading || catalog.isLoading) && !failedMessage) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 		role: "status",
 		className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
 		children: t("settingAgentsLoading")
 	});
-	if (!catalog || !models) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+	if (!models.data || !catalog.data) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 		role: "alert",
 		className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
-		children: t("settingAgentsCatalogError", { error: loadError ?? "" })
+		children: t("settingAgentsCatalogError", { error: failedMessage ?? "" })
 	});
-	const fallback = catalog.default;
+	const catalogue_0 = catalog.data;
+	const current = models.data;
+	const fallback = catalogue_0.default;
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
 		"aria-labelledby": "nexus-agents",
@@ -57218,19 +62205,19 @@ function Agents() {
 					className: "m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
 					children: fallback ? t("settingAgentsDefault", { model: `${fallback.provider} / ${fallback.model}${fallback.reasoningEffort ? ` · ${fallback.reasoningEffort}` : ""}` }) : t("settingAgentsDefaultUnavailable")
 				}),
-				catalog.groups.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				catalogue_0.groups.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					role: "status",
 					className: "m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
 					children: t("settingAgentsEmpty")
 				}),
-				loadError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				catalog.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					role: "alert",
 					className: "m-0 mt-1.5 text-xs text-[var(--dsw-alias-state-error-primary)]",
-					children: t("settingAgentsCatalogError", { error: loadError })
+					children: t("settingAgentsCatalogError", { error: catalog.error.message })
 				})
 			]
 		}), roles.map(({ role: role_6, label }) => {
-			const entry_5 = models[role_6];
+			const entry_5 = current[role_6];
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -57257,7 +62244,7 @@ function Agents() {
 						type: "button",
 						size: "sm",
 						variant: "outline",
-						disabled: !ready || pending !== null,
+						disabled: pending !== null,
 						"aria-haspopup": "menu",
 						"aria-expanded": open === role_6,
 						"aria-label": `${t(label)} · ${t("settingAgentsSelect")}`,
@@ -57270,10 +62257,10 @@ function Agents() {
 							children: effortName(role_6)
 						})]
 					}),
-					items: items(role_6),
+					items: items(role_6, catalogue_0),
 					selectedIds: selectedIds(role_6),
-					onSelect: (value_0) => {
-						if (value_0 === INHERIT) {
+					onSelect: (value) => {
+						if (value === INHERIT) {
 							setOpen(null);
 							submit(role_6, {
 								provider: "",
@@ -57281,16 +62268,16 @@ function Agents() {
 							});
 							return;
 						}
-						if (value_0.startsWith("effort:")) {
+						if (value.startsWith("effort:")) {
 							setOpen(null);
 							if (entry_5) submit(role_6, {
 								provider: entry_5.provider,
 								model: entry_5.model,
-								reasoningEffort: value_0.slice(7)
+								reasoningEffort: value.slice(7)
 							});
 							return;
 						}
-						const route = value_0.slice(6);
+						const route = value.slice(6);
 						const at = route.indexOf("/");
 						setOpen(null);
 						submit(role_6, {
@@ -57318,151 +62305,361 @@ function effortChoices(reasoning, t) {
 	}))];
 }
 // src/client/pages/setting/components/general.tsx
-function General() {
+function General(t0) {
+	const $ = (0, import_dist.c)(104);
+	const { value, baseline, pending, failed, onChange, onDiscard, onSave } = t0;
 	const { t } = useTranslation();
-	const saved = useStore((state) => state.setting.saved.administrators);
-	const draft = useStore((state_0) => state_0.setting.draft.administrators);
-	const savedArchive = useStore((state_1) => state_1.setting.saved.autoArchiveWorkers);
-	const draftArchive = useStore((state_2) => state_2.setting.draft.autoArchiveWorkers);
-	const ready = useStore((state_3) => state_3.data.panel !== null);
-	const { editSettings, receiveGeneralSettings, clearSettingNotice } = useActions();
-	const [saving, setSaving] = (0, react.useState)(false);
-	const [failed, setFailed] = (0, react.useState)(false);
-	const request = (0, react.useRef)(null);
 	const id = (0, react.useId)();
-	(0, react.useEffect)(() => () => {
-		request.current?.abort();
-		request.current = null;
-	}, []);
-	const value = draft.join(",");
-	const names = value.split(/[,\s]+/).filter(Boolean);
-	const valid = names.length <= 100 && names.every((name) => /^[a-z0-9][\w.-]{0,254}$/i.test(name));
-	const dirty = administratorSignature(draft) !== administratorSignature(saved) || draftArchive !== savedArchive;
-	async function save() {
-		if (!ready || !dirty || !valid || request.current) return;
-		const controller = new AbortController();
-		request.current = controller;
-		setSaving(true);
-		setFailed(false);
-		clearSettingNotice();
-		try {
-			const settings = await patchApiNexusSettings({
-				administrators: names,
-				autoArchiveWorkers: draftArchive
-			}, { signal: controller.signal });
-			if (controller.signal.aborted || request.current !== controller) return;
-			if (!settings || !Array.isArray(settings.administrators)) throw new Error("invalid_settings");
-			receiveGeneralSettings(settings.administrators);
-			editSettings({ autoArchiveWorkers: settings.autoArchiveWorkers });
-		} catch {
-			if (!controller.signal.aborted && request.current === controller) setFailed(true);
-		} finally {
-			if (request.current === controller) {
-				request.current = null;
-				setSaving(false);
-			}
-		}
+	let administrators;
+	let names;
+	let t1;
+	if ($[0] !== value.administrators) {
+		administrators = value.administrators.join(",");
+		names = administrators.split(/[,\s]+/).filter(Boolean);
+		t1 = names.length <= 100 && names.every(_temp$14);
+		$[0] = value.administrators;
+		$[1] = administrators;
+		$[2] = names;
+		$[3] = t1;
+	} else {
+		administrators = $[1];
+		names = $[2];
+		t1 = $[3];
 	}
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
-		"aria-labelledby": `${id}-title`,
-		onSubmit: (event) => {
+	const valid = t1;
+	let t2;
+	if ($[4] !== baseline.administrators || $[5] !== baseline.autoArchiveWorkers || $[6] !== value.administrators || $[7] !== value.autoArchiveWorkers) {
+		t2 = administratorSignature(value.administrators) !== administratorSignature(baseline.administrators) || value.autoArchiveWorkers !== baseline.autoArchiveWorkers;
+		$[4] = baseline.administrators;
+		$[5] = baseline.autoArchiveWorkers;
+		$[6] = value.administrators;
+		$[7] = value.autoArchiveWorkers;
+		$[8] = t2;
+	} else t2 = $[8];
+	const dirty = t2;
+	const t3 = `${id}-title`;
+	let t4;
+	if ($[9] !== dirty || $[10] !== names || $[11] !== onSave || $[12] !== pending || $[13] !== valid || $[14] !== value.autoArchiveWorkers) {
+		t4 = (event) => {
 			event.preventDefault();
-			save();
-		},
-		children: [
-			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-				className: "px-4 py-3",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-					id: `${id}-title`,
-					className: "m-0 text-sm font-medium",
-					children: t("settingGeneral")
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-					children: t("settingGeneralDescription")
-				})]
-			}),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-						htmlFor: `${id}-administrators`,
-						className: "text-xs font-medium",
-						children: t("settingAdministrators")
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-						id: `${id}-administrators`,
-						value,
-						onChange: (event_0) => {
-							editSettings({ administrators: event_0.target.value.split(",") });
-							setFailed(false);
-						},
-						disabled: !ready || saving,
-						autoComplete: "off",
-						spellCheck: false,
-						"aria-invalid": !valid,
-						"aria-describedby": `${id}-help`
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						id: `${id}-help`,
-						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-						children: t("settingAdministratorsHelp")
-					}),
-					!valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						role: "alert",
-						className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
-						children: t("settingAdministratorsInvalid")
-					}),
-					failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						role: "alert",
-						className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
-						children: t("settingGeneralSaveFailed")
-					})
-				]
-			}),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "min-w-0",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
-						className: "m-0 text-xs font-medium",
-						children: t("settingAutoArchiveWorkers")
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-						children: t("settingAutoArchiveWorkersHelp")
-					})]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-					disabled: !ready || saving,
-					checked: draftArchive,
-					label: t("settingAutoArchiveWorkers"),
-					onChange: (autoArchiveWorkers) => editSettings({ autoArchiveWorkers })
-				})]
-			}),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
-				className: "flex flex-wrap items-center justify-end gap-2 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					type: "button",
-					size: "sm",
-					variant: "ghost",
-					disabled: saving || !dirty,
-					onClick: () => {
-						editSettings({
-							administrators: [...saved],
-							autoArchiveWorkers: savedArchive
-						});
-						setFailed(false);
-					},
-					children: t("settingDiscard")
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					type: "submit",
-					size: "sm",
-					variant: "primary",
-					disabled: !ready || saving || !dirty || !valid,
-					children: t(saving ? "channelSaving" : "settingSave")
-				})]
-			})
-		]
-	});
+			if (dirty && valid && !pending) onSave({
+				administrators: names,
+				autoArchiveWorkers: value.autoArchiveWorkers
+			});
+		};
+		$[9] = dirty;
+		$[10] = names;
+		$[11] = onSave;
+		$[12] = pending;
+		$[13] = valid;
+		$[14] = value.autoArchiveWorkers;
+		$[15] = t4;
+	} else t4 = $[15];
+	const t5 = `${id}-title`;
+	let t6;
+	if ($[16] !== t) {
+		t6 = t("settingGeneral");
+		$[16] = t;
+		$[17] = t6;
+	} else t6 = $[17];
+	let t7;
+	if ($[18] !== t5 || $[19] !== t6) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+			id: t5,
+			className: "m-0 text-sm font-medium",
+			children: t6
+		});
+		$[18] = t5;
+		$[19] = t6;
+		$[20] = t7;
+	} else t7 = $[20];
+	let t8;
+	if ($[21] !== t) {
+		t8 = t("settingGeneralDescription");
+		$[21] = t;
+		$[22] = t8;
+	} else t8 = $[22];
+	let t9;
+	if ($[23] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			children: t8
+		});
+		$[23] = t8;
+		$[24] = t9;
+	} else t9 = $[24];
+	let t10;
+	if ($[25] !== t7 || $[26] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+			className: "px-4 py-3",
+			children: [t7, t9]
+		});
+		$[25] = t7;
+		$[26] = t9;
+		$[27] = t10;
+	} else t10 = $[27];
+	const t11 = `${id}-administrators`;
+	let t12;
+	if ($[28] !== t) {
+		t12 = t("settingAdministrators");
+		$[28] = t;
+		$[29] = t12;
+	} else t12 = $[29];
+	let t13;
+	if ($[30] !== t11 || $[31] !== t12) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+			htmlFor: t11,
+			className: "text-xs font-medium",
+			children: t12
+		});
+		$[30] = t11;
+		$[31] = t12;
+		$[32] = t13;
+	} else t13 = $[32];
+	const t14 = `${id}-administrators`;
+	let t15;
+	if ($[33] !== onChange) {
+		t15 = (event_0) => onChange({ administrators: event_0.target.value.split(",") });
+		$[33] = onChange;
+		$[34] = t15;
+	} else t15 = $[34];
+	const t16 = !valid;
+	const t17 = `${id}-help`;
+	let t18;
+	if ($[35] !== administrators || $[36] !== pending || $[37] !== t14 || $[38] !== t15 || $[39] !== t16 || $[40] !== t17) {
+		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+			id: t14,
+			value: administrators,
+			onChange: t15,
+			disabled: pending,
+			autoComplete: "off",
+			spellCheck: false,
+			"aria-invalid": t16,
+			"aria-describedby": t17
+		});
+		$[35] = administrators;
+		$[36] = pending;
+		$[37] = t14;
+		$[38] = t15;
+		$[39] = t16;
+		$[40] = t17;
+		$[41] = t18;
+	} else t18 = $[41];
+	const t19 = `${id}-help`;
+	let t20;
+	if ($[42] !== t) {
+		t20 = t("settingAdministratorsHelp");
+		$[42] = t;
+		$[43] = t20;
+	} else t20 = $[43];
+	let t21;
+	if ($[44] !== t19 || $[45] !== t20) {
+		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			id: t19,
+			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			children: t20
+		});
+		$[44] = t19;
+		$[45] = t20;
+		$[46] = t21;
+	} else t21 = $[46];
+	let t22;
+	if ($[47] !== t || $[48] !== valid) {
+		t22 = !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+			children: t("settingAdministratorsInvalid")
+		});
+		$[47] = t;
+		$[48] = valid;
+		$[49] = t22;
+	} else t22 = $[49];
+	let t23;
+	if ($[50] !== failed || $[51] !== t) {
+		t23 = failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+			children: t("settingGeneralSaveFailed")
+		});
+		$[50] = failed;
+		$[51] = t;
+		$[52] = t23;
+	} else t23 = $[52];
+	let t24;
+	if ($[53] !== t13 || $[54] !== t18 || $[55] !== t21 || $[56] !== t22 || $[57] !== t23) {
+		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+			children: [
+				t13,
+				t18,
+				t21,
+				t22,
+				t23
+			]
+		});
+		$[53] = t13;
+		$[54] = t18;
+		$[55] = t21;
+		$[56] = t22;
+		$[57] = t23;
+		$[58] = t24;
+	} else t24 = $[58];
+	let t25;
+	if ($[59] !== t) {
+		t25 = t("settingAutoArchiveWorkers");
+		$[59] = t;
+		$[60] = t25;
+	} else t25 = $[60];
+	let t26;
+	if ($[61] !== t25) {
+		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
+			className: "m-0 text-xs font-medium",
+			children: t25
+		});
+		$[61] = t25;
+		$[62] = t26;
+	} else t26 = $[62];
+	let t27;
+	if ($[63] !== t) {
+		t27 = t("settingAutoArchiveWorkersHelp");
+		$[63] = t;
+		$[64] = t27;
+	} else t27 = $[64];
+	let t28;
+	if ($[65] !== t27) {
+		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			children: t27
+		});
+		$[65] = t27;
+		$[66] = t28;
+	} else t28 = $[66];
+	let t29;
+	if ($[67] !== t26 || $[68] !== t28) {
+		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "min-w-0",
+			children: [t26, t28]
+		});
+		$[67] = t26;
+		$[68] = t28;
+		$[69] = t29;
+	} else t29 = $[69];
+	const t30 = value.autoArchiveWorkers;
+	let t31;
+	if ($[70] !== t) {
+		t31 = t("settingAutoArchiveWorkers");
+		$[70] = t;
+		$[71] = t31;
+	} else t31 = $[71];
+	let t32;
+	if ($[72] !== onChange) {
+		t32 = (autoArchiveWorkers) => onChange({ autoArchiveWorkers });
+		$[72] = onChange;
+		$[73] = t32;
+	} else t32 = $[73];
+	let t33;
+	if ($[74] !== pending || $[75] !== t31 || $[76] !== t32 || $[77] !== value.autoArchiveWorkers) {
+		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+			disabled: pending,
+			checked: t30,
+			label: t31,
+			onChange: t32
+		});
+		$[74] = pending;
+		$[75] = t31;
+		$[76] = t32;
+		$[77] = value.autoArchiveWorkers;
+		$[78] = t33;
+	} else t33 = $[78];
+	let t34;
+	if ($[79] !== t29 || $[80] !== t33) {
+		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+			children: [t29, t33]
+		});
+		$[79] = t29;
+		$[80] = t33;
+		$[81] = t34;
+	} else t34 = $[81];
+	const t35 = pending || !dirty;
+	let t36;
+	if ($[82] !== t) {
+		t36 = t("settingDiscard");
+		$[82] = t;
+		$[83] = t36;
+	} else t36 = $[83];
+	let t37;
+	if ($[84] !== onDiscard || $[85] !== t35 || $[86] !== t36) {
+		t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			type: "button",
+			size: "sm",
+			variant: "ghost",
+			disabled: t35,
+			onClick: onDiscard,
+			children: t36
+		});
+		$[84] = onDiscard;
+		$[85] = t35;
+		$[86] = t36;
+		$[87] = t37;
+	} else t37 = $[87];
+	const t38 = pending || !dirty || !valid;
+	const t39 = pending ? "channelSaving" : "settingSave";
+	let t40;
+	if ($[88] !== t || $[89] !== t39) {
+		t40 = t(t39);
+		$[88] = t;
+		$[89] = t39;
+		$[90] = t40;
+	} else t40 = $[90];
+	let t41;
+	if ($[91] !== t38 || $[92] !== t40) {
+		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			type: "submit",
+			size: "sm",
+			variant: "primary",
+			disabled: t38,
+			children: t40
+		});
+		$[91] = t38;
+		$[92] = t40;
+		$[93] = t41;
+	} else t41 = $[93];
+	let t42;
+	if ($[94] !== t37 || $[95] !== t41) {
+		t42 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
+			className: "flex flex-wrap items-center justify-end gap-2 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
+			children: [t37, t41]
+		});
+		$[94] = t37;
+		$[95] = t41;
+		$[96] = t42;
+	} else t42 = $[96];
+	let t43;
+	if ($[97] !== t10 || $[98] !== t24 || $[99] !== t3 || $[100] !== t34 || $[101] !== t4 || $[102] !== t42) {
+		t43 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+			className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+			"aria-labelledby": t3,
+			onSubmit: t4,
+			children: [
+				t10,
+				t24,
+				t34,
+				t42
+			]
+		});
+		$[97] = t10;
+		$[98] = t24;
+		$[99] = t3;
+		$[100] = t34;
+		$[101] = t4;
+		$[102] = t42;
+		$[103] = t43;
+	} else t43 = $[103];
+	return t43;
+}
+function _temp$14(name) {
+	return /^[a-z0-9][\w.-]{0,254}$/i.test(name);
 }
 // src/utils/repository.ts
 function parseGitRemote(value) {
@@ -57510,22 +62707,24 @@ function parseRepositoryRemote(value, gitlabHost = "https://gitlab.com") {
 // src/client/pages/setting/components/add-repository.tsx
 function AddRepository() {
 	const { t } = useTranslation();
-	const { receivePanel } = useActions();
-	const gitlabHost = useStore((state) => state.data.panel?.channels.find((channel) => channel.id === "gitlab")?.host ?? "https://gitlab.com");
+	const client = useQueryClient();
+	const channels = useQuery({
+		queryKey: keys.channel,
+		queryFn: () => getApiNexusChannel()
+	});
+	const addRepository = useMutation({
+		mutationFn: (input) => postApiNexusRepository(input),
+		onSettled: () => client.invalidateQueries({ queryKey: keys.project })
+	});
+	const gitlabHost = channels.data?.find((channel) => channel.id === "gitlab")?.host ?? "https://gitlab.com";
 	const [open, setOpen] = (0, react.useState)(false);
 	const [remote, setRemote] = (0, react.useState)("");
 	const [name, setName] = (0, react.useState)(null);
-	const [saving, setSaving] = (0, react.useState)(false);
 	const [error, setError] = (0, react.useState)("");
 	const [notice, setNotice] = (0, react.useState)("");
 	const pending = (0, react.useRef)(false);
-	const lifetime = (0, react.useRef)(new AbortController());
 	const id = (0, react.useId)();
-	(0, react.useEffect)(() => {
-		const controller = new AbortController();
-		lifetime.current = controller;
-		return () => controller.abort();
-	}, []);
+	const saving = addRepository.isPending;
 	let repository = null;
 	try {
 		if (remote.trim()) repository = parseRepositoryRemote(remote.trim(), gitlabHost);
@@ -57537,32 +62736,21 @@ function AddRepository() {
 	async function save() {
 		if (!repository || !workspaceName.trim() || pending.current) return;
 		pending.current = true;
-		setSaving(true);
 		setError("");
 		try {
-			const result = await postApiNexusRepositories({
+			const result = await addRepository.mutateAsync({
 				remoteUrl: remote.trim(),
 				name: workspaceName.trim()
-			}, { signal: lifetime.current.signal });
-			if (lifetime.current.signal.aborted) return;
+			});
 			if (!result || !("project" in result)) throw new Error(t("settingRepositoryAddFailed"));
 			setOpen(false);
 			setRemote("");
 			setName(null);
 			setNotice(t("settingRepositoryCreated"));
-			try {
-				const panel = await getApiNexusPanel({ signal: lifetime.current.signal });
-				if (lifetime.current.signal.aborted) return;
-				if (!panel || !("projects" in panel)) throw new Error("invalid_panel");
-				receivePanel(panel);
-			} catch {
-				if (!lifetime.current.signal.aborted) setNotice(t("settingRepositoryRefreshFailed"));
-			}
 		} catch (reason) {
-			if (!lifetime.current.signal.aborted) setError(reason instanceof Error ? reason.message : t("settingRepositoryAddFailed"));
+			setError(reason instanceof Error ? reason.message : t("settingRepositoryAddFailed"));
 		} finally {
 			pending.current = false;
-			if (!lifetime.current.signal.aborted) setSaving(false);
 		}
 	}
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
@@ -57667,596 +62855,792 @@ function AddRepository() {
 	] });
 }
 // src/client/pages/setting/components/projects.tsx
-function Projects() {
-	const $ = (0, import_dist.c)(66);
+function Projects({ onNotice }) {
 	const { t } = useTranslation();
-	let t0;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = new AbortController();
-		$[0] = t0;
-	} else t0 = $[0];
-	const lifetime = (0, react.useRef)(t0);
-	let t1;
-	let t2;
-	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = () => {
-			const controller = new AbortController();
-			lifetime.current = controller;
-			return () => controller.abort();
-		};
-		t2 = [];
-		$[1] = t1;
-		$[2] = t2;
-	} else {
-		t1 = $[1];
-		t2 = $[2];
-	}
-	(0, react.useEffect)(t1, t2);
-	const projects = useStore(_temp$12);
-	const gitlabHost = useStore(_temp3$5);
-	const refreshedAt = useStore(_temp4$3);
-	const { receiveProject, receivePanel, clearSettingNotice } = useActions();
-	let t3;
-	if ($[3] !== clearSettingNotice || $[4] !== receiveProject) {
-		t3 = async (projectId, enabled) => {
-			clearSettingNotice();
-			const project = await patchApiNexusProjectsId({ id: encodeURIComponent(projectId) }, { enabled }, { signal: lifetime.current.signal });
-			if (lifetime.current.signal.aborted) return;
-			if (!project || project.id !== projectId) throw new Error(project && "message" in project && typeof project.message === "string" ? project.message : "项目设置保存失败");
-			receiveProject(project);
-		};
-		$[3] = clearSettingNotice;
-		$[4] = receiveProject;
-		$[5] = t3;
-	} else t3 = $[5];
-	const [saving, toggle] = useAsyncFn(t3);
-	let t4;
-	if ($[6] !== clearSettingNotice || $[7] !== receivePanel) {
-		t4 = async () => {
-			clearSettingNotice();
-			const projects_0 = await postApiNexusProjects({ signal: lifetime.current.signal });
-			if (lifetime.current.signal.aborted) return;
-			if (!Array.isArray(projects_0)) throw new Error("项目发现失败");
-			const panel = await getApiNexusPanel({ signal: lifetime.current.signal });
-			if (lifetime.current.signal.aborted) return;
-			if (!panel?.projects || !panel.settings) throw new Error("项目列表加载失败");
-			receivePanel(panel);
-		};
-		$[6] = clearSettingNotice;
-		$[7] = receivePanel;
-		$[8] = t4;
-	} else t4 = $[8];
-	const [refreshing, refresh] = useAsyncFn(t4);
+	const client = useQueryClient();
+	const projects = useQuery({
+		queryKey: keys.project,
+		queryFn: () => getApiNexusProject()
+	});
+	const channels = useQuery({
+		queryKey: keys.channel,
+		queryFn: () => getApiNexusChannel()
+	});
+	const toggleProject = useMutation({
+		mutationFn: (input) => patchApiNexusProjectId({ id: encodeURIComponent(input.id) }, { enabled: input.enabled }),
+		onSettled: () => client.invalidateQueries({ queryKey: keys.project })
+	});
+	const refreshProject = useMutation({
+		mutationFn: () => postApiNexusProject(),
+		onSettled: () => client.invalidateQueries({ queryKey: keys.project })
+	});
+	const gitlabHost = channels.data?.find((channel) => channel.id === "gitlab")?.host ?? "https://gitlab.com";
+	const [refreshedAt, setRefreshedAt] = (0, react.useState)(null);
+	const [error, setError] = (0, react.useState)("");
+	const saving = toggleProject.isPending;
+	const refreshing = refreshProject.isPending;
+	const toggle = async (projectId, enabled) => {
+		onNotice(null);
+		setError("");
+		try {
+			const updated = await toggleProject.mutateAsync({
+				id: projectId,
+				enabled
+			});
+			if (!updated || updated.id !== projectId) throw new Error(updated && "message" in updated && typeof updated.message === "string" ? updated.message : "项目设置保存失败");
+			onNotice("project");
+		} catch (reason) {
+			setError(reason instanceof Error ? reason.message : "项目设置保存失败");
+		}
+	};
+	const refresh = async () => {
+		onNotice(null);
+		setError("");
+		try {
+			await refreshProject.mutateAsync();
+			setRefreshedAt((/* @__PURE__ */ new Date()).toISOString());
+			onNotice("refreshed");
+		} catch (reason_0) {
+			setError(reason_0 instanceof Error ? reason_0.message : "项目发现失败");
+		}
+	};
 	const id = (0, react.useId)();
 	const [query, setQuery] = (0, react.useState)("");
-	let t5;
-	if ($[9] !== gitlabHost || $[10] !== id || $[11] !== projects || $[12] !== query || $[13] !== refresh || $[14] !== refreshedAt || $[15] !== refreshing.error || $[16] !== refreshing.loading || $[17] !== saving.error || $[18] !== saving.loading || $[19] !== t || $[20] !== toggle) {
-		const normalized = query.trim().toLocaleLowerCase();
-		let t6;
-		if ($[22] !== gitlabHost) {
-			t6 = (project_1) => {
-				let repository = null;
-				try {
-					repository = parseRepositoryRemote(project_1.remoteUrl, gitlabHost);
-				} catch {}
-				return {
-					...project_1,
-					repository
-				};
-			};
-			$[22] = gitlabHost;
-			$[23] = t6;
-		} else t6 = $[23];
-		const candidates = projects.filter(_temp5$2).map(t6).filter(_temp6$2);
-		const visible = candidates.filter((project_3) => !normalized || [
-			project_3.name,
-			project_3.repository.platform,
-			project_3.repository.owner,
-			project_3.repository.name
-		].join(" ").toLocaleLowerCase().includes(normalized));
-		const enabled_0 = candidates.filter(_temp7$1).length;
-		let t7;
-		if ($[24] !== t) {
-			t7 = t("settingProjects");
-			$[24] = t;
-			$[25] = t7;
-		} else t7 = $[25];
-		let t8;
-		if ($[26] !== id || $[27] !== t7) {
-			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-				id,
-				className: "m-0 text-sm font-medium",
-				children: t7
-			});
-			$[26] = id;
-			$[27] = t7;
-			$[28] = t8;
-		} else t8 = $[28];
-		const t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex flex-wrap items-center gap-2",
-			children: [t8, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-				tone: "quiet",
-				children: t("settingEnabledCount", {
-					enabled: enabled_0,
-					total: candidates.length
-				})
-			})]
-		});
-		let t10;
-		if ($[29] !== t) {
-			t10 = t("settingProjectsDescription");
-			$[29] = t;
-			$[30] = t10;
-		} else t10 = $[30];
-		let t11;
-		if ($[31] !== t10) {
-			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t10
-			});
-			$[31] = t10;
-			$[32] = t11;
-		} else t11 = $[32];
-		let t12;
-		if ($[33] !== t11 || $[34] !== t9) {
-			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "min-w-0",
-				children: [t9, t11]
-			});
-			$[33] = t11;
-			$[34] = t9;
-			$[35] = t12;
-		} else t12 = $[35];
-		let t13;
-		if ($[36] === Symbol.for("react.memo_cache_sentinel")) {
-			t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AddRepository, {});
-			$[36] = t13;
-		} else t13 = $[36];
-		const t14 = refreshing.loading || saving.loading;
-		let t15;
-		if ($[37] !== refresh) {
-			t15 = () => void refresh();
-			$[37] = refresh;
-			$[38] = t15;
-		} else t15 = $[38];
-		let t16;
-		if ($[39] !== t) {
-			t16 = t("settingRefresh");
-			$[39] = t;
-			$[40] = t16;
-		} else t16 = $[40];
-		let t17;
-		if ($[41] !== t14 || $[42] !== t15 || $[43] !== t16) {
-			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center gap-2",
-				children: [t13, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					size: "sm",
-					variant: "outline",
-					disabled: t14,
-					onClick: t15,
-					children: t16
-				})]
-			});
-			$[41] = t14;
-			$[42] = t15;
-			$[43] = t16;
-			$[44] = t17;
-		} else t17 = $[44];
-		let t18;
-		if ($[45] !== t12 || $[46] !== t17) {
-			t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-				className: "flex flex-wrap items-start justify-between gap-3 p-5 pb-4",
-				children: [t12, t17]
-			});
-			$[45] = t12;
-			$[46] = t17;
-			$[47] = t18;
-		} else t18 = $[47];
-		let t19;
-		if ($[48] !== t) {
-			t19 = t("settingSearchProjects");
-			$[48] = t;
-			$[49] = t19;
-		} else t19 = $[49];
-		let t20;
-		if ($[50] !== t) {
-			t20 = t("settingSearchProjects");
-			$[50] = t;
-			$[51] = t20;
-		} else t20 = $[51];
-		let t21;
-		if ($[52] === Symbol.for("react.memo_cache_sentinel")) {
-			t21 = (event) => setQuery(event.currentTarget.value);
-			$[52] = t21;
-		} else t21 = $[52];
-		let t22;
-		if ($[53] !== query || $[54] !== t19 || $[55] !== t20) {
-			t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-				type: "search",
-				"aria-label": t19,
-				placeholder: t20,
-				value: query,
-				onChange: t21,
-				className: "min-w-40 flex-1 !text-xs @min-[620px]:max-w-xs"
-			});
-			$[53] = query;
-			$[54] = t19;
-			$[55] = t20;
-			$[56] = t22;
-		} else t22 = $[56];
-		let t23;
-		if ($[57] !== refreshedAt || $[58] !== t) {
-			t23 = refreshedAt && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
-				dateTime: refreshedAt,
-				title: refreshedAt,
-				className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
-				children: [
-					t("settingLastSynced"),
-					" ",
-					new Date(refreshedAt).toLocaleTimeString()
-				]
-			});
-			$[57] = refreshedAt;
-			$[58] = t;
-			$[59] = t23;
-		} else t23 = $[59];
-		let t24;
-		if ($[60] !== t22 || $[61] !== t23) {
-			t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center justify-between gap-3 px-5 pb-4",
-				children: [t22, t23]
-			});
-			$[60] = t22;
-			$[61] = t23;
-			$[62] = t24;
-		} else t24 = $[62];
-		let t25;
-		if ($[63] !== refreshing.error || $[64] !== saving.error) {
-			t25 = (saving.error || refreshing.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "alert",
-				className: "px-5",
-				children: saving.error?.message ?? refreshing.error?.message
-			});
-			$[63] = refreshing.error;
-			$[64] = saving.error;
-			$[65] = t25;
-		} else t25 = $[65];
-		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
-			"aria-labelledby": id,
-			children: [
-				t18,
-				t24,
-				t25,
-				visible.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-					className: "m-0 list-none p-0",
-					children: visible.map((project_5) => {
-						const pathId = `${id}-path-${project_5.id}`;
-						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-							className: "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-								className: "flex min-w-0 flex-1 basis-48 items-start gap-2",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-									className: "flex size-6 shrink-0 cursor-pointer items-center justify-center",
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-										type: "checkbox",
-										disabled: saving.loading || refreshing.loading || !project_5.remoteUrl && !project_5.enabled,
-										checked: Boolean(project_5.enabled),
-										"aria-label": t("settingSelectProject", { name: project_5.name }),
-										"aria-describedby": pathId,
-										onChange: (event_0) => void toggle(project_5.id, event_0.currentTarget.checked),
-										className: "size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]"
-									})
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-									className: "min-w-0 pt-0.5",
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-										className: "truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]",
-										children: project_5.name
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										id: pathId,
-										className: "m-0 mt-1 truncate font-mono text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-										title: project_5.repository.webUrl,
-										children: `${project_5.repository.platform}:${project_5.repository.owner}/${project_5.repository.name}`
-									})]
-								})]
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								className: "ml-auto flex shrink-0 items-center gap-2",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
-									href: project_5.repository.webUrl,
-									target: "_blank",
-									rel: "noopener noreferrer",
-									className: "inline-flex h-7 items-center rounded-lg border border-[var(--dsw-alias-border-l3)] px-3 text-xs text-[var(--dsw-alias-label-primary)] no-underline hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
-									children: t("settingOpenRepository")
-								})
-							})]
-						}, project_5.id);
-					})
-				}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-					compact: true,
-					className: "items-center !gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 !text-center [&>p:first-of-type]:text-xs [&>p:first-of-type]:leading-4 [&>p:first-of-type]:font-medium [&>p:first-of-type]:text-[var(--dsw-alias-label-primary)] [&>p:nth-of-type(2)]:text-[var(--dsw-alias-label-secondary)]",
-					title: t(normalized ? "settingNoMatchingProjects" : "settingNoProjects"),
-					description: t(normalized ? "settingNoMatchingProjectsHelp" : "settingNoProjectsHelp"),
-					children: normalized && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						size: "sm",
-						variant: "ghost",
-						onClick: () => setQuery(""),
-						children: t("settingClearSearch")
-					})
-				})
-			]
-		});
-		$[9] = gitlabHost;
-		$[10] = id;
-		$[11] = projects;
-		$[12] = query;
-		$[13] = refresh;
-		$[14] = refreshedAt;
-		$[15] = refreshing.error;
-		$[16] = refreshing.loading;
-		$[17] = saving.error;
-		$[18] = saving.loading;
-		$[19] = t;
-		$[20] = toggle;
-		$[21] = t5;
-	} else t5 = $[21];
-	return t5;
-}
-function _temp7$1(project_4) {
-	return Boolean(project_4.enabled);
-}
-function _temp6$2(project_2) {
-	return project_2.repository;
-}
-function _temp5$2(project_0) {
-	return project_0.remoteUrl && project_0.available !== false;
-}
-function _temp4$3(state_1) {
-	return state_1.setting.refreshedAt;
-}
-function _temp3$5(state_0) {
-	return state_0.data.panel?.channels.find(_temp2$8)?.host ?? "https://gitlab.com";
-}
-function _temp2$8(channel) {
-	return channel.id === "gitlab";
-}
-function _temp$12(state) {
-	return state.data.panel?.projects ?? [];
-}
-// src/client/pages/setting/components/runtime.tsx
-function Runtime() {
-	const { t } = useTranslation();
-	const section = useStore((state) => state.setting.section);
-	const scoped = section === "execution" || section === "delivery" ? section : null;
-	const draft = useStore((state_0) => state_0.setting.draft);
-	const saved = useStore((state_1) => state_1.setting.saved);
-	const ready = useStore((state_2) => state_2.data.panel !== null);
-	const { editSettings, receiveSettings, resetSettings } = useActions();
-	const [saving, setSaving] = (0, react.useState)(false);
-	const [failed, setFailed] = (0, react.useState)(false);
-	const request = (0, react.useRef)(null);
-	(0, react.useEffect)(() => () => {
-		request.current?.abort();
-		request.current = null;
-	}, [section]);
-	async function save() {
-		if (!ready || request.current || !scoped) return;
-		const patch = Object.fromEntries(GROUPS[scoped].map((key) => [key, draft[key]]));
-		const controller = new AbortController();
-		request.current = controller;
-		setSaving(true);
-		setFailed(false);
+	const normalized = query.trim().toLocaleLowerCase();
+	const candidates = (projects.data ?? []).filter((project) => project.remoteUrl && project.available !== false).map((project_0) => {
+		let repository = null;
 		try {
-			const settings = await patchApiNexusSettings(patch, { signal: controller.signal });
-			if (controller.signal.aborted || request.current !== controller) return;
-			if (!settings || !validSettings(settings)) throw new Error("invalid_settings");
-			receiveSettings(settings, scoped);
-		} catch {
-			if (!controller.signal.aborted && request.current === controller) setFailed(true);
-		} finally {
-			if (request.current === controller) {
-				request.current = null;
-				setSaving(false);
-			}
-		}
-	}
-	const prefix = (0, react.useId)();
-	if (!scoped) return null;
-	const dirty = GROUPS[scoped].some((key_0) => draft[key_0] !== saved[key_0]);
-	const valid = validSettings({
-		...saved,
-		...Object.fromEntries(GROUPS[scoped].map((key_1) => [key_1, draft[key_1]]))
-	});
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+			repository = parseRepositoryRemote(project_0.remoteUrl, gitlabHost);
+		} catch {}
+		return {
+			...project_0,
+			repository
+		};
+	}).filter((project_1) => project_1.repository);
+	const visible = candidates.filter((project_2) => !normalized || [
+		project_2.name,
+		project_2.repository.platform,
+		project_2.repository.owner,
+		project_2.repository.name
+	].join(" ").toLocaleLowerCase().includes(normalized));
+	const enabled_0 = candidates.filter((project_3) => Boolean(project_3.enabled)).length;
+	const loadError = projects.error ?? channels.error;
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
-		onSubmit: (event) => {
-			event.preventDefault();
-			if (valid && dirty) save();
-		},
-		"aria-labelledby": `${prefix}-runtime`,
+		"aria-labelledby": id,
 		children: [
 			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-				className: "px-4 py-3",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-					id: `${prefix}-runtime`,
-					className: "m-0 text-sm font-medium",
-					children: t(scoped === "execution" ? "settingExecution" : "settingDelivery")
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-					children: t(scoped === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription")
-				})]
-			}),
-			[
-				{
-					key: "maxWorkers",
-					label: "settingMaxWorkers",
-					help: "settingMaxWorkersHelp",
-					unit: "settingWorkersUnit"
-				},
-				{
-					key: "backgroundLimitMinutes",
-					label: "settingBackgroundLimit",
-					help: "settingBackgroundLimitHelp",
-					unit: "settingMinutesUnit"
-				},
-				{
-					key: "autoMergeMaxLines",
-					label: "settingAutoMergeLines",
-					help: "settingAutoMergeLinesHelp",
-					unit: "settingLinesUnit"
-				},
-				{
-					key: "deliveryMaxAttempts",
-					label: "settingDeliveryAttempts",
-					help: "settingDeliveryAttemptsHelp",
-					unit: "settingAttemptsUnit"
-				},
-				{
-					key: "deliveryRetryCeilingSeconds",
-					label: "settingRetryCeiling",
-					help: "settingRetryCeilingHelp",
-					unit: "settingSecondsUnit"
-				}
-			].filter((field) => GROUPS[scoped].includes(field.key)).map((field_0) => {
-				const limits = LIMITS[field_0.key];
-				const value = draft[field_0.key];
-				const disabled = !ready || saving || field_0.key === "autoMergeMaxLines" && !draft.autoMerge;
-				const invalid = !Number.isInteger(value) || value < limits.min || value > limits.max;
-				const id = `${prefix}-${field_0.key}`;
-				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: "min-w-0 flex-1 basis-52",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-							htmlFor: id,
-							className: "text-xs font-medium",
-							children: t(field_0.label)
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							id: `${id}-help`,
-							className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-							children: t(field_0.help)
-						})]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: "w-36 shrink-0",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: "flex items-center gap-2",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-								id,
-								type: "number",
-								min: limits.min,
-								max: limits.max,
-								step: 1,
-								required: true,
-								value: Number.isFinite(value) ? value : "",
-								"aria-describedby": `${id}-help ${id}-range`,
-								"aria-invalid": invalid && !disabled,
-								disabled,
-								onChange: (event_0) => editSettings({ [field_0.key]: event_0.currentTarget.value === "" ? NaN : Number(event_0.currentTarget.value) }),
-								className: "w-24 !text-xs"
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
-								children: t(field_0.unit)
-							})]
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							id: `${id}-range`,
-							className: `mt-1.5 block text-[11px] ${invalid && !disabled ? "text-[var(--dsw-alias-state-error-primary)]" : "text-[var(--dsw-alias-label-tertiary)]"}`,
-							children: t("settingRange", {
-								min: limits.min,
-								max: limits.max
-							})
-						})]
-					})]
-				}, field_0.key);
-			}),
-			scoped === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				className: "flex flex-wrap items-start justify-between gap-3 p-5 pb-4",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "min-w-0",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
-						className: "m-0 text-xs font-medium",
-						children: t("settingAutoMerge")
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "flex flex-wrap items-center gap-2",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+							id,
+							className: "m-0 text-sm font-medium",
+							children: t("settingProjects")
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+							tone: "quiet",
+							children: t("settingEnabledCount", {
+								enabled: enabled_0,
+								total: candidates.length
+							})
+						})]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-						children: t("settingAutoMergeHelp")
-					})]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
-					disabled: !ready || saving,
-					checked: draft.autoMerge,
-					label: t("settingAutoMerge"),
-					onChange: (autoMerge) => editSettings({ autoMerge })
-				})]
-			}),
-			failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "alert",
-				className: "px-4",
-				children: t("settingSaveFailed")
-			}),
-			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
-				className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "min-w-0 flex-1 basis-60",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-						children: t("settingPersistenceOnly")
-					}), dirty && !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						role: "status",
-						className: "m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]",
-						children: t("settingInvalid")
+						className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: t("settingProjectsDescription")
 					})]
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						type: "button",
+					className: "flex flex-wrap items-center gap-2",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AddRepository, {}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						size: "sm",
-						variant: "ghost",
-						disabled: saving || !dirty,
-						onClick: () => resetSettings(scoped),
-						children: t("settingDiscard")
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						type: "submit",
-						size: "sm",
-						variant: "primary",
-						disabled: !ready || saving || !dirty || !valid,
-						children: t("settingSave")
+						variant: "outline",
+						disabled: refreshing || saving,
+						onClick: () => void refresh(),
+						children: t("settingRefresh")
 					})]
 				})]
+			}),
+			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-center justify-between gap-3 px-5 pb-4",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					type: "search",
+					"aria-label": t("settingSearchProjects"),
+					placeholder: t("settingSearchProjects"),
+					value: query,
+					onChange: (event) => setQuery(event.currentTarget.value),
+					className: "min-w-40 flex-1 !text-xs @min-[620px]:max-w-xs"
+				}), refreshedAt && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
+					dateTime: refreshedAt,
+					title: refreshedAt,
+					className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+					children: [
+						t("settingLastSynced"),
+						" ",
+						new Date(refreshedAt).toLocaleTimeString()
+					]
+				})]
+			}),
+			(error || loadError) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				className: "px-5",
+				children: error || loadError?.message
+			}),
+			projects.isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "status",
+				className: "px-5 pb-4 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				children: "正在载入项目列表…"
+			}) : visible.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+				className: "m-0 list-none p-0",
+				children: visible.map((project_4) => {
+					const pathId = `${id}-path-${project_4.id}`;
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+						className: "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+							className: "flex min-w-0 flex-1 basis-48 items-start gap-2",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+								className: "flex size-6 shrink-0 cursor-pointer items-center justify-center",
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
+									type: "checkbox",
+									disabled: saving || refreshing || !project_4.remoteUrl && !project_4.enabled,
+									checked: Boolean(project_4.enabled),
+									"aria-label": t("settingSelectProject", { name: project_4.name }),
+									"aria-describedby": pathId,
+									onChange: (event_0) => void toggle(project_4.id, event_0.currentTarget.checked),
+									className: "size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]"
+								})
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+								className: "min-w-0 pt-0.5",
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+									className: "truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]",
+									children: project_4.name
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+									id: pathId,
+									className: "m-0 mt-1 truncate font-mono text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+									title: project_4.repository.webUrl,
+									children: `${project_4.repository.platform}:${project_4.repository.owner}/${project_4.repository.name}`
+								})]
+							})]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+							className: "ml-auto flex shrink-0 items-center gap-2",
+							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
+								href: project_4.repository.webUrl,
+								target: "_blank",
+								rel: "noopener noreferrer",
+								className: "inline-flex h-7 items-center rounded-lg border border-[var(--dsw-alias-border-l3)] px-3 text-xs text-[var(--dsw-alias-label-primary)] no-underline hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+								children: t("settingOpenRepository")
+							})
+						})]
+					}, project_4.id);
+				})
+			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+				compact: true,
+				className: "items-center !gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 !text-center [&>p:first-of-type]:text-xs [&>p:first-of-type]:leading-4 [&>p:first-of-type]:font-medium [&>p:first-of-type]:text-[var(--dsw-alias-label-primary)] [&>p:nth-of-type(2)]:text-[var(--dsw-alias-label-secondary)]",
+				title: t(normalized ? "settingNoMatchingProjects" : "settingNoProjects"),
+				description: t(normalized ? "settingNoMatchingProjectsHelp" : "settingNoProjectsHelp"),
+				children: normalized && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "ghost",
+					onClick: () => setQuery(""),
+					children: t("settingClearSearch")
+				})
 			})
 		]
 	});
 }
-// src/client/pages/setting/page.tsx
-function Setting() {
-	const $ = (0, import_dist.c)(91);
+// src/client/pages/setting/components/runtime.tsx
+function Runtime(t0) {
+	const $ = (0, import_dist.c)(94);
+	const { section, value, baseline, pending, failed, onChange, onDiscard, onSave } = t0;
 	const { t } = useTranslation();
-	const activeSection = useStore(_temp$11);
-	const notice = useStore(_temp2$7);
-	const invalid = useStore(_temp3$4);
-	const generalDirty = useStore(_temp4$2);
-	const executionDirty = useStore(_temp5$1);
-	const deliveryDirty = useStore(_temp6$1);
-	const { setSettingSection } = useActions();
-	const id = (0, react.useId)();
-	let t0;
-	let t1;
-	let t10;
+	const prefix = (0, react.useId)();
+	const t1 = GROUPS[section];
 	let t2;
+	if ($[0] !== baseline || $[1] !== t1 || $[2] !== value) {
+		let t3;
+		if ($[4] !== baseline || $[5] !== value) {
+			t3 = (key) => value[key] !== baseline[key];
+			$[4] = baseline;
+			$[5] = value;
+			$[6] = t3;
+		} else t3 = $[6];
+		t2 = t1.some(t3);
+		$[0] = baseline;
+		$[1] = t1;
+		$[2] = value;
+		$[3] = t2;
+	} else t2 = $[3];
+	const dirty = t2;
 	let t3;
+	if ($[7] !== baseline || $[8] !== section || $[9] !== value) {
+		let t4;
+		if ($[11] !== value) {
+			t4 = (key_0) => [key_0, value[key_0]];
+			$[11] = value;
+			$[12] = t4;
+		} else t4 = $[12];
+		t3 = validSettings({
+			...baseline,
+			...Object.fromEntries(GROUPS[section].map(t4)),
+			administrators: value.administrators,
+			autoArchiveWorkers: value.autoArchiveWorkers
+		});
+		$[7] = baseline;
+		$[8] = section;
+		$[9] = value;
+		$[10] = t3;
+	} else t3 = $[10];
+	const valid = t3;
 	let t4;
 	let t5;
 	let t6;
 	let t7;
 	let t8;
+	if ($[13] !== dirty || $[14] !== onChange || $[15] !== onSave || $[16] !== pending || $[17] !== prefix || $[18] !== section || $[19] !== t || $[20] !== valid || $[21] !== value) {
+		const fields = [
+			{
+				key: "maxWorkers",
+				label: "settingMaxWorkers",
+				help: "settingMaxWorkersHelp",
+				unit: "settingWorkersUnit"
+			},
+			{
+				key: "backgroundLimitMinutes",
+				label: "settingBackgroundLimit",
+				help: "settingBackgroundLimitHelp",
+				unit: "settingMinutesUnit"
+			},
+			{
+				key: "autoMergeMaxLines",
+				label: "settingAutoMergeLines",
+				help: "settingAutoMergeLinesHelp",
+				unit: "settingLinesUnit"
+			},
+			{
+				key: "deliveryMaxAttempts",
+				label: "settingDeliveryAttempts",
+				help: "settingDeliveryAttemptsHelp",
+				unit: "settingAttemptsUnit"
+			},
+			{
+				key: "deliveryRetryCeilingSeconds",
+				label: "settingRetryCeiling",
+				help: "settingRetryCeilingHelp",
+				unit: "settingSecondsUnit"
+			}
+		];
+		t4 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
+		if ($[27] !== dirty || $[28] !== onSave || $[29] !== pending || $[30] !== section || $[31] !== valid || $[32] !== value) {
+			t5 = (event) => {
+				event.preventDefault();
+				if (valid && dirty && !pending) onSave(Object.fromEntries(GROUPS[section].map((key_1) => [key_1, value[key_1]])));
+			};
+			$[27] = dirty;
+			$[28] = onSave;
+			$[29] = pending;
+			$[30] = section;
+			$[31] = valid;
+			$[32] = value;
+			$[33] = t5;
+		} else t5 = $[33];
+		t6 = `${prefix}-runtime`;
+		const t9 = `${prefix}-runtime`;
+		const t10 = section === "execution" ? "settingExecution" : "settingDelivery";
+		let t11;
+		if ($[34] !== t || $[35] !== t10) {
+			t11 = t(t10);
+			$[34] = t;
+			$[35] = t10;
+			$[36] = t11;
+		} else t11 = $[36];
+		let t12;
+		if ($[37] !== t11 || $[38] !== t9) {
+			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+				id: t9,
+				className: "m-0 text-sm font-medium",
+				children: t11
+			});
+			$[37] = t11;
+			$[38] = t9;
+			$[39] = t12;
+		} else t12 = $[39];
+		const t13 = section === "execution" ? "settingExecutionDescription" : "settingDeliveryDescription";
+		let t14;
+		if ($[40] !== t || $[41] !== t13) {
+			t14 = t(t13);
+			$[40] = t;
+			$[41] = t13;
+			$[42] = t14;
+		} else t14 = $[42];
+		let t15;
+		if ($[43] !== t14) {
+			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				children: t14
+			});
+			$[43] = t14;
+			$[44] = t15;
+		} else t15 = $[44];
+		if ($[45] !== t12 || $[46] !== t15) {
+			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+				className: "px-4 py-3",
+				children: [t12, t15]
+			});
+			$[45] = t12;
+			$[46] = t15;
+			$[47] = t7;
+		} else t7 = $[47];
+		t8 = fields.filter((field) => GROUPS[section].includes(field.key)).map((field_0) => {
+			const limits = LIMITS[field_0.key];
+			const current = value[field_0.key];
+			const disabled = pending || field_0.key === "autoMergeMaxLines" && !value.autoMerge;
+			const invalid = !Number.isInteger(current) || current < limits.min || current > limits.max;
+			const id = `${prefix}-${field_0.key}`;
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "min-w-0 flex-1 basis-52",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+						htmlFor: id,
+						className: "text-xs font-medium",
+						children: t(field_0.label)
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						id: `${id}-help`,
+						className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: t(field_0.help)
+					})]
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+					className: "w-36 shrink-0",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "flex items-center gap-2",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+							id,
+							type: "number",
+							min: limits.min,
+							max: limits.max,
+							step: 1,
+							required: true,
+							value: Number.isFinite(current) ? current : "",
+							"aria-describedby": `${id}-help ${id}-range`,
+							"aria-invalid": invalid && !disabled,
+							disabled,
+							onChange: (event_0) => onChange({ [field_0.key]: event_0.currentTarget.value === "" ? NaN : Number(event_0.currentTarget.value) }),
+							className: "w-24 !text-xs"
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+							className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
+							children: t(field_0.unit)
+						})]
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						id: `${id}-range`,
+						className: `mt-1.5 block text-[11px] ${invalid && !disabled ? "text-[var(--dsw-alias-state-error-primary)]" : "text-[var(--dsw-alias-label-tertiary)]"}`,
+						children: t("settingRange", {
+							min: limits.min,
+							max: limits.max
+						})
+					})]
+				})]
+			}, field_0.key);
+		});
+		$[13] = dirty;
+		$[14] = onChange;
+		$[15] = onSave;
+		$[16] = pending;
+		$[17] = prefix;
+		$[18] = section;
+		$[19] = t;
+		$[20] = valid;
+		$[21] = value;
+		$[22] = t4;
+		$[23] = t5;
+		$[24] = t6;
+		$[25] = t7;
+		$[26] = t8;
+	} else {
+		t4 = $[22];
+		t5 = $[23];
+		t6 = $[24];
+		t7 = $[25];
+		t8 = $[26];
+	}
 	let t9;
-	if ($[0] !== activeSection || $[1] !== deliveryDirty || $[2] !== executionDirty || $[3] !== generalDirty || $[4] !== id || $[5] !== invalid || $[6] !== notice || $[7] !== setSettingSection || $[8] !== t) {
+	if ($[48] !== onChange || $[49] !== pending || $[50] !== section || $[51] !== t || $[52] !== value.autoMerge) {
+		t9 = section === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "min-w-0",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
+					className: "m-0 text-xs font-medium",
+					children: t("settingAutoMerge")
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					children: t("settingAutoMergeHelp")
+				})]
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
+				disabled: pending,
+				checked: value.autoMerge,
+				label: t("settingAutoMerge"),
+				onChange: (autoMerge) => onChange({ autoMerge })
+			})]
+		});
+		$[48] = onChange;
+		$[49] = pending;
+		$[50] = section;
+		$[51] = t;
+		$[52] = value.autoMerge;
+		$[53] = t9;
+	} else t9 = $[53];
+	let t10;
+	if ($[54] !== failed || $[55] !== t) {
+		t10 = failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "px-4",
+			children: t("settingSaveFailed")
+		});
+		$[54] = failed;
+		$[55] = t;
+		$[56] = t10;
+	} else t10 = $[56];
+	let t11;
+	if ($[57] !== t) {
+		t11 = t("settingPersistenceOnly");
+		$[57] = t;
+		$[58] = t11;
+	} else t11 = $[58];
+	let t12;
+	if ($[59] !== t11) {
+		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			children: t11
+		});
+		$[59] = t11;
+		$[60] = t12;
+	} else t12 = $[60];
+	let t13;
+	if ($[61] !== dirty || $[62] !== t || $[63] !== valid) {
+		t13 = dirty && !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "status",
+			className: "m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			children: t("settingInvalid")
+		});
+		$[61] = dirty;
+		$[62] = t;
+		$[63] = valid;
+		$[64] = t13;
+	} else t13 = $[64];
+	let t14;
+	if ($[65] !== t12 || $[66] !== t13) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "min-w-0 flex-1 basis-60",
+			children: [t12, t13]
+		});
+		$[65] = t12;
+		$[66] = t13;
+		$[67] = t14;
+	} else t14 = $[67];
+	const t15 = pending || !dirty;
+	let t16;
+	if ($[68] !== t) {
+		t16 = t("settingDiscard");
+		$[68] = t;
+		$[69] = t16;
+	} else t16 = $[69];
+	let t17;
+	if ($[70] !== onDiscard || $[71] !== t15 || $[72] !== t16) {
+		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			type: "button",
+			size: "sm",
+			variant: "ghost",
+			disabled: t15,
+			onClick: onDiscard,
+			children: t16
+		});
+		$[70] = onDiscard;
+		$[71] = t15;
+		$[72] = t16;
+		$[73] = t17;
+	} else t17 = $[73];
+	const t18 = pending || !dirty || !valid;
+	let t19;
+	if ($[74] !== t) {
+		t19 = t("settingSave");
+		$[74] = t;
+		$[75] = t19;
+	} else t19 = $[75];
+	let t20;
+	if ($[76] !== t18 || $[77] !== t19) {
+		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			type: "submit",
+			size: "sm",
+			variant: "primary",
+			disabled: t18,
+			children: t19
+		});
+		$[76] = t18;
+		$[77] = t19;
+		$[78] = t20;
+	} else t20 = $[78];
+	let t21;
+	if ($[79] !== t17 || $[80] !== t20) {
+		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex items-center gap-2",
+			children: [t17, t20]
+		});
+		$[79] = t17;
+		$[80] = t20;
+		$[81] = t21;
+	} else t21 = $[81];
+	let t22;
+	if ($[82] !== t14 || $[83] !== t21) {
+		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
+			className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
+			children: [t14, t21]
+		});
+		$[82] = t14;
+		$[83] = t21;
+		$[84] = t22;
+	} else t22 = $[84];
+	let t23;
+	if ($[85] !== t10 || $[86] !== t22 || $[87] !== t4 || $[88] !== t5 || $[89] !== t6 || $[90] !== t7 || $[91] !== t8 || $[92] !== t9) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+			className: t4,
+			onSubmit: t5,
+			"aria-labelledby": t6,
+			children: [
+				t7,
+				t8,
+				t9,
+				t10,
+				t22
+			]
+		});
+		$[85] = t10;
+		$[86] = t22;
+		$[87] = t4;
+		$[88] = t5;
+		$[89] = t6;
+		$[90] = t7;
+		$[91] = t8;
+		$[92] = t9;
+		$[93] = t23;
+	} else t23 = $[93];
+	return t23;
+}
+// src/client/pages/setting/page.tsx
+const NUMERIC = [
+	"maxWorkers",
+	"backgroundLimitMinutes",
+	"autoMerge",
+	"autoMergeMaxLines",
+	"autoArchiveWorkers",
+	"deliveryMaxAttempts",
+	"deliveryRetryCeilingSeconds"
+];
+function toRuntime(value) {
+	const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = value;
+	return {
+		administrators,
+		maxWorkers,
+		backgroundLimitMinutes,
+		autoMerge,
+		autoMergeMaxLines,
+		autoArchiveWorkers,
+		deliveryMaxAttempts,
+		deliveryRetryCeilingSeconds
+	};
+}
+function sameSettings(left, right) {
+	return administratorSignature(left.administrators) === administratorSignature(right.administrators) && NUMERIC.every((key) => left[key] === right[key]);
+}
+function numbersValid(value) {
+	return Object.entries(LIMITS).every(([key, limits]) => {
+		const current = value[key];
+		return Number.isInteger(current) && current >= limits.min && current <= limits.max;
+	});
+}
+function Setting() {
+	const $ = (0, import_dist.c)(176);
+	const { t } = useTranslation();
+	const activeSection = useStore(_temp$13);
+	const { setSettingSection } = useActions();
+	let t0;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.setting,
+			queryFn: _temp2$7
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const setting = useQuery(t0);
+	const client = useQueryClient();
+	let t1;
+	if ($[1] !== client) {
+		t1 = {
+			mutationFn: _temp3$5,
+			onSettled: () => client.invalidateQueries({ queryKey: keys.setting })
+		};
+		$[1] = client;
+		$[2] = t1;
+	} else t1 = $[2];
+	const saveSetting = useMutation(t1);
+	let t2;
+	if ($[3] !== setting.data) {
+		t2 = setting.data ? toRuntime(setting.data) : null;
+		$[3] = setting.data;
+		$[4] = t2;
+	} else t2 = $[4];
+	const baseline = t2;
+	const [draft, setDraft] = (0, react.useState)(null);
+	const [notice, setNotice] = (0, react.useState)(null);
+	const [failed, setFailed] = (0, react.useState)(null);
+	const previous = (0, react.useRef)(null);
+	let t3;
+	let t4;
+	if ($[5] !== baseline) {
+		t3 = () => {
+			if (!baseline) return;
+			const before = previous.current;
+			previous.current = baseline;
+			setDraft((current) => current === null || before === null || sameSettings(current, before) ? { ...baseline } : current);
+		};
+		t4 = [baseline];
+		$[5] = baseline;
+		$[6] = t3;
+		$[7] = t4;
+	} else {
+		t3 = $[6];
+		t4 = $[7];
+	}
+	(0, react.useEffect)(t3, t4);
+	let t5;
+	if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
+		t5 = () => {
+			setNotice(null);
+			setFailed(null);
+		};
+		$[8] = t5;
+	} else t5 = $[8];
+	let t6;
+	if ($[9] !== activeSection) {
+		t6 = [activeSection];
+		$[9] = activeSection;
+		$[10] = t6;
+	} else t6 = $[10];
+	(0, react.useEffect)(t5, t6);
+	let t7;
+	if ($[11] !== baseline?.autoMergeMaxLines) {
+		t7 = (patch) => {
+			setDraft((current_0) => current_0 && {
+				...current_0,
+				...patch,
+				...patch.autoMerge === false && !numbersValid({
+					...current_0,
+					...patch,
+					autoMergeMaxLines: current_0.autoMergeMaxLines
+				}) ? { autoMergeMaxLines: baseline?.autoMergeMaxLines ?? current_0.autoMergeMaxLines } : {}
+			});
+			setNotice(null);
+			setFailed(null);
+		};
+		$[11] = baseline?.autoMergeMaxLines;
+		$[12] = t7;
+	} else t7 = $[12];
+	const change = t7;
+	let t8;
+	if ($[13] !== baseline) {
+		t8 = (section) => {
+			if (!baseline) return;
+			setDraft((current_1) => current_1 && (section === "general" ? {
+				...current_1,
+				administrators: [...baseline.administrators],
+				autoArchiveWorkers: baseline.autoArchiveWorkers
+			} : {
+				...current_1,
+				...Object.fromEntries(GROUPS[section].map((key) => [key, baseline[key]]))
+			}));
+			setNotice(null);
+			setFailed(null);
+		};
+		$[13] = baseline;
+		$[14] = t8;
+	} else t8 = $[14];
+	const discard = t8;
+	let t9;
+	if ($[15] !== saveSetting) {
+		t9 = async (patch_0, section_0) => {
+			setNotice(null);
+			setFailed(null);
+			try {
+				await saveSetting.mutateAsync(patch_0);
+				setNotice("saved");
+			} catch {
+				setFailed(section_0);
+			}
+		};
+		$[15] = saveSetting;
+		$[16] = t9;
+	} else t9 = $[16];
+	const save = t9;
+	let t10;
+	if ($[17] !== baseline || $[18] !== draft) {
+		t10 = (scope) => draft !== null && baseline !== null && GROUPS[scope].some((key_0) => draft[key_0] !== baseline[key_0]);
+		$[17] = baseline;
+		$[18] = draft;
+		$[19] = t10;
+	} else t10 = $[19];
+	const dirtyOf = t10;
+	let t11;
+	if ($[20] !== baseline || $[21] !== draft) {
+		t11 = draft !== null && baseline !== null && (administratorSignature(draft.administrators) !== administratorSignature(baseline.administrators) || draft.autoArchiveWorkers !== baseline.autoArchiveWorkers);
+		$[20] = baseline;
+		$[21] = draft;
+		$[22] = t11;
+	} else t11 = $[22];
+	const generalDirty = t11;
+	let t12;
+	if ($[23] !== dirtyOf) {
+		t12 = dirtyOf("execution");
+		$[23] = dirtyOf;
+		$[24] = t12;
+	} else t12 = $[24];
+	const executionDirty = t12;
+	let t13;
+	if ($[25] !== dirtyOf) {
+		t13 = dirtyOf("delivery");
+		$[25] = dirtyOf;
+		$[26] = t13;
+	} else t13 = $[26];
+	const deliveryDirty = t13;
+	let t14;
+	if ($[27] !== draft) {
+		t14 = draft !== null && !numbersValid(draft);
+		$[27] = draft;
+		$[28] = t14;
+	} else t14 = $[28];
+	const invalid = t14;
+	const id = (0, react.useId)();
+	let t15;
+	let t16;
+	let t17;
+	let t18;
+	let t19;
+	let t20;
+	let t21;
+	let t22;
+	let t23;
+	let t24;
+	let t25;
+	if ($[29] !== activeSection || $[30] !== baseline || $[31] !== change || $[32] !== deliveryDirty || $[33] !== discard || $[34] !== draft || $[35] !== executionDirty || $[36] !== failed || $[37] !== generalDirty || $[38] !== id || $[39] !== invalid || $[40] !== notice || $[41] !== save || $[42] !== saveSetting || $[43] !== setSettingSection || $[44] !== setting.error || $[45] !== t) {
 		const notices = {
 			saved: "settingSaved",
 			refreshed: "settingRefreshed",
 			project: "settingProjectSaved"
 		};
-		let t11;
-		let t12;
-		let t13;
-		let t14;
-		if ($[20] !== activeSection || $[21] !== deliveryDirty || $[22] !== executionDirty || $[23] !== generalDirty || $[24] !== id || $[25] !== setSettingSection || $[26] !== t) {
+		let content;
+		let t26;
+		let t27;
+		let t28;
+		let t29;
+		if ($[57] !== activeSection || $[58] !== baseline || $[59] !== change || $[60] !== deliveryDirty || $[61] !== discard || $[62] !== draft || $[63] !== executionDirty || $[64] !== failed || $[65] !== generalDirty || $[66] !== id || $[67] !== save || $[68] !== saveSetting || $[69] !== setSettingSection || $[70] !== setting.error || $[71] !== t) {
 			const sections = [
 				{
 					value: "general",
@@ -58291,322 +63675,443 @@ function Setting() {
 				execution: executionDirty,
 				delivery: deliveryDirty
 			};
-			t8 = "@container flex min-w-0 flex-col gap-4 pb-8";
-			if ($[35] !== t) {
-				t9 = t("tabSettings");
-				$[35] = t;
-				$[36] = t9;
-			} else t9 = $[36];
-			let t15;
-			if ($[37] !== t) {
-				t15 = t("tabSettings");
-				$[37] = t;
-				$[38] = t15;
-			} else t15 = $[38];
-			let t16;
-			if ($[39] !== t15) {
-				t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+			if (setting.error) {
+				const t30 = setting.error.message || "设置加载失败";
+				let t31;
+				if ($[81] !== t30) {
+					t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "alert",
+						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+						children: t30
+					});
+					$[81] = t30;
+					$[82] = t31;
+				} else t31 = $[82];
+				content = t31;
+			} else if (!draft || !baseline) {
+				let t30;
+				if ($[83] === Symbol.for("react.memo_cache_sentinel")) {
+					t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "status",
+						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: "正在载入设置…"
+					});
+					$[83] = t30;
+				} else t30 = $[83];
+				content = t30;
+			} else {
+				const t30 = failed === "general";
+				let t31;
+				if ($[84] !== discard) {
+					t31 = () => discard("general");
+					$[84] = discard;
+					$[85] = t31;
+				} else t31 = $[85];
+				let t32;
+				if ($[86] !== save) {
+					t32 = (patch_1) => save(patch_1, "general");
+					$[86] = save;
+					$[87] = t32;
+				} else t32 = $[87];
+				let t33;
+				if ($[88] !== baseline || $[89] !== change || $[90] !== draft || $[91] !== saveSetting.isPending || $[92] !== t30 || $[93] !== t31 || $[94] !== t32) {
+					t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "general",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(General, {
+							value: draft,
+							baseline,
+							pending: saveSetting.isPending,
+							failed: t30,
+							onChange: change,
+							onDiscard: t31,
+							onSave: t32
+						})
+					});
+					$[88] = baseline;
+					$[89] = change;
+					$[90] = draft;
+					$[91] = saveSetting.isPending;
+					$[92] = t30;
+					$[93] = t31;
+					$[94] = t32;
+					$[95] = t33;
+				} else t33 = $[95];
+				let t34;
+				if ($[96] === Symbol.for("react.memo_cache_sentinel")) {
+					t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "projects",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Projects, { onNotice: setNotice })
+					});
+					$[96] = t34;
+				} else t34 = $[96];
+				let t35;
+				if ($[97] === Symbol.for("react.memo_cache_sentinel")) {
+					t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "agents",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Agents, {})
+					});
+					$[97] = t35;
+				} else t35 = $[97];
+				const t36 = failed === "execution";
+				let t37;
+				if ($[98] !== discard) {
+					t37 = () => discard("execution");
+					$[98] = discard;
+					$[99] = t37;
+				} else t37 = $[99];
+				let t38;
+				if ($[100] !== save) {
+					t38 = (patch_2) => save(patch_2, "execution");
+					$[100] = save;
+					$[101] = t38;
+				} else t38 = $[101];
+				let t39;
+				if ($[102] !== baseline || $[103] !== change || $[104] !== draft || $[105] !== saveSetting.isPending || $[106] !== t36 || $[107] !== t37 || $[108] !== t38) {
+					t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "execution",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {
+							section: "execution",
+							value: draft,
+							baseline,
+							pending: saveSetting.isPending,
+							failed: t36,
+							onChange: change,
+							onDiscard: t37,
+							onSave: t38
+						}, "execution")
+					});
+					$[102] = baseline;
+					$[103] = change;
+					$[104] = draft;
+					$[105] = saveSetting.isPending;
+					$[106] = t36;
+					$[107] = t37;
+					$[108] = t38;
+					$[109] = t39;
+				} else t39 = $[109];
+				const t40 = failed === "delivery";
+				let t41;
+				if ($[110] !== discard) {
+					t41 = () => discard("delivery");
+					$[110] = discard;
+					$[111] = t41;
+				} else t41 = $[111];
+				let t42;
+				if ($[112] !== save) {
+					t42 = (patch_3) => save(patch_3, "delivery");
+					$[112] = save;
+					$[113] = t42;
+				} else t42 = $[113];
+				let t43;
+				if ($[114] !== baseline || $[115] !== change || $[116] !== draft || $[117] !== saveSetting.isPending || $[118] !== t40 || $[119] !== t41 || $[120] !== t42) {
+					t43 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+						cond: "delivery",
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {
+							section: "delivery",
+							value: draft,
+							baseline,
+							pending: saveSetting.isPending,
+							failed: t40,
+							onChange: change,
+							onDiscard: t41,
+							onSave: t42
+						}, "delivery")
+					});
+					$[114] = baseline;
+					$[115] = change;
+					$[116] = draft;
+					$[117] = saveSetting.isPending;
+					$[118] = t40;
+					$[119] = t41;
+					$[120] = t42;
+					$[121] = t43;
+				} else t43 = $[121];
+				let t44;
+				if ($[122] !== activeSection || $[123] !== t33 || $[124] !== t39 || $[125] !== t43) {
+					t44 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$2, {
+						value: activeSection,
+						children: [
+							t33,
+							t34,
+							t35,
+							t39,
+							t43
+						]
+					});
+					$[122] = activeSection;
+					$[123] = t33;
+					$[124] = t39;
+					$[125] = t43;
+					$[126] = t44;
+				} else t44 = $[126];
+				content = t44;
+			}
+			t23 = "@container flex min-w-0 flex-col gap-4 pb-8";
+			if ($[127] !== t) {
+				t24 = t("tabSettings");
+				$[127] = t;
+				$[128] = t24;
+			} else t24 = $[128];
+			let t30;
+			if ($[129] !== t) {
+				t30 = t("tabSettings");
+				$[129] = t;
+				$[130] = t30;
+			} else t30 = $[130];
+			let t31;
+			if ($[131] !== t30) {
+				t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 					className: "m-0 text-base font-medium",
-					children: t15
+					children: t30
 				});
-				$[39] = t15;
-				$[40] = t16;
-			} else t16 = $[40];
-			let t17;
-			if ($[41] !== t) {
-				t17 = t("settingDescription");
-				$[41] = t;
-				$[42] = t17;
-			} else t17 = $[42];
-			let t18;
-			if ($[43] !== t17) {
-				t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				$[131] = t30;
+				$[132] = t31;
+			} else t31 = $[132];
+			let t32;
+			if ($[133] !== t) {
+				t32 = t("settingDescription");
+				$[133] = t;
+				$[134] = t32;
+			} else t32 = $[134];
+			let t33;
+			if ($[135] !== t32) {
+				t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					className: "m-0 mt-1.5 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-					children: t17
+					children: t32
 				});
-				$[43] = t17;
-				$[44] = t18;
-			} else t18 = $[44];
-			if ($[45] !== t16 || $[46] !== t18) {
-				t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
+				$[135] = t32;
+				$[136] = t33;
+			} else t33 = $[136];
+			if ($[137] !== t31 || $[138] !== t33) {
+				t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
 					className: "flex flex-wrap items-start justify-between gap-3",
-					children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t16, t18] })
+					children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t31, t33] })
 				});
-				$[45] = t16;
-				$[46] = t18;
-				$[47] = t10;
-			} else t10 = $[47];
-			t6 = "grid min-w-0 gap-4 @min-[740px]:grid-cols-[160px_minmax(0,1fr)] @min-[940px]:gap-5";
-			t14 = "self-start @min-[740px]:sticky @min-[740px]:top-4";
-			if ($[48] !== t) {
-				t11 = t("settingNavigation");
-				$[48] = t;
-				$[49] = t11;
-			} else t11 = $[49];
-			t12 = "flex flex-wrap gap-1 rounded-xl bg-[var(--dsw-alias-card-fill)] p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0";
-			t13 = sections.map((section) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-				id: `${id}-${section.value}`,
+				$[137] = t31;
+				$[138] = t33;
+				$[139] = t25;
+			} else t25 = $[139];
+			t21 = "grid min-w-0 gap-4 @min-[740px]:grid-cols-[160px_minmax(0,1fr)] @min-[940px]:gap-5";
+			t29 = "self-start @min-[740px]:sticky @min-[740px]:top-4";
+			if ($[140] !== t) {
+				t26 = t("settingNavigation");
+				$[140] = t;
+				$[141] = t26;
+			} else t26 = $[141];
+			t27 = "flex flex-wrap gap-1 rounded-xl bg-[var(--dsw-alias-card-fill)] p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0";
+			t28 = sections.map((section_1) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+				id: `${id}-${section_1.value}`,
 				type: "button",
-				"aria-current": activeSection === section.value ? "page" : void 0,
+				"aria-current": activeSection === section_1.value ? "page" : void 0,
 				"aria-controls": `${id}-content`,
-				onClick: () => setSettingSection(section.value),
-				className: `flex cursor-pointer items-center gap-2.5 rounded-lg border-0 px-3 py-2.5 text-left font-[inherit] text-xs outline-none transition-colors focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${activeSection === section.value ? "bg-[var(--dsw-alias-card-fill)] font-medium text-[var(--dsw-alias-label-primary)]" : "bg-transparent text-[var(--dsw-alias-label-secondary)] hover:bg-[var(--dsw-alias-card-fill)]"}`,
+				onClick: () => setSettingSection(section_1.value),
+				className: `flex cursor-pointer items-center gap-2.5 rounded-lg border-0 px-3 py-2.5 text-left font-[inherit] text-xs outline-none transition-colors focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${activeSection === section_1.value ? "bg-[var(--dsw-alias-card-fill)] font-medium text-[var(--dsw-alias-label-primary)]" : "bg-transparent text-[var(--dsw-alias-label-secondary)] hover:bg-[var(--dsw-alias-card-fill)]"}`,
 				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(section.icon, {
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(section_1.icon, {
 						width: 16,
 						height: 16
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t(section.label) }),
-					dirty[section.value] && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t(section_1.label) }),
+					dirty[section_1.value] && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: "ml-auto size-1.5 rounded-full bg-[var(--dsw-alias-state-business-primary)]",
 						"aria-label": t("settingUnsaved")
 					})
 				]
-			}, section.value));
-			$[20] = activeSection;
-			$[21] = deliveryDirty;
-			$[22] = executionDirty;
-			$[23] = generalDirty;
-			$[24] = id;
-			$[25] = setSettingSection;
-			$[26] = t;
-			$[27] = t10;
-			$[28] = t11;
-			$[29] = t12;
-			$[30] = t13;
-			$[31] = t14;
-			$[32] = t6;
-			$[33] = t8;
-			$[34] = t9;
+			}, section_1.value));
+			$[57] = activeSection;
+			$[58] = baseline;
+			$[59] = change;
+			$[60] = deliveryDirty;
+			$[61] = discard;
+			$[62] = draft;
+			$[63] = executionDirty;
+			$[64] = failed;
+			$[65] = generalDirty;
+			$[66] = id;
+			$[67] = save;
+			$[68] = saveSetting;
+			$[69] = setSettingSection;
+			$[70] = setting.error;
+			$[71] = t;
+			$[72] = content;
+			$[73] = t21;
+			$[74] = t23;
+			$[75] = t24;
+			$[76] = t25;
+			$[77] = t26;
+			$[78] = t27;
+			$[79] = t28;
+			$[80] = t29;
 		} else {
-			t10 = $[27];
-			t11 = $[28];
-			t12 = $[29];
-			t13 = $[30];
-			t14 = $[31];
-			t6 = $[32];
-			t8 = $[33];
-			t9 = $[34];
+			content = $[72];
+			t21 = $[73];
+			t23 = $[74];
+			t24 = $[75];
+			t25 = $[76];
+			t26 = $[77];
+			t27 = $[78];
+			t28 = $[79];
+			t29 = $[80];
 		}
-		let t15;
-		if ($[50] !== t11 || $[51] !== t12 || $[52] !== t13) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("nav", {
-				"aria-label": t11,
-				className: t12,
-				children: t13
+		let t30;
+		if ($[142] !== t26 || $[143] !== t27 || $[144] !== t28) {
+			t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("nav", {
+				"aria-label": t26,
+				className: t27,
+				children: t28
 			});
-			$[50] = t11;
-			$[51] = t12;
-			$[52] = t13;
-			$[53] = t15;
-		} else t15 = $[53];
-		if ($[54] !== t14 || $[55] !== t15) {
-			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("aside", {
-				className: t14,
-				children: t15
+			$[142] = t26;
+			$[143] = t27;
+			$[144] = t28;
+			$[145] = t30;
+		} else t30 = $[145];
+		if ($[146] !== t29 || $[147] !== t30) {
+			t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("aside", {
+				className: t29,
+				children: t30
 			});
-			$[54] = t14;
-			$[55] = t15;
-			$[56] = t7;
-		} else t7 = $[56];
-		t0 = `${id}-content`;
-		t1 = "region";
-		t2 = `${id}-${activeSection}`;
-		t3 = "flex min-w-0 flex-col gap-4";
-		let t16;
-		if ($[57] === Symbol.for("react.memo_cache_sentinel")) {
-			t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-				cond: "general",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(General, {})
-			});
-			$[57] = t16;
-		} else t16 = $[57];
-		let t17;
-		if ($[58] === Symbol.for("react.memo_cache_sentinel")) {
-			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-				cond: "projects",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Projects, {})
-			});
-			$[58] = t17;
-		} else t17 = $[58];
-		let t18;
-		if ($[59] === Symbol.for("react.memo_cache_sentinel")) {
-			t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-				cond: "agents",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Agents, {})
-			});
-			$[59] = t18;
-		} else t18 = $[59];
-		let t19;
-		if ($[60] === Symbol.for("react.memo_cache_sentinel")) {
-			t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-				cond: "execution",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "execution")
-			});
-			$[60] = t19;
-		} else t19 = $[60];
-		let t20;
-		if ($[61] === Symbol.for("react.memo_cache_sentinel")) {
-			t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-				cond: "delivery",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Runtime, {}, "delivery")
-			});
-			$[61] = t20;
-		} else t20 = $[61];
-		if ($[62] !== activeSection) {
-			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$2, {
-				value: activeSection,
-				children: [
-					t16,
-					t17,
-					t18,
-					t19,
-					t20
-				]
-			});
-			$[62] = activeSection;
-			$[63] = t4;
-		} else t4 = $[63];
-		t5 = invalid ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			$[146] = t29;
+			$[147] = t30;
+			$[148] = t22;
+		} else t22 = $[148];
+		t15 = `${id}-content`;
+		t16 = "region";
+		t17 = `${id}-${activeSection}`;
+		t18 = "flex min-w-0 flex-col gap-4";
+		t19 = content;
+		t20 = invalid ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
 			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
 			children: t("settingInvalid")
-		}) : notice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		}) : notice && !failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
 			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
 			children: t(notices[notice])
 		});
-		$[0] = activeSection;
-		$[1] = deliveryDirty;
-		$[2] = executionDirty;
-		$[3] = generalDirty;
-		$[4] = id;
-		$[5] = invalid;
-		$[6] = notice;
-		$[7] = setSettingSection;
-		$[8] = t;
-		$[9] = t0;
-		$[10] = t1;
-		$[11] = t10;
-		$[12] = t2;
-		$[13] = t3;
-		$[14] = t4;
-		$[15] = t5;
-		$[16] = t6;
-		$[17] = t7;
-		$[18] = t8;
-		$[19] = t9;
+		$[29] = activeSection;
+		$[30] = baseline;
+		$[31] = change;
+		$[32] = deliveryDirty;
+		$[33] = discard;
+		$[34] = draft;
+		$[35] = executionDirty;
+		$[36] = failed;
+		$[37] = generalDirty;
+		$[38] = id;
+		$[39] = invalid;
+		$[40] = notice;
+		$[41] = save;
+		$[42] = saveSetting;
+		$[43] = setSettingSection;
+		$[44] = setting.error;
+		$[45] = t;
+		$[46] = t15;
+		$[47] = t16;
+		$[48] = t17;
+		$[49] = t18;
+		$[50] = t19;
+		$[51] = t20;
+		$[52] = t21;
+		$[53] = t22;
+		$[54] = t23;
+		$[55] = t24;
+		$[56] = t25;
 	} else {
-		t0 = $[9];
-		t1 = $[10];
-		t10 = $[11];
-		t2 = $[12];
-		t3 = $[13];
-		t4 = $[14];
-		t5 = $[15];
-		t6 = $[16];
-		t7 = $[17];
-		t8 = $[18];
-		t9 = $[19];
+		t15 = $[46];
+		t16 = $[47];
+		t17 = $[48];
+		t18 = $[49];
+		t19 = $[50];
+		t20 = $[51];
+		t21 = $[52];
+		t22 = $[53];
+		t23 = $[54];
+		t24 = $[55];
+		t25 = $[56];
 	}
-	let t11;
-	if ($[64] !== t) {
-		t11 = t("settingPreview");
-		$[64] = t;
-		$[65] = t11;
-	} else t11 = $[65];
-	let t12;
-	if ($[66] !== deliveryDirty || $[67] !== executionDirty || $[68] !== generalDirty || $[69] !== t) {
-		t12 = (generalDirty || executionDirty || deliveryDirty) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+	let t26;
+	if ($[149] !== t) {
+		t26 = t("settingPreview");
+		$[149] = t;
+		$[150] = t26;
+	} else t26 = $[150];
+	let t27;
+	if ($[151] !== deliveryDirty || $[152] !== executionDirty || $[153] !== generalDirty || $[154] !== t) {
+		t27 = (generalDirty || executionDirty || deliveryDirty) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			className: "ml-1",
 			children: t("settingUnsaved")
 		});
-		$[66] = deliveryDirty;
-		$[67] = executionDirty;
-		$[68] = generalDirty;
-		$[69] = t;
-		$[70] = t12;
-	} else t12 = $[70];
-	let t13;
-	if ($[71] !== t11 || $[72] !== t12) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+		$[151] = deliveryDirty;
+		$[152] = executionDirty;
+		$[153] = generalDirty;
+		$[154] = t;
+		$[155] = t27;
+	} else t27 = $[155];
+	let t28;
+	if ($[156] !== t26 || $[157] !== t27) {
+		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: [t11, t12]
+			children: [t26, t27]
 		});
-		$[71] = t11;
-		$[72] = t12;
-		$[73] = t13;
-	} else t13 = $[73];
-	let t14;
-	if ($[74] !== t0 || $[75] !== t1 || $[76] !== t13 || $[77] !== t2 || $[78] !== t3 || $[79] !== t4 || $[80] !== t5) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			id: t0,
-			role: t1,
-			"aria-labelledby": t2,
-			className: t3,
+		$[156] = t26;
+		$[157] = t27;
+		$[158] = t28;
+	} else t28 = $[158];
+	let t29;
+	if ($[159] !== t15 || $[160] !== t16 || $[161] !== t17 || $[162] !== t18 || $[163] !== t19 || $[164] !== t20 || $[165] !== t28) {
+		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			id: t15,
+			role: t16,
+			"aria-labelledby": t17,
+			className: t18,
 			children: [
-				t4,
-				t5,
-				t13
+				t19,
+				t20,
+				t28
 			]
 		});
-		$[74] = t0;
-		$[75] = t1;
-		$[76] = t13;
-		$[77] = t2;
-		$[78] = t3;
-		$[79] = t4;
-		$[80] = t5;
-		$[81] = t14;
-	} else t14 = $[81];
-	let t15;
-	if ($[82] !== t14 || $[83] !== t6 || $[84] !== t7) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t6,
-			children: [t7, t14]
+		$[159] = t15;
+		$[160] = t16;
+		$[161] = t17;
+		$[162] = t18;
+		$[163] = t19;
+		$[164] = t20;
+		$[165] = t28;
+		$[166] = t29;
+	} else t29 = $[166];
+	let t30;
+	if ($[167] !== t21 || $[168] !== t22 || $[169] !== t29) {
+		t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t21,
+			children: [t22, t29]
 		});
-		$[82] = t14;
-		$[83] = t6;
-		$[84] = t7;
-		$[85] = t15;
-	} else t15 = $[85];
-	let t16;
-	if ($[86] !== t10 || $[87] !== t15 || $[88] !== t8 || $[89] !== t9) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: t8,
-			"aria-label": t9,
-			children: [t10, t15]
+		$[167] = t21;
+		$[168] = t22;
+		$[169] = t29;
+		$[170] = t30;
+	} else t30 = $[170];
+	let t31;
+	if ($[171] !== t23 || $[172] !== t24 || $[173] !== t25 || $[174] !== t30) {
+		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: t23,
+			"aria-label": t24,
+			children: [t25, t30]
 		});
-		$[86] = t10;
-		$[87] = t15;
-		$[88] = t8;
-		$[89] = t9;
-		$[90] = t16;
-	} else t16 = $[90];
-	return t16;
+		$[171] = t23;
+		$[172] = t24;
+		$[173] = t25;
+		$[174] = t30;
+		$[175] = t31;
+	} else t31 = $[175];
+	return t31;
 }
-function _temp6$1(t0) {
-	const { setting: t1 } = t0;
-	const { draft: draft_1, saved: saved_1 } = t1;
-	return GROUPS.delivery.some((key_0) => draft_1[key_0] !== saved_1[key_0]);
+function _temp3$5(input) {
+	return patchApiNexusSetting(input);
 }
-function _temp5$1(t0) {
-	const { setting: t1 } = t0;
-	const { draft: draft_0, saved: saved_0 } = t1;
-	return GROUPS.execution.some((key) => draft_0[key] !== saved_0[key]);
+function _temp2$7() {
+	return getApiNexusSetting();
 }
-function _temp4$2(t0) {
-	const { setting: t1 } = t0;
-	const { draft, saved } = t1;
-	return administratorSignature(draft.administrators) !== administratorSignature(saved.administrators);
-}
-function _temp3$4(state_1) {
-	return state_1.setting.invalid;
-}
-function _temp2$7(state_0) {
-	return state_0.setting.notice;
-}
-function _temp$11(state) {
+function _temp$13(state) {
 	return state.setting.section;
 }
 // src/client/pages/ticket/detail/components/arrivals.tsx
@@ -58625,7 +64130,7 @@ function Arrivals(t0) {
 				$[5] = triggers;
 				$[6] = t3;
 			} else t3 = $[6];
-			const arrivals = [...triggers.map(_temp$10), ...inbox.filter(t3).map(_temp2$6)].sort(_temp3$3);
+			const arrivals = [...triggers.map(_temp$12), ...inbox.filter(t3).map(_temp2$6)].sort(_temp3$4);
 			let t4;
 			if ($[7] !== t) {
 				t4 = (arrival) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
@@ -58719,7 +64224,7 @@ function Arrivals(t0) {
 	if (t2 !== Symbol.for("react.early_return_sentinel")) return t2;
 	return t1;
 }
-function _temp3$3(a, b) {
+function _temp3$4(a, b) {
 	return b.at.localeCompare(a.at);
 }
 function _temp2$6(message_0) {
@@ -58730,7 +64235,7 @@ function _temp2$6(message_0) {
 		answer: message_0.answer
 	};
 }
-function _temp$10(trigger) {
+function _temp$12(trigger) {
 	return {
 		id: `trigger-${trigger.id}`,
 		message: trigger.text,
@@ -58980,72 +64485,95 @@ function PrStatus(t0) {
 }
 // src/client/pages/ticket/detail/components/relations.tsx
 function Relations(t0) {
-	const $ = (0, import_dist.c)(28);
-	const { links, ticketId, tickets, empty, clear } = t0;
+	const $ = (0, import_dist.c)(31);
+	const { links, ticketId, empty, clear } = t0;
 	const { openTicket } = useActions();
 	const { t } = useTranslation();
 	let t1;
-	if ($[0] !== t) {
-		t1 = t("overviewStatusWaiting");
-		$[0] = t;
-		$[1] = t1;
-	} else t1 = $[1];
-	let t2;
-	if ($[2] !== t) {
-		t2 = t("ticketStatusQueued");
-		$[2] = t;
-		$[3] = t2;
-	} else t2 = $[3];
-	let t3;
-	if ($[4] !== t) {
-		t3 = t("overviewStatusRunning");
-		$[4] = t;
-		$[5] = t3;
-	} else t3 = $[5];
-	let t4;
-	if ($[6] !== t) {
-		t4 = t("overviewStatusReview");
-		$[6] = t;
-		$[7] = t4;
-	} else t4 = $[7];
-	let t5;
-	if ($[8] !== t) {
-		t5 = t("overviewCompleted");
-		$[8] = t;
-		$[9] = t5;
-	} else t5 = $[9];
-	let t6;
-	if ($[10] !== t) {
-		t6 = t("ticketStatusCancelled");
-		$[10] = t;
-		$[11] = t6;
-	} else t6 = $[11];
-	let t7;
-	if ($[12] !== t1 || $[13] !== t2 || $[14] !== t3 || $[15] !== t4 || $[16] !== t5 || $[17] !== t6) {
-		t7 = {
-			waiting: t1,
-			queued: t2,
-			running: t3,
-			review: t4,
-			done: t5,
-			cancelled: t6
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.ticket,
+			queryFn: _temp$11
 		};
-		$[12] = t1;
+		$[0] = t1;
+	} else t1 = $[0];
+	const { data: tickets, error } = useQuery(t1);
+	let t2;
+	if ($[1] !== t) {
+		t2 = t("overviewStatusWaiting");
+		$[1] = t;
+		$[2] = t2;
+	} else t2 = $[2];
+	let t3;
+	if ($[3] !== t) {
+		t3 = t("ticketStatusQueued");
+		$[3] = t;
+		$[4] = t3;
+	} else t3 = $[4];
+	let t4;
+	if ($[5] !== t) {
+		t4 = t("overviewStatusRunning");
+		$[5] = t;
+		$[6] = t4;
+	} else t4 = $[6];
+	let t5;
+	if ($[7] !== t) {
+		t5 = t("overviewStatusReview");
+		$[7] = t;
+		$[8] = t5;
+	} else t5 = $[8];
+	let t6;
+	if ($[9] !== t) {
+		t6 = t("overviewCompleted");
+		$[9] = t;
+		$[10] = t6;
+	} else t6 = $[10];
+	let t7;
+	if ($[11] !== t) {
+		t7 = t("ticketStatusCancelled");
+		$[11] = t;
+		$[12] = t7;
+	} else t7 = $[12];
+	let t8;
+	if ($[13] !== t2 || $[14] !== t3 || $[15] !== t4 || $[16] !== t5 || $[17] !== t6 || $[18] !== t7) {
+		t8 = {
+			waiting: t2,
+			queued: t3,
+			running: t4,
+			review: t5,
+			done: t6,
+			cancelled: t7
+		};
 		$[13] = t2;
 		$[14] = t3;
 		$[15] = t4;
 		$[16] = t5;
 		$[17] = t6;
 		$[18] = t7;
-	} else t7 = $[18];
-	const labels = t7;
-	let t8;
-	if ($[19] !== clear || $[20] !== empty || $[21] !== labels || $[22] !== links || $[23] !== openTicket || $[24] !== t || $[25] !== ticketId || $[26] !== tickets) {
-		t8 = links.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+		$[19] = t8;
+	} else t8 = $[19];
+	const labels = t8;
+	if (error) {
+		const t9 = error instanceof Error ? error.message : "任务列表加载失败";
+		let t10;
+		if ($[20] !== t9) {
+			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+				children: t9
+			});
+			$[20] = t9;
+			$[21] = t10;
+		} else t10 = $[21];
+		return t10;
+	}
+	let t9;
+	if ($[22] !== clear || $[23] !== empty || $[24] !== labels || $[25] !== links || $[26] !== openTicket || $[27] !== t || $[28] !== ticketId || $[29] !== tickets) {
+		t9 = links.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "m-0 flex list-none flex-col gap-2 p-0",
 			children: links.map((link) => {
 				const id = link.ticketId === ticketId ? link.relatedId : link.ticketId;
-				const task_0 = tickets.find((task) => task.id === id);
+				const task_0 = tickets?.find((task) => task.id === id);
 				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 					className: "flex flex-wrap items-center gap-x-2 gap-y-1",
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -59074,203 +64602,238 @@ function Relations(t0) {
 				size: 7
 			})
 		});
-		$[19] = clear;
-		$[20] = empty;
-		$[21] = labels;
-		$[22] = links;
-		$[23] = openTicket;
-		$[24] = t;
-		$[25] = ticketId;
-		$[26] = tickets;
-		$[27] = t8;
-	} else t8 = $[27];
-	return t8;
+		$[22] = clear;
+		$[23] = empty;
+		$[24] = labels;
+		$[25] = links;
+		$[26] = openTicket;
+		$[27] = t;
+		$[28] = ticketId;
+		$[29] = tickets;
+		$[30] = t9;
+	} else t9 = $[30];
+	return t9;
+}
+function _temp$11() {
+	return getApiNexusTicket();
 }
 // src/client/pages/ticket/detail/page.tsx
 function TicketDetail() {
-	const $ = (0, import_dist.c)(73);
+	const $ = (0, import_dist.c)(82);
 	const { t } = useTranslation();
 	const ctx = useDshContext();
-	const { go, receiveTicket } = useActions();
-	const { ticketId, returnTo } = useStore(_temp$9);
-	const stored = useStore(_temp2$5);
-	const panel = useStore(_temp3$2);
-	const detail = stored?.ticket.id === ticketId ? stored : null;
+	const { go } = useActions();
+	const { ticketId, returnTo } = useStore(_temp$10);
 	let t0;
-	if ($[0] !== receiveTicket || $[1] !== ticketId) {
-		t0 = async () => {
-			if (!ticketId) return;
-			const result = await getApiNexusTicketsId({ id: encodeURIComponent(ticketId) });
-			if (!result?.ticket || result.ticket.id !== ticketId) throw new Error("任务不存在或无法读取");
-			receiveTicket(result);
-		};
-		$[0] = receiveTicket;
-		$[1] = ticketId;
-		$[2] = t0;
-	} else t0 = $[2];
-	const { isLoading, error } = useAsyncState(t0, void 0);
-	const task = detail?.ticket;
+	if ($[0] !== ticketId) {
+		t0 = keys.ticketDetail(ticketId ?? "");
+		$[0] = ticketId;
+		$[1] = t0;
+	} else t0 = $[1];
 	let t1;
-	if ($[3] !== detail?.executions) {
-		t1 = detail?.executions.toSorted(_temp4$1).at(-1);
-		$[3] = detail?.executions;
-		$[4] = t1;
-	} else t1 = $[4];
-	const latest = t1;
-	let t2;
-	if ($[5] !== panel?.channels || $[6] !== task?.channelId) {
-		t2 = panel?.channels.find((channel) => channel.id === task?.channelId);
-		$[5] = panel?.channels;
-		$[6] = task?.channelId;
-		$[7] = t2;
-	} else t2 = $[7];
-	const channel_0 = t2;
+	if ($[2] !== ticketId) {
+		t1 = () => getApiNexusTicketId({ id: ticketId ?? "" });
+		$[2] = ticketId;
+		$[3] = t1;
+	} else t1 = $[3];
+	const t2 = Boolean(ticketId);
 	let t3;
-	if ($[8] !== task) {
-		t3 = task?.status !== "waiting" && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? /* @__PURE__ */ new Date()).getTime() - new Date(task.startedAt).getTime()) / 1e3)) : null;
-		$[8] = task;
-		$[9] = t3;
-	} else t3 = $[9];
-	const seconds = t3;
-	let t4;
-	if ($[10] !== detail?.inbox) {
-		t4 = new Set(detail?.inbox.map(_temp5).filter(_temp6));
-		$[10] = detail?.inbox;
-		$[11] = t4;
-	} else t4 = $[11];
-	let t5;
-	if ($[12] !== t4) {
-		t5 = [...t4];
-		$[12] = t4;
-		$[13] = t5;
-	} else t5 = $[13];
-	let t6;
-	if ($[14] !== panel?.graph || $[15] !== t5) {
-		t6 = t5.map((id_0) => ({
-			id: id_0,
-			group: panel?.graph.groups.find((group) => group.id === `supervisor:${id_0}`)
-		}));
-		$[14] = panel?.graph;
-		$[15] = t5;
-		$[16] = t6;
-	} else t6 = $[16];
-	const supervisors = t6;
-	let t7;
-	if ($[17] !== t) {
-		t7 = t("overviewStatusWaiting");
-		$[17] = t;
-		$[18] = t7;
-	} else t7 = $[18];
-	let t8;
-	if ($[19] !== t) {
-		t8 = t("ticketStatusQueued");
-		$[19] = t;
-		$[20] = t8;
-	} else t8 = $[20];
-	let t9;
-	if ($[21] !== t) {
-		t9 = t("overviewStatusRunning");
-		$[21] = t;
-		$[22] = t9;
-	} else t9 = $[22];
-	let t10;
-	if ($[23] !== t) {
-		t10 = t("overviewStatusReview");
-		$[23] = t;
-		$[24] = t10;
-	} else t10 = $[24];
-	let t11;
-	if ($[25] !== t) {
-		t11 = t("overviewCompleted");
-		$[25] = t;
-		$[26] = t11;
-	} else t11 = $[26];
-	let t12;
-	if ($[27] !== t) {
-		t12 = t("ticketStatusCancelled");
-		$[27] = t;
-		$[28] = t12;
-	} else t12 = $[28];
-	let t13;
-	if ($[29] !== t10 || $[30] !== t11 || $[31] !== t12 || $[32] !== t7 || $[33] !== t8 || $[34] !== t9) {
-		t13 = {
-			waiting: t7,
-			queued: t8,
-			running: t9,
-			review: t10,
-			done: t11,
-			cancelled: t12
+	if ($[4] !== t0 || $[5] !== t1 || $[6] !== t2) {
+		t3 = {
+			queryKey: t0,
+			queryFn: t1,
+			enabled: t2
 		};
-		$[29] = t10;
-		$[30] = t11;
-		$[31] = t12;
-		$[32] = t7;
-		$[33] = t8;
-		$[34] = t9;
-		$[35] = t13;
-	} else t13 = $[35];
-	const labels = t13;
+		$[4] = t0;
+		$[5] = t1;
+		$[6] = t2;
+		$[7] = t3;
+	} else t3 = $[7];
+	const { data: stored, isLoading, error } = useQuery(t3);
+	let t4;
+	if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = {
+			queryKey: keys.channel,
+			queryFn: _temp2$5
+		};
+		$[8] = t4;
+	} else t4 = $[8];
+	const { data: channelList } = useQuery(t4);
+	let t5;
+	if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
+		t5 = {
+			queryKey: keys.group,
+			queryFn: _temp3$3,
+			refetchInterval: 15e3
+		};
+		$[9] = t5;
+	} else t5 = $[9];
+	const { data: groupList } = useQuery(t5);
+	const detail = stored?.ticket?.id === ticketId ? stored : null;
+	const task = detail?.ticket;
+	const unavailable = stored !== void 0 && !detail;
+	let t6;
+	if ($[10] !== detail?.executions) {
+		t6 = detail?.executions.toSorted(_temp4$3).at(-1);
+		$[10] = detail?.executions;
+		$[11] = t6;
+	} else t6 = $[11];
+	const latest = t6;
+	let t7;
+	if ($[12] !== channelList || $[13] !== task?.channelId) {
+		t7 = channelList?.find((channel) => channel.id === task?.channelId);
+		$[12] = channelList;
+		$[13] = task?.channelId;
+		$[14] = t7;
+	} else t7 = $[14];
+	const channel_0 = t7;
+	let t8;
+	if ($[15] !== task) {
+		t8 = task?.status !== "waiting" && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? /* @__PURE__ */ new Date()).getTime() - new Date(task.startedAt).getTime()) / 1e3)) : null;
+		$[15] = task;
+		$[16] = t8;
+	} else t8 = $[16];
+	const seconds = t8;
+	let t9;
+	if ($[17] !== detail?.inbox) {
+		t9 = new Set(detail?.inbox.map(_temp5$3).filter(_temp6$3));
+		$[17] = detail?.inbox;
+		$[18] = t9;
+	} else t9 = $[18];
+	let t10;
+	if ($[19] !== t9) {
+		t10 = [...t9];
+		$[19] = t9;
+		$[20] = t10;
+	} else t10 = $[20];
+	let t11;
+	if ($[21] !== groupList || $[22] !== t10) {
+		t11 = t10.map((id_0) => ({
+			id: id_0,
+			group: groupList?.find((group) => group.id === `supervisor:${id_0}`)
+		}));
+		$[21] = groupList;
+		$[22] = t10;
+		$[23] = t11;
+	} else t11 = $[23];
+	const supervisors = t11;
+	let t12;
+	if ($[24] !== t) {
+		t12 = t("overviewStatusWaiting");
+		$[24] = t;
+		$[25] = t12;
+	} else t12 = $[25];
+	let t13;
+	if ($[26] !== t) {
+		t13 = t("ticketStatusQueued");
+		$[26] = t;
+		$[27] = t13;
+	} else t13 = $[27];
 	let t14;
-	if ($[36] !== t) {
-		t14 = t("ticketDetail");
-		$[36] = t;
-		$[37] = t14;
-	} else t14 = $[37];
+	if ($[28] !== t) {
+		t14 = t("overviewStatusRunning");
+		$[28] = t;
+		$[29] = t14;
+	} else t14 = $[29];
 	let t15;
-	if ($[38] === Symbol.for("react.memo_cache_sentinel")) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
+	if ($[30] !== t) {
+		t15 = t("overviewStatusReview");
+		$[30] = t;
+		$[31] = t15;
+	} else t15 = $[31];
+	let t16;
+	if ($[32] !== t) {
+		t16 = t("overviewCompleted");
+		$[32] = t;
+		$[33] = t16;
+	} else t16 = $[33];
+	let t17;
+	if ($[34] !== t) {
+		t17 = t("ticketStatusCancelled");
+		$[34] = t;
+		$[35] = t17;
+	} else t17 = $[35];
+	let t18;
+	if ($[36] !== t12 || $[37] !== t13 || $[38] !== t14 || $[39] !== t15 || $[40] !== t16 || $[41] !== t17) {
+		t18 = {
+			waiting: t12,
+			queued: t13,
+			running: t14,
+			review: t15,
+			done: t16,
+			cancelled: t17
+		};
+		$[36] = t12;
+		$[37] = t13;
+		$[38] = t14;
+		$[39] = t15;
+		$[40] = t16;
+		$[41] = t17;
+		$[42] = t18;
+	} else t18 = $[42];
+	const labels = t18;
+	let t19;
+	if ($[43] !== t) {
+		t19 = t("ticketDetail");
+		$[43] = t;
+		$[44] = t19;
+	} else t19 = $[44];
+	let t20;
+	if ($[45] === Symbol.for("react.memo_cache_sentinel")) {
+		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
 			width: 16,
 			height: 16
 		});
-		$[38] = t15;
-	} else t15 = $[38];
-	let t16;
-	if ($[39] !== go || $[40] !== returnTo) {
-		t16 = () => go(returnTo);
-		$[39] = go;
-		$[40] = returnTo;
-		$[41] = t16;
-	} else t16 = $[41];
-	let t17;
-	if ($[42] !== t) {
-		t17 = t("ticketBack");
-		$[42] = t;
-		$[43] = t17;
-	} else t17 = $[43];
-	let t18;
-	if ($[44] !== t16 || $[45] !== t17) {
-		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+		$[45] = t20;
+	} else t20 = $[45];
+	let t21;
+	if ($[46] !== go || $[47] !== returnTo) {
+		t21 = () => go(returnTo);
+		$[46] = go;
+		$[47] = returnTo;
+		$[48] = t21;
+	} else t21 = $[48];
+	let t22;
+	if ($[49] !== t) {
+		t22 = t("ticketBack");
+		$[49] = t;
+		$[50] = t22;
+	} else t22 = $[50];
+	let t23;
+	if ($[51] !== t21 || $[52] !== t22) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			variant: "ghost",
 			size: "sm",
-			icon: t15,
-			onClick: t16,
-			children: t17
+			icon: t20,
+			onClick: t21,
+			children: t22
 		}) });
-		$[44] = t16;
-		$[45] = t17;
-		$[46] = t18;
-	} else t18 = $[46];
-	let t19;
-	if ($[47] !== isLoading) {
-		t19 = isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		$[51] = t21;
+		$[52] = t22;
+		$[53] = t23;
+	} else t23 = $[53];
+	let t24;
+	if ($[54] !== isLoading) {
+		t24 = isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
 			children: "加载中…"
 		});
-		$[47] = isLoading;
-		$[48] = t19;
-	} else t19 = $[48];
-	let t20;
-	if ($[49] !== error) {
-		t20 = Boolean(error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		$[54] = isLoading;
+		$[55] = t24;
+	} else t24 = $[55];
+	let t25;
+	if ($[56] !== error || $[57] !== unavailable) {
+		t25 = (error || unavailable) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
-			children: error instanceof Error ? error.message : "读取失败"
+			children: error instanceof Error ? error.message : "任务不存在或无法读取"
 		});
-		$[49] = error;
-		$[50] = t20;
-	} else t20 = $[50];
-	let t21;
-	if ($[51] !== isLoading || $[52] !== t || $[53] !== task) {
-		t21 = !task && !isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+		$[56] = error;
+		$[57] = unavailable;
+		$[58] = t25;
+	} else t25 = $[58];
+	let t26;
+	if ($[59] !== error || $[60] !== isLoading || $[61] !== t || $[62] !== task || $[63] !== unavailable) {
+		t26 = !task && !isLoading && !error && !unavailable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			title: t("ticketNotFound"),
 			description: t("ticketNotFoundDescription"),
 			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NexusIcon, {
@@ -59278,14 +64841,16 @@ function TicketDetail() {
 				height: 28
 			})
 		});
-		$[51] = isLoading;
-		$[52] = t;
-		$[53] = task;
-		$[54] = t21;
-	} else t21 = $[54];
-	let t22;
-	if ($[55] !== channel_0 || $[56] !== ctx || $[57] !== detail || $[58] !== labels || $[59] !== latest || $[60] !== panel?.tickets || $[61] !== seconds || $[62] !== supervisors || $[63] !== t || $[64] !== task) {
-		t22 = task && detail && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+		$[59] = error;
+		$[60] = isLoading;
+		$[61] = t;
+		$[62] = task;
+		$[63] = unavailable;
+		$[64] = t26;
+	} else t26 = $[64];
+	let t27;
+	if ($[65] !== channel_0 || $[66] !== ctx || $[67] !== detail || $[68] !== labels || $[69] !== latest || $[70] !== seconds || $[71] !== supervisors || $[72] !== t || $[73] !== task) {
+		t27 = task && detail && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 				className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -59398,13 +64963,12 @@ function TicketDetail() {
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "flex min-w-0 flex-col gap-4",
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Issues, { issues: detail.topics.filter(_temp7) }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Issues, { issues: detail.topics.filter(_temp7$3) }),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
 							title: t("ticketDependencies"),
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
-								links: detail.dependencies.filter(_temp8),
+								links: detail.dependencies.filter(_temp8$2),
 								ticketId: task.id,
-								tickets: panel?.tickets ?? [],
 								empty: t("ticketDependenciesEmpty"),
 								clear: true
 							})
@@ -59414,7 +64978,6 @@ function TicketDetail() {
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
 								links: detail.dependencies.filter(_temp9),
 								ticketId: task.id,
-								tickets: panel?.tickets ?? [],
 								empty: t("ticketRelatedTasksEmpty")
 							})
 						})
@@ -59425,8 +64988,8 @@ function TicketDetail() {
 						title: t("graphSupervisor"),
 						children: supervisors.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 							className: "m-0 flex list-none flex-col gap-2 p-0",
-							children: supervisors.map((t23) => {
-								const { id: id_1, group: group_0 } = t23;
+							children: supervisors.map((t28) => {
+								const { id: id_1, group: group_0 } = t28;
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 									className: "flex flex-wrap items-center justify-between gap-2",
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -59454,96 +65017,198 @@ function TicketDetail() {
 				})]
 			})
 		] });
-		$[55] = channel_0;
-		$[56] = ctx;
-		$[57] = detail;
-		$[58] = labels;
-		$[59] = latest;
-		$[60] = panel?.tickets;
-		$[61] = seconds;
-		$[62] = supervisors;
-		$[63] = t;
-		$[64] = task;
-		$[65] = t22;
-	} else t22 = $[65];
-	let t23;
-	if ($[66] !== t14 || $[67] !== t18 || $[68] !== t19 || $[69] !== t20 || $[70] !== t21 || $[71] !== t22) {
-		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[65] = channel_0;
+		$[66] = ctx;
+		$[67] = detail;
+		$[68] = labels;
+		$[69] = latest;
+		$[70] = seconds;
+		$[71] = supervisors;
+		$[72] = t;
+		$[73] = task;
+		$[74] = t27;
+	} else t27 = $[74];
+	let t28;
+	if ($[75] !== t19 || $[76] !== t23 || $[77] !== t24 || $[78] !== t25 || $[79] !== t26 || $[80] !== t27) {
+		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "@container flex min-w-0 flex-col gap-5 pb-10",
-			"aria-label": t14,
+			"aria-label": t19,
 			children: [
-				t18,
-				t19,
-				t20,
-				t21,
-				t22
+				t23,
+				t24,
+				t25,
+				t26,
+				t27
 			]
 		});
-		$[66] = t14;
-		$[67] = t18;
-		$[68] = t19;
-		$[69] = t20;
-		$[70] = t21;
-		$[71] = t22;
-		$[72] = t23;
-	} else t23 = $[72];
-	return t23;
+		$[75] = t19;
+		$[76] = t23;
+		$[77] = t24;
+		$[78] = t25;
+		$[79] = t26;
+		$[80] = t27;
+		$[81] = t28;
+	} else t28 = $[81];
+	return t28;
 }
 function _temp9(link_0) {
 	return link_0.kind === "relates";
 }
-function _temp8(link) {
+function _temp8$2(link) {
 	return link.kind === "depends";
 }
-function _temp7(topic) {
+function _temp7$3(topic) {
 	return topic.kind === "issue";
 }
-function _temp6(id) {
+function _temp6$3(id) {
 	return Boolean(id);
 }
-function _temp5(message) {
+function _temp5$3(message) {
 	return message.supervisorId;
 }
-function _temp4$1(a, b) {
+function _temp4$3(a, b) {
 	return a.createdAt.localeCompare(b.createdAt);
 }
-function _temp3$2(state_1) {
-	return state_1.data.panel;
+function _temp3$3() {
+	return getApiNexusGroup();
 }
-function _temp2$5(state_0) {
-	return state_0.data.ticket;
+function _temp2$5() {
+	return getApiNexusChannel();
 }
-function _temp$9(state) {
+function _temp$10(state) {
 	return state.navigation;
 }
 // src/client/pages/ticket/page.tsx
 function Ticket() {
-	const $ = (0, import_dist.c)(10);
+	const $ = (0, import_dist.c)(38);
 	const { t } = useTranslation();
-	const tickets = useStore(_temp$8);
 	let t0;
-	if ($[0] !== t) {
-		t0 = t("ticketListDescription");
-		$[0] = t;
-		$[1] = t0;
-	} else t0 = $[1];
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.ticket,
+			queryFn: _temp$9
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const ticket = useQuery(t0);
 	let t1;
-	if ($[2] !== t0) {
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.node,
+			queryFn: _temp2$4,
+			refetchInterval: 15e3
+		};
+		$[1] = t1;
+	} else t1 = $[1];
+	const node = useQuery(t1);
+	let t2;
+	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
+		t2 = {
+			queryKey: keys.channel,
+			queryFn: _temp3$2
+		};
+		$[2] = t2;
+	} else t2 = $[2];
+	const channel = useQuery(t2);
+	let t3;
+	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
+		t3 = {
+			queryKey: keys.trigger,
+			queryFn: _temp4$2,
+			refetchInterval: 3e4
+		};
+		$[3] = t3;
+	} else t3 = $[3];
+	const trigger = useQuery(t3);
+	let t4;
+	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = {
+			queryKey: keys.subscription,
+			queryFn: _temp5$2
+		};
+		$[4] = t4;
+	} else t4 = $[4];
+	const subscription = useQuery(t4);
+	let t5;
+	if ($[5] !== channel || $[6] !== node || $[7] !== subscription || $[8] !== ticket || $[9] !== trigger) {
+		t5 = [
+			ticket,
+			node,
+			channel,
+			trigger,
+			subscription
+		];
+		$[5] = channel;
+		$[6] = node;
+		$[7] = subscription;
+		$[8] = ticket;
+		$[9] = trigger;
+		$[10] = t5;
+	} else t5 = $[10];
+	const queries = t5;
+	const failure = queries.find(_temp6$2)?.error;
+	let t6;
+	if ($[11] !== ticket.data) {
+		t6 = ticket.data ?? [];
+		$[11] = ticket.data;
+		$[12] = t6;
+	} else t6 = $[12];
+	const tickets = t6;
+	let t7;
+	if ($[13] !== ticket.dataUpdatedAt) {
+		t7 = ticket.dataUpdatedAt ? new Date(ticket.dataUpdatedAt).toISOString() : null;
+		$[13] = ticket.dataUpdatedAt;
+		$[14] = t7;
+	} else t7 = $[14];
+	const refreshedAt = t7;
+	let t8;
+	if ($[15] !== t) {
+		t8 = t("ticketListDescription");
+		$[15] = t;
+		$[16] = t8;
+	} else t8 = $[16];
+	let t9;
+	if ($[17] !== t8) {
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "mb-1 flex flex-wrap items-center justify-between gap-3",
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				className: "text-[13px] text-[var(--dsw-alias-label-secondary)] my-1",
-				children: t0
+				children: t8
 			})
 		});
-		$[2] = t0;
-		$[3] = t1;
-	} else t1 = $[3];
-	let t2;
-	if ($[4] !== t || $[5] !== tickets) {
-		t2 = tickets.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+		$[17] = t8;
+		$[18] = t9;
+	} else t9 = $[18];
+	let t10;
+	if ($[19] !== failure) {
+		t10 = failure && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			children: failure instanceof Error ? failure.message : "任务列表加载失败"
+		});
+		$[19] = failure;
+		$[20] = t10;
+	} else t10 = $[20];
+	let t11;
+	if ($[21] !== queries) {
+		t11 = queries.some(_temp7$2) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "status",
+			children: "加载中…"
+		});
+		$[21] = queries;
+		$[22] = t11;
+	} else t11 = $[22];
+	let t12;
+	if ($[23] !== channel || $[24] !== failure || $[25] !== node || $[26] !== queries || $[27] !== refreshedAt || $[28] !== subscription || $[29] !== t || $[30] !== tickets || $[31] !== trigger) {
+		t12 = !failure && !queries.some(_temp8$1) && (tickets.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "m-0 pl-0",
-			children: tickets.map(_temp2$4)
+			children: tickets.map((task) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, {
+				task,
+				nodes: node.data ?? [],
+				channels: channel.data ?? [],
+				triggers: trigger.data ?? [],
+				subscriptions: subscription.data ?? [],
+				refreshedAt
+			}, task.id))
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			title: t("overviewTasksEmpty"),
 			description: t("overviewTasksEmptyDescription"),
@@ -59551,28 +65216,60 @@ function Ticket() {
 				width: 24,
 				height: 24
 			})
-		});
-		$[4] = t;
-		$[5] = tickets;
-		$[6] = t2;
-	} else t2 = $[6];
-	let t3;
-	if ($[7] !== t1 || $[8] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		}));
+		$[23] = channel;
+		$[24] = failure;
+		$[25] = node;
+		$[26] = queries;
+		$[27] = refreshedAt;
+		$[28] = subscription;
+		$[29] = t;
+		$[30] = tickets;
+		$[31] = trigger;
+		$[32] = t12;
+	} else t12 = $[32];
+	let t13;
+	if ($[33] !== t10 || $[34] !== t11 || $[35] !== t12 || $[36] !== t9) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "@container pb-10",
-			children: [t1, t2]
+			children: [
+				t9,
+				t10,
+				t11,
+				t12
+			]
 		});
-		$[7] = t1;
-		$[8] = t2;
-		$[9] = t3;
-	} else t3 = $[9];
-	return t3;
+		$[33] = t10;
+		$[34] = t11;
+		$[35] = t12;
+		$[36] = t9;
+		$[37] = t13;
+	} else t13 = $[37];
+	return t13;
 }
-function _temp2$4(task) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, { task }, task.id);
+function _temp8$1(query_1) {
+	return query_1.isLoading;
 }
-function _temp$8(state) {
-	return state.data.panel?.tickets ?? [];
+function _temp7$2(query_0) {
+	return query_0.isLoading;
+}
+function _temp6$2(query) {
+	return query.error;
+}
+function _temp5$2() {
+	return getApiNexusSubscription();
+}
+function _temp4$2() {
+	return getApiNexusTrigger();
+}
+function _temp3$2() {
+	return getApiNexusChannel();
+}
+function _temp2$4() {
+	return getApiNexusNode();
+}
+function _temp$9() {
+	return getApiNexusTicket();
 }
 // src/client/pages/trigger/model.ts
 const KINDS = {
@@ -59653,35 +65350,36 @@ const THREAD_KINDS = {
 	chat: "triggerTopicChat",
 	ci: "triggerTopicCi"
 };
-function recordsOf(panel) {
-	if (!panel) return [];
-	return panel.topics.triggers.flatMap((trigger) => {
-		const thread = panel.topics.threads.find((thread) => thread.id === trigger.threadId);
-		if (!thread) return [];
+function recordsOf(source) {
+	const { project, trigger, thread, subscription, delivery } = source;
+	if (!project || !trigger || !thread || !subscription || !delivery) return [];
+	return trigger.flatMap((item) => {
+		const topic = thread.find((row) => row.id === item.threadId);
+		if (!topic) return [];
 		return [{
-			id: trigger.id,
-			channel: trigger.channelId,
-			kind: trigger.kind,
-			actor: trigger.actorName ?? "",
-			human: Boolean(trigger.human),
-			mentioned: Boolean(trigger.mentioned),
-			text: trigger.text,
-			at: trigger.at,
-			ref: trigger.ref ?? void 0,
-			url: trigger.url ?? void 0,
+			id: item.id,
+			channel: item.channelId,
+			kind: item.kind,
+			actor: item.actorName ?? "",
+			human: Boolean(item.human),
+			mentioned: Boolean(item.mentioned),
+			text: item.text,
+			at: item.at,
+			ref: item.ref ?? void 0,
+			url: item.url ?? void 0,
 			thread: {
-				id: thread.id,
-				kind: thread.kind,
-				ref: thread.refId,
-				title: thread.title,
-				triage: thread.triage,
-				project: panel.projects.find((project) => project.id === thread.projectId)?.name,
-				url: thread.url ?? void 0
+				id: topic.id,
+				kind: topic.kind,
+				ref: topic.refId,
+				title: topic.title,
+				triage: topic.triage,
+				project: project.find((row) => row.id === topic.projectId)?.name,
+				url: topic.url ?? void 0
 			},
-			tickets: panel.topics.subscriptions.filter((link) => link.threadId === thread.id).map((link) => link.ticketId),
-			deliveries: panel.deliveries.filter((message) => message.triggerId === trigger.id).map((message) => ({
+			tickets: subscription.filter((link) => link.threadId === topic.id).map((link) => link.ticketId),
+			deliveries: delivery.filter((message) => message.triggerId === item.id).map((message) => ({
 				target: message.type,
-				project: panel.projects.find((project) => project.id === message.projectId)?.name,
+				project: project.find((row) => row.id === message.projectId)?.name,
 				status: message.status,
 				read: Boolean(message.readAt),
 				attempts: message.deliveryAttempts,
@@ -59839,7 +65537,7 @@ function Event$1(t0) {
 				variant: "ghost",
 				"aria-expanded": expanded,
 				"aria-controls": bodyId,
-				onClick: () => setExpanded(_temp$7),
+				onClick: () => setExpanded(_temp$8),
 				children: t(expanded ? "triggerCollapseBody" : "triggerExpandBody")
 			});
 			$[52] = bodyId;
@@ -60070,132 +65768,244 @@ function Event$1(t0) {
 	} else t14 = $[98];
 	return t14;
 }
-function _temp$7(value) {
+function _temp$8(value) {
 	return !value;
 }
 // src/client/pages/trigger/detail/page.tsx
 function TriggerDetail() {
-	const $ = (0, import_dist.c)(136);
+	const $ = (0, import_dist.c)(159);
 	const { t } = useTranslation();
 	const { go, openTicket } = useActions();
-	const id = useStore(_temp$6);
-	const panel = useStore(_temp2$3);
+	const id = useStore(_temp$7);
+	let t0;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.project,
+			queryFn: _temp2$3
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const project = useQuery(t0);
+	let t1;
+	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.trigger,
+			queryFn: _temp3$1,
+			refetchInterval: 3e4
+		};
+		$[1] = t1;
+	} else t1 = $[1];
+	const trigger = useQuery(t1);
+	let t2;
+	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
+		t2 = {
+			queryKey: keys.thread,
+			queryFn: _temp4$1
+		};
+		$[2] = t2;
+	} else t2 = $[2];
+	const thread = useQuery(t2);
+	let t3;
+	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
+		t3 = {
+			queryKey: keys.subscription,
+			queryFn: _temp5$1
+		};
+		$[3] = t3;
+	} else t3 = $[3];
+	const subscription = useQuery(t3);
+	let t4;
+	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = {
+			queryKey: keys.delivery,
+			queryFn: _temp6$1
+		};
+		$[4] = t4;
+	} else t4 = $[4];
+	const delivery = useQuery(t4);
+	const error = project.error ?? trigger.error ?? thread.error ?? subscription.error ?? delivery.error;
+	const loading = project.isLoading || trigger.isLoading || thread.isLoading || subscription.isLoading || delivery.isLoading;
 	let href;
 	let latest;
-	let t0;
-	let t1;
-	let t2;
-	let t3;
-	let t4;
+	let t10;
+	let t11;
+	let t12;
+	let t13;
+	let t14;
 	let t5;
 	let t6;
 	let t7;
 	let t8;
 	let t9;
 	let tickets;
-	if ($[0] !== go || $[1] !== id || $[2] !== panel || $[3] !== t) {
-		t9 = Symbol.for("react.early_return_sentinel");
+	if ($[5] !== delivery.data || $[6] !== error || $[7] !== go || $[8] !== id || $[9] !== loading || $[10] !== project.data || $[11] !== subscription.data || $[12] !== t || $[13] !== thread.data || $[14] !== trigger.data) {
+		t14 = Symbol.for("react.early_return_sentinel");
 		bb0: {
-			let t10;
-			if ($[17] !== id) {
-				t10 = (topic) => topic.latest.thread.id === id;
-				$[17] = id;
-				$[18] = t10;
-			} else t10 = $[18];
-			const topic_0 = groupTopics(recordsOf(panel)).find(t10);
-			let t11;
-			if ($[19] === Symbol.for("react.memo_cache_sentinel")) {
-				t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
+			let t15;
+			if ($[28] !== id) {
+				t15 = (topic) => topic.latest.thread.id === id;
+				$[28] = id;
+				$[29] = t15;
+			} else t15 = $[29];
+			const topic_0 = groupTopics(recordsOf({
+				project: project.data,
+				trigger: trigger.data,
+				thread: thread.data,
+				subscription: subscription.data,
+				delivery: delivery.data
+			})).find(t15);
+			let t16;
+			if ($[30] === Symbol.for("react.memo_cache_sentinel")) {
+				t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
 					width: 16,
 					height: 16
 				});
-				$[19] = t11;
-			} else t11 = $[19];
-			let t12;
-			if ($[20] !== go) {
-				t12 = () => go("trigger");
-				$[20] = go;
-				$[21] = t12;
-			} else t12 = $[21];
-			let t13;
-			if ($[22] !== t) {
-				t13 = t("triggerBack");
-				$[22] = t;
-				$[23] = t13;
-			} else t13 = $[23];
-			let t14;
-			if ($[24] !== t12 || $[25] !== t13) {
-				t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				$[30] = t16;
+			} else t16 = $[30];
+			let t17;
+			if ($[31] !== go) {
+				t17 = () => go("trigger");
+				$[31] = go;
+				$[32] = t17;
+			} else t17 = $[32];
+			let t18;
+			if ($[33] !== t) {
+				t18 = t("triggerBack");
+				$[33] = t;
+				$[34] = t18;
+			} else t18 = $[34];
+			let t19;
+			if ($[35] !== t17 || $[36] !== t18) {
+				t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "ghost",
-					icon: t11,
-					onClick: t12,
-					children: t13
+					icon: t16,
+					onClick: t17,
+					children: t18
 				});
-				$[24] = t12;
-				$[25] = t13;
-				$[26] = t14;
-			} else t14 = $[26];
-			const back = t14;
-			if (!topic_0) {
-				let t15;
-				if ($[27] !== back) {
-					t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
-					$[27] = back;
-					$[28] = t15;
-				} else t15 = $[28];
-				let t16;
-				if ($[29] !== t) {
-					t16 = t("triggerTopicNotFound");
-					$[29] = t;
-					$[30] = t16;
-				} else t16 = $[30];
-				let t17;
-				if ($[31] !== t16) {
-					t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-						compact: true,
-						className: "rounded-xl border border-[var(--dsw-alias-border-l3)] p-5 [&>p]:text-sm [&>p]:text-[var(--dsw-alias-label-primary)]",
-						title: t16
+				$[35] = t17;
+				$[36] = t18;
+				$[37] = t19;
+			} else t19 = $[37];
+			const back = t19;
+			if (error) {
+				let t20;
+				if ($[38] !== back) {
+					t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
+					$[38] = back;
+					$[39] = t20;
+				} else t20 = $[39];
+				const t21 = error.message || "话题详情加载失败，请重试。";
+				let t22;
+				if ($[40] !== t21) {
+					t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "alert",
+						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+						children: t21
 					});
-					$[31] = t16;
-					$[32] = t17;
-				} else t17 = $[32];
-				let t18;
-				if ($[33] !== t15 || $[34] !== t17) {
-					t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+					$[40] = t21;
+					$[41] = t22;
+				} else t22 = $[41];
+				let t23;
+				if ($[42] !== t20 || $[43] !== t22) {
+					t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 						className: "flex flex-col gap-5 pb-10",
-						children: [t15, t17]
+						children: [t20, t22]
 					});
-					$[33] = t15;
-					$[34] = t17;
-					$[35] = t18;
-				} else t18 = $[35];
-				t9 = t18;
+					$[42] = t20;
+					$[43] = t22;
+					$[44] = t23;
+				} else t23 = $[44];
+				t14 = t23;
 				break bb0;
 			}
-			const { latest: t15, events } = topic_0;
-			latest = t15;
+			if (loading) {
+				let t20;
+				if ($[45] !== back) {
+					t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
+					$[45] = back;
+					$[46] = t20;
+				} else t20 = $[46];
+				let t21;
+				if ($[47] === Symbol.for("react.memo_cache_sentinel")) {
+					t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "status",
+						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						children: "正在载入话题详情…"
+					});
+					$[47] = t21;
+				} else t21 = $[47];
+				let t22;
+				if ($[48] !== t20) {
+					t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: "flex flex-col gap-5 pb-10",
+						children: [t20, t21]
+					});
+					$[48] = t20;
+					$[49] = t22;
+				} else t22 = $[49];
+				t14 = t22;
+				break bb0;
+			}
+			if (!topic_0) {
+				let t20;
+				if ($[50] !== back) {
+					t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
+					$[50] = back;
+					$[51] = t20;
+				} else t20 = $[51];
+				let t21;
+				if ($[52] !== t) {
+					t21 = t("triggerTopicNotFound");
+					$[52] = t;
+					$[53] = t21;
+				} else t21 = $[53];
+				let t22;
+				if ($[54] !== t21) {
+					t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+						compact: true,
+						className: "rounded-xl border border-[var(--dsw-alias-border-l3)] p-5 [&>p]:text-sm [&>p]:text-[var(--dsw-alias-label-primary)]",
+						title: t21
+					});
+					$[54] = t21;
+					$[55] = t22;
+				} else t22 = $[55];
+				let t23;
+				if ($[56] !== t20 || $[57] !== t22) {
+					t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+						className: "flex flex-col gap-5 pb-10",
+						children: [t20, t22]
+					});
+					$[56] = t20;
+					$[57] = t22;
+					$[58] = t23;
+				} else t23 = $[58];
+				t14 = t23;
+				break bb0;
+			}
+			const { latest: t20, events } = topic_0;
+			latest = t20;
 			href = sourceHref(latest.channel, latest.thread.url);
 			const channel = latest.channel === "feishu" ? t("triggerFeishu") : latest.channel === "github" ? "GitHub" : "GitLab";
-			tickets = [...new Set(events.flatMap(_temp3$1))];
-			t5 = "@container flex min-w-0 flex-col gap-5 pb-10";
-			if ($[36] !== t) {
-				t6 = t("triggerTopicDetail");
-				$[36] = t;
-				$[37] = t6;
-			} else t6 = $[37];
-			if ($[38] !== back) {
-				t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
-				$[38] = back;
-				$[39] = t7;
-			} else t7 = $[39];
-			let t16;
-			if ($[40] !== channel) {
-				t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: channel });
-				$[40] = channel;
-				$[41] = t16;
-			} else t16 = $[41];
-			const t17 = href ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+			tickets = [...new Set(events.flatMap(_temp7$1))];
+			t10 = "@container flex min-w-0 flex-col gap-5 pb-10";
+			if ($[59] !== t) {
+				t11 = t("triggerTopicDetail");
+				$[59] = t;
+				$[60] = t11;
+			} else t11 = $[60];
+			if ($[61] !== back) {
+				t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: back });
+				$[61] = back;
+				$[62] = t12;
+			} else t12 = $[62];
+			let t21;
+			if ($[63] !== channel) {
+				t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: channel });
+				$[63] = channel;
+				$[64] = t21;
+			} else t21 = $[64];
+			const t22 = href ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
 				href,
 				target: "_blank",
 				rel: "noopener noreferrer",
@@ -60207,277 +66017,283 @@ function TriggerDetail() {
 					"↗"
 				]
 			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: latest.thread.ref });
-			const t18 = THREAD_KINDS[latest.thread.kind];
-			let t19;
-			if ($[42] !== t || $[43] !== t18) {
-				t19 = t(t18);
-				$[42] = t;
-				$[43] = t18;
-				$[44] = t19;
-			} else t19 = $[44];
-			let t20;
-			if ($[45] !== t19) {
-				t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-					tone: "neutral",
-					children: t19
-				});
-				$[45] = t19;
-				$[46] = t20;
-			} else t20 = $[46];
-			const t21 = TRIAGE[latest.thread.triage];
-			let t22;
-			if ($[47] !== t || $[48] !== t21) {
-				t22 = t(t21);
-				$[47] = t;
-				$[48] = t21;
-				$[49] = t22;
-			} else t22 = $[49];
-			let t23;
-			if ($[50] !== t22) {
-				t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-					tone: "outline",
-					children: t22
-				});
-				$[50] = t22;
-				$[51] = t23;
-			} else t23 = $[51];
+			const t23 = THREAD_KINDS[latest.thread.kind];
 			let t24;
-			if ($[52] !== t16 || $[53] !== t17 || $[54] !== t20 || $[55] !== t23) {
-				t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			if ($[65] !== t || $[66] !== t23) {
+				t24 = t(t23);
+				$[65] = t;
+				$[66] = t23;
+				$[67] = t24;
+			} else t24 = $[67];
+			let t25;
+			if ($[68] !== t24) {
+				t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+					tone: "neutral",
+					children: t24
+				});
+				$[68] = t24;
+				$[69] = t25;
+			} else t25 = $[69];
+			const t26 = TRIAGE[latest.thread.triage];
+			let t27;
+			if ($[70] !== t || $[71] !== t26) {
+				t27 = t(t26);
+				$[70] = t;
+				$[71] = t26;
+				$[72] = t27;
+			} else t27 = $[72];
+			let t28;
+			if ($[73] !== t27) {
+				t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+					tone: "outline",
+					children: t27
+				});
+				$[73] = t27;
+				$[74] = t28;
+			} else t28 = $[74];
+			let t29;
+			if ($[75] !== t21 || $[76] !== t22 || $[77] !== t25 || $[78] !== t28) {
+				t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "mb-2 flex flex-wrap items-center gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]",
 					children: [
-						t16,
-						t17,
-						t20,
-						t23
+						t21,
+						t22,
+						t25,
+						t28
 					]
 				});
-				$[52] = t16;
-				$[53] = t17;
-				$[54] = t20;
-				$[55] = t23;
-				$[56] = t24;
-			} else t24 = $[56];
-			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", { children: [t24, /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+				$[75] = t21;
+				$[76] = t22;
+				$[77] = t25;
+				$[78] = t28;
+				$[79] = t29;
+			} else t29 = $[79];
+			t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", { children: [t29, /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 				className: "m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]",
 				children: latest.thread.title
 			})] });
-			t4 = "grid min-w-0 gap-5 @min-[780px]:grid-cols-[minmax(0,1fr)_250px]";
-			t2 = "min-w-0";
-			let t25;
-			if ($[57] !== t) {
-				t25 = t("triggerTimeline");
-				$[57] = t;
-				$[58] = t25;
-			} else t25 = $[58];
-			let t26;
-			if ($[59] !== t25) {
-				t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+			t9 = "grid min-w-0 gap-5 @min-[780px]:grid-cols-[minmax(0,1fr)_250px]";
+			t7 = "min-w-0";
+			let t30;
+			if ($[80] !== t) {
+				t30 = t("triggerTimeline");
+				$[80] = t;
+				$[81] = t30;
+			} else t30 = $[81];
+			let t31;
+			if ($[82] !== t30) {
+				t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 					className: "m-0 text-sm font-medium",
-					children: t25
+					children: t30
 				});
-				$[59] = t25;
-				$[60] = t26;
-			} else t26 = $[60];
-			const t27 = t("triggerEventCount", { count: events.length });
-			let t28;
-			if ($[61] !== t) {
-				t28 = t("triggerNewestFirst");
-				$[61] = t;
-				$[62] = t28;
-			} else t28 = $[62];
-			t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				$[82] = t30;
+				$[83] = t31;
+			} else t31 = $[83];
+			const t32 = t("triggerEventCount", { count: events.length });
+			let t33;
+			if ($[84] !== t) {
+				t33 = t("triggerNewestFirst");
+				$[84] = t;
+				$[85] = t33;
+			} else t33 = $[85];
+			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "mb-4 flex items-center justify-between gap-2",
-				children: [t26, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
+				children: [t31, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 					className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
 					children: [
-						t27,
+						t32,
 						" ",
 						"·",
 						" ",
-						t28
+						t33
 					]
 				})]
 			});
-			t0 = "m-0 list-none p-0 pl-1.5";
-			t1 = events.map(_temp4);
+			t5 = "m-0 list-none p-0 pl-1.5";
+			t6 = events.map(_temp8);
 		}
-		$[0] = go;
-		$[1] = id;
-		$[2] = panel;
-		$[3] = t;
-		$[4] = href;
-		$[5] = latest;
-		$[6] = t0;
-		$[7] = t1;
-		$[8] = t2;
-		$[9] = t3;
-		$[10] = t4;
-		$[11] = t5;
-		$[12] = t6;
-		$[13] = t7;
-		$[14] = t8;
-		$[15] = t9;
-		$[16] = tickets;
+		$[5] = delivery.data;
+		$[6] = error;
+		$[7] = go;
+		$[8] = id;
+		$[9] = loading;
+		$[10] = project.data;
+		$[11] = subscription.data;
+		$[12] = t;
+		$[13] = thread.data;
+		$[14] = trigger.data;
+		$[15] = href;
+		$[16] = latest;
+		$[17] = t10;
+		$[18] = t11;
+		$[19] = t12;
+		$[20] = t13;
+		$[21] = t14;
+		$[22] = t5;
+		$[23] = t6;
+		$[24] = t7;
+		$[25] = t8;
+		$[26] = t9;
+		$[27] = tickets;
 	} else {
-		href = $[4];
-		latest = $[5];
-		t0 = $[6];
-		t1 = $[7];
-		t2 = $[8];
-		t3 = $[9];
-		t4 = $[10];
-		t5 = $[11];
-		t6 = $[12];
-		t7 = $[13];
-		t8 = $[14];
-		t9 = $[15];
-		tickets = $[16];
+		href = $[15];
+		latest = $[16];
+		t10 = $[17];
+		t11 = $[18];
+		t12 = $[19];
+		t13 = $[20];
+		t14 = $[21];
+		t5 = $[22];
+		t6 = $[23];
+		t7 = $[24];
+		t8 = $[25];
+		t9 = $[26];
+		tickets = $[27];
 	}
-	if (t9 !== Symbol.for("react.early_return_sentinel")) return t9;
-	let t10;
-	if ($[63] !== t0 || $[64] !== t1) {
-		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ol", {
-			className: t0,
-			children: t1
-		});
-		$[63] = t0;
-		$[64] = t1;
-		$[65] = t10;
-	} else t10 = $[65];
-	let t11;
-	if ($[66] !== t10 || $[67] !== t2 || $[68] !== t3) {
-		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t2,
-			children: [t3, t10]
-		});
-		$[66] = t10;
-		$[67] = t2;
-		$[68] = t3;
-		$[69] = t11;
-	} else t11 = $[69];
-	let t12;
-	if ($[70] !== t) {
-		t12 = t("triggerThread");
-		$[70] = t;
-		$[71] = t12;
-	} else t12 = $[71];
-	let t13;
-	if ($[72] !== t12) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-			className: "m-0 text-sm font-medium",
-			children: t12
-		});
-		$[72] = t12;
-		$[73] = t13;
-	} else t13 = $[73];
-	let t14;
-	if ($[74] !== t) {
-		t14 = t("ticketProject");
-		$[74] = t;
-		$[75] = t14;
-	} else t14 = $[75];
+	if (t14 !== Symbol.for("react.early_return_sentinel")) return t14;
 	let t15;
-	if ($[76] !== t14) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
-			className: "text-[var(--dsw-alias-label-tertiary)]",
-			children: t14
+	if ($[86] !== t5 || $[87] !== t6) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ol", {
+			className: t5,
+			children: t6
 		});
-		$[76] = t14;
-		$[77] = t15;
-	} else t15 = $[77];
+		$[86] = t5;
+		$[87] = t6;
+		$[88] = t15;
+	} else t15 = $[88];
 	let t16;
-	if ($[78] !== latest.thread.project || $[79] !== t) {
-		t16 = latest.thread.project ?? t("triggerNoProject");
-		$[78] = latest.thread.project;
-		$[79] = t;
-		$[80] = t16;
-	} else t16 = $[80];
-	let t17;
-	if ($[81] !== t16) {
-		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-			className: "m-0 mt-1 break-all leading-5",
-			children: t16
+	if ($[89] !== t15 || $[90] !== t7 || $[91] !== t8) {
+		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t7,
+			children: [t8, t15]
 		});
-		$[81] = t16;
-		$[82] = t17;
-	} else t17 = $[82];
+		$[89] = t15;
+		$[90] = t7;
+		$[91] = t8;
+		$[92] = t16;
+	} else t16 = $[92];
+	let t17;
+	if ($[93] !== t) {
+		t17 = t("triggerThread");
+		$[93] = t;
+		$[94] = t17;
+	} else t17 = $[94];
 	let t18;
-	if ($[83] !== t15 || $[84] !== t17) {
-		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t15, t17] });
-		$[83] = t15;
-		$[84] = t17;
-		$[85] = t18;
-	} else t18 = $[85];
+	if ($[95] !== t17) {
+		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+			className: "m-0 text-sm font-medium",
+			children: t17
+		});
+		$[95] = t17;
+		$[96] = t18;
+	} else t18 = $[96];
 	let t19;
-	if ($[86] !== t) {
-		t19 = t("triggerThreadId");
-		$[86] = t;
-		$[87] = t19;
-	} else t19 = $[87];
+	if ($[97] !== t) {
+		t19 = t("ticketProject");
+		$[97] = t;
+		$[98] = t19;
+	} else t19 = $[98];
 	let t20;
-	if ($[88] !== t19) {
+	if ($[99] !== t19) {
 		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
 			className: "text-[var(--dsw-alias-label-tertiary)]",
 			children: t19
 		});
-		$[88] = t19;
-		$[89] = t20;
-	} else t20 = $[89];
+		$[99] = t19;
+		$[100] = t20;
+	} else t20 = $[100];
 	let t21;
-	if ($[90] !== latest.thread.id) {
-		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+	if ($[101] !== latest.thread.project || $[102] !== t) {
+		t21 = latest.thread.project ?? t("triggerNoProject");
+		$[101] = latest.thread.project;
+		$[102] = t;
+		$[103] = t21;
+	} else t21 = $[103];
+	let t22;
+	if ($[104] !== t21) {
+		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+			className: "m-0 mt-1 break-all leading-5",
+			children: t21
+		});
+		$[104] = t21;
+		$[105] = t22;
+	} else t22 = $[105];
+	let t23;
+	if ($[106] !== t20 || $[107] !== t22) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t20, t22] });
+		$[106] = t20;
+		$[107] = t22;
+		$[108] = t23;
+	} else t23 = $[108];
+	let t24;
+	if ($[109] !== t) {
+		t24 = t("triggerThreadId");
+		$[109] = t;
+		$[110] = t24;
+	} else t24 = $[110];
+	let t25;
+	if ($[111] !== t24) {
+		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
+			className: "text-[var(--dsw-alias-label-tertiary)]",
+			children: t24
+		});
+		$[111] = t24;
+		$[112] = t25;
+	} else t25 = $[112];
+	let t26;
+	if ($[113] !== latest.thread.id) {
+		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
 			className: "m-0 mt-1 break-all font-mono text-[11px] leading-5",
 			children: latest.thread.id
 		});
-		$[90] = latest.thread.id;
-		$[91] = t21;
-	} else t21 = $[91];
-	let t22;
-	if ($[92] !== t20 || $[93] !== t21) {
-		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t20, t21] });
-		$[92] = t20;
-		$[93] = t21;
-		$[94] = t22;
-	} else t22 = $[94];
-	let t23;
-	if ($[95] !== t18 || $[96] !== t22) {
-		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
-			className: "m-0 mt-3 flex flex-col gap-3 text-xs",
-			children: [t18, t22]
-		});
-		$[95] = t18;
-		$[96] = t22;
-		$[97] = t23;
-	} else t23 = $[97];
-	let t24;
-	if ($[98] !== t13 || $[99] !== t23) {
-		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4",
-			children: [t13, t23]
-		});
-		$[98] = t13;
-		$[99] = t23;
-		$[100] = t24;
-	} else t24 = $[100];
-	let t25;
-	if ($[101] !== t) {
-		t25 = t("triggerLinkedTasks");
-		$[101] = t;
-		$[102] = t25;
-	} else t25 = $[102];
-	let t26;
-	if ($[103] !== t25) {
-		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-			className: "m-0 text-sm font-medium",
-			children: t25
-		});
-		$[103] = t25;
-		$[104] = t26;
-	} else t26 = $[104];
+		$[113] = latest.thread.id;
+		$[114] = t26;
+	} else t26 = $[114];
 	let t27;
-	if ($[105] !== openTicket || $[106] !== t || $[107] !== tickets) {
-		t27 = tickets.length ? tickets.map((ticket) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+	if ($[115] !== t25 || $[116] !== t26) {
+		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t25, t26] });
+		$[115] = t25;
+		$[116] = t26;
+		$[117] = t27;
+	} else t27 = $[117];
+	let t28;
+	if ($[118] !== t23 || $[119] !== t27) {
+		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
+			className: "m-0 mt-3 flex flex-col gap-3 text-xs",
+			children: [t23, t27]
+		});
+		$[118] = t23;
+		$[119] = t27;
+		$[120] = t28;
+	} else t28 = $[120];
+	let t29;
+	if ($[121] !== t18 || $[122] !== t28) {
+		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4",
+			children: [t18, t28]
+		});
+		$[121] = t18;
+		$[122] = t28;
+		$[123] = t29;
+	} else t29 = $[123];
+	let t30;
+	if ($[124] !== t) {
+		t30 = t("triggerLinkedTasks");
+		$[124] = t;
+		$[125] = t30;
+	} else t30 = $[125];
+	let t31;
+	if ($[126] !== t30) {
+		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+			className: "m-0 text-sm font-medium",
+			children: t30
+		});
+		$[126] = t30;
+		$[127] = t31;
+	} else t31 = $[127];
+	let t32;
+	if ($[128] !== openTicket || $[129] !== t || $[130] !== tickets) {
+		t32 = tickets.length ? tickets.map((ticket) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			size: "sm",
 			variant: "outline",
 			onClick: () => openTicket(ticket),
@@ -60487,120 +66303,132 @@ function TriggerDetail() {
 			className: "[&>p]:text-xs [&>p]:text-[var(--dsw-alias-label-tertiary)]",
 			title: t("triggerNoTask")
 		});
-		$[105] = openTicket;
-		$[106] = t;
-		$[107] = tickets;
-		$[108] = t27;
-	} else t27 = $[108];
-	let t28;
-	if ($[109] !== t27) {
-		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+		$[128] = openTicket;
+		$[129] = t;
+		$[130] = tickets;
+		$[131] = t32;
+	} else t32 = $[131];
+	let t33;
+	if ($[132] !== t32) {
+		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "mt-3 flex flex-wrap gap-2",
-			children: t27
+			children: t32
 		});
-		$[109] = t27;
-		$[110] = t28;
-	} else t28 = $[110];
-	let t29;
-	if ($[111] !== t26 || $[112] !== t28) {
-		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[132] = t32;
+		$[133] = t33;
+	} else t33 = $[133];
+	let t34;
+	if ($[134] !== t31 || $[135] !== t33) {
+		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4",
-			children: [t26, t28]
+			children: [t31, t33]
 		});
-		$[111] = t26;
-		$[112] = t28;
-		$[113] = t29;
-	} else t29 = $[113];
-	let t30;
-	if ($[114] !== t) {
-		t30 = t("triggerExternalText");
-		$[114] = t;
-		$[115] = t30;
-	} else t30 = $[115];
-	let t31;
-	if ($[116] !== t30) {
-		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		$[134] = t31;
+		$[135] = t33;
+		$[136] = t34;
+	} else t34 = $[136];
+	let t35;
+	if ($[137] !== t) {
+		t35 = t("triggerExternalText");
+		$[137] = t;
+		$[138] = t35;
+	} else t35 = $[138];
+	let t36;
+	if ($[139] !== t35) {
+		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t30
+			children: t35
 		});
-		$[116] = t30;
-		$[117] = t31;
-	} else t31 = $[117];
-	let t32;
-	if ($[118] !== href || $[119] !== t) {
-		t32 = href && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		$[139] = t35;
+		$[140] = t36;
+	} else t36 = $[140];
+	let t37;
+	if ($[141] !== href || $[142] !== t) {
+		t37 = href && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
 			children: t("triggerSampleLink")
 		});
-		$[118] = href;
-		$[119] = t;
-		$[120] = t32;
-	} else t32 = $[120];
-	let t33;
-	if ($[121] !== t24 || $[122] !== t29 || $[123] !== t31 || $[124] !== t32) {
-		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("aside", {
+		$[141] = href;
+		$[142] = t;
+		$[143] = t37;
+	} else t37 = $[143];
+	let t38;
+	if ($[144] !== t29 || $[145] !== t34 || $[146] !== t36 || $[147] !== t37) {
+		t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("aside", {
 			className: "flex min-w-0 flex-col gap-4 self-start @min-[780px]:sticky @min-[780px]:top-4",
 			children: [
-				t24,
 				t29,
-				t31,
-				t32
+				t34,
+				t36,
+				t37
 			]
 		});
-		$[121] = t24;
-		$[122] = t29;
-		$[123] = t31;
-		$[124] = t32;
-		$[125] = t33;
-	} else t33 = $[125];
-	let t34;
-	if ($[126] !== t11 || $[127] !== t33 || $[128] !== t4) {
-		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t4,
-			children: [t11, t33]
+		$[144] = t29;
+		$[145] = t34;
+		$[146] = t36;
+		$[147] = t37;
+		$[148] = t38;
+	} else t38 = $[148];
+	let t39;
+	if ($[149] !== t16 || $[150] !== t38 || $[151] !== t9) {
+		t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t9,
+			children: [t16, t38]
 		});
-		$[126] = t11;
-		$[127] = t33;
-		$[128] = t4;
-		$[129] = t34;
-	} else t34 = $[129];
-	let t35;
-	if ($[130] !== t34 || $[131] !== t5 || $[132] !== t6 || $[133] !== t7 || $[134] !== t8) {
-		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: t5,
-			"aria-label": t6,
+		$[149] = t16;
+		$[150] = t38;
+		$[151] = t9;
+		$[152] = t39;
+	} else t39 = $[152];
+	let t40;
+	if ($[153] !== t10 || $[154] !== t11 || $[155] !== t12 || $[156] !== t13 || $[157] !== t39) {
+		t40 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: t10,
+			"aria-label": t11,
 			children: [
-				t7,
-				t8,
-				t34
+				t12,
+				t13,
+				t39
 			]
 		});
-		$[130] = t34;
-		$[131] = t5;
-		$[132] = t6;
-		$[133] = t7;
-		$[134] = t8;
-		$[135] = t35;
-	} else t35 = $[135];
-	return t35;
+		$[153] = t10;
+		$[154] = t11;
+		$[155] = t12;
+		$[156] = t13;
+		$[157] = t39;
+		$[158] = t40;
+	} else t40 = $[158];
+	return t40;
 }
-function _temp4(event_0) {
+function _temp8(event_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Event$1, { event: event_0 }, event_0.id);
 }
-function _temp3$1(event) {
+function _temp7$1(event) {
 	return [...event.tickets];
 }
-function _temp2$3(state_0) {
-	return state_0.data.panel;
+function _temp6$1() {
+	return getApiNexusDelivery();
 }
-function _temp$6(state) {
+function _temp5$1() {
+	return getApiNexusSubscription();
+}
+function _temp4$1() {
+	return getApiNexusThread();
+}
+function _temp3$1() {
+	return getApiNexusTrigger();
+}
+function _temp2$3() {
+	return getApiNexusProject();
+}
+function _temp$7(state) {
 	return state.trigger.selectedId;
 }
 // src/client/pages/trigger/components/filters.tsx
 function Filters() {
 	const $ = (0, import_dist.c)(48);
 	const { t } = useTranslation();
-	const { filters, openFilter } = useStore(_temp$5);
+	const { filters, openFilter } = useStore(_temp$6);
 	const { setTriggerFilters, resetTriggerFilters, setTriggerFilterMenu } = useActions();
 	let t0;
 	if ($[0] !== filters.channel || $[1] !== filters.kind || $[2] !== filters.mentionedOnly || $[3] !== filters.query || $[4] !== filters.status) {
@@ -60807,7 +66635,7 @@ function Filters() {
 	} else t9 = $[47];
 	return t9;
 }
-function _temp$5(state) {
+function _temp$6(state) {
 	return state.trigger;
 }
 // src/client/pages/trigger/components/row.tsx
@@ -60820,7 +66648,7 @@ function Row(t0) {
 	const Icon = record.channel === "github" ? GitHubIcon : record.channel === "feishu" ? FeishuIcon : GitLabIcon;
 	const status = STATUSES[deliveryStatus({
 		...record,
-		deliveries: topic.events.flatMap(_temp$4)
+		deliveries: topic.events.flatMap(_temp$5)
 	})];
 	let t1;
 	if ($[0] !== record.channel || $[1] !== t) {
@@ -61124,25 +66952,37 @@ function Row(t0) {
 	} else t35 = $[82];
 	return t35;
 }
-function _temp$4(event) {
+function _temp$5(event) {
 	return [...event.deliveries];
 }
 // src/client/pages/trigger/components/summary.tsx
-function Summary() {
-	const $ = (0, import_dist.c)(13);
+function Summary(t0) {
+	const $ = (0, import_dist.c)(21);
+	const { topics } = t0;
 	const { t } = useTranslation();
 	const { setTriggerFilters } = useActions();
-	const selected = useStore(_temp$3);
-	const panel = useStore(_temp2$2);
-	let t0;
-	if ($[0] !== panel || $[1] !== t) {
-		const topics = groupTopics(recordsOf(panel));
-		t0 = [{
+	const selected = useStore(_temp$4);
+	let t1;
+	if ($[0] !== t) {
+		t1 = t("triggerReceived");
+		$[0] = t;
+		$[1] = t1;
+	} else t1 = $[1];
+	let t2;
+	if ($[2] !== t1 || $[3] !== topics.length) {
+		t2 = {
 			value: "all",
-			label: t("triggerReceived"),
+			label: t1,
 			count: topics.length,
 			color: "var(--dsw-alias-label-primary)"
-		}, ...[
+		};
+		$[2] = t1;
+		$[3] = topics.length;
+		$[4] = t2;
+	} else t2 = $[4];
+	let t3;
+	if ($[5] !== t || $[6] !== topics) {
+		t3 = [
 			"pending",
 			"done",
 			"stalled"
@@ -61157,21 +66997,28 @@ function Summary() {
 				status: value
 			}).length,
 			color: `var(--dsw-alias-state-${value === "stalled" ? "error" : value === "done" ? "success" : "business"}-primary)`
-		}))];
-		$[0] = panel;
-		$[1] = t;
-		$[2] = t0;
-	} else t0 = $[2];
-	const cards = t0;
-	let t1;
-	if ($[3] !== t) {
-		t1 = t("triggerSummary");
-		$[3] = t;
-		$[4] = t1;
-	} else t1 = $[4];
-	let t2;
-	if ($[5] !== cards || $[6] !== selected || $[7] !== setTriggerFilters || $[8] !== t) {
-		t2 = cards.map((card) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+		}));
+		$[5] = t;
+		$[6] = topics;
+		$[7] = t3;
+	} else t3 = $[7];
+	let t4;
+	if ($[8] !== t2 || $[9] !== t3) {
+		t4 = [t2, ...t3];
+		$[8] = t2;
+		$[9] = t3;
+		$[10] = t4;
+	} else t4 = $[10];
+	const cards = t4;
+	let t5;
+	if ($[11] !== t) {
+		t5 = t("triggerSummary");
+		$[11] = t;
+		$[12] = t5;
+	} else t5 = $[12];
+	let t6;
+	if ($[13] !== cards || $[14] !== selected || $[15] !== setTriggerFilters || $[16] !== t) {
+		t6 = cards.map((card) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 			type: "button",
 			"aria-pressed": selected === card.value,
 			onClick: () => setTriggerFilters({ status: card.value }),
@@ -61190,228 +67037,383 @@ function Summary() {
 				})]
 			})]
 		}, card.value));
-		$[5] = cards;
-		$[6] = selected;
-		$[7] = setTriggerFilters;
-		$[8] = t;
-		$[9] = t2;
-	} else t2 = $[9];
-	let t3;
-	if ($[10] !== t1 || $[11] !== t2) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+		$[13] = cards;
+		$[14] = selected;
+		$[15] = setTriggerFilters;
+		$[16] = t;
+		$[17] = t6;
+	} else t6 = $[17];
+	let t7;
+	if ($[18] !== t5 || $[19] !== t6) {
+		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "grid grid-cols-2 gap-3 @min-[740px]:grid-cols-4",
 			role: "group",
-			"aria-label": t1,
-			children: t2
+			"aria-label": t5,
+			children: t6
 		});
-		$[10] = t1;
-		$[11] = t2;
-		$[12] = t3;
-	} else t3 = $[12];
-	return t3;
+		$[18] = t5;
+		$[19] = t6;
+		$[20] = t7;
+	} else t7 = $[20];
+	return t7;
 }
-function _temp2$2(state_0) {
-	return state_0.data.panel;
-}
-function _temp$3(state) {
+function _temp$4(state) {
 	return state.trigger.filters.status;
 }
 // src/client/pages/trigger/page.tsx
 function Trigger() {
-	const $ = (0, import_dist.c)(47);
+	const $ = (0, import_dist.c)(88);
 	const { t } = useTranslation();
-	const filters = useStore(_temp$2);
+	const filters = useStore(_temp$3);
 	const { resetTriggerFilters } = useActions();
-	const panel = useStore(_temp2$1);
 	let t0;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = {
+			queryKey: keys.project,
+			queryFn: _temp2$2
+		};
+		$[0] = t0;
+	} else t0 = $[0];
+	const project = useQuery(t0);
 	let t1;
+	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.trigger,
+			queryFn: _temp3,
+			refetchInterval: 3e4
+		};
+		$[1] = t1;
+	} else t1 = $[1];
+	const trigger = useQuery(t1);
 	let t2;
+	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
+		t2 = {
+			queryKey: keys.thread,
+			queryFn: _temp4
+		};
+		$[2] = t2;
+	} else t2 = $[2];
+	const thread = useQuery(t2);
 	let t3;
+	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
+		t3 = {
+			queryKey: keys.subscription,
+			queryFn: _temp5
+		};
+		$[3] = t3;
+	} else t3 = $[3];
+	const subscription = useQuery(t3);
 	let t4;
+	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = {
+			queryKey: keys.delivery,
+			queryFn: _temp6
+		};
+		$[4] = t4;
+	} else t4 = $[4];
+	const delivery = useQuery(t4);
+	let content;
+	let t10;
+	let t11;
+	let t12;
+	let t13;
 	let t5;
 	let t6;
 	let t7;
 	let t8;
-	if ($[0] !== filters || $[1] !== panel || $[2] !== resetTriggerFilters || $[3] !== t) {
-		const topics = groupTopics(recordsOf(panel));
-		const records = filterTopics(topics, filters);
-		t5 = "@container flex min-w-0 flex-col gap-5 pb-10";
-		if ($[13] !== t) {
-			t6 = t("tabTriggers");
-			$[13] = t;
-			$[14] = t6;
-		} else t6 = $[14];
-		let t9;
-		if ($[15] !== t) {
-			t9 = t("triggerTitle");
-			$[15] = t;
-			$[16] = t9;
-		} else t9 = $[16];
-		let t10;
-		if ($[17] !== t9) {
-			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-				className: "m-0 text-base leading-6 font-medium",
-				children: t9
-			});
-			$[17] = t9;
-			$[18] = t10;
-		} else t10 = $[18];
-		let t11;
-		if ($[19] !== t) {
-			t11 = t("triggerDescription");
-			$[19] = t;
-			$[20] = t11;
-		} else t11 = $[20];
-		let t12;
-		if ($[21] !== t11) {
-			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
-				children: t11
-			});
-			$[21] = t11;
-			$[22] = t12;
-		} else t12 = $[22];
-		if ($[23] !== t10 || $[24] !== t12) {
-			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
-				className: "flex flex-wrap items-start justify-between gap-3",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t10, t12] })
-			});
-			$[23] = t10;
-			$[24] = t12;
-			$[25] = t7;
-		} else t7 = $[25];
-		if ($[26] === Symbol.for("react.memo_cache_sentinel")) {
-			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Summary, {});
-			$[26] = t8;
-		} else t8 = $[26];
-		t2 = "flex flex-col gap-3";
-		if ($[27] === Symbol.for("react.memo_cache_sentinel")) {
-			t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
-			$[27] = t3;
-		} else t3 = $[27];
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: "flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				role: "status",
-				children: t("triggerResultCount", {
-					count: records.length,
-					total: topics.length
-				})
-			})
-		});
-		t0 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
-		t1 = records.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "m-0 list-none p-0",
-			children: records.map(_temp3)
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-			className: "!min-h-0 !gap-3 !py-6",
-			title: t("triggerEmpty"),
-			description: t("triggerEmptyDescription"),
-			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
-				width: 24,
-				height: 24
-			}),
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "outline",
-				onClick: resetTriggerFilters,
-				children: t("triggerReset")
-			})
-		});
-		$[0] = filters;
-		$[1] = panel;
-		$[2] = resetTriggerFilters;
-		$[3] = t;
-		$[4] = t0;
-		$[5] = t1;
-		$[6] = t2;
-		$[7] = t3;
-		$[8] = t4;
-		$[9] = t5;
-		$[10] = t6;
-		$[11] = t7;
-		$[12] = t8;
-	} else {
-		t0 = $[4];
-		t1 = $[5];
-		t2 = $[6];
-		t3 = $[7];
-		t4 = $[8];
-		t5 = $[9];
-		t6 = $[10];
-		t7 = $[11];
-		t8 = $[12];
-	}
 	let t9;
-	if ($[28] !== t0 || $[29] !== t1) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: t0,
-			children: t1
+	if ($[5] !== delivery.data || $[6] !== delivery.error || $[7] !== delivery.isLoading || $[8] !== filters || $[9] !== project.data || $[10] !== project.error || $[11] !== project.isLoading || $[12] !== resetTriggerFilters || $[13] !== subscription.data || $[14] !== subscription.error || $[15] !== subscription.isLoading || $[16] !== t || $[17] !== thread.data || $[18] !== thread.error || $[19] !== thread.isLoading || $[20] !== trigger.data || $[21] !== trigger.error || $[22] !== trigger.isLoading) {
+		const topics = groupTopics(recordsOf({
+			project: project.data,
+			trigger: trigger.data,
+			thread: thread.data,
+			subscription: subscription.data,
+			delivery: delivery.data
+		}));
+		const records = filterTopics(topics, filters);
+		const error = project.error ?? trigger.error ?? thread.error ?? subscription.error ?? delivery.error;
+		const loading = project.isLoading || trigger.isLoading || thread.isLoading || subscription.isLoading || delivery.isLoading;
+		if (error) {
+			const t14 = error.message || "触发记录加载失败，请重试。";
+			let t15;
+			if ($[33] !== t14) {
+				t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					role: "alert",
+					className: "m-0 px-4 py-6 text-xs text-[var(--dsw-alias-state-error-primary)]",
+					children: t14
+				});
+				$[33] = t14;
+				$[34] = t15;
+			} else t15 = $[34];
+			content = t15;
+		} else if (loading) {
+			let t14;
+			if ($[35] === Symbol.for("react.memo_cache_sentinel")) {
+				t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					role: "status",
+					className: "m-0 px-4 py-6 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					children: "正在载入触发记录…"
+				});
+				$[35] = t14;
+			} else t14 = $[35];
+			content = t14;
+		} else if (records.length) content = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+			className: "m-0 list-none p-0",
+			children: records.map(_temp7)
 		});
-		$[28] = t0;
-		$[29] = t1;
-		$[30] = t9;
-	} else t9 = $[30];
-	let t10;
-	if ($[31] !== t) {
-		t10 = t("triggerPreviewNotice");
-		$[31] = t;
-		$[32] = t10;
-	} else t10 = $[32];
-	let t11;
-	if ($[33] !== t10) {
-		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		else {
+			let t14;
+			if ($[36] !== t) {
+				t14 = t("triggerEmpty");
+				$[36] = t;
+				$[37] = t14;
+			} else t14 = $[37];
+			let t15;
+			if ($[38] !== t) {
+				t15 = t("triggerEmptyDescription");
+				$[38] = t;
+				$[39] = t15;
+			} else t15 = $[39];
+			let t16;
+			if ($[40] === Symbol.for("react.memo_cache_sentinel")) {
+				t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
+					width: 24,
+					height: 24
+				});
+				$[40] = t16;
+			} else t16 = $[40];
+			let t17;
+			if ($[41] !== t) {
+				t17 = t("triggerReset");
+				$[41] = t;
+				$[42] = t17;
+			} else t17 = $[42];
+			let t18;
+			if ($[43] !== resetTriggerFilters || $[44] !== t17) {
+				t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "outline",
+					onClick: resetTriggerFilters,
+					children: t17
+				});
+				$[43] = resetTriggerFilters;
+				$[44] = t17;
+				$[45] = t18;
+			} else t18 = $[45];
+			let t19;
+			if ($[46] !== t14 || $[47] !== t15 || $[48] !== t18) {
+				t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+					className: "!min-h-0 !gap-3 !py-6",
+					title: t14,
+					description: t15,
+					icon: t16,
+					children: t18
+				});
+				$[46] = t14;
+				$[47] = t15;
+				$[48] = t18;
+				$[49] = t19;
+			} else t19 = $[49];
+			content = t19;
+		}
+		t10 = "@container flex min-w-0 flex-col gap-5 pb-10";
+		if ($[50] !== t) {
+			t11 = t("tabTriggers");
+			$[50] = t;
+			$[51] = t11;
+		} else t11 = $[51];
+		let t14;
+		if ($[52] !== t) {
+			t14 = t("triggerTitle");
+			$[52] = t;
+			$[53] = t14;
+		} else t14 = $[53];
+		let t15;
+		if ($[54] !== t14) {
+			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+				className: "m-0 text-base leading-6 font-medium",
+				children: t14
+			});
+			$[54] = t14;
+			$[55] = t15;
+		} else t15 = $[55];
+		let t16;
+		if ($[56] !== t) {
+			t16 = t("triggerDescription");
+			$[56] = t;
+			$[57] = t16;
+		} else t16 = $[57];
+		let t17;
+		if ($[58] !== t16) {
+			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				className: "m-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				children: t16
+			});
+			$[58] = t16;
+			$[59] = t17;
+		} else t17 = $[59];
+		if ($[60] !== t15 || $[61] !== t17) {
+			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
+				className: "flex flex-wrap items-start justify-between gap-3",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t15, t17] })
+			});
+			$[60] = t15;
+			$[61] = t17;
+			$[62] = t12;
+		} else t12 = $[62];
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Summary, { topics });
+		t8 = "flex flex-col gap-3";
+		if ($[63] === Symbol.for("react.memo_cache_sentinel")) {
+			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
+			$[63] = t9;
+		} else t9 = $[63];
+		t7 = "flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]";
+		t5 = "status";
+		t6 = t("triggerResultCount", {
+			count: records.length,
+			total: topics.length
+		});
+		$[5] = delivery.data;
+		$[6] = delivery.error;
+		$[7] = delivery.isLoading;
+		$[8] = filters;
+		$[9] = project.data;
+		$[10] = project.error;
+		$[11] = project.isLoading;
+		$[12] = resetTriggerFilters;
+		$[13] = subscription.data;
+		$[14] = subscription.error;
+		$[15] = subscription.isLoading;
+		$[16] = t;
+		$[17] = thread.data;
+		$[18] = thread.error;
+		$[19] = thread.isLoading;
+		$[20] = trigger.data;
+		$[21] = trigger.error;
+		$[22] = trigger.isLoading;
+		$[23] = content;
+		$[24] = t10;
+		$[25] = t11;
+		$[26] = t12;
+		$[27] = t13;
+		$[28] = t5;
+		$[29] = t6;
+		$[30] = t7;
+		$[31] = t8;
+		$[32] = t9;
+	} else {
+		content = $[23];
+		t10 = $[24];
+		t11 = $[25];
+		t12 = $[26];
+		t13 = $[27];
+		t5 = $[28];
+		t6 = $[29];
+		t7 = $[30];
+		t8 = $[31];
+		t9 = $[32];
+	}
+	let t14;
+	if ($[64] !== t5 || $[65] !== t6) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			role: t5,
+			children: t6
+		});
+		$[64] = t5;
+		$[65] = t6;
+		$[66] = t14;
+	} else t14 = $[66];
+	let t15;
+	if ($[67] !== t14 || $[68] !== t7) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: t7,
+			children: t14
+		});
+		$[67] = t14;
+		$[68] = t7;
+		$[69] = t15;
+	} else t15 = $[69];
+	let t16;
+	if ($[70] !== content) {
+		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+			children: content
+		});
+		$[70] = content;
+		$[71] = t16;
+	} else t16 = $[71];
+	let t17;
+	if ($[72] !== t) {
+		t17 = t("triggerPreviewNotice");
+		$[72] = t;
+		$[73] = t17;
+	} else t17 = $[73];
+	let t18;
+	if ($[74] !== t17) {
+		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
-			children: t10
+			children: t17
 		});
-		$[33] = t10;
-		$[34] = t11;
-	} else t11 = $[34];
-	let t12;
-	if ($[35] !== t11 || $[36] !== t2 || $[37] !== t3 || $[38] !== t4 || $[39] !== t9) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t2,
+		$[74] = t17;
+		$[75] = t18;
+	} else t18 = $[75];
+	let t19;
+	if ($[76] !== t15 || $[77] !== t16 || $[78] !== t18 || $[79] !== t8 || $[80] !== t9) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t8,
 			children: [
-				t3,
-				t4,
 				t9,
-				t11
+				t15,
+				t16,
+				t18
 			]
 		});
-		$[35] = t11;
-		$[36] = t2;
-		$[37] = t3;
-		$[38] = t4;
-		$[39] = t9;
-		$[40] = t12;
-	} else t12 = $[40];
-	let t13;
-	if ($[41] !== t12 || $[42] !== t5 || $[43] !== t6 || $[44] !== t7 || $[45] !== t8) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: t5,
-			"aria-label": t6,
+		$[76] = t15;
+		$[77] = t16;
+		$[78] = t18;
+		$[79] = t8;
+		$[80] = t9;
+		$[81] = t19;
+	} else t19 = $[81];
+	let t20;
+	if ($[82] !== t10 || $[83] !== t11 || $[84] !== t12 || $[85] !== t13 || $[86] !== t19) {
+		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: t10,
+			"aria-label": t11,
 			children: [
-				t7,
-				t8,
-				t12
+				t12,
+				t13,
+				t19
 			]
 		});
-		$[41] = t12;
-		$[42] = t5;
-		$[43] = t6;
-		$[44] = t7;
-		$[45] = t8;
-		$[46] = t13;
-	} else t13 = $[46];
-	return t13;
+		$[82] = t10;
+		$[83] = t11;
+		$[84] = t12;
+		$[85] = t13;
+		$[86] = t19;
+		$[87] = t20;
+	} else t20 = $[87];
+	return t20;
 }
-function _temp3(topic) {
+function _temp7(topic) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row, { topic }, topic.latest.thread.id);
 }
-function _temp2$1(state_0) {
-	return state_0.data.panel;
+function _temp6() {
+	return getApiNexusDelivery();
 }
-function _temp$2(state) {
+function _temp5() {
+	return getApiNexusSubscription();
+}
+function _temp4() {
+	return getApiNexusThread();
+}
+function _temp3() {
+	return getApiNexusTrigger();
+}
+function _temp2$2() {
+	return getApiNexusProject();
+}
+function _temp$3(state) {
 	return state.trigger.filters;
 }
 // src/client/panel.tsx
@@ -61441,128 +67443,340 @@ function tabOf(page) {
 	return page.split("/")[0];
 }
 function Panel$1() {
+	const $ = (0, import_dist.c)(76);
 	const { t } = useTranslation();
 	const ctx = useDshContext();
-	const [opening, openMain] = useAsyncFn(async () => {
-		const navigation = ctx.layout.beginNavigation();
-		const result = await putApiNexusSessionsMain();
-		if (!result || typeof result.sessionId !== "string" || !result.sessionId.trim()) throw new Error(result && "message" in result && typeof result.message === "string" ? result.message : "打开主会话失败");
-		if (!navigation.aborted) ctx.uiWorkspace.openSession(result.sessionId);
-	});
-	const { receivePanel, setLoadError, setLoading } = useActions();
-	const loading = useStore((state) => state.data.loading);
-	const error = useStore((state_0) => state_0.data.error);
-	const { execute } = useAsyncState(async () => {
-		setLoading(true);
-		try {
-			const panel = await getApiNexusPanel();
-			if (!panel || !Array.isArray(panel.tickets) || !panel.settings) throw new Error("面板数据加载失败");
-			receivePanel(panel);
-		} catch (error_0) {
-			setLoadError(error_0 instanceof Error ? error_0.message : "面板数据加载失败");
-		}
-	}, void 0);
-	const selectedTicketId = useStore((state_1) => state_1.navigation.ticketId);
-	const page = useStore((state_2) => state_2.navigation.page);
+	let t0;
+	if ($[0] !== ctx.layout || $[1] !== ctx.uiWorkspace) {
+		t0 = async () => {
+			const navigation = ctx.layout.beginNavigation();
+			const result = await putApiNexusSessionMain();
+			if (!result || typeof result.sessionId !== "string" || !result.sessionId.trim()) throw new Error(result && "message" in result && typeof result.message === "string" ? result.message : "打开主会话失败");
+			if (!navigation.aborted) ctx.uiWorkspace.openSession(result.sessionId);
+		};
+		$[0] = ctx.layout;
+		$[1] = ctx.uiWorkspace;
+		$[2] = t0;
+	} else t0 = $[2];
+	const [opening, openMain] = useAsyncFn(t0);
+	const client = useQueryClient();
+	let t1;
+	if ($[3] !== client) {
+		t1 = async () => {
+			await client.invalidateQueries();
+		};
+		$[3] = client;
+		$[4] = t1;
+	} else t1 = $[4];
+	const [refreshing, refresh] = useAsyncFn(t1);
+	const selectedTicketId = useStore(_temp$2);
+	const page = useStore(_temp2$1);
 	const { go: navigate } = useActions();
-	const tabsId = (0, react.useId)().replaceAll(":", "");
-	const items = TABS.map((tab) => ({
-		value: tab.kind,
-		label: t(tab.label),
-		id: `${tabsId}-${tab.kind}`,
-		panelId: `${tabsId}-${tab.kind}-panel`
-	}));
-	const tab_0 = tabOf(page);
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-		className: "box-border flex h-full min-h-0 w-full min-w-0 max-w-full flex-col items-center overflow-y-auto px-[clamp(20px,4vw,48px)] text-[13px] leading-5 text-[var(--dsw-alias-label-primary)] [&_*]:box-border",
-		style: { fontFamily: "var(--dsw-font-family, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif)" },
-		children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
+	const t2 = (0, react.useId)();
+	let t3;
+	if ($[5] !== t2) {
+		t3 = t2.replaceAll(":", "");
+		$[5] = t2;
+		$[6] = t3;
+	} else t3 = $[6];
+	const tabsId = t3;
+	let t4;
+	if ($[7] !== t || $[8] !== tabsId) {
+		t4 = TABS.map((tab) => ({
+			value: tab.kind,
+			label: t(tab.label),
+			id: `${tabsId}-${tab.kind}`,
+			panelId: `${tabsId}-${tab.kind}-panel`
+		}));
+		$[7] = t;
+		$[8] = tabsId;
+		$[9] = t4;
+	} else t4 = $[9];
+	const items = t4;
+	let t5;
+	if ($[10] !== page) {
+		t5 = tabOf(page);
+		$[10] = page;
+		$[11] = t5;
+	} else t5 = $[11];
+	const tab_0 = t5;
+	let t6;
+	if ($[12] === Symbol.for("react.memo_cache_sentinel")) {
+		t6 = { fontFamily: "var(--dsw-font-family, -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"Microsoft YaHei\", sans-serif)" };
+		$[12] = t6;
+	} else t6 = $[12];
+	let t7;
+	if ($[13] !== t) {
+		t7 = t("title");
+		$[13] = t;
+		$[14] = t7;
+	} else t7 = $[14];
+	let t8;
+	if ($[15] !== t7) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h1", {
+			className: "text-xl leading-7 font-semibold",
+			children: t7
+		});
+		$[15] = t7;
+		$[16] = t8;
+	} else t8 = $[16];
+	let t9;
+	if ($[17] !== t) {
+		t9 = t("desc");
+		$[17] = t;
+		$[18] = t9;
+	} else t9 = $[18];
+	let t10;
+	if ($[19] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "mt-1 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
+			children: t9
+		});
+		$[19] = t9;
+		$[20] = t10;
+	} else t10 = $[20];
+	let t11;
+	if ($[21] !== t10 || $[22] !== t8) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "min-w-0",
+			children: [t8, t10]
+		});
+		$[21] = t10;
+		$[22] = t8;
+		$[23] = t11;
+	} else t11 = $[23];
+	let t12;
+	if ($[24] !== refresh) {
+		t12 = () => void refresh();
+		$[24] = refresh;
+		$[25] = t12;
+	} else t12 = $[25];
+	const t13 = refreshing.loading ? "刷新中…" : "刷新";
+	let t14;
+	if ($[26] !== refreshing.loading || $[27] !== t12 || $[28] !== t13) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			variant: "outline",
+			size: "sm",
+			disabled: refreshing.loading,
+			onClick: t12,
+			children: t13
+		});
+		$[26] = refreshing.loading;
+		$[27] = t12;
+		$[28] = t13;
+		$[29] = t14;
+	} else t14 = $[29];
+	const t15 = opening.loading;
+	let t16;
+	if ($[30] !== openMain) {
+		t16 = () => void openMain();
+		$[30] = openMain;
+		$[31] = t16;
+	} else t16 = $[31];
+	let t17;
+	if ($[32] !== t) {
+		t17 = t("openMainSession");
+		$[32] = t;
+		$[33] = t17;
+	} else t17 = $[33];
+	let t18;
+	if ($[34] !== opening.loading || $[35] !== t16 || $[36] !== t17) {
+		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			variant: "outline",
+			size: "sm",
+			disabled: t15,
+			onClick: t16,
+			children: t17
+		});
+		$[34] = opening.loading;
+		$[35] = t16;
+		$[36] = t17;
+		$[37] = t18;
+	} else t18 = $[37];
+	let t19;
+	if ($[38] !== t14 || $[39] !== t18) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex items-center gap-2",
+			children: [t14, t18]
+		});
+		$[38] = t14;
+		$[39] = t18;
+		$[40] = t19;
+	} else t19 = $[40];
+	let t20;
+	if ($[41] !== t11 || $[42] !== t19) {
+		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex flex-wrap items-start justify-between gap-4",
+			children: [t11, t19]
+		});
+		$[41] = t11;
+		$[42] = t19;
+		$[43] = t20;
+	} else t20 = $[43];
+	let t21;
+	if ($[44] !== t) {
+		t21 = t("tabsLabel");
+		$[44] = t;
+		$[45] = t21;
+	} else t21 = $[45];
+	let t22;
+	if ($[46] !== items || $[47] !== navigate || $[48] !== t21 || $[49] !== tab_0) {
+		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "w-full min-w-0 overflow-x-auto",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
+				size: "sm",
+				items,
+				value: tab_0,
+				onChange: navigate,
+				label: t21,
+				className: "w-fit"
+			})
+		});
+		$[46] = items;
+		$[47] = navigate;
+		$[48] = t21;
+		$[49] = tab_0;
+		$[50] = t22;
+	} else t22 = $[50];
+	let t23;
+	if ($[51] !== t20 || $[52] !== t22) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 			className: "flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-5 pt-7",
-			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-start justify-between gap-4",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "min-w-0",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h1", {
-						className: "text-xl leading-7 font-semibold",
-						children: t("title")
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "mt-1 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
-						children: t("desc")
-					})]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "flex items-center gap-2",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "outline",
-						size: "sm",
-						disabled: loading,
-						onClick: () => void execute(),
-						children: loading ? "加载中…" : "刷新"
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "outline",
-						size: "sm",
-						disabled: opening.loading,
-						onClick: () => void openMain(),
-						children: t("openMainSession")
-					})]
-				})]
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				className: "w-full min-w-0 overflow-x-auto",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
-					size: "sm",
-					items,
-					value: tab_0,
-					onChange: navigate,
-					label: t("tabsLabel"),
-					className: "w-fit"
-				})
-			})]
-		}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			id: `${tabsId}-${tab_0}-panel`,
+			children: [t20, t22]
+		});
+		$[51] = t20;
+		$[52] = t22;
+		$[53] = t23;
+	} else t23 = $[53];
+	const t24 = `${tabsId}-${tab_0}-panel`;
+	const t25 = `${tabsId}-${tab_0}`;
+	let t26;
+	if ($[54] !== opening.error) {
+		t26 = opening.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			children: opening.error.message
+		});
+		$[54] = opening.error;
+		$[55] = t26;
+	} else t26 = $[55];
+	let t27;
+	if ($[56] === Symbol.for("react.memo_cache_sentinel")) {
+		t27 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "overview",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overview, {})
+		});
+		$[56] = t27;
+	} else t27 = $[56];
+	let t28;
+	if ($[57] === Symbol.for("react.memo_cache_sentinel")) {
+		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "ticket",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Ticket, {})
+		});
+		$[57] = t28;
+	} else t28 = $[57];
+	const t29 = selectedTicketId ?? "none";
+	let t30;
+	if ($[58] !== t29) {
+		t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "ticket/detail",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TicketDetail, {}, t29)
+		});
+		$[58] = t29;
+		$[59] = t30;
+	} else t30 = $[59];
+	let t31;
+	if ($[60] === Symbol.for("react.memo_cache_sentinel")) {
+		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "trigger",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Trigger, {})
+		});
+		$[60] = t31;
+	} else t31 = $[60];
+	let t32;
+	if ($[61] === Symbol.for("react.memo_cache_sentinel")) {
+		t32 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "trigger/detail",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TriggerDetail, {})
+		});
+		$[61] = t32;
+	} else t32 = $[61];
+	let t33;
+	if ($[62] === Symbol.for("react.memo_cache_sentinel")) {
+		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "channel",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Channel, {})
+		});
+		$[62] = t33;
+	} else t33 = $[62];
+	let t34;
+	if ($[63] === Symbol.for("react.memo_cache_sentinel")) {
+		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "channel/detail",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelDetail, {})
+		});
+		$[63] = t34;
+	} else t34 = $[63];
+	let t35;
+	if ($[64] === Symbol.for("react.memo_cache_sentinel")) {
+		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
+			cond: "setting",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Setting, {})
+		});
+		$[64] = t35;
+	} else t35 = $[64];
+	let t36;
+	if ($[65] !== page || $[66] !== t30) {
+		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$2, {
+			value: page,
+			children: [
+				t27,
+				t28,
+				t30,
+				t31,
+				t32,
+				t33,
+				t34,
+				t35
+			]
+		});
+		$[65] = page;
+		$[66] = t30;
+		$[67] = t36;
+	} else t36 = $[67];
+	let t37;
+	if ($[68] !== t24 || $[69] !== t25 || $[70] !== t26 || $[71] !== t36) {
+		t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			id: t24,
 			role: "tabpanel",
-			"aria-labelledby": `${tabsId}-${tab_0}`,
+			"aria-labelledby": t25,
 			className: "mt-6 flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-6",
-			children: [(error || opening.error) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "alert",
-				children: error ?? opening.error?.message
-			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Switch$2, {
-				value: page,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "overview",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Overview, {})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "ticket",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Ticket, {})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "ticket/detail",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TicketDetail, {}, selectedTicketId ?? "none")
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "trigger",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Trigger, {})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "trigger/detail",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TriggerDetail, {})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "channel",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Channel, {})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "channel/detail",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelDetail, {})
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Case, {
-						cond: "setting",
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Setting, {})
-					})
-				]
-			})]
-		})]
-	});
+			children: [t26, t36]
+		});
+		$[68] = t24;
+		$[69] = t25;
+		$[70] = t26;
+		$[71] = t36;
+		$[72] = t37;
+	} else t37 = $[72];
+	let t38;
+	if ($[73] !== t23 || $[74] !== t37) {
+		t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "box-border flex h-full min-h-0 w-full min-w-0 max-w-full flex-col items-center overflow-y-auto px-[clamp(20px,4vw,48px)] text-[13px] leading-5 text-[var(--dsw-alias-label-primary)] [&_*]:box-border",
+			style: t6,
+			children: [t23, t37]
+		});
+		$[73] = t23;
+		$[74] = t37;
+		$[75] = t38;
+	} else t38 = $[75];
+	return t38;
+}
+function _temp2$1(state_0) {
+	return state_0.navigation.page;
+}
+function _temp$2(state) {
+	return state.navigation.ticketId;
 }
 // src/client/store/index.ts
 const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
@@ -61589,15 +67803,8 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 				section: "general",
 				saved,
 				draft: { ...saved },
-				refreshedAt: null,
 				notice: null,
 				invalid: false
-			},
-			data: {
-				panel: null,
-				ticket: null,
-				loading: false,
-				error: null
 			},
 			trigger: {
 				selectedId: null,
@@ -61619,43 +67826,6 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 		};
 	},
 	actions: {
-		setLoading: (draft, loading) => {
-			draft.data.loading = loading;
-			draft.data.error = null;
-		},
-		setLoadError: (draft, error) => {
-			draft.data.loading = false;
-			draft.data.error = error;
-		},
-		receivePanel: (draft, value) => {
-			const { settings, ...panel } = value;
-			const administratorsDirty = administratorSignature(draft.setting.draft.administrators) !== administratorSignature(draft.setting.saved.administrators);
-			const dirty = [...GROUPS.execution, ...GROUPS.delivery].some((key) => draft.setting.draft[key] !== draft.setting.saved[key]);
-			draft.data.panel = panel;
-			draft.data.loading = false;
-			draft.data.error = null;
-			const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = settings;
-			draft.setting.saved = {
-				administrators,
-				maxWorkers,
-				backgroundLimitMinutes,
-				autoMerge,
-				autoMergeMaxLines,
-				autoArchiveWorkers,
-				deliveryMaxAttempts,
-				deliveryRetryCeilingSeconds
-			};
-			if (!dirty && !administratorsDirty) draft.setting.draft = { ...draft.setting.saved };
-			else if (!administratorsDirty) draft.setting.draft.administrators = [...administrators];
-			draft.setting.refreshedAt = (/* @__PURE__ */ new Date()).toISOString();
-		},
-		receiveProject: (draft, project) => {
-			if (draft.data.panel) draft.data.panel.projects = draft.data.panel.projects.map((item) => item.id === project.id ? project : item);
-			draft.setting.notice = "project";
-		},
-		receiveTicket: (draft, ticket) => {
-			if (ticket.ticket.id === draft.navigation.ticketId) draft.data.ticket = ticket;
-		},
 		receiveGeneralSettings: (draft, administrators) => {
 			draft.setting.saved.administrators = [...administrators];
 			draft.setting.draft.administrators = [...administrators];
@@ -61663,10 +67833,9 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 			draft.setting.notice = "saved";
 		},
 		receiveSettings: (draft, value, section) => {
-			const administratorsDirty = administratorSignature(draft.setting.draft.administrators) !== administratorSignature(draft.setting.saved.administrators);
 			draft.setting.saved = value;
 			for (const key of GROUPS[section]) Object.assign(draft.setting.draft, { [key]: value[key] });
-			if (!administratorsDirty) draft.setting.draft.administrators = [...value.administrators];
+			draft.setting.draft.administrators = [...value.administrators];
 			draft.setting.invalid = false;
 			draft.setting.notice = "saved";
 		},
@@ -61684,7 +67853,6 @@ const store = (0, _deepseek_ai_dsh_client_store.defineStore)({
 		openTicket: (draft, id) => {
 			if (draft.navigation.page !== "ticket/detail") draft.navigation.returnTo = draft.navigation.page === "overview" || draft.navigation.page === "trigger" || draft.navigation.page === "trigger/detail" ? draft.navigation.page : "ticket";
 			draft.navigation.ticketId = id;
-			draft.data.ticket = null;
 			draft.channel.selected = null;
 			draft.navigation.page = "ticket/detail";
 		},
@@ -61942,7 +68110,7 @@ function Panel({ sessionId }) {
 	const listId = (0, react.useId)();
 	const { state: mailbox, execute, error: error_0 } = useAsyncState(async (signal) => {
 		try {
-			const { mailbox: result } = await getApiNexusSessionsIdMailbox({ id: sessionId }, { signal });
+			const { mailbox: result } = await getApiNexusSessionIdMailbox({ id: sessionId }, { signal });
 			return !signal.aborted && result?.sessionId === sessionId && Array.isArray(result.messages) ? result : null;
 		} catch (error) {
 			if (signal.aborted) return null;
@@ -62055,45 +68223,54 @@ function Panel({ sessionId }) {
 }
 // src/client/index.tsx
 function SessionRoleIcon(t0) {
-	const $ = (0, import_dist.c)(4);
+	const $ = (0, import_dist.c)(5);
 	const { sessionId } = t0;
-	const role = useStore(_temp)?.find((session) => session.sessionId === sessionId)?.role;
+	let t1;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.sessionRole,
+			queryFn: _temp
+		};
+		$[0] = t1;
+	} else t1 = $[0];
+	const { data } = useQuery(t1);
+	const role = data?.sessions.find((session) => session.sessionId === sessionId)?.role;
 	if (role === "main") {
-		let t1;
-		if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GitForkIcon, {});
-			$[0] = t1;
-		} else t1 = $[0];
-		return t1;
+		let t2;
+		if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+			t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GitForkIcon, {});
+			$[1] = t2;
+		} else t2 = $[1];
+		return t2;
 	}
 	if (role === "project") {
-		let t1;
-		if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
-			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UserCheckIcon, {});
-			$[1] = t1;
-		} else t1 = $[1];
-		return t1;
+		let t2;
+		if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
+			t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UserShieldIcon, {});
+			$[2] = t2;
+		} else t2 = $[2];
+		return t2;
 	}
 	if (role === "supervisor") {
-		let t1;
-		if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UsersRoundIcon, {});
-			$[2] = t1;
-		} else t1 = $[2];
-		return t1;
+		let t2;
+		if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
+			t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UsersRoundIcon, {});
+			$[3] = t2;
+		} else t2 = $[3];
+		return t2;
 	}
 	if (role === "worker") {
-		let t1;
-		if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
-			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {});
-			$[3] = t1;
-		} else t1 = $[3];
-		return t1;
+		let t2;
+		if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
+			t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {});
+			$[4] = t2;
+		} else t2 = $[4];
+		return t2;
 	}
 	return null;
 }
-function _temp(state) {
-	return state.data.panel?.sessions;
+function _temp() {
+	return getApiNexusSessionRole();
 }
 const PANEL_ID = "dsh-nexus";
 const NS = "dshNexus";
@@ -62173,7 +68350,16 @@ function apply(ctx) {
 		id: `${PANEL_ID}:role-icon`,
 		order: 10,
 		locale: NS
-	}, ({ sessionId }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SessionRoleIcon, { sessionId })));
+	}, (props) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(QueryClientProvider, {
+		client,
+		children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PluginContext.Provider, {
+			value: {
+				ctx,
+				t: props.t
+			},
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SessionRoleIcon, { sessionId: props.sessionId })
+		})
+	})));
 	ctx.slots.inject("sidebar.panellist", () => ctx.slots.register({
 		name: "sidebar.panellist",
 		id: PANEL_ID,

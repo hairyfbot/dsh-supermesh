@@ -1,10 +1,11 @@
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
 import { Button, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useAsyncState } from '@reause/core'
-import { getApiNexusTicketsId } from '../../../apis'
+import { useQuery } from '@tanstack/react-query'
+import { getApiNexusChannel, getApiNexusGroup, getApiNexusTicketId } from '../../../apis'
 import { Empty } from '../../../components/empty'
 import { ActivityIcon, ArrowLeftIcon, ChannelsIcon, GitBranchIcon, GitHubIcon, NexusIcon } from '../../../components/icons'
+import { keys } from '../../../config/query-keys'
 import { useDshContext } from '../../../hooks/use-dsh-context'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
@@ -18,31 +19,25 @@ import { Section } from './components/section'
 export function TicketDetail(): ReactNode {
   const { t } = useTranslation()
   const ctx = useDshContext()
-  const { go, receiveTicket } = useActions()
+  const { go } = useActions()
   const { ticketId, returnTo } = useStore(state => state.navigation)
-  const stored = useStore(state => state.data.ticket)
-  const panel = useStore(state => state.data.panel)
-  const detail = stored?.ticket.id === ticketId ? stored : null
-  const { isLoading, error } = useAsyncState(async () => {
-    if (!ticketId)
-      return
-    const result = await getApiNexusTicketsId({ id: encodeURIComponent(ticketId) })
-    if (!result?.ticket || result.ticket.id !== ticketId)
-      throw new Error('任务不存在或无法读取')
-    receiveTicket(result)
-  }, undefined)
+  const { data: stored, isLoading, error } = useQuery({ queryKey: keys.ticketDetail(ticketId ?? ''), queryFn: () => getApiNexusTicketId({ id: ticketId ?? '' }), enabled: Boolean(ticketId) })
+  const { data: channelList } = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const { data: groupList } = useQuery({ queryKey: keys.group, queryFn: () => getApiNexusGroup(), refetchInterval: 15_000 })
+  const detail = stored?.ticket?.id === ticketId ? stored : null
   const task = detail?.ticket
+  const unavailable = stored !== undefined && !detail
   const latest = detail?.executions.toSorted((a, b) => a.createdAt.localeCompare(b.createdAt)).at(-1)
-  const channel = panel?.channels.find(channel => channel.id === task?.channelId)
+  const channel = channelList?.find(channel => channel.id === task?.channelId)
   const seconds = task?.status !== 'waiting' && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? new Date()).getTime() - new Date(task.startedAt).getTime()) / 1000)) : null
-  const supervisors = [...new Set(detail?.inbox.map(message => message.supervisorId).filter((id): id is string => Boolean(id)))].map(id => ({ id, group: panel?.graph.groups.find(group => group.id === `supervisor:${id}`) }))
+  const supervisors = [...new Set(detail?.inbox.map(message => message.supervisorId).filter((id): id is string => Boolean(id)))].map(id => ({ id, group: groupList?.find(group => group.id === `supervisor:${id}`) }))
   const labels = { waiting: t('overviewStatusWaiting'), queued: t('ticketStatusQueued'), running: t('overviewStatusRunning'), review: t('overviewStatusReview'), done: t('overviewCompleted'), cancelled: t('ticketStatusCancelled') }
   return (
     <section className="@container flex min-w-0 flex-col gap-5 pb-10" aria-label={t('ticketDetail')}>
       <div><Button variant="ghost" size="sm" icon={<ArrowLeftIcon width={16} height={16} />} onClick={() => go(returnTo)}>{t('ticketBack')}</Button></div>
       {isLoading && <p role="status">加载中…</p>}
-      {Boolean(error) && <p role="alert">{error instanceof Error ? error.message : '读取失败'}</p>}
-      {!task && !isLoading && <Empty title={t('ticketNotFound')} description={t('ticketNotFoundDescription')} icon={<NexusIcon width={28} height={28} />} />}
+      {(error || unavailable) && <p role="alert">{error instanceof Error ? error.message : '任务不存在或无法读取'}</p>}
+      {!task && !isLoading && !error && !unavailable && <Empty title={t('ticketNotFound')} description={t('ticketNotFoundDescription')} icon={<NexusIcon width={28} height={28} />} />}
       {task && detail && (
         <>
           <header className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
@@ -88,8 +83,8 @@ export function TicketDetail(): ReactNode {
           <div className="grid min-w-0 gap-4 @min-[740px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <div className="flex min-w-0 flex-col gap-4">
               <Issues issues={detail.topics.filter(topic => topic.kind === 'issue')} />
-              <Section title={t('ticketDependencies')}><Relations links={detail.dependencies.filter(link => link.kind === 'depends')} ticketId={task.id} tickets={panel?.tickets ?? []} empty={t('ticketDependenciesEmpty')} clear /></Section>
-              <Section title={t('ticketRelatedTasks')}><Relations links={detail.dependencies.filter(link => link.kind === 'relates')} ticketId={task.id} tickets={panel?.tickets ?? []} empty={t('ticketRelatedTasksEmpty')} /></Section>
+              <Section title={t('ticketDependencies')}><Relations links={detail.dependencies.filter(link => link.kind === 'depends')} ticketId={task.id} empty={t('ticketDependenciesEmpty')} clear /></Section>
+              <Section title={t('ticketRelatedTasks')}><Relations links={detail.dependencies.filter(link => link.kind === 'relates')} ticketId={task.id} empty={t('ticketRelatedTasksEmpty')} /></Section>
             </div>
             <div className="grid min-w-0 grid-rows-[auto_1fr] gap-4">
               <Section title={t('graphSupervisor')}>

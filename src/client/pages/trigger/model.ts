@@ -1,5 +1,5 @@
 import type { InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '../../../database/types'
-import type { GetApiNexusPanelResponse } from '../../apis/index.type'
+import type { GetApiNexusDeliveryResponse, GetApiNexusProjectResponse, GetApiNexusSubscriptionResponse, GetApiNexusThreadResponse, GetApiNexusTriggerResponse } from '../../apis/index.type'
 import type { DshNexusKey } from '../../locale'
 import type { OverviewChannelKind } from '../../types'
 
@@ -95,27 +95,36 @@ export function filterTopics(topics: readonly Topic[], filters: Filters): Topic[
 export const TRIAGE = { pending: 'triggerTriagePending', claimed: 'triggerTriageClaimed', ignored: 'triggerTriageIgnored' } as const
 export const THREAD_KINDS = { issue: 'triggerTopicIssue', pull: 'triggerTopicPull', chat: 'triggerTopicChat', ci: 'triggerTopicCi' } as const
 
-export function recordsOf(panel: Pick<GetApiNexusPanelResponse, 'projects' | 'topics' | 'deliveries'> | null): EventRecord[] {
-  if (!panel)
+export interface RecordSource {
+  project: GetApiNexusProjectResponse | null | undefined
+  trigger: GetApiNexusTriggerResponse | null | undefined
+  thread: GetApiNexusThreadResponse | null | undefined
+  subscription: GetApiNexusSubscriptionResponse | null | undefined
+  delivery: GetApiNexusDeliveryResponse | null | undefined
+}
+
+export function recordsOf(source: RecordSource): EventRecord[] {
+  const { project, trigger, thread, subscription, delivery } = source
+  if (!project || !trigger || !thread || !subscription || !delivery)
     return []
-  return panel.topics.triggers.flatMap((trigger) => {
-    const thread = panel.topics.threads.find(thread => thread.id === trigger.threadId)
-    if (!thread)
+  return trigger.flatMap((item) => {
+    const topic = thread.find(row => row.id === item.threadId)
+    if (!topic)
       return []
     return [{
-      id: trigger.id,
-      channel: trigger.channelId,
-      kind: trigger.kind,
-      actor: trigger.actorName ?? '',
-      human: Boolean(trigger.human),
-      mentioned: Boolean(trigger.mentioned),
-      text: trigger.text,
-      at: trigger.at,
-      ref: trigger.ref ?? undefined,
-      url: trigger.url ?? undefined,
-      thread: { id: thread.id, kind: thread.kind, ref: thread.refId, title: thread.title, triage: thread.triage, project: panel.projects.find(project => project.id === thread.projectId)?.name, url: thread.url ?? undefined },
-      tickets: panel.topics.subscriptions.filter(link => link.threadId === thread.id).map(link => link.ticketId),
-      deliveries: panel.deliveries.filter(message => message.triggerId === trigger.id).map(message => ({ target: message.type, project: panel.projects.find(project => project.id === message.projectId)?.name, status: message.status, read: Boolean(message.readAt), attempts: message.deliveryAttempts, error: message.deliveryError ?? undefined })),
+      id: item.id,
+      channel: item.channelId,
+      kind: item.kind,
+      actor: item.actorName ?? '',
+      human: Boolean(item.human),
+      mentioned: Boolean(item.mentioned),
+      text: item.text,
+      at: item.at,
+      ref: item.ref ?? undefined,
+      url: item.url ?? undefined,
+      thread: { id: topic.id, kind: topic.kind, ref: topic.refId, title: topic.title, triage: topic.triage, project: project.find(row => row.id === topic.projectId)?.name, url: topic.url ?? undefined },
+      tickets: subscription.filter(link => link.threadId === topic.id).map(link => link.ticketId),
+      deliveries: delivery.filter(message => message.triggerId === item.id).map(message => ({ target: message.type, project: project.find(row => row.id === message.projectId)?.name, status: message.status, read: Boolean(message.readAt), attempts: message.deliveryAttempts, error: message.deliveryError ?? undefined })),
     }]
   })
 }

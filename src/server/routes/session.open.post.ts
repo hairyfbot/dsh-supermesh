@@ -1,7 +1,7 @@
 import { defineHandler, HTTPError } from 'h3'
 import { session } from '../../service/session'
 
-export const putMainSession = defineHandler(async () => {
+export default defineHandler(async () => {
   try {
     return { sessionId: await session.create('main', {}) }
   }

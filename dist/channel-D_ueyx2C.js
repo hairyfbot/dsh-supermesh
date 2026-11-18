@@ -1649,15 +1649,12 @@ function bypasses(hostname, pattern) {
 	const escaped = pattern.replace(/[|\\{}()[\]^$+?.]/g, "\\$&").replaceAll("*", ".*");
 	return new RegExp(`^${escaped}$`, "i").test(hostname);
 }
-// src/server/routes/agent.models.get.ts
-const getAgentModels = defineHandler(async () => {
-	const ctx = getServerContext(server);
-	const [settings, catalog] = await Promise.all([setting.load(), ctx.sessionController.modelCatalog()]);
-	return {
-		models: settings.models,
-		catalog
-	};
+// src/server/routes/agent.model.catalog.get.ts
+var agent_model_catalog_get_default = defineHandler(async () => {
+	return getServerContext(server).sessionController.modelCatalog();
 });
+// src/server/routes/agent.model.get.ts
+var agent_model_get_default = defineHandler(async () => (await setting.load()).models);
 // src/service/role-model.ts
 const roleModel = defineService({
 	async resolve(model) {
@@ -1713,7 +1710,7 @@ const roleModel = defineService({
 		await ctx.sessionPersistence.flush();
 	}
 });
-// src/server/routes/agent.models.patch.ts
+// src/server/routes/agent.model.patch.ts
 const roles = [
 	"main",
 	"manager",
@@ -1721,7 +1718,7 @@ const roles = [
 	"worker",
 	"supervisor"
 ];
-const patchAgentModels = defineHandler(async (event) => {
+var agent_model_patch_default = defineHandler(async (event) => {
 	const body = await readBody(event);
 	if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => ![
 		"role",
@@ -1756,7 +1753,7 @@ const patchAgentModels = defineHandler(async (event) => {
 		...(await setting.load()).models,
 		[body.role]: entry
 	};
-	return { models: (await setting.save({ models })).models };
+	return (await setting.save({ models })).models;
 });
 // src/service/session.ts
 const presets$1 = {
@@ -2259,8 +2256,8 @@ function scopeOf(identity) {
 	};
 	return null;
 }
-// src/server/routes/ask.answers.post.ts
-const postAnswer = defineHandler(async (event) => {
+// src/server/routes/ask.[id].answer.post.ts
+var ask__id__answer_post_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id", { decode: true });
 	const body = await readBody(event);
 	if (!id?.trim() || !body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "answer") || typeof body.answer !== "string" || !body.answer.trim()) throw new HTTPError({
@@ -2776,8 +2773,8 @@ function lines(task) {
 		}
 	};
 }
-// src/server/routes/channel.authentication.get.ts
-const getChannelAuthentication = defineHandler((event) => {
+// src/server/routes/channel.[id].authentication.[authenticationId].get.ts
+var channel__id__authentication__authenticationId__get_default = defineHandler((event) => {
 	const id = getRouterParam(event, "id");
 	const authenticationId = getRouterParam(event, "authenticationId");
 	if (!id || !authenticationId) throw new HTTPError({
@@ -2791,8 +2788,8 @@ const getChannelAuthentication = defineHandler((event) => {
 	});
 	return authentication;
 });
-// src/server/routes/channel.authentication.post.ts
-const postChannelAuthentication = defineHandler(async (event) => {
+// src/server/routes/channel.[id].authentication.post.ts
+var channel__id__authentication_post_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id");
 	if (!id) throw new HTTPError({
 		status: 400,
@@ -2821,8 +2818,8 @@ const postChannelAuthentication = defineHandler(async (event) => {
 		});
 	}
 });
-// src/server/routes/channel.configuration.ts
-const putChannelConfiguration = defineHandler(async (event) => {
+// src/server/routes/channel.[id].configuration.put.ts
+var channel__id__configuration_put_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id");
 	const body = await readBody(event);
 	if (!id || !body) throw new HTTPError({
@@ -2850,8 +2847,8 @@ const putChannelConfiguration = defineHandler(async (event) => {
 		});
 	}
 });
-// src/server/routes/channel.credentials.delete.ts
-const deleteChannelCredentials = defineHandler(async (event) => {
+// src/server/routes/channel.[id].credential.delete.ts
+var channel__id__credential_delete_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id");
 	if (!id) throw new HTTPError({
 		status: 400,
@@ -2868,6 +2865,75 @@ const deleteChannelCredentials = defineHandler(async (event) => {
 		});
 	}
 });
+// src/server/routes/channel.get.ts
+var channel_get_default = defineHandler(async () => channel.list());
+// src/server/routes/delivery.get.ts
+var delivery_get_default = defineHandler(async () => db.inbox.listRecent());
+// src/server/routes/edge.get.ts
+var edge_get_default = defineHandler(async () => {
+	const [runningWorkers, queuedWorkers, links, openTickets] = await Promise.all([
+		db.worker.listRunning(),
+		db.worker.listQueued(),
+		db.ticketLink.listAll(),
+		db.ticket.listOpen()
+	]);
+	const activeWorkers = [...new Map([...queuedWorkers, ...runningWorkers].map((worker) => [worker.id, worker])).values()];
+	const runningTicketIds = new Set(runningWorkers.map((worker) => worker.ticketId));
+	const ticketMap = new Map(openTickets.map((ticket) => [ticket.id, ticket]));
+	for (const ticket of await Promise.all([...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id)).map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
+	return [
+		...[...new Set([...ticketMap.values()].map((ticket) => ticket.projectId))].map((projectId) => ({
+			source: "orchestrator",
+			target: `project:${projectId}`,
+			kind: "flow"
+		})),
+		...[...ticketMap.values()].map((ticket) => ({
+			source: `project:${ticket.projectId}`,
+			target: `ticket:${ticket.id}`,
+			kind: "flow"
+		})),
+		...activeWorkers.filter((worker) => runningTicketIds.has(worker.ticketId) || ticketMap.has(worker.ticketId)).map((worker) => ({
+			source: `ticket:${worker.ticketId}`,
+			target: `worker:${worker.id}`,
+			kind: "flow"
+		})),
+		...links.map((link) => ({
+			source: `ticket:${link.ticketId}`,
+			target: `ticket:${link.relatedId}`,
+			kind: link.kind === "depends" ? "dependency" : "association"
+		}))
+	];
+});
+// src/server/routes/group.get.ts
+var group_get_default = defineHandler(async () => {
+	const [supervisors, scopes, runningWorkers, queuedWorkers, openTickets] = await Promise.all([
+		db.supervisor.listActive(),
+		db.supervisorTicket.listAll(),
+		db.worker.listRunning(),
+		db.worker.listQueued(),
+		db.ticket.listOpen()
+	]);
+	const activeWorkers = [...new Map([...queuedWorkers, ...runningWorkers].map((worker) => [worker.id, worker])).values()];
+	const runningTicketIds = new Set(runningWorkers.map((worker) => worker.ticketId));
+	const ticketMap = new Map(openTickets.map((ticket) => [ticket.id, ticket]));
+	for (const ticket of await Promise.all([...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id)).map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
+	const current = [...ticketMap.values()].filter((ticket) => ![
+		"closed",
+		"done",
+		"cancelled"
+	].includes(ticket.status) || runningTicketIds.has(ticket.id));
+	return supervisors.map((supervisor) => ({
+		id: `supervisor:${supervisor.id}`,
+		label: supervisor.title,
+		sessionId: supervisor.sessionId,
+		nodeIds: [...new Set(scopes.filter((scope) => scope.supervisorId === supervisor.id).flatMap((scope) => {
+			const ticket = current.find((item) => item.id === scope.ticketId);
+			return ticket ? [`project:${ticket.projectId}`] : [];
+		}))]
+	})).filter((group) => group.nodeIds.length);
+});
+// src/server/routes/message.get.ts
+var message_get_default = defineHandler(async () => db.inbox.listRecent());
 // src/utils/repository.ts
 function parseGitRemote(value) {
 	const invalid = () => /* @__PURE__ */ new Error("invalid_repository_remote");
@@ -3220,27 +3286,16 @@ async function repositoryFacts(directory) {
 function samePath(left, right) {
 	return process.platform === "win32" ? resolve(left).toLowerCase() === resolve(right).toLowerCase() : resolve(left) === resolve(right);
 }
-// src/server/routes/panel.get.ts
-const getPanel = defineHandler(async () => {
-	const [projects, tickets, runningWorkers, supervisors, scopes, links, threads, triggers, subscriptions, channelCatalog, messages, pending, settings, savedMainSessionId, openTickets, queuedWorkers] = await Promise.all([
+// src/server/routes/node.get.ts
+var node_get_default = defineHandler(async () => {
+	const [projects, runningWorkers, queuedWorkers, openTickets, channelCatalog] = await Promise.all([
 		project.list(),
-		db.ticket.listRecent(),
 		db.worker.listRunning(),
-		db.supervisor.listActive(),
-		db.supervisorTicket.listAll(),
-		db.ticketLink.listAll(),
-		db.thread.listRecent(1e3),
-		db.trigger.listRecent(),
-		db.ticketThread.listAll(),
-		channel.list(),
-		db.inbox.listRecent(),
-		db.inbox.listPending("user"),
-		setting.load(),
-		session.findMain(),
+		db.worker.listQueued(),
 		db.ticket.listOpen(),
-		db.worker.listQueued()
+		channel.list()
 	]);
-	async function binding(id, role, projectId) {
+	async function activity(id, role, projectId) {
 		if (!id) return {
 			sessionId: null,
 			status: "not_created"
@@ -3250,23 +3305,22 @@ const getPanel = defineHandler(async () => {
 			sessionId: null,
 			status: "not_created"
 		};
-		const activity = await session.activity(id);
+		const state = await session.activity(id);
 		return {
 			sessionId: id,
-			status: activity.running ? "running" : activity.background ? "background" : activity.queued ? "queued" : "idle"
+			status: state.running ? "running" : state.background ? "background" : state.queued ? "queued" : "idle"
 		};
 	}
-	const [mainBinding, projectBindings] = await Promise.all([binding(savedMainSessionId, "main"), Promise.all(projects.map(async (project) => ({
-		id: project.id,
-		...await binding(project.orchestratorSessionId ?? null, "project", project.id)
-	})))]);
-	const mainSessionId = mainBinding.sessionId;
-	const projectSessions = new Map(projectBindings.map((project) => [project.id, project]));
+	const mainBinding = await activity(await session.findMain(), "main");
+	const projectBindings = await Promise.all(projects.map(async (item) => ({
+		id: item.id,
+		...await activity(item.orchestratorSessionId ?? null, "project", item.id)
+	})));
+	const projectSessions = new Map(projectBindings.map((item) => [item.id, item]));
 	const activeWorkers = [...new Map([...queuedWorkers, ...runningWorkers].map((worker) => [worker.id, worker])).values()];
 	const runningTicketIds = new Set(runningWorkers.map((worker) => worker.ticketId));
 	const ticketMap = new Map(openTickets.map((ticket) => [ticket.id, ticket]));
-	const missingIds = [...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id));
-	for (const ticket of await Promise.all(missingIds.map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
+	for (const ticket of await Promise.all([...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id)).map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
 	const currentTickets = [...ticketMap.values()].filter((ticket) => ![
 		"closed",
 		"done",
@@ -3278,22 +3332,22 @@ const getPanel = defineHandler(async () => {
 		"done",
 		"cancelled"
 	].includes(ticketMap.get(worker.ticketId).status)));
-	const currentProjects = projects.filter((project) => [
+	const currentProjects = projects.filter((item) => [
 		"running",
 		"background",
 		"queued"
-	].includes(projectSessions.get(project.id).status) || currentTickets.some((ticket) => ticket.projectId === project.id));
+	].includes(projectSessions.get(item.id).status) || currentTickets.some((ticket) => ticket.projectId === item.id));
 	const hasRuntime = currentTickets.length > 0 || currentProjects.length > 0 || [
 		"running",
 		"background",
 		"queued"
 	].includes(mainBinding.status);
-	const channels = channelCatalog.filter((channel) => channel.configured && channel.supported && currentTickets.some((ticket) => ticket.channelId === channel.id));
-	const nodes = [
+	const channels = channelCatalog.filter((item) => item.configured && item.supported && currentTickets.some((ticket) => ticket.channelId === item.id));
+	return [
 		...channels.length ? [{
 			id: "channel",
 			kind: "channel",
-			label: channels.map((channel) => channel.name).join(" · "),
+			label: channels.map((item) => item.name).join(" · "),
 			status: "configured",
 			projectId: null,
 			ticketId: null,
@@ -3302,20 +3356,20 @@ const getPanel = defineHandler(async () => {
 		...hasRuntime ? [{
 			id: "orchestrator",
 			kind: "orchestrator",
-			label: mainSessionId ?? "",
+			label: mainBinding.sessionId ?? "",
 			status: mainBinding.status,
 			projectId: null,
 			ticketId: null,
-			sessionId: mainSessionId
+			sessionId: mainBinding.sessionId
 		}] : [],
-		...currentProjects.map((project) => ({
-			id: `project:${project.id}`,
+		...currentProjects.map((item) => ({
+			id: `project:${item.id}`,
 			kind: "project",
-			label: project.name,
-			status: projectSessions.get(project.id).status,
-			projectId: project.id,
+			label: item.name,
+			status: projectSessions.get(item.id).status,
+			projectId: item.id,
 			ticketId: null,
-			sessionId: projectSessions.get(project.id).sessionId
+			sessionId: projectSessions.get(item.id).sessionId
 		})),
 		...currentTickets.map((ticket) => ({
 			id: `ticket:${ticket.id}`,
@@ -3336,94 +3390,14 @@ const getPanel = defineHandler(async () => {
 			sessionId: worker.status === "running" ? worker.id : null
 		}))
 	];
-	const nodeIds = new Set(nodes.map((node) => node.id));
-	const edges = [
-		{
-			source: "channel",
-			target: "orchestrator",
-			kind: "flow"
-		},
-		...currentProjects.map((project) => ({
-			source: "orchestrator",
-			target: `project:${project.id}`,
-			kind: "flow"
-		})),
-		...currentTickets.map((ticket) => ({
-			source: `project:${ticket.projectId}`,
-			target: `ticket:${ticket.id}`,
-			kind: "flow"
-		})),
-		...currentWorkers.map((worker) => ({
-			source: `ticket:${worker.ticketId}`,
-			target: `worker:${worker.id}`,
-			kind: "flow"
-		})),
-		...links.map((link) => ({
-			source: `ticket:${link.ticketId}`,
-			target: `ticket:${link.relatedId}`,
-			kind: link.kind === "depends" ? "dependency" : "association"
-		}))
-	].filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target));
-	const groups = supervisors.map((supervisor) => ({
-		id: `supervisor:${supervisor.id}`,
-		label: supervisor.title,
-		sessionId: supervisor.sessionId,
-		nodeIds: [...new Set(scopes.filter((scope) => scope.supervisorId === supervisor.id).flatMap((scope) => {
-			const ticket = currentTickets.find((ticket) => ticket.id === scope.ticketId);
-			return ticket && nodeIds.has(`project:${ticket.projectId}`) ? [`project:${ticket.projectId}`] : [];
-		}))]
-	})).filter((group) => group.nodeIds.length);
-	const failed = messages.find((message) => message.status === "stalled" || message.status === "pending" && message.deliveryError);
-	const activities = [mainBinding, ...projectBindings];
-	const run = {
-		state: failed ? "delivery_failed" : runningWorkers.length || activities.some((activity) => activity.status === "running" || activity.status === "background") ? "running" : currentWorkers.some((worker) => worker.status === "queued") || activities.some((activity) => activity.status === "queued") ? "queued" : "idle",
-		reason: failed?.deliveryError ?? null
-	};
-	return {
-		projects,
-		tickets,
-		mainSessionId,
-		sessions: [
-			...mainSessionId ? [{
-				sessionId: mainSessionId,
-				role: "main"
-			}] : [],
-			...[...projectSessions.values()].flatMap((value) => value.sessionId ? [{
-				sessionId: value.sessionId,
-				role: "project"
-			}] : []),
-			...supervisors.flatMap((supervisor) => supervisor.sessionId ? [{
-				sessionId: supervisor.sessionId,
-				role: "supervisor"
-			}] : []),
-			...currentWorkers.map((worker) => ({
-				sessionId: worker.id,
-				role: "worker"
-			}))
-		],
-		graph: {
-			nodes,
-			edges,
-			groups
-		},
-		run,
-		inbox: {
-			pending: pending.filter((message) => !message.ticketId || openTickets.some((ticket) => ticket.id === message.ticketId)),
-			resolved: messages.filter((message) => message.type === "user" && message.status === "done"),
-			blocked: tickets.filter((ticket) => ticket.paused)
-		},
-		topics: {
-			threads,
-			triggers,
-			subscriptions
-		},
-		deliveries: messages,
-		channels: channelCatalog,
-		settings
-	};
 });
-// src/server/routes/project.opening.ts
-const postProjectOpening = defineHandler(async (event) => {
+// src/server/routes/pending.get.ts
+var pending_get_default = defineHandler(async () => {
+	const [pending, openTickets] = await Promise.all([db.inbox.listPending("user"), db.ticket.listOpen()]);
+	return pending.filter((message) => !message.ticketId || openTickets.some((ticket) => ticket.id === message.ticketId));
+});
+// src/server/routes/project.[id].opening.post.ts
+var project__id__opening_post_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id", { decode: true });
 	if (!id?.trim()) throw new HTTPError({
 		status: 400,
@@ -3439,8 +3413,8 @@ const postProjectOpening = defineHandler(async (event) => {
 		});
 	}
 });
-// src/server/routes/project.patch.ts
-const patchProject = defineHandler(async (event) => {
+// src/server/routes/project.[id].patch.ts
+var project__id__patch_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id", { decode: true });
 	const body = await readBody(event);
 	if (!id?.trim() || !body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "enabled") || typeof body.enabled !== "boolean") throw new HTTPError({
@@ -3463,10 +3437,51 @@ const patchProject = defineHandler(async (event) => {
 	});
 	return project;
 });
+// src/server/routes/project.[id].session.put.ts
+var project__id__session_put_default = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	if (!id?.trim()) throw new HTTPError({
+		status: 400,
+		message: "project_id_required"
+	});
+	try {
+		return { sessionId: await session.create("project", { projectId: id }) };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "session_open_failed";
+		throw new HTTPError({
+			status: message === "project_not_found" ? 404 : message === "session_binding_conflict" ? 409 : message === "runtime_stopping" ? 503 : 502,
+			message
+		});
+	}
+});
+// src/server/routes/project.get.ts
+var project_get_default = defineHandler(async () => {
+	const projects = await project.list();
+	return Promise.all(projects.map(async (item) => {
+		const id = item.orchestratorSessionId ?? null;
+		let status = "not_created";
+		let sessionId = null;
+		if (id) {
+			const identity = await session.resolve(id);
+			if (identity?.role === "project" && identity.projectId === item.id) {
+				const activity = await session.activity(id);
+				status = activity.running ? "running" : activity.background ? "background" : activity.queued ? "queued" : "idle";
+				sessionId = id;
+			}
+		}
+		return {
+			...item,
+			session: {
+				sessionId,
+				status
+			}
+		};
+	}));
+});
 // src/server/routes/project.post.ts
-const postProjects = defineHandler(async () => project.sync());
+var project_post_default = defineHandler(async () => project.sync());
 // src/server/routes/project.repository.post.ts
-const postRepository = defineHandler(async (event) => {
+var project_repository_post_default = defineHandler(async (event) => {
 	const body = await readBody(event);
 	if (!body || typeof body.remoteUrl !== "string" || body.name !== void 0 && typeof body.name !== "string") throw new HTTPError({
 		status: 400,
@@ -3490,25 +3505,10 @@ const postRepository = defineHandler(async (event) => {
 		});
 	}
 });
-// src/server/routes/project.session.ts
-const putProjectSession = defineHandler(async (event) => {
-	const id = getRouterParam(event, "id", { decode: true });
-	if (!id?.trim()) throw new HTTPError({
-		status: 400,
-		message: "project_id_required"
-	});
-	try {
-		return { sessionId: await session.create("project", { projectId: id }) };
-	} catch (error) {
-		const message = error instanceof Error ? error.message : "session_open_failed";
-		throw new HTTPError({
-			status: message === "project_not_found" ? 404 : message === "session_binding_conflict" ? 409 : message === "runtime_stopping" ? 503 : 502,
-			message
-		});
-	}
-});
-// src/server/routes/session.context.get.ts
-const getContext = defineHandler(async (event) => {
+// src/server/routes/scope.get.ts
+var scope_get_default = defineHandler(async () => db.supervisorTicket.listAll());
+// src/server/routes/session.[id].context.get.ts
+var session__id__context_get_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id", { decode: true });
 	if (!id?.trim()) throw new HTTPError({
 		status: 400,
@@ -3527,17 +3527,8 @@ const getContext = defineHandler(async (event) => {
 		...context
 	};
 });
-// src/server/routes/session.mailbox.get.ts
-const getMailbox = defineHandler(async (event) => {
-	const id = getRouterParam(event, "id", { decode: true });
-	if (!id?.trim()) throw new HTTPError({
-		status: 400,
-		message: "invalid_session"
-	});
-	return { mailbox: await inbox.peek(id) };
-});
-// src/server/routes/session.mailbox.patch.ts
-const patchMail = defineHandler(async (event) => {
+// src/server/routes/session.[id].mailbox.[messageId].patch.ts
+var session__id__mailbox__messageId__patch_default = defineHandler(async (event) => {
 	const body = await readBody(event);
 	if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "status") || body.status !== "done") throw new HTTPError({
 		status: 400,
@@ -3565,8 +3556,17 @@ const patchMail = defineHandler(async (event) => {
 	});
 	return { completed: await inbox.complete(id, [messageId]) };
 });
+// src/server/routes/session.[id].mailbox.get.ts
+var session__id__mailbox_get_default = defineHandler(async (event) => {
+	const id = getRouterParam(event, "id", { decode: true });
+	if (!id?.trim()) throw new HTTPError({
+		status: 400,
+		message: "invalid_session"
+	});
+	return { mailbox: await inbox.peek(id) };
+});
 // src/server/routes/session.open.post.ts
-const putMainSession = defineHandler(async () => {
+var session_open_post_default = defineHandler(async () => {
 	try {
 		return { sessionId: await session.create("main", {}) };
 	} catch (error) {
@@ -3577,8 +3577,37 @@ const putMainSession = defineHandler(async () => {
 		});
 	}
 });
+// src/server/routes/session.role.get.ts
+var session_role_get_default = defineHandler(async () => {
+	const [mainSessionId, projects, supervisors, workers] = await Promise.all([
+		storage.getItem("mainSessionId"),
+		db.project.listAll(),
+		db.supervisor.listByStatus("active"),
+		db.worker.listRecent()
+	]);
+	return { sessions: [
+		...mainSessionId ? [{
+			sessionId: mainSessionId,
+			role: "main"
+		}] : [],
+		...projects.flatMap((project) => project.orchestratorSessionId ? [{
+			sessionId: project.orchestratorSessionId,
+			role: "project"
+		}] : []),
+		...supervisors.flatMap((supervisor) => supervisor.sessionId ? [{
+			sessionId: supervisor.sessionId,
+			role: "supervisor"
+		}] : []),
+		...workers.map((worker) => ({
+			sessionId: worker.id,
+			role: "worker"
+		}))
+	] };
+});
+// src/server/routes/setting.get.ts
+var setting_get_default = defineHandler(async () => setting.load());
 // src/server/routes/setting.patch.ts
-const patchSettings = defineHandler(async (event) => {
+var setting_patch_default = defineHandler(async (event) => {
 	const body = await readBody(event);
 	if (!body) throw new HTTPError({
 		status: 400,
@@ -3594,8 +3623,37 @@ const patchSettings = defineHandler(async (event) => {
 		throw error;
 	}
 });
-// src/server/routes/ticket.get.ts
-const getTicket = defineHandler(async (event) => {
+// src/server/routes/status.get.ts
+var status_get_default = defineHandler(async () => {
+	const [projects, runningWorkers, queuedWorkers, messages, mainSessionId] = await Promise.all([
+		project.list(),
+		db.worker.listRunning(),
+		db.worker.listQueued(),
+		db.inbox.listRecent(),
+		session.findMain()
+	]);
+	const bindings = [...mainSessionId ? [{ sessionId: mainSessionId }] : [], ...projects.flatMap((item) => item.orchestratorSessionId ? [{ sessionId: item.orchestratorSessionId }] : [])];
+	const activities = await Promise.all(bindings.map(async (binding) => await session.resolve(binding.sessionId) ? await session.activity(binding.sessionId) : {
+		running: false,
+		background: false,
+		queued: false
+	}));
+	const failed = messages.find((message) => message.status === "stalled" || message.status === "pending" && message.deliveryError);
+	const active = activities.some((activity) => activity.running || activity.background);
+	const queued = queuedWorkers.length > 0 || activities.some((activity) => activity.queued);
+	return {
+		state: failed ? "delivery_failed" : runningWorkers.length || active ? "running" : queued ? "queued" : "idle",
+		reason: failed?.deliveryError ?? null
+	};
+});
+// src/server/routes/subscription.get.ts
+var subscription_get_default = defineHandler(async () => db.ticketThread.listAll());
+// src/server/routes/supervisor.get.ts
+var supervisor_get_default = defineHandler(async () => db.supervisor.listActive());
+// src/server/routes/thread.get.ts
+var thread_get_default = defineHandler(async () => db.thread.listRecent(1e3));
+// src/server/routes/ticket.[id].get.ts
+var ticket__id__get_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id", { decode: true });
 	if (!id?.trim()) throw new HTTPError({
 		status: 400,
@@ -3628,8 +3686,8 @@ const getTicket = defineHandler(async (event) => {
 		inbox
 	};
 });
-// src/server/routes/ticket.patch.ts
-const patchTicket = defineHandler(async (event) => {
+// src/server/routes/ticket.[id].patch.ts
+var ticket__id__patch_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id", { decode: true });
 	const body = await readBody(event);
 	if (!id?.trim() || !body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "reason" && key !== "paused") || typeof body.paused !== "boolean" || typeof body.reason !== "string" || !body.reason.trim()) throw new HTTPError({
@@ -3652,6 +3710,32 @@ const patchTicket = defineHandler(async (event) => {
 	});
 	return updated;
 });
+// src/server/routes/ticket.current.get.ts
+var ticket_current_get_default = defineHandler(async () => {
+	const [runningWorkers, queuedWorkers, openTickets] = await Promise.all([
+		db.worker.listRunning(),
+		db.worker.listQueued(),
+		db.ticket.listOpen()
+	]);
+	const runningTicketIds = new Set(runningWorkers.map((worker) => worker.ticketId));
+	const activeWorkers = [...new Map([...queuedWorkers, ...runningWorkers].map((worker) => [worker.id, worker])).values()];
+	const ticketMap = new Map(openTickets.map((ticket) => [ticket.id, ticket]));
+	for (const ticket of await Promise.all([...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id)).map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
+	return [...ticketMap.values()].filter((ticket) => ![
+		"closed",
+		"done",
+		"cancelled"
+	].includes(ticket.status) || runningTicketIds.has(ticket.id));
+});
+// src/server/routes/ticket.get.ts
+var ticket_get_default = defineHandler(async () => db.ticket.listRecent());
+// src/server/routes/trigger.get.ts
+var trigger_get_default = defineHandler(async () => db.trigger.listRecent());
+// src/server/routes/worker.get.ts
+var worker_get_default = defineHandler(async () => {
+	const [running, queued] = await Promise.all([db.worker.listRunning(), db.worker.listQueued()]);
+	return [...new Map([...queued, ...running].map((worker) => [worker.id, worker])).values()];
+});
 // src/server/index.ts
 const authorize = defineHandler(async (event) => {
 	const options = getServerOptions(event);
@@ -3669,26 +3753,45 @@ const authorize = defineHandler(async (event) => {
 });
 const server = defineWebServer((app) => {
 	app.use(authorize);
-	app.get("/api/nexus/panel", getPanel);
-	app.get("/api/nexus/agents/models", getAgentModels);
-	app.patch("/api/nexus/agents/models", patchAgentModels);
-	app.get("/api/nexus/tickets/:id", getTicket);
-	app.patch("/api/nexus/tickets/:id", patchTicket);
-	app.put("/api/nexus/channels/:id/configuration", putChannelConfiguration);
-	app.delete("/api/nexus/channels/:id/credentials", deleteChannelCredentials);
-	app.post("/api/nexus/channels/:id/authentications", postChannelAuthentication);
-	app.get("/api/nexus/channels/:id/authentications/:authenticationId", getChannelAuthentication);
-	app.patch("/api/nexus/projects/:id", patchProject);
-	app.post("/api/nexus/projects", postProjects);
-	app.post("/api/nexus/repositories", postRepository);
-	app.put("/api/nexus/projects/:id/session", putProjectSession);
-	app.post("/api/nexus/projects/:id/openings", postProjectOpening);
-	app.put("/api/nexus/sessions/main", putMainSession);
-	app.patch("/api/nexus/settings", patchSettings);
-	app.post("/api/nexus/asks/:id/answers", postAnswer);
-	app.get("/api/nexus/sessions/:id/context", getContext);
-	app.get("/api/nexus/sessions/:id/mailbox", getMailbox);
-	app.patch("/api/nexus/sessions/:id/mailbox/:messageId", patchMail);
+	app.get("/api/nexus/project", project_get_default);
+	app.post("/api/nexus/project", project_post_default);
+	app.patch("/api/nexus/project/:id", project__id__patch_default);
+	app.put("/api/nexus/project/:id/session", project__id__session_put_default);
+	app.post("/api/nexus/project/:id/opening", project__id__opening_post_default);
+	app.post("/api/nexus/repository", project_repository_post_default);
+	app.get("/api/nexus/ticket", ticket_get_default);
+	app.get("/api/nexus/ticket/current", ticket_current_get_default);
+	app.get("/api/nexus/ticket/:id", ticket__id__get_default);
+	app.patch("/api/nexus/ticket/:id", ticket__id__patch_default);
+	app.post("/api/nexus/ask/:id/answer", ask__id__answer_post_default);
+	app.get("/api/nexus/worker", worker_get_default);
+	app.get("/api/nexus/supervisor", supervisor_get_default);
+	app.get("/api/nexus/scope", scope_get_default);
+	app.get("/api/nexus/node", node_get_default);
+	app.get("/api/nexus/edge", edge_get_default);
+	app.get("/api/nexus/group", group_get_default);
+	app.get("/api/nexus/status", status_get_default);
+	app.get("/api/nexus/message", message_get_default);
+	app.get("/api/nexus/pending", pending_get_default);
+	app.get("/api/nexus/delivery", delivery_get_default);
+	app.get("/api/nexus/thread", thread_get_default);
+	app.get("/api/nexus/trigger", trigger_get_default);
+	app.get("/api/nexus/subscription", subscription_get_default);
+	app.get("/api/nexus/channel", channel_get_default);
+	app.put("/api/nexus/channel/:id/configuration", channel__id__configuration_put_default);
+	app.delete("/api/nexus/channel/:id/credential", channel__id__credential_delete_default);
+	app.post("/api/nexus/channel/:id/authentication", channel__id__authentication_post_default);
+	app.get("/api/nexus/channel/:id/authentication/:authenticationId", channel__id__authentication__authenticationId__get_default);
+	app.get("/api/nexus/setting", setting_get_default);
+	app.patch("/api/nexus/setting", setting_patch_default);
+	app.get("/api/nexus/agent/model", agent_model_get_default);
+	app.patch("/api/nexus/agent/model", agent_model_patch_default);
+	app.get("/api/nexus/agent/model/catalog", agent_model_catalog_get_default);
+	app.put("/api/nexus/session/main", session_open_post_default);
+	app.get("/api/nexus/session/role", session_role_get_default);
+	app.get("/api/nexus/session/:id/context", session__id__context_get_default);
+	app.get("/api/nexus/session/:id/mailbox", session__id__mailbox_get_default);
+	app.patch("/api/nexus/session/:id/mailbox/:messageId", session__id__mailbox__messageId__patch_default);
 });
 // src/service/channel.ts
 const presets = [
@@ -3763,7 +3866,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BG8vTbvb.js");
+			const { shell } = await import("./shell-DnwWm2Jt.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3772,7 +3875,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BG8vTbvb.js");
+			const { shell } = await import("./shell-DnwWm2Jt.js");
 			await shell.refresh();
 			return view;
 		});
