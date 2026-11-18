@@ -4414,7 +4414,7 @@ const channel = defineService({
 	connection(kind) {
 		const operation = writing.then(async () => {
 			const row = await db.channel.findById(kind);
-			const token = kind === "feishu" ? void 0 : (await credentials().resolve(ref(kind)))?.value;
+			const token = kind === "feishu" ? void 0 : await this.resolveCredential(kind);
 			return Object.freeze({
 				host: row?.host ?? (kind === "gitlab" ? "https://gitlab.com" : null),
 				token,
@@ -4434,7 +4434,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DEFsM7Vj.js");
+			const { shell } = await import("./shell-DmhUwIO7.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4443,7 +4443,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DEFsM7Vj.js");
+			const { shell } = await import("./shell-DmhUwIO7.js");
 			await shell.refresh();
 			return view;
 		});

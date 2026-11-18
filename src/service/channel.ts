@@ -44,7 +44,7 @@ export const channel = defineService({
   connection(kind: ChannelKind): Promise<ChannelConnection> {
     const operation = writing.then(async () => {
       const row = await db.channel.findById(kind)
-      const token = kind === 'feishu' ? undefined : (await credentials().resolve(ref(kind)))?.value
+      const token = kind === 'feishu' ? undefined : await this.resolveCredential(kind)
       return Object.freeze({ host: row?.host ?? (kind === 'gitlab' ? 'https://gitlab.com' : null), token, enabled: kind !== 'feishu' && Boolean(row?.enabled) })
     })
     writing = operation.then(() => undefined, () => undefined)
