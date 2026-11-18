@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-BmsUD93m.js";
+import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-C8mM_GyJ.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -394,6 +394,7 @@ var GitHubChannel = class {
 	async collect(projectId, signal) {
 		return this.exclusive(`collect:${projectId}`, async () => {
 			const errors = [];
+			let repository;
 			const attempt = async (operation) => {
 				try {
 					await operation();
@@ -405,12 +406,13 @@ var GitHubChannel = class {
 			try {
 				const project = await this.project(projectId);
 				const environment = await this.verifyEnvironment(projectId, signal);
-				const repository = repositoryOf(project.remoteUrl);
-				const baseline = await this.state(repository, "baseline") ?? now$1();
-				await this.save(repository, "baseline", baseline);
-				await attempt(() => this.stream(repository, "topics", `repos/${repository}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
+				const repo = repositoryOf(project.remoteUrl);
+				repository = repo;
+				const baseline = await this.state(repo, "baseline") ?? now$1();
+				await this.save(repo, "baseline", baseline);
+				await attempt(() => this.stream(repo, "topics", `repos/${repo}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
 					const target = {
-						repository,
+						repository: repo,
 						number: number$1(row.number),
 						kind: row.pull_request ? "pull" : "issue"
 					};
@@ -422,10 +424,10 @@ var GitHubChannel = class {
 						if (!result.ok) throw new GhError(result.reason);
 					}
 				}, signal));
-				await attempt(() => this.stream(repository, "comments", `repos/${repository}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
+				await attempt(() => this.stream(repo, "comments", `repos/${repo}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
 					const match = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/issues\/(\d+)$/.exec(text$1(row.issue_url));
-					if (!match || match[1].toLowerCase() !== repository) throw new GhError("source_repository_mismatch");
-					const thread = await db.thread.findByRef("github", `${repository}:${match[2]}`);
+					if (!match || match[1].toLowerCase() !== repo) throw new GhError("source_repository_mismatch");
+					const thread = await db.thread.findByRef("github", `${repo}:${match[2]}`);
 					if (thread) {
 						await this.acceptAnswers(thread, row);
 						await this.ingest(thread, row, "comment", baseline);
@@ -435,8 +437,8 @@ var GitHubChannel = class {
 					if (thread.kind !== "pull" || !thread.url || !(await db.ticketThread.listTicketIds(thread.id)).length) continue;
 					await attempt(async () => {
 						const target = parseResource$1(thread.url);
-						if (target.repository !== repository) return;
-						const root = `repos/${repository}/pulls/${target.number}`;
+						if (target.repository !== repo) return;
+						const root = `repos/${repo}/pulls/${target.number}`;
 						for (const [path, kind] of [["reviews", "review"], ["comments", "review_comment"]]) await attempt(async () => {
 							for (const row of await this.pages(`${root}/${path}`, signal)) {
 								await this.acceptAnswers(thread, row);
@@ -448,15 +450,15 @@ var GitHubChannel = class {
 					});
 				}
 				if (environment.defaultBranch) await attempt(() => this.collectBranch(projectId, environment.defaultBranch, signal));
-				await this.save(repository, "collection_status", {
-					ok: !errors.length,
-					reasons: [...new Set(errors)],
-					collectedAt: now$1()
-				});
 			} catch (error) {
 				if (signal?.aborted) throw error;
 				errors.push(failure$1(error));
 			}
+			if (repository) await this.save(repository, "collection_status", {
+				ok: !errors.length,
+				reasons: [...new Set(errors)],
+				collectedAt: now$1()
+			});
 			return errors.length ? {
 				ok: false,
 				reason: [...new Set(errors)].join(",")

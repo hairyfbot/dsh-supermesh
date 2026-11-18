@@ -130,6 +130,7 @@ export class GitHubChannel {
   async collect(projectId: string, signal?: AbortSignal): Promise<{ ok: boolean, reason?: string }> {
     return this.exclusive(`collect:${projectId}`, async () => {
       const errors: string[] = []
+      let repository: string | undefined
       const attempt = async (operation: () => Promise<unknown>) => {
         try {
           await operation()
@@ -143,11 +144,12 @@ export class GitHubChannel {
       try {
         const project = await this.project(projectId)
         const environment = await this.verifyEnvironment(projectId, signal)
-        const repository = repositoryOf(project.remoteUrl)!
-        const baseline = await this.state<string>(repository, 'baseline') ?? now()
-        await this.save(repository, 'baseline', baseline)
-        await attempt(() => this.stream(repository, 'topics', `repos/${repository}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
-          const target: Resource = { repository, number: number(row.number), kind: row.pull_request ? 'pull' : 'issue' }
+        const repo = repositoryOf(project.remoteUrl)!
+        repository = repo
+        const baseline = await this.state<string>(repo, 'baseline') ?? now()
+        await this.save(repo, 'baseline', baseline)
+        await attempt(() => this.stream(repo, 'topics', `repos/${repo}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
+          const target: Resource = { repository: repo, number: number(row.number), kind: row.pull_request ? 'pull' : 'issue' }
           validateTopic(row, target)
           const thread = await this.ensureThread(target, row)
           await this.ingest(thread, row, target.kind === 'issue' && row.state === 'closed' ? 'close' : 'open', baseline)
@@ -157,11 +159,11 @@ export class GitHubChannel {
               throw new GhError(result.reason!)
           }
         }, signal))
-        await attempt(() => this.stream(repository, 'comments', `repos/${repository}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
+        await attempt(() => this.stream(repo, 'comments', `repos/${repo}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
           const match = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/issues\/(\d+)$/.exec(text(row.issue_url))
-          if (!match || match[1]!.toLowerCase() !== repository)
+          if (!match || match[1]!.toLowerCase() !== repo)
             throw new GhError('source_repository_mismatch')
-          const thread = await db.thread.findByRef('github', `${repository}:${match[2]}`)
+          const thread = await db.thread.findByRef('github', `${repo}:${match[2]}`)
           if (thread) {
             await this.acceptAnswers(thread, row)
             await this.ingest(thread, row, 'comment', baseline)
@@ -172,9 +174,9 @@ export class GitHubChannel {
             continue
           await attempt(async () => {
             const target = parseResource(thread.url!)
-            if (target.repository !== repository)
+            if (target.repository !== repo)
               return
-            const root = `repos/${repository}/pulls/${target.number}`
+            const root = `repos/${repo}/pulls/${target.number}`
             for (const [path, kind] of [['reviews', 'review'], ['comments', 'review_comment']] as const) {
               await attempt(async () => {
                 for (const row of await this.pages(`${root}/${path}`, signal)) {
@@ -190,13 +192,15 @@ export class GitHubChannel {
         }
         if (environment.defaultBranch)
           await attempt(() => this.collectBranch(projectId, environment.defaultBranch!, signal))
-        await this.save(repository, 'collection_status', { ok: !errors.length, reasons: [...new Set(errors)], collectedAt: now() })
       }
       catch (error) {
         if (signal?.aborted)
           throw error
         errors.push(failure(error))
       }
+      // 状态无论如何都写：中途抛错也要留下 collectedAt，否则界面看不出采集是死是活。
+      if (repository)
+        await this.save(repository, 'collection_status', { ok: !errors.length, reasons: [...new Set(errors)], collectedAt: now() })
       return errors.length ? { ok: false, reason: [...new Set(errors)].join(',') } : { ok: true }
     })
   }
