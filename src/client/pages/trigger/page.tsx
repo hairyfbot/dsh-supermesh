@@ -1,30 +1,44 @@
 import type { ReactNode } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshDelivery, getApiSupermeshProject, getApiSupermeshSubscription, getApiSupermeshThread, getApiSupermeshTrigger } from '../../apis'
+import { useState } from 'react'
+import { getApiSupermeshTopic } from '../../apis'
 import { Empty } from '../../components/empty'
 import { ActivityIcon } from '../../components/icons'
+import { Pagination } from '../../components/pagination'
 import { keys } from '../../config/query-keys'
 import { useActions, useStore } from '../../hooks/use-store'
 import { useTranslation } from '../../hooks/use-translation'
 import { Filters } from './components/filters'
 import { Row } from './components/row'
 import { Summary } from './components/summary'
-import { filterTopics, groupTopics, recordsOf } from './model'
+import { KINDS } from './model'
+
+export const TRIGGER_PAGE_SIZE = 5
 
 export function Trigger(): ReactNode {
   const { t } = useTranslation()
   const filters = useStore(state => state.trigger.filters)
   const { resetTriggerFilters } = useActions()
-  const project = useQuery({ queryKey: keys.project, queryFn: () => getApiSupermeshProject() })
-  const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiSupermeshTrigger(), refetchInterval: 30_000 })
-  const thread = useQuery({ queryKey: keys.thread, queryFn: () => getApiSupermeshThread() })
-  const subscription = useQuery({ queryKey: keys.subscription, queryFn: () => getApiSupermeshSubscription() })
-  const delivery = useQuery({ queryKey: keys.delivery, queryFn: () => getApiSupermeshDelivery() })
-  const topics = groupTopics(recordsOf({ project: project.data, trigger: trigger.data, thread: thread.data, subscription: subscription.data, delivery: delivery.data }))
-  const records = filterTopics(topics, filters)
-  const error = project.error ?? trigger.error ?? thread.error ?? subscription.error ?? delivery.error
-  const loading = project.isLoading || trigger.isLoading || thread.isLoading || subscription.isLoading || delivery.isLoading
+  const [page, setPage] = useState(1)
+  const query = {
+    query: filters.query || undefined,
+    channel: filters.channel === 'all' ? undefined : filters.channel,
+    status: filters.status === 'all' ? undefined : filters.status,
+    kind: filters.kind === 'all' ? undefined : KINDS[filters.kind],
+    mentionedOnly: filters.mentionedOnly ? 'true' : undefined,
+  }
+  const topic = useQuery({
+    queryKey: keys.topicPage(page, TRIGGER_PAGE_SIZE, query),
+    queryFn: () => getApiSupermeshTopic({ ...query, page: String(page), pageSize: String(TRIGGER_PAGE_SIZE) }),
+    refetchInterval: 30_000,
+  })
+  const records = topic.data?.data ?? []
+  const total = topic.data?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / TRIGGER_PAGE_SIZE))
+  const current = Math.min(page, pageCount)
+  const error = topic.error
+  const loading = topic.isLoading
   let content: ReactNode
   if (error) {
     content = <p role="alert" className="m-0 px-4 py-6 text-xs text-(--dsw-alias-state-error-primary)">{error.message || '触发记录加载失败，请重试。'}</p>
@@ -32,8 +46,8 @@ export function Trigger(): ReactNode {
   else if (loading) {
     content = <p role="status" className="m-0 px-4 py-6 text-xs leading-5 text-(--dsw-alias-label-secondary)">正在载入触发记录…</p>
   }
-  else if (records.length) {
-    content = <ul className="m-0 list-none p-0">{records.map(topic => <Row key={topic.latest.thread.id} topic={topic} />)}</ul>
+  else if (total) {
+    content = <ul className="m-0 list-none p-0">{records.map(item => <Row key={item.latest.thread.id} topic={item} />)}</ul>
   }
   else {
     content = (
@@ -50,15 +64,16 @@ export function Trigger(): ReactNode {
           <p className="m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('triggerDescription')}</p>
         </div>
       </header>
-      <Summary topics={topics} />
+      <Summary topics={records} />
       <div className="flex flex-col gap-3">
         <Filters />
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)">
-          <span role="status">{t('triggerResultCount', { count: records.length, total: topics.length })}</span>
+          <span role="status">{t('triggerResultCount', { count: records.length, total })}</span>
         </div>
         <div className="overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)">
           {content}
         </div>
+        {!error && !loading && total > 0 && <Pagination page={current} pageCount={pageCount} onChange={setPage} />}
         <p className="m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">{t('triggerPreviewNotice')}</p>
       </div>
     </section>

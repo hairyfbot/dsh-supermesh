@@ -40,6 +40,7 @@ import ticketGet from './routes/ticket.[id].get'
 import ticketPatch from './routes/ticket.[id].patch'
 import ticketCurrentGet from './routes/ticket.current.get'
 import ticketsGet from './routes/ticket.get'
+import topicGet from './routes/topic.get'
 import triggerGet from './routes/trigger.get'
 import workerGet from './routes/worker.get'
 
@@ -87,6 +88,7 @@ export const server = defineWebServer<ServerOptions>((app) => {
   app.get('/api/supermesh/delivery', deliveryGet)
   app.get('/api/supermesh/thread', threadGet)
   app.get('/api/supermesh/trigger', triggerGet)
+  app.get('/api/supermesh/topic', topicGet)
   app.get('/api/supermesh/subscription', subscriptionGet)
 
   app.get('/api/supermesh/channel', channelGet)

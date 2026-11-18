@@ -80,6 +80,7 @@ async function activate(): Promise<() => Promise<void>> {
     restoreShell = await shell.start()
     await worker.recover()
     unregister.push(scheduler.use({ id: 'supermesh:runtime', cron: '* * * * * *' }, () => track(async () => {
+      await worker.rescue()
       await worker.reconcileBackground()
       await inbox.deliverAnswers()
       await inbox.deliver()

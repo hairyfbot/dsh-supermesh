@@ -15,7 +15,7 @@ import { createRouteDispatcher, proxyEnvironmentForChild } from "@deepseek-ai/ds
 import { getServerContext, getServerOptions } from "dsh-h3/utils";
 import { fetch } from "undici";
 import { defineWebServer } from "dsh-h3";
-import { HTTPError, defineHandler, getRouterParam, readBody } from "h3";
+import { HTTPError, defineHandler, getQuery, getRouterParam, readBody } from "h3";
 import { ReasoningEffortId, createUserMessage } from "@deepseek-ai/dsh-llm";
 import { access, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { Session, SessionId } from "@deepseek-ai/dsh-session";
@@ -974,7 +974,7 @@ var Ticket = class Ticket extends Model {
 			status: "running",
 			startedAt,
 			updatedAt
-		}).where("id", "=", id).execute();
+		}).where("id", "=", id).where("status", "not in", ["done", "cancelled"]).where((eb) => eb.or([eb("prState", "is", null), eb("prState", "not in", ["merged", "closed"])])).execute();
 	}
 	async finish(id, status, endedAt, updatedAt) {
 		await this.db.transaction().execute(async (trx) => {
@@ -1017,6 +1017,19 @@ var Ticket = class Ticket extends Model {
 	}
 	async listRecent(limit = 100) {
 		return this.db.selectFrom("ticket").selectAll().orderBy("createdAt", "desc").orderBy("id").limit(Math.max(1, Math.min(1e3, limit))).execute();
+	}
+	findManyQuery() {
+		return this.db.selectFrom("ticket").selectAll().orderBy("createdAt", "desc").orderBy("id");
+	}
+	async findManyPage(page = 1, pageSize = 8) {
+		const size = Math.max(1, Math.min(100, pageSize));
+		const offset = (Math.max(1, page) - 1) * size;
+		const base = this.findManyQuery();
+		const [counted, data] = await Promise.all([base.clearSelect().select(this.db.fn.count("ticket.id").as("count")).executeTakeFirst(), base.limit(size).offset(offset).execute()]);
+		return {
+			data,
+			total: Number(counted?.count ?? 0)
+		};
 	}
 	async listFiltered(filters = {}) {
 		let query = this.db.selectFrom("ticket").selectAll("ticket").select((eb) => eb.exists(eb.selectFrom("inbox").select("id").whereRef("inbox.ticketId", "=", "ticket.id").where("kind", "=", "ask").where("inbox.status", "=", "pending")).as("attention"));
@@ -3730,7 +3743,119 @@ var ticket_current_get_default = defineHandler(async () => {
 	].includes(ticket.status) || runningTicketIds.has(ticket.id));
 });
 // src/server/routes/ticket.get.ts
-var ticket_get_default = defineHandler(async () => db.ticket.listRecent());
+var ticket_get_default = defineHandler(async (event) => {
+	const query = getQuery(event);
+	const page = Math.max(1, Number(query.page) || 1);
+	const pageSize = Math.max(1, Math.min(100, Number(query.pageSize) || 8));
+	return {
+		...await db.ticket.findManyPage(page, pageSize),
+		page,
+		pageSize
+	};
+});
+// src/service/topic.ts
+function matchEvent(event, filters, thread, projectName) {
+	const query = (filters.query ?? "").trim().toLocaleLowerCase();
+	if (filters.channel && filters.channel !== "all" && event.channel !== filters.channel) return false;
+	if (filters.kind && filters.kind !== "all" && event.kind !== filters.kind) return false;
+	if (filters.mentionedOnly && !event.mentioned) return false;
+	if (filters.status && filters.status !== "all") {
+		if ((event.deliveries.some((item) => item.status === "stalled") ? "stalled" : event.deliveries.some((item) => item.status === "pending") ? "pending" : event.deliveries.length ? "done" : "not-delivered") !== filters.status) return false;
+	}
+	if (query) {
+		if (![
+			event.id,
+			event.actor,
+			event.channel,
+			thread.refId,
+			projectName,
+			event.ref,
+			thread.title,
+			event.text,
+			...event.tickets
+		].filter(Boolean).join(" ").toLocaleLowerCase().includes(query)) return false;
+	}
+	return true;
+}
+const topic = { async page(filters, page = 1, pageSize = 5) {
+	const size = Math.max(1, Math.min(100, pageSize));
+	const [triggers, threads, projects, subscriptions, deliveries] = await Promise.all([
+		db.trigger.listRecent(1e3),
+		db.thread.listRecent(1e3),
+		db.project.listAll(),
+		db.ticketThread.listAll(),
+		db.inbox.listRecent()
+	]);
+	const threadById = new Map(threads.map((item) => [item.id, item]));
+	const projectById = new Map(projects.map((item) => [item.id, item]));
+	const grouped = /* @__PURE__ */ new Map();
+	for (const item of triggers) {
+		const thread = threadById.get(item.threadId);
+		if (!thread) continue;
+		const event = {
+			id: item.id,
+			channel: item.channelId,
+			kind: item.kind,
+			actor: item.actorName ?? "",
+			human: Boolean(item.human),
+			mentioned: Boolean(item.mentioned),
+			text: item.text,
+			at: item.at,
+			ref: item.ref ?? void 0,
+			url: item.url ?? void 0,
+			thread: {
+				id: thread.id,
+				kind: thread.kind,
+				ref: thread.refId,
+				title: thread.title,
+				triage: thread.triage,
+				project: thread.projectId ? projectById.get(thread.projectId)?.name : void 0,
+				url: thread.url ?? void 0
+			},
+			tickets: subscriptions.filter((link) => link.threadId === thread.id).map((link) => link.ticketId),
+			deliveries: deliveries.filter((message) => message.triggerId === item.id).map((message) => ({
+				target: message.type,
+				project: message.projectId ? projectById.get(message.projectId)?.name : void 0,
+				status: message.status,
+				read: Boolean(message.readAt),
+				attempts: message.deliveryAttempts,
+				error: message.deliveryError ?? void 0
+			}))
+		};
+		if (!matchEvent(event, filters, thread, projectById.get(thread.projectId ?? "")?.name)) continue;
+		const events = grouped.get(thread.id) ?? [];
+		events.push(event);
+		grouped.set(thread.id, events);
+	}
+	const rows = [...grouped.values()].map((events) => {
+		events.sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id));
+		return {
+			latest: events[0],
+			events
+		};
+	});
+	rows.sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id));
+	const offset = (Math.max(1, page) - 1) * size;
+	return {
+		data: rows.slice(offset, offset + size),
+		total: rows.length,
+		page: Math.max(1, page),
+		pageSize: size
+	};
+} };
+// src/server/routes/topic.get.ts
+var topic_get_default = defineHandler(async (event) => {
+	const query = getQuery(event);
+	const page = Math.max(1, Number(query.page) || 1);
+	const pageSize = Math.max(1, Math.min(100, Number(query.pageSize) || 5));
+	return topic.page({
+		query: query.query,
+		channel: query.channel,
+		status: query.status,
+		kind: query.kind,
+		mentionedOnly: query.mentionedOnly === "true"
+	}, page, pageSize);
+});
 // src/server/routes/trigger.get.ts
 var trigger_get_default = defineHandler(async () => db.trigger.listRecent());
 // src/server/routes/worker.get.ts
@@ -3778,6 +3903,7 @@ const server = defineWebServer((app) => {
 	app.get("/api/supermesh/delivery", delivery_get_default);
 	app.get("/api/supermesh/thread", thread_get_default);
 	app.get("/api/supermesh/trigger", trigger_get_default);
+	app.get("/api/supermesh/topic", topic_get_default);
 	app.get("/api/supermesh/subscription", subscription_get_default);
 	app.get("/api/supermesh/channel", channel_get_default);
 	app.put("/api/supermesh/channel/:id/configuration", channel__id__configuration_put_default);
@@ -3870,7 +3996,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CD0_YwlH.js");
+			const { shell } = await import("./shell-B4uRO0di.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3879,7 +4005,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CD0_YwlH.js");
+			const { shell } = await import("./shell-B4uRO0di.js");
 			await shell.refresh();
 			return view;
 		});

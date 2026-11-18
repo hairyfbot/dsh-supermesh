@@ -15,8 +15,8 @@ const SEGMENTS = [
 
 export function TaskCard({ onMore }: { onMore: () => void }): ReactNode {
   const { t } = useTranslation()
-  const { data: tickets, isLoading, error } = useQuery({ queryKey: keys.ticket, queryFn: () => getApiSupermeshTicket() })
-  const list = tickets ?? []
+  const { data: tickets, isLoading, error } = useQuery({ queryKey: keys.ticketPage(1, 100), queryFn: () => getApiSupermeshTicket({ page: '1', pageSize: '100' }) })
+  const list = tickets?.data ?? []
   const now = Date.now()
   const added = list.filter(ticket => Date.parse(ticket.createdAt) >= now - 86400000).length
   const segments = SEGMENTS.map(segment => ({

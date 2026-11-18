@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-BarKs7Zk.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-DbcCpMF8.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -2202,6 +2202,13 @@ const worker$1 = defineService({
 					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
 					continue;
 				}
+				if (ticket.prState === "merged" || ticket.prState === "closed") {
+					const now = (/* @__PURE__ */ new Date()).toISOString();
+					await db.worker.end(worker.id, "stopped", now);
+					await db.ticket.finish(ticket.id, "done", now, now);
+					await releaseDependents(ticket.id);
+					continue;
+				}
 				if (ticket.paused) continue;
 				if (await blockedByDependency(ticket.id)) continue;
 				if ((await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) continue;
@@ -2290,6 +2297,24 @@ const worker$1 = defineService({
 				if (!expired && (activity.running || activity.background || activity.queued)) continue;
 				if (expired) await session.stop(worker.id);
 				await finish(worker, expired ? "stopped" : void 0);
+			}
+		});
+	},
+	rescue() {
+		return run("rescue", async () => {
+			for (const ticket of await db.ticket.listOpen()) {
+				if (stopped) break;
+				if (ticket.status !== "waiting" || ticket.paused) continue;
+				if ((await db.worker.listByTicket(ticket.id)).some((worker) => worker.status !== "ended")) continue;
+				if (!(await db.project.findById(ticket.projectId))?.enabled) continue;
+				if (ticket.prState === "merged" || ticket.prState === "closed") {
+					const now = (/* @__PURE__ */ new Date()).toISOString();
+					await db.ticket.finish(ticket.id, "done", now, now);
+					await releaseDependents(ticket.id);
+					continue;
+				}
+				if (ticket.prepareError) await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
+				await db.worker.queue(ticket.id, ticket.projectId);
 			}
 		});
 	},
@@ -2405,7 +2430,8 @@ async function finish(current, reason) {
 	await db.worker.end(current.id, reason ?? (current.reportState === "failed" ? "failed" : "completed"), now);
 	const ticket = await db.ticket.findById(current.ticketId);
 	if (ticket && ticket.status !== "done" && ticket.status !== "cancelled") {
-		if (!reason && current.reportState === "dropped") await db.ticket.finish(ticket.id, "done", now, now);
+		if (ticket.prState === "merged" || ticket.prState === "closed") await db.ticket.finish(ticket.id, "done", now, now);
+		else if (!reason && current.reportState === "dropped") await db.ticket.finish(ticket.id, "done", now, now);
 		else await db.ticket.update(ticket.id, {
 			status: !reason && current.reportState === "ready" ? "review" : "waiting",
 			updatedAt: now
@@ -4498,6 +4524,7 @@ async function activate() {
 			id: "supermesh:runtime",
 			cron: "* * * * * *"
 		}, () => track(async () => {
+			await worker$1.rescue();
 			await worker$1.reconcileBackground();
 			await inbox.deliverAnswers();
 			await inbox.deliver();

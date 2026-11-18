@@ -10,7 +10,7 @@ import { Row } from '../../ticket/components/row'
 
 export function TaskList(): ReactNode {
   const { t } = useTranslation()
-  const ticket = useQuery({ queryKey: keys.ticket, queryFn: () => getApiSupermeshTicket() })
+  const ticket = useQuery({ queryKey: keys.ticketPage(1, 5), queryFn: () => getApiSupermeshTicket({ page: '1', pageSize: '5' }) })
   const node = useQuery({ queryKey: keys.node, queryFn: () => getApiSupermeshNode(), refetchInterval: 15_000 })
   const channel = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiSupermeshTrigger(), refetchInterval: 30_000 })
@@ -21,7 +21,7 @@ export function TaskList(): ReactNode {
     return <p role="alert" className="m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{failure instanceof Error ? failure.message : '任务列表加载失败'}</p>
   if (queries.some(query => query.isLoading))
     return <p role="status" className="m-0 text-xs leading-5 text-(--dsw-alias-label-tertiary)">加载中…</p>
-  const list = ticket.data ?? []
+  const list = ticket.data?.data ?? []
   const refreshedAt = ticket.dataUpdatedAt ? new Date(ticket.dataUpdatedAt).toISOString() : null
 
   return (

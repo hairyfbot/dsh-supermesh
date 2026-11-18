@@ -54,6 +54,13 @@ export const worker = defineService({
           await db.worker.end(worker.id, 'stopped', new Date().toISOString())
           continue
         }
+        if (ticket.prState === 'merged' || ticket.prState === 'closed') {
+          const now = new Date().toISOString()
+          await db.worker.end(worker.id, 'stopped', now)
+          await db.ticket.finish(ticket.id, 'done', now, now)
+          await releaseDependents(ticket.id)
+          continue
+        }
         if (ticket.paused)
           continue
         if (await blockedByDependency(ticket.id))
@@ -142,6 +149,30 @@ export const worker = defineService({
         if (expired)
           await session.stop(worker.id)
         await finish(worker, expired ? 'stopped' : undefined)
+      }
+    })
+  },
+  rescue(): Promise<void> {
+    return run('rescue', async () => {
+      for (const ticket of await db.ticket.listOpen()) {
+        if (stopped)
+          break
+        if (ticket.status !== 'waiting' || ticket.paused)
+          continue
+        if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
+          continue
+        const project = await db.project.findById(ticket.projectId)
+        if (!project?.enabled)
+          continue
+        if (ticket.prState === 'merged' || ticket.prState === 'closed') {
+          const now = new Date().toISOString()
+          await db.ticket.finish(ticket.id, 'done', now, now)
+          await releaseDependents(ticket.id)
+          continue
+        }
+        if (ticket.prepareError)
+          await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
+        await db.worker.queue(ticket.id, ticket.projectId)
       }
     })
   },
@@ -278,7 +309,9 @@ async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'st
   await db.worker.end(current.id, reason ?? (current.reportState === 'failed' ? 'failed' : 'completed'), now)
   const ticket = await db.ticket.findById(current.ticketId)
   if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled') {
-    if (!reason && current.reportState === 'dropped')
+    if (ticket.prState === 'merged' || ticket.prState === 'closed')
+      await db.ticket.finish(ticket.id, 'done', now, now)
+    else if (!reason && current.reportState === 'dropped')
       await db.ticket.finish(ticket.id, 'done', now, now)
     else
       await db.ticket.update(ticket.id, { status: !reason && current.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })

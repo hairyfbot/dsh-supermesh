@@ -64,8 +64,9 @@ export async function postApiSupermeshRepository(body: Types.PostApiSupermeshRep
 }
 
 /** @method get */
-export async function getApiSupermeshTicket(config?: RequestInit) {
-  const response = await fetch("/api/supermesh/ticket", {
+export async function getApiSupermeshTicket(query?: Types.GetApiSupermeshTicketQuery, config?: RequestInit) {
+  const querystr = new URLSearchParams(Object.entries(query || {}));
+  const response = await fetch(`/api/supermesh/ticket?${querystr}`, {
     ...config,
   });
   return response.json() as Promise<Types.GetApiSupermeshTicketResponse>;
@@ -203,6 +204,15 @@ export async function getApiSupermeshTrigger(config?: RequestInit) {
     ...config,
   });
   return response.json() as Promise<Types.GetApiSupermeshTriggerResponse>;
+}
+
+/** @method get */
+export async function getApiSupermeshTopic(query?: Types.GetApiSupermeshTopicQuery, config?: RequestInit) {
+  const querystr = new URLSearchParams(Object.entries(query || {}));
+  const response = await fetch(`/api/supermesh/topic?${querystr}`, {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiSupermeshTopicResponse>;
 }
 
 /** @method get */

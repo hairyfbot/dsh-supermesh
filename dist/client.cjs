@@ -4702,8 +4702,9 @@ async function postApiSupermeshRepository(body, config) {
 	})).json();
 }
 /** @method get */
-async function getApiSupermeshTicket(config) {
-	return (await fetch("/api/supermesh/ticket", { ...config })).json();
+async function getApiSupermeshTicket(query, config) {
+	const querystr = new URLSearchParams(Object.entries(query || {}));
+	return (await fetch(`/api/supermesh/ticket?${querystr}`, { ...config })).json();
 }
 /** @method get */
 async function getApiSupermeshTicketId(paths, config) {
@@ -4749,6 +4750,11 @@ async function getApiSupermeshThread(config) {
 /** @method get */
 async function getApiSupermeshTrigger(config) {
 	return (await fetch("/api/supermesh/trigger", { ...config })).json();
+}
+/** @method get */
+async function getApiSupermeshTopic(query, config) {
+	const querystr = new URLSearchParams(Object.entries(query || {}));
+	return (await fetch(`/api/supermesh/topic?${querystr}`, { ...config })).json();
 }
 /** @method get */
 async function getApiSupermeshSubscription(config) {
@@ -6189,6 +6195,20 @@ const PluginContext = (0, react.createContext)({
 const keys = {
 	project: ["project"],
 	ticket: ["ticket"],
+	ticketPage: (page, pageSize) => [
+		"ticket",
+		"page",
+		page,
+		pageSize
+	],
+	topic: ["topic"],
+	topicPage: (page, pageSize, filters) => [
+		"topic",
+		"page",
+		page,
+		pageSize,
+		filters
+	],
 	ticketCurrent: ["ticket", "current"],
 	ticketDetail: (id) => ["ticket", id],
 	worker: ["worker"],
@@ -6594,6 +6614,10 @@ const dicts = {
 		triggerMentioned: "@ 提及",
 		triggerAutomated: "自动事件",
 		triggerReset: "清除筛选",
+		paginationLabel: "分页",
+		paginationPrevious: "上一页",
+		paginationNext: "下一页",
+		paginationPage: "第 {page} 页",
 		triggerKindComment: "评论",
 		triggerKindOpen: "新建",
 		triggerKindClose: "关闭",
@@ -7001,6 +7025,10 @@ const dicts = {
 		triggerMentioned: "@ mentioned",
 		triggerAutomated: "Automated event",
 		triggerReset: "Clear filters",
+		paginationLabel: "Pagination",
+		paginationPrevious: "Previous",
+		paginationNext: "Next",
+		paginationPage: "Page {page}",
 		triggerKindComment: "Comment",
 		triggerKindOpen: "Opened",
 		triggerKindClose: "Closed",
@@ -59533,7 +59561,7 @@ function AskCard() {
 	if ($[3] !== answer || $[4] !== failure || $[5] !== pending || $[6] !== pendingError) {
 		t6 = Symbol.for("react.early_return_sentinel");
 		bb0: {
-			const asks = pending?.filter(_temp3$10) ?? [];
+			const asks = pending?.filter(_temp3$9) ?? [];
 			let t7;
 			if ($[12] !== answer) {
 				t7 = (id, text) => {
@@ -59655,7 +59683,7 @@ function AskCard() {
 	} else t9 = $[28];
 	return t9;
 }
-function _temp3$10(message) {
+function _temp3$9(message) {
 	return message.kind === "ask";
 }
 function _temp2$14(input) {
@@ -59779,7 +59807,7 @@ function ChannelCard(t0) {
 			$[13] = t;
 			$[14] = t2;
 		} else t2 = $[14];
-		t3 = `${items.filter(_temp3$9).length}/${items.length}`;
+		t3 = `${items.filter(_temp3$8).length}/${items.length}`;
 		if ($[15] === Symbol.for("react.memo_cache_sentinel")) {
 			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
 				width: 18,
@@ -59804,7 +59832,7 @@ function ChannelCard(t0) {
 			children: "加载中…"
 		}) : items.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "mt-auto grid min-h-[83px] grid-cols-3 gap-2.5",
-			children: items.slice(0, 3).map(_temp4$7)
+			children: items.slice(0, 3).map(_temp4$6)
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			title: t("overviewChannelsEmpty"),
 			description: t("overviewChannelsEmptyDescription"),
@@ -59871,10 +59899,10 @@ function ChannelCard(t0) {
 	} else t10 = $[30];
 	return t10;
 }
-function _temp4$7(channel_1) {
+function _temp4$6(channel_1) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelTile, { channel: channel_1 }, channel_1.name);
 }
-function _temp3$9(channel_0) {
+function _temp3$8(channel_0) {
 	return channel_0.connected;
 }
 function _temp2$13(channel) {
@@ -59990,16 +60018,16 @@ function TaskCard(t0) {
 	let t1;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
-			queryKey: keys.ticket,
+			queryKey: keys.ticketPage(1, 100),
 			queryFn: _temp$21
 		};
 		$[0] = t1;
 	} else t1 = $[0];
 	const { data: tickets, isLoading, error } = useQuery(t1);
 	let t2;
-	if ($[1] !== tickets) {
-		t2 = tickets ?? [];
-		$[1] = tickets;
+	if ($[1] !== tickets?.data) {
+		t2 = tickets?.data ?? [];
+		$[1] = tickets?.data;
 		$[2] = t2;
 	} else t2 = $[2];
 	const list = t2;
@@ -60109,7 +60137,10 @@ function TaskCard(t0) {
 	return t4;
 }
 function _temp$21() {
-	return getApiSupermeshTicket();
+	return getApiSupermeshTicket({
+		page: "1",
+		pageSize: "100"
+	});
 }
 // src/client/config/constants.ts
 const AGENT_GRAPH = {
@@ -60563,13 +60594,13 @@ function GraphCanvas(t0) {
 					if (!members.length) return [];
 					const inset = 16 + index * 6;
 					const x_0 = Math.min(...members.map(_temp2$11)) - inset;
-					const y_0 = Math.min(...members.map(_temp3$8)) - 12 - index * 6;
+					const y_0 = Math.min(...members.map(_temp3$7)) - 12 - index * 6;
 					return [{
 						...group,
 						x: x_0,
 						y: y_0,
-						width: Math.max(...members.map(_temp4$6)) + AGENT_GRAPH.nodeWidth + inset - x_0,
-						height: Math.max(...members.map(_temp5$5)) + AGENT_GRAPH.nodeHeight + 16 + index * 6 - y_0
+						width: Math.max(...members.map(_temp4$5)) + AGENT_GRAPH.nodeWidth + inset - x_0,
+						height: Math.max(...members.map(_temp5$4)) + AGENT_GRAPH.nodeHeight + 16 + index * 6 - y_0
 					}];
 				};
 				$[50] = nodes;
@@ -61065,13 +61096,13 @@ function GraphCanvas(t0) {
 	} else t2 = $[22];
 	return t2;
 }
-function _temp5$5(node_4) {
+function _temp5$4(node_4) {
 	return node_4.y;
 }
-function _temp4$6(node_3) {
+function _temp4$5(node_3) {
 	return node_3.x;
 }
-function _temp3$8(node_2) {
+function _temp3$7(node_2) {
 	return node_2.y;
 }
 function _temp2$11(node_1) {
@@ -61108,7 +61139,7 @@ function Graph() {
 	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
 		t2 = {
 			queryKey: keys.group,
-			queryFn: _temp3$7,
+			queryFn: _temp3$6,
 			refetchInterval: 15e3
 		};
 		$[2] = t2;
@@ -61135,7 +61166,7 @@ function Graph() {
 	} else t4 = $[8];
 	let t5;
 	if ($[9] !== t4) {
-		t5 = t4.map(_temp4$5);
+		t5 = t4.map(_temp4$4);
 		$[9] = t4;
 		$[10] = t5;
 	} else t5 = $[10];
@@ -61223,13 +61254,13 @@ function Graph() {
 	} else t12 = $[31];
 	return t12;
 }
-function _temp4$5(edge) {
+function _temp4$4(edge) {
 	return {
 		...edge,
 		kind: edge.kind === "dependency" ? "dependency" : edge.kind === "association" ? "association" : "flow"
 	};
 }
-function _temp3$7() {
+function _temp3$6() {
 	return getApiSupermeshGroup();
 }
 function _temp2$10() {
@@ -61685,7 +61716,7 @@ function TaskList() {
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
-			queryKey: keys.ticket,
+			queryKey: keys.ticketPage(1, 5),
 			queryFn: _temp$16
 		};
 		$[0] = t0;
@@ -61705,7 +61736,7 @@ function TaskList() {
 	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
 		t2 = {
 			queryKey: keys.channel,
-			queryFn: _temp3$6
+			queryFn: _temp3$5
 		};
 		$[2] = t2;
 	} else t2 = $[2];
@@ -61714,7 +61745,7 @@ function TaskList() {
 	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
 		t3 = {
 			queryKey: keys.trigger,
-			queryFn: _temp4$4,
+			queryFn: _temp4$3,
 			refetchInterval: 3e4
 		};
 		$[3] = t3;
@@ -61724,7 +61755,7 @@ function TaskList() {
 	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
 		t4 = {
 			queryKey: keys.subscription,
-			queryFn: _temp5$4
+			queryFn: _temp5$3
 		};
 		$[4] = t4;
 	} else t4 = $[4];
@@ -61736,7 +61767,7 @@ function TaskList() {
 		trigger,
 		subscription
 	];
-	const failure = queries.find(_temp6$4)?.error;
+	const failure = queries.find(_temp6$3)?.error;
 	if (failure) {
 		const t5 = failure instanceof Error ? failure.message : "任务列表加载失败";
 		let t6;
@@ -61751,7 +61782,7 @@ function TaskList() {
 		} else t6 = $[6];
 		return t6;
 	}
-	if (queries.some(_temp7$4)) {
+	if (queries.some(_temp7$3)) {
 		let t5;
 		if ($[7] === Symbol.for("react.memo_cache_sentinel")) {
 			t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
@@ -61764,9 +61795,9 @@ function TaskList() {
 		return t5;
 	}
 	let t5;
-	if ($[8] !== ticket.data) {
-		t5 = ticket.data ?? [];
-		$[8] = ticket.data;
+	if ($[8] !== ticket.data?.data) {
+		t5 = ticket.data?.data ?? [];
+		$[8] = ticket.data?.data;
 		$[9] = t5;
 	} else t5 = $[9];
 	const list = t5;
@@ -61860,26 +61891,29 @@ function TaskList() {
 	} else t14 = $[38];
 	return t14;
 }
-function _temp7$4(query_0) {
+function _temp7$3(query_0) {
 	return query_0.isLoading;
 }
-function _temp6$4(query) {
+function _temp6$3(query) {
 	return query.error;
 }
-function _temp5$4() {
+function _temp5$3() {
 	return getApiSupermeshSubscription();
 }
-function _temp4$4() {
+function _temp4$3() {
 	return getApiSupermeshTrigger();
 }
-function _temp3$6() {
+function _temp3$5() {
 	return getApiSupermeshChannel();
 }
 function _temp2$8() {
 	return getApiSupermeshNode();
 }
 function _temp$16() {
-	return getApiSupermeshTicket();
+	return getApiSupermeshTicket({
+		page: "1",
+		pageSize: "5"
+	});
 }
 // src/client/pages/overview/components/task-view-card.tsx
 function TaskViewCard() {
@@ -63539,7 +63573,7 @@ function Setting() {
 	let t1;
 	if ($[1] !== client) {
 		t1 = {
-			mutationFn: _temp3$5,
+			mutationFn: _temp3$4,
 			onSettled: () => client.invalidateQueries({ queryKey: keys.setting })
 		};
 		$[1] = client;
@@ -64169,7 +64203,7 @@ function Setting() {
 	} else t31 = $[175];
 	return t31;
 }
-function _temp3$5(input) {
+function _temp3$4(input) {
 	return patchApiSupermeshSetting(input);
 }
 function _temp2$7() {
@@ -64194,7 +64228,7 @@ function Arrivals(t0) {
 				$[5] = triggers;
 				$[6] = t3;
 			} else t3 = $[6];
-			const arrivals = [...triggers.map(_temp$12), ...inbox.filter(t3).map(_temp2$6)].sort(_temp3$4);
+			const arrivals = [...triggers.map(_temp$12), ...inbox.filter(t3).map(_temp2$6)].sort(_temp3$3);
 			let t4;
 			if ($[7] !== t) {
 				t4 = (arrival) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
@@ -64288,7 +64322,7 @@ function Arrivals(t0) {
 	if (t2 !== Symbol.for("react.early_return_sentinel")) return t2;
 	return t1;
 }
-function _temp3$4(a, b) {
+function _temp3$3(a, b) {
 	return b.at.localeCompare(a.at);
 }
 function _temp2$6(message_0) {
@@ -64556,7 +64590,7 @@ function Relations(t0) {
 	let t1;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
-			queryKey: keys.ticket,
+			queryKey: keys.ticketPage(1, 100),
 			queryFn: _temp$11
 		};
 		$[0] = t1;
@@ -64632,12 +64666,12 @@ function Relations(t0) {
 		return t10;
 	}
 	let t9;
-	if ($[22] !== clear || $[23] !== empty || $[24] !== labels || $[25] !== links || $[26] !== openTicket || $[27] !== t || $[28] !== ticketId || $[29] !== tickets) {
+	if ($[22] !== clear || $[23] !== empty || $[24] !== labels || $[25] !== links || $[26] !== openTicket || $[27] !== t || $[28] !== ticketId || $[29] !== tickets?.data) {
 		t9 = links.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "m-0 flex list-none flex-col gap-2 p-0",
 			children: links.map((link) => {
 				const id = link.ticketId === ticketId ? link.relatedId : link.ticketId;
-				const task_0 = tickets?.find((task) => task.id === id);
+				const task_0 = tickets?.data.find((task) => task.id === id);
 				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 					className: "flex flex-wrap items-center gap-x-2 gap-y-1",
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -64673,13 +64707,16 @@ function Relations(t0) {
 		$[26] = openTicket;
 		$[27] = t;
 		$[28] = ticketId;
-		$[29] = tickets;
+		$[29] = tickets?.data;
 		$[30] = t9;
 	} else t9 = $[30];
 	return t9;
 }
 function _temp$11() {
-	return getApiSupermeshTicket();
+	return getApiSupermeshTicket({
+		page: "1",
+		pageSize: "100"
+	});
 }
 // src/client/pages/ticket/detail/page.tsx
 function TicketDetail() {
@@ -64769,7 +64806,7 @@ function TicketDetail() {
 	const seconds = t8;
 	let t9;
 	if ($[17] !== detail?.inbox) {
-		t9 = new Set(detail?.inbox.map(_temp3$3).filter(_temp4$3));
+		t9 = new Set(detail?.inbox.map(_temp3$2).filter(_temp4$2));
 		$[17] = detail?.inbox;
 		$[18] = t9;
 	} else t9 = $[18];
@@ -65036,11 +65073,11 @@ function TicketDetail() {
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "flex min-w-0 flex-col gap-4",
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Issues, { issues: detail.topics.filter(_temp5$3) }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Issues, { issues: detail.topics.filter(_temp5$2) }),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
 							title: t("ticketDependencies"),
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
-								links: detail.dependencies.filter(_temp6$3),
+								links: detail.dependencies.filter(_temp6$2),
 								ticketId: task.id,
 								empty: t("ticketDependenciesEmpty"),
 								clear: true
@@ -65049,7 +65086,7 @@ function TicketDetail() {
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
 							title: t("ticketRelatedTasks"),
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
-								links: detail.dependencies.filter(_temp7$3),
+								links: detail.dependencies.filter(_temp7$2),
 								ticketId: task.id,
 								empty: t("ticketRelatedTasksEmpty")
 							})
@@ -65124,19 +65161,19 @@ function TicketDetail() {
 	} else t28 = $[81];
 	return t28;
 }
-function _temp7$3(link_0) {
+function _temp7$2(link_0) {
 	return link_0.kind === "relates";
 }
-function _temp6$3(link) {
+function _temp6$2(link) {
 	return link.kind === "depends";
 }
-function _temp5$3(topic) {
+function _temp5$2(topic) {
 	return topic.kind === "issue";
 }
-function _temp4$3(id) {
+function _temp4$2(id) {
 	return Boolean(id);
 }
-function _temp3$3(message) {
+function _temp3$2(message) {
 	return message.supervisorId;
 }
 function _temp2$5(a, b) {
@@ -65145,128 +65182,318 @@ function _temp2$5(a, b) {
 function _temp$10(state) {
 	return state.navigation;
 }
-// src/client/pages/ticket/page.tsx
-function Ticket() {
-	const $ = (0, import_dist.c)(38);
+// src/client/components/pagination.tsx
+function range(start, end) {
+	return Array.from({ length: Math.max(0, end - start + 1) }, (_, index) => start + index);
+}
+function pages(page, pageCount) {
+	if (pageCount <= 7) return range(1, pageCount);
+	if (page <= 4) return [
+		...range(1, 5),
+		"gap",
+		pageCount
+	];
+	if (page >= pageCount - 3) return [
+		1,
+		"gap",
+		...range(pageCount - 4, pageCount)
+	];
+	return [
+		1,
+		"gap",
+		page - 1,
+		page,
+		page + 1,
+		"gap",
+		pageCount
+	];
+}
+function Pagination(t0) {
+	const $ = (0, import_dist.c)(45);
+	const { page, pageCount, onChange, className } = t0;
 	const { t } = useTranslation();
-	let t0;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = {
-			queryKey: keys.ticket,
-			queryFn: _temp$9
-		};
-		$[0] = t0;
-	} else t0 = $[0];
-	const ticket = useQuery(t0);
+	if (pageCount <= 1) return null;
 	let t1;
-	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = {
+	if ($[0] !== onChange || $[1] !== page || $[2] !== pageCount) {
+		t1 = (next) => {
+			if (next >= 1 && next <= pageCount && next !== page) onChange(next);
+		};
+		$[0] = onChange;
+		$[1] = page;
+		$[2] = pageCount;
+		$[3] = t1;
+	} else t1 = $[3];
+	const go = t1;
+	const t2 = `flex flex-wrap items-center justify-end gap-1 ${className ?? ""}`;
+	let t3;
+	if ($[4] !== t) {
+		t3 = t("paginationLabel");
+		$[4] = t;
+		$[5] = t3;
+	} else t3 = $[5];
+	const t4 = page <= 1;
+	let t5;
+	if ($[6] !== go || $[7] !== page) {
+		t5 = () => go(page - 1);
+		$[6] = go;
+		$[7] = page;
+		$[8] = t5;
+	} else t5 = $[8];
+	let t6;
+	if ($[9] !== t) {
+		t6 = t("paginationPrevious");
+		$[9] = t;
+		$[10] = t6;
+	} else t6 = $[10];
+	let t7;
+	if ($[11] !== t) {
+		t7 = t("paginationPrevious");
+		$[11] = t;
+		$[12] = t7;
+	} else t7 = $[12];
+	let t8;
+	if ($[13] !== t4 || $[14] !== t5 || $[15] !== t6 || $[16] !== t7) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "ghost",
+			disabled: t4,
+			onClick: t5,
+			"aria-label": t6,
+			children: t7
+		});
+		$[13] = t4;
+		$[14] = t5;
+		$[15] = t6;
+		$[16] = t7;
+		$[17] = t8;
+	} else t8 = $[17];
+	let t9;
+	if ($[18] !== go || $[19] !== page || $[20] !== pageCount || $[21] !== t) {
+		let t10;
+		if ($[23] !== go || $[24] !== page || $[25] !== t) {
+			t10 = (item, index) => item === "gap" ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				"aria-hidden": "true",
+				className: "px-1 text-xs leading-7 text-(--dsw-alias-label-tertiary)",
+				children: "…"
+			}, `gap-${index}`) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: item === page ? "outline" : "ghost",
+				"aria-current": item === page ? "page" : void 0,
+				"aria-label": t("paginationPage", { page: item }),
+				onClick: () => go(item),
+				className: item === page ? "font-medium" : void 0,
+				children: item
+			}, item);
+			$[23] = go;
+			$[24] = page;
+			$[25] = t;
+			$[26] = t10;
+		} else t10 = $[26];
+		t9 = pages(page, pageCount).map(t10);
+		$[18] = go;
+		$[19] = page;
+		$[20] = pageCount;
+		$[21] = t;
+		$[22] = t9;
+	} else t9 = $[22];
+	const t10 = page >= pageCount;
+	let t11;
+	if ($[27] !== go || $[28] !== page) {
+		t11 = () => go(page + 1);
+		$[27] = go;
+		$[28] = page;
+		$[29] = t11;
+	} else t11 = $[29];
+	let t12;
+	if ($[30] !== t) {
+		t12 = t("paginationNext");
+		$[30] = t;
+		$[31] = t12;
+	} else t12 = $[31];
+	let t13;
+	if ($[32] !== t) {
+		t13 = t("paginationNext");
+		$[32] = t;
+		$[33] = t13;
+	} else t13 = $[33];
+	let t14;
+	if ($[34] !== t10 || $[35] !== t11 || $[36] !== t12 || $[37] !== t13) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			size: "sm",
+			variant: "ghost",
+			disabled: t10,
+			onClick: t11,
+			"aria-label": t12,
+			children: t13
+		});
+		$[34] = t10;
+		$[35] = t11;
+		$[36] = t12;
+		$[37] = t13;
+		$[38] = t14;
+	} else t14 = $[38];
+	let t15;
+	if ($[39] !== t14 || $[40] !== t2 || $[41] !== t3 || $[42] !== t8 || $[43] !== t9) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("nav", {
+			className: t2,
+			"aria-label": t3,
+			children: [
+				t8,
+				t9,
+				t14
+			]
+		});
+		$[39] = t14;
+		$[40] = t2;
+		$[41] = t3;
+		$[42] = t8;
+		$[43] = t9;
+		$[44] = t15;
+	} else t15 = $[44];
+	return t15;
+}
+function Ticket() {
+	const $ = (0, import_dist.c)(47);
+	const { t } = useTranslation();
+	const [page, setPage] = (0, react.useState)(1);
+	let t0;
+	if ($[0] !== page) {
+		t0 = keys.ticketPage(page, 8);
+		$[0] = page;
+		$[1] = t0;
+	} else t0 = $[1];
+	let t1;
+	if ($[2] !== page) {
+		t1 = () => getApiSupermeshTicket({
+			page: String(page),
+			pageSize: String(8)
+		});
+		$[2] = page;
+		$[3] = t1;
+	} else t1 = $[3];
+	let t2;
+	if ($[4] !== t0 || $[5] !== t1) {
+		t2 = {
+			queryKey: t0,
+			queryFn: t1
+		};
+		$[4] = t0;
+		$[5] = t1;
+		$[6] = t2;
+	} else t2 = $[6];
+	const ticket = useQuery(t2);
+	let t3;
+	if ($[7] === Symbol.for("react.memo_cache_sentinel")) {
+		t3 = {
 			queryKey: keys.node,
-			queryFn: _temp2$4,
+			queryFn: _temp$9,
 			refetchInterval: 15e3
 		};
-		$[1] = t1;
-	} else t1 = $[1];
-	const node = useQuery(t1);
-	let t2;
-	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-		t2 = {
+		$[7] = t3;
+	} else t3 = $[7];
+	const node = useQuery(t3);
+	let t4;
+	if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
+		t4 = {
 			queryKey: keys.channel,
-			queryFn: _temp3$2
+			queryFn: _temp2$4
 		};
-		$[2] = t2;
-	} else t2 = $[2];
-	const channel = useQuery(t2);
-	let t3;
-	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
-		t3 = {
+		$[8] = t4;
+	} else t4 = $[8];
+	const channel = useQuery(t4);
+	let t5;
+	if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
+		t5 = {
 			queryKey: keys.trigger,
-			queryFn: _temp4$2,
+			queryFn: _temp3$1,
 			refetchInterval: 3e4
 		};
-		$[3] = t3;
-	} else t3 = $[3];
-	const trigger = useQuery(t3);
-	let t4;
-	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
-		t4 = {
+		$[9] = t5;
+	} else t5 = $[9];
+	const trigger = useQuery(t5);
+	let t6;
+	if ($[10] === Symbol.for("react.memo_cache_sentinel")) {
+		t6 = {
 			queryKey: keys.subscription,
-			queryFn: _temp5$2
+			queryFn: _temp4$1
 		};
-		$[4] = t4;
-	} else t4 = $[4];
-	const subscription = useQuery(t4);
-	let t5;
-	if ($[5] !== channel || $[6] !== node || $[7] !== subscription || $[8] !== ticket || $[9] !== trigger) {
-		t5 = [
+		$[10] = t6;
+	} else t6 = $[10];
+	const subscription = useQuery(t6);
+	let t7;
+	if ($[11] !== channel || $[12] !== node || $[13] !== subscription || $[14] !== ticket || $[15] !== trigger) {
+		t7 = [
 			ticket,
 			node,
 			channel,
 			trigger,
 			subscription
 		];
-		$[5] = channel;
-		$[6] = node;
-		$[7] = subscription;
-		$[8] = ticket;
-		$[9] = trigger;
-		$[10] = t5;
-	} else t5 = $[10];
-	const queries = t5;
-	const failure = queries.find(_temp6$2)?.error;
-	let t6;
-	if ($[11] !== ticket.data) {
-		t6 = ticket.data ?? [];
-		$[11] = ticket.data;
-		$[12] = t6;
-	} else t6 = $[12];
-	const tickets = t6;
-	let t7;
-	if ($[13] !== ticket.dataUpdatedAt) {
-		t7 = ticket.dataUpdatedAt ? new Date(ticket.dataUpdatedAt).toISOString() : null;
-		$[13] = ticket.dataUpdatedAt;
-		$[14] = t7;
-	} else t7 = $[14];
-	const refreshedAt = t7;
+		$[11] = channel;
+		$[12] = node;
+		$[13] = subscription;
+		$[14] = ticket;
+		$[15] = trigger;
+		$[16] = t7;
+	} else t7 = $[16];
+	const queries = t7;
+	const failure = queries.find(_temp5$1)?.error;
 	let t8;
-	if ($[15] !== t) {
-		t8 = t("ticketListDescription");
-		$[15] = t;
-		$[16] = t8;
-	} else t8 = $[16];
+	if ($[17] !== ticket.data?.data) {
+		t8 = ticket.data?.data ?? [];
+		$[17] = ticket.data?.data;
+		$[18] = t8;
+	} else t8 = $[18];
+	const tickets = t8;
+	const total = ticket.data?.total ?? 0;
+	const pageCount = Math.max(1, Math.ceil(total / 8));
+	const current = Math.min(page, pageCount);
 	let t9;
-	if ($[17] !== t8) {
-		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+	if ($[19] !== ticket.dataUpdatedAt) {
+		t9 = ticket.dataUpdatedAt ? new Date(ticket.dataUpdatedAt).toISOString() : null;
+		$[19] = ticket.dataUpdatedAt;
+		$[20] = t9;
+	} else t9 = $[20];
+	const refreshedAt = t9;
+	let t10;
+	if ($[21] !== t) {
+		t10 = t("ticketListDescription");
+		$[21] = t;
+		$[22] = t10;
+	} else t10 = $[22];
+	let t11;
+	if ($[23] !== t10) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "mb-1 flex flex-wrap items-center justify-between gap-3",
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				className: "text-[13px] text-(--dsw-alias-label-secondary) my-1",
-				children: t8
+				children: t10
 			})
 		});
-		$[17] = t8;
-		$[18] = t9;
-	} else t9 = $[18];
-	let t10;
-	if ($[19] !== failure) {
-		t10 = failure && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		$[23] = t10;
+		$[24] = t11;
+	} else t11 = $[24];
+	let t12;
+	if ($[25] !== failure) {
+		t12 = failure && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
 			children: failure instanceof Error ? failure.message : "任务列表加载失败"
 		});
-		$[19] = failure;
-		$[20] = t10;
-	} else t10 = $[20];
-	let t11;
-	if ($[21] !== queries) {
-		t11 = queries.some(_temp7$2) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+		$[25] = failure;
+		$[26] = t12;
+	} else t12 = $[26];
+	let t13;
+	if ($[27] !== queries) {
+		t13 = queries.some(_temp6$1) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
 			children: "加载中…"
 		});
-		$[21] = queries;
-		$[22] = t11;
-	} else t11 = $[22];
-	let t12;
-	if ($[23] !== channel || $[24] !== failure || $[25] !== node || $[26] !== queries || $[27] !== refreshedAt || $[28] !== subscription || $[29] !== t || $[30] !== tickets || $[31] !== trigger) {
-		t12 = !failure && !queries.some(_temp8$1) && (tickets.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+		$[27] = queries;
+		$[28] = t13;
+	} else t13 = $[28];
+	let t14;
+	if ($[29] !== channel || $[30] !== current || $[31] !== failure || $[32] !== node || $[33] !== pageCount || $[34] !== queries || $[35] !== refreshedAt || $[36] !== subscription || $[37] !== t || $[38] !== tickets || $[39] !== total || $[40] !== trigger) {
+		t14 = !failure && !queries.some(_temp7$1) && (total ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 			className: "m-0 pl-0",
 			children: tickets.map((task) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, {
 				task,
@@ -65276,7 +65503,12 @@ function Ticket() {
 				subscriptions: subscription.data ?? [],
 				refreshedAt
 			}, task.id))
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+		}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Pagination, {
+			className: "mt-4",
+			page: current,
+			pageCount,
+			onChange: setPage
+		})] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			title: t("overviewTasksEmpty"),
 			description: t("overviewTasksEmptyDescription"),
 			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
@@ -65284,59 +65516,59 @@ function Ticket() {
 				height: 24
 			})
 		}));
-		$[23] = channel;
-		$[24] = failure;
-		$[25] = node;
-		$[26] = queries;
-		$[27] = refreshedAt;
-		$[28] = subscription;
-		$[29] = t;
-		$[30] = tickets;
-		$[31] = trigger;
-		$[32] = t12;
-	} else t12 = $[32];
-	let t13;
-	if ($[33] !== t10 || $[34] !== t11 || $[35] !== t12 || $[36] !== t9) {
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[29] = channel;
+		$[30] = current;
+		$[31] = failure;
+		$[32] = node;
+		$[33] = pageCount;
+		$[34] = queries;
+		$[35] = refreshedAt;
+		$[36] = subscription;
+		$[37] = t;
+		$[38] = tickets;
+		$[39] = total;
+		$[40] = trigger;
+		$[41] = t14;
+	} else t14 = $[41];
+	let t15;
+	if ($[42] !== t11 || $[43] !== t12 || $[44] !== t13 || $[45] !== t14) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "@container pb-10",
 			children: [
-				t9,
-				t10,
 				t11,
-				t12
+				t12,
+				t13,
+				t14
 			]
 		});
-		$[33] = t10;
-		$[34] = t11;
-		$[35] = t12;
-		$[36] = t9;
-		$[37] = t13;
-	} else t13 = $[37];
-	return t13;
+		$[42] = t11;
+		$[43] = t12;
+		$[44] = t13;
+		$[45] = t14;
+		$[46] = t15;
+	} else t15 = $[46];
+	return t15;
 }
-function _temp8$1(query_1) {
+function _temp7$1(query_1) {
 	return query_1.isLoading;
 }
-function _temp7$2(query_0) {
+function _temp6$1(query_0) {
 	return query_0.isLoading;
 }
-function _temp6$2(query) {
+function _temp5$1(query) {
 	return query.error;
 }
-function _temp5$2() {
+function _temp4$1() {
 	return getApiSupermeshSubscription();
 }
-function _temp4$2() {
+function _temp3$1() {
 	return getApiSupermeshTrigger();
 }
-function _temp3$2() {
+function _temp2$4() {
 	return getApiSupermeshChannel();
 }
-function _temp2$4() {
-	return getApiSupermeshNode();
-}
 function _temp$9() {
-	return getApiSupermeshTicket();
+	return getApiSupermeshNode();
 }
 // src/client/pages/trigger/model.ts
 const KINDS = {
@@ -65860,7 +66092,7 @@ function TriggerDetail() {
 	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.trigger,
-			queryFn: _temp3$1,
+			queryFn: _temp3,
 			refetchInterval: 3e4,
 			staleTime: 0,
 			gcTime: 0,
@@ -65873,7 +66105,7 @@ function TriggerDetail() {
 	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
 		t2 = {
 			queryKey: keys.thread,
-			queryFn: _temp4$1,
+			queryFn: _temp4,
 			staleTime: 0,
 			gcTime: 0,
 			refetchOnMount: "always"
@@ -65885,7 +66117,7 @@ function TriggerDetail() {
 	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
 		t3 = {
 			queryKey: keys.subscription,
-			queryFn: _temp5$1,
+			queryFn: _temp5,
 			staleTime: 0,
 			gcTime: 0,
 			refetchOnMount: "always"
@@ -65897,7 +66129,7 @@ function TriggerDetail() {
 	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
 		t4 = {
 			queryKey: keys.delivery,
-			queryFn: _temp6$1,
+			queryFn: _temp6,
 			staleTime: 0,
 			gcTime: 0,
 			refetchOnMount: "always"
@@ -66069,7 +66301,7 @@ function TriggerDetail() {
 			latest = t20;
 			href = sourceHref(latest.channel, latest.thread.url);
 			const channel = latest.channel === "feishu" ? t("triggerFeishu") : latest.channel === "github" ? "GitHub" : "GitLab";
-			tickets = [...new Set(events.flatMap(_temp7$1))];
+			tickets = [...new Set(events.flatMap(_temp7))];
 			t10 = "@container flex min-w-0 flex-col gap-5 pb-10";
 			if ($[59] !== t) {
 				t11 = t("triggerTopicDetail");
@@ -66485,19 +66717,19 @@ function TriggerDetail() {
 function _temp8(event_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Event$1, { event: event_0 }, event_0.id);
 }
-function _temp7$1(event) {
+function _temp7(event) {
 	return [...event.tickets];
 }
-function _temp6$1() {
+function _temp6() {
 	return getApiSupermeshDelivery();
 }
-function _temp5$1() {
+function _temp5() {
 	return getApiSupermeshSubscription();
 }
-function _temp4$1() {
+function _temp4() {
 	return getApiSupermeshThread();
 }
-function _temp3$1() {
+function _temp3() {
 	return getApiSupermeshTrigger();
 }
 function _temp2$3() {
@@ -67142,358 +67374,333 @@ function Summary(t0) {
 function _temp$4(state) {
 	return state.trigger.filters.status;
 }
-// src/client/pages/trigger/page.tsx
 function Trigger() {
-	const $ = (0, import_dist.c)(88);
+	const $ = (0, import_dist.c)(82);
 	const { t } = useTranslation();
 	const filters = useStore(_temp$3);
 	const { resetTriggerFilters } = useActions();
-	let t0;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = {
-			queryKey: keys.project,
-			queryFn: _temp2$2
-		};
-		$[0] = t0;
-	} else t0 = $[0];
-	const project = useQuery(t0);
-	let t1;
-	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = {
-			queryKey: keys.trigger,
-			queryFn: _temp3,
-			refetchInterval: 3e4
-		};
-		$[1] = t1;
-	} else t1 = $[1];
-	const trigger = useQuery(t1);
-	let t2;
-	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-		t2 = {
-			queryKey: keys.thread,
-			queryFn: _temp4
-		};
-		$[2] = t2;
-	} else t2 = $[2];
-	const thread = useQuery(t2);
-	let t3;
-	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
-		t3 = {
-			queryKey: keys.subscription,
-			queryFn: _temp5
-		};
-		$[3] = t3;
-	} else t3 = $[3];
-	const subscription = useQuery(t3);
-	let t4;
-	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
-		t4 = {
-			queryKey: keys.delivery,
-			queryFn: _temp6
-		};
-		$[4] = t4;
-	} else t4 = $[4];
-	const delivery = useQuery(t4);
-	let content;
-	let t10;
-	let t11;
-	let t12;
-	let t13;
+	const [page, setPage] = (0, react.useState)(1);
+	const t0 = filters.query || void 0;
+	const t1 = filters.channel === "all" ? void 0 : filters.channel;
+	const t2 = filters.status === "all" ? void 0 : filters.status;
+	const t3 = filters.kind === "all" ? void 0 : KINDS[filters.kind];
+	const t4 = filters.mentionedOnly ? "true" : void 0;
+	let query;
 	let t5;
 	let t6;
+	if ($[0] !== page || $[1] !== t0 || $[2] !== t1 || $[3] !== t2 || $[4] !== t3 || $[5] !== t4) {
+		query = {
+			query: t0,
+			channel: t1,
+			status: t2,
+			kind: t3,
+			mentionedOnly: t4
+		};
+		t6 = useQuery;
+		t5 = keys.topicPage(page, 5, query);
+		$[0] = page;
+		$[1] = t0;
+		$[2] = t1;
+		$[3] = t2;
+		$[4] = t3;
+		$[5] = t4;
+		$[6] = query;
+		$[7] = t5;
+		$[8] = t6;
+	} else {
+		query = $[6];
+		t5 = $[7];
+		t6 = $[8];
+	}
 	let t7;
-	let t8;
-	let t9;
-	if ($[5] !== delivery.data || $[6] !== delivery.error || $[7] !== delivery.isLoading || $[8] !== filters || $[9] !== project.data || $[10] !== project.error || $[11] !== project.isLoading || $[12] !== resetTriggerFilters || $[13] !== subscription.data || $[14] !== subscription.error || $[15] !== subscription.isLoading || $[16] !== t || $[17] !== thread.data || $[18] !== thread.error || $[19] !== thread.isLoading || $[20] !== trigger.data || $[21] !== trigger.error || $[22] !== trigger.isLoading) {
-		const topics = groupTopics(recordsOf({
-			project: project.data,
-			trigger: trigger.data,
-			thread: thread.data,
-			subscription: subscription.data,
-			delivery: delivery.data
-		}));
-		const records = filterTopics(topics, filters);
-		const error = project.error ?? trigger.error ?? thread.error ?? subscription.error ?? delivery.error;
-		const loading = project.isLoading || trigger.isLoading || thread.isLoading || subscription.isLoading || delivery.isLoading;
-		if (error) {
-			const t14 = error.message || "触发记录加载失败，请重试。";
-			let t15;
-			if ($[33] !== t14) {
-				t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					role: "alert",
-					className: "m-0 px-4 py-6 text-xs text-(--dsw-alias-state-error-primary)",
-					children: t14
-				});
-				$[33] = t14;
-				$[34] = t15;
-			} else t15 = $[34];
-			content = t15;
-		} else if (loading) {
-			let t14;
-			if ($[35] === Symbol.for("react.memo_cache_sentinel")) {
-				t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					role: "status",
-					className: "m-0 px-4 py-6 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-					children: "正在载入触发记录…"
-				});
-				$[35] = t14;
-			} else t14 = $[35];
-			content = t14;
-		} else if (records.length) content = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "m-0 list-none p-0",
-			children: records.map(_temp7)
+	if ($[9] !== page || $[10] !== query) {
+		t7 = () => getApiSupermeshTopic({
+			...query,
+			page: String(page),
+			pageSize: String(5)
 		});
-		else {
-			let t14;
-			if ($[36] !== t) {
-				t14 = t("triggerEmpty");
-				$[36] = t;
-				$[37] = t14;
-			} else t14 = $[37];
-			let t15;
-			if ($[38] !== t) {
-				t15 = t("triggerEmptyDescription");
-				$[38] = t;
-				$[39] = t15;
-			} else t15 = $[39];
-			let t16;
-			if ($[40] === Symbol.for("react.memo_cache_sentinel")) {
-				t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
-					width: 24,
-					height: 24
-				});
-				$[40] = t16;
-			} else t16 = $[40];
-			let t17;
-			if ($[41] !== t) {
-				t17 = t("triggerReset");
-				$[41] = t;
-				$[42] = t17;
-			} else t17 = $[42];
-			let t18;
-			if ($[43] !== resetTriggerFilters || $[44] !== t17) {
-				t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-					size: "sm",
-					variant: "outline",
-					onClick: resetTriggerFilters,
-					children: t17
-				});
-				$[43] = resetTriggerFilters;
-				$[44] = t17;
-				$[45] = t18;
-			} else t18 = $[45];
-			let t19;
-			if ($[46] !== t14 || $[47] !== t15 || $[48] !== t18) {
-				t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-					className: "!min-h-0 !gap-3 !py-6",
-					title: t14,
-					description: t15,
-					icon: t16,
-					children: t18
-				});
-				$[46] = t14;
-				$[47] = t15;
-				$[48] = t18;
-				$[49] = t19;
-			} else t19 = $[49];
-			content = t19;
-		}
-		t10 = "@container flex min-w-0 flex-col gap-5 pb-10";
-		if ($[50] !== t) {
-			t11 = t("tabTriggers");
-			$[50] = t;
-			$[51] = t11;
-		} else t11 = $[51];
+		$[9] = page;
+		$[10] = query;
+		$[11] = t7;
+	} else t7 = $[11];
+	let t8;
+	if ($[12] !== t5 || $[13] !== t7) {
+		t8 = {
+			queryKey: t5,
+			queryFn: t7,
+			refetchInterval: 3e4
+		};
+		$[12] = t5;
+		$[13] = t7;
+		$[14] = t8;
+	} else t8 = $[14];
+	const topic = t6(t8);
+	let t9;
+	if ($[15] !== topic.data?.data) {
+		t9 = topic.data?.data ?? [];
+		$[15] = topic.data?.data;
+		$[16] = t9;
+	} else t9 = $[16];
+	const records = t9;
+	const total = topic.data?.total ?? 0;
+	const pageCount = Math.max(1, Math.ceil(total / 5));
+	const current = Math.min(page, pageCount);
+	const error = topic.error;
+	const loading = topic.isLoading;
+	let content;
+	if (error) {
+		const t10 = error.message || "触发记录加载失败，请重试。";
+		let t11;
+		if ($[17] !== t10) {
+			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				className: "m-0 px-4 py-6 text-xs text-(--dsw-alias-state-error-primary)",
+				children: t10
+			});
+			$[17] = t10;
+			$[18] = t11;
+		} else t11 = $[18];
+		content = t11;
+	} else if (loading) {
+		let t10;
+		if ($[19] === Symbol.for("react.memo_cache_sentinel")) {
+			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "status",
+				className: "m-0 px-4 py-6 text-xs leading-5 text-(--dsw-alias-label-secondary)",
+				children: "正在载入触发记录…"
+			});
+			$[19] = t10;
+		} else t10 = $[19];
+		content = t10;
+	} else if (total) {
+		let t10;
+		if ($[20] !== records) {
+			t10 = records.map(_temp2$2);
+			$[20] = records;
+			$[21] = t10;
+		} else t10 = $[21];
+		let t11;
+		if ($[22] !== t10) {
+			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+				className: "m-0 list-none p-0",
+				children: t10
+			});
+			$[22] = t10;
+			$[23] = t11;
+		} else t11 = $[23];
+		content = t11;
+	} else {
+		let t10;
+		if ($[24] !== t) {
+			t10 = t("triggerEmpty");
+			$[24] = t;
+			$[25] = t10;
+		} else t10 = $[25];
+		let t11;
+		if ($[26] !== t) {
+			t11 = t("triggerEmptyDescription");
+			$[26] = t;
+			$[27] = t11;
+		} else t11 = $[27];
+		let t12;
+		if ($[28] === Symbol.for("react.memo_cache_sentinel")) {
+			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
+				width: 24,
+				height: 24
+			});
+			$[28] = t12;
+		} else t12 = $[28];
+		let t13;
+		if ($[29] !== t) {
+			t13 = t("triggerReset");
+			$[29] = t;
+			$[30] = t13;
+		} else t13 = $[30];
 		let t14;
-		if ($[52] !== t) {
-			t14 = t("triggerTitle");
-			$[52] = t;
-			$[53] = t14;
-		} else t14 = $[53];
+		if ($[31] !== resetTriggerFilters || $[32] !== t13) {
+			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				size: "sm",
+				variant: "outline",
+				onClick: resetTriggerFilters,
+				children: t13
+			});
+			$[31] = resetTriggerFilters;
+			$[32] = t13;
+			$[33] = t14;
+		} else t14 = $[33];
 		let t15;
-		if ($[54] !== t14) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-				className: "m-0 text-base leading-6 font-medium",
+		if ($[34] !== t10 || $[35] !== t11 || $[36] !== t14) {
+			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+				className: "!min-h-0 !gap-3 !py-6",
+				title: t10,
+				description: t11,
+				icon: t12,
 				children: t14
 			});
-			$[54] = t14;
-			$[55] = t15;
-		} else t15 = $[55];
-		let t16;
-		if ($[56] !== t) {
-			t16 = t("triggerDescription");
-			$[56] = t;
-			$[57] = t16;
-		} else t16 = $[57];
-		let t17;
-		if ($[58] !== t16) {
-			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-				children: t16
-			});
-			$[58] = t16;
-			$[59] = t17;
-		} else t17 = $[59];
-		if ($[60] !== t15 || $[61] !== t17) {
-			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
-				className: "flex flex-wrap items-start justify-between gap-3",
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t15, t17] })
-			});
-			$[60] = t15;
-			$[61] = t17;
-			$[62] = t12;
-		} else t12 = $[62];
-		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Summary, { topics });
-		t8 = "flex flex-col gap-3";
-		if ($[63] === Symbol.for("react.memo_cache_sentinel")) {
-			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
-			$[63] = t9;
-		} else t9 = $[63];
-		t7 = "flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)";
-		t5 = "status";
-		t6 = t("triggerResultCount", {
-			count: records.length,
-			total: topics.length
-		});
-		$[5] = delivery.data;
-		$[6] = delivery.error;
-		$[7] = delivery.isLoading;
-		$[8] = filters;
-		$[9] = project.data;
-		$[10] = project.error;
-		$[11] = project.isLoading;
-		$[12] = resetTriggerFilters;
-		$[13] = subscription.data;
-		$[14] = subscription.error;
-		$[15] = subscription.isLoading;
-		$[16] = t;
-		$[17] = thread.data;
-		$[18] = thread.error;
-		$[19] = thread.isLoading;
-		$[20] = trigger.data;
-		$[21] = trigger.error;
-		$[22] = trigger.isLoading;
-		$[23] = content;
-		$[24] = t10;
-		$[25] = t11;
-		$[26] = t12;
-		$[27] = t13;
-		$[28] = t5;
-		$[29] = t6;
-		$[30] = t7;
-		$[31] = t8;
-		$[32] = t9;
-	} else {
-		content = $[23];
-		t10 = $[24];
-		t11 = $[25];
-		t12 = $[26];
-		t13 = $[27];
-		t5 = $[28];
-		t6 = $[29];
-		t7 = $[30];
-		t8 = $[31];
-		t9 = $[32];
+			$[34] = t10;
+			$[35] = t11;
+			$[36] = t14;
+			$[37] = t15;
+		} else t15 = $[37];
+		content = t15;
 	}
+	let t10;
+	if ($[38] !== t) {
+		t10 = t("tabTriggers");
+		$[38] = t;
+		$[39] = t10;
+	} else t10 = $[39];
+	let t11;
+	if ($[40] !== t) {
+		t11 = t("triggerTitle");
+		$[40] = t;
+		$[41] = t11;
+	} else t11 = $[41];
+	let t12;
+	if ($[42] !== t11) {
+		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+			className: "m-0 text-base leading-6 font-medium",
+			children: t11
+		});
+		$[42] = t11;
+		$[43] = t12;
+	} else t12 = $[43];
+	let t13;
+	if ($[44] !== t) {
+		t13 = t("triggerDescription");
+		$[44] = t;
+		$[45] = t13;
+	} else t13 = $[45];
 	let t14;
-	if ($[64] !== t5 || $[65] !== t6) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			role: t5,
-			children: t6
+	if ($[46] !== t13) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
+			children: t13
 		});
-		$[64] = t5;
-		$[65] = t6;
-		$[66] = t14;
-	} else t14 = $[66];
+		$[46] = t13;
+		$[47] = t14;
+	} else t14 = $[47];
 	let t15;
-	if ($[67] !== t14 || $[68] !== t7) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: t7,
-			children: t14
+	if ($[48] !== t12 || $[49] !== t14) {
+		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
+			className: "flex flex-wrap items-start justify-between gap-3",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t12, t14] })
 		});
-		$[67] = t14;
-		$[68] = t7;
-		$[69] = t15;
-	} else t15 = $[69];
+		$[48] = t12;
+		$[49] = t14;
+		$[50] = t15;
+	} else t15 = $[50];
 	let t16;
-	if ($[70] !== content) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+	if ($[51] !== records) {
+		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Summary, { topics: records });
+		$[51] = records;
+		$[52] = t16;
+	} else t16 = $[52];
+	let t17;
+	if ($[53] === Symbol.for("react.memo_cache_sentinel")) {
+		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
+		$[53] = t17;
+	} else t17 = $[53];
+	let t18;
+	if ($[54] !== records.length || $[55] !== t || $[56] !== total) {
+		t18 = t("triggerResultCount", {
+			count: records.length,
+			total
+		});
+		$[54] = records.length;
+		$[55] = t;
+		$[56] = total;
+		$[57] = t18;
+	} else t18 = $[57];
+	let t19;
+	if ($[58] !== t18) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: "flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)",
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				role: "status",
+				children: t18
+			})
+		});
+		$[58] = t18;
+		$[59] = t19;
+	} else t19 = $[59];
+	let t20;
+	if ($[60] !== content) {
+		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)",
 			children: content
 		});
-		$[70] = content;
-		$[71] = t16;
-	} else t16 = $[71];
-	let t17;
-	if ($[72] !== t) {
-		t17 = t("triggerPreviewNotice");
-		$[72] = t;
-		$[73] = t17;
-	} else t17 = $[73];
-	let t18;
-	if ($[74] !== t17) {
-		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
-			children: t17
+		$[60] = content;
+		$[61] = t20;
+	} else t20 = $[61];
+	let t21;
+	if ($[62] !== current || $[63] !== error || $[64] !== loading || $[65] !== pageCount || $[66] !== total) {
+		t21 = !error && !loading && total > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Pagination, {
+			page: current,
+			pageCount,
+			onChange: setPage
 		});
-		$[74] = t17;
-		$[75] = t18;
-	} else t18 = $[75];
-	let t19;
-	if ($[76] !== t15 || $[77] !== t16 || $[78] !== t18 || $[79] !== t8 || $[80] !== t9) {
-		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t8,
+		$[62] = current;
+		$[63] = error;
+		$[64] = loading;
+		$[65] = pageCount;
+		$[66] = total;
+		$[67] = t21;
+	} else t21 = $[67];
+	let t22;
+	if ($[68] !== t) {
+		t22 = t("triggerPreviewNotice");
+		$[68] = t;
+		$[69] = t22;
+	} else t22 = $[69];
+	let t23;
+	if ($[70] !== t22) {
+		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
+			children: t22
+		});
+		$[70] = t22;
+		$[71] = t23;
+	} else t23 = $[71];
+	let t24;
+	if ($[72] !== t19 || $[73] !== t20 || $[74] !== t21 || $[75] !== t23) {
+		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex flex-col gap-3",
 			children: [
-				t9,
+				t17,
+				t19,
+				t20,
+				t21,
+				t23
+			]
+		});
+		$[72] = t19;
+		$[73] = t20;
+		$[74] = t21;
+		$[75] = t23;
+		$[76] = t24;
+	} else t24 = $[76];
+	let t25;
+	if ($[77] !== t10 || $[78] !== t15 || $[79] !== t16 || $[80] !== t24) {
+		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "@container flex min-w-0 flex-col gap-5 pb-10",
+			"aria-label": t10,
+			children: [
 				t15,
 				t16,
-				t18
+				t24
 			]
 		});
-		$[76] = t15;
-		$[77] = t16;
-		$[78] = t18;
-		$[79] = t8;
-		$[80] = t9;
-		$[81] = t19;
-	} else t19 = $[81];
-	let t20;
-	if ($[82] !== t10 || $[83] !== t11 || $[84] !== t12 || $[85] !== t13 || $[86] !== t19) {
-		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: t10,
-			"aria-label": t11,
-			children: [
-				t12,
-				t13,
-				t19
-			]
-		});
-		$[82] = t10;
-		$[83] = t11;
-		$[84] = t12;
-		$[85] = t13;
-		$[86] = t19;
-		$[87] = t20;
-	} else t20 = $[87];
-	return t20;
+		$[77] = t10;
+		$[78] = t15;
+		$[79] = t16;
+		$[80] = t24;
+		$[81] = t25;
+	} else t25 = $[81];
+	return t25;
 }
-function _temp7(topic) {
-	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row, { topic }, topic.latest.thread.id);
-}
-function _temp6() {
-	return getApiSupermeshDelivery();
-}
-function _temp5() {
-	return getApiSupermeshSubscription();
-}
-function _temp4() {
-	return getApiSupermeshThread();
-}
-function _temp3() {
-	return getApiSupermeshTrigger();
-}
-function _temp2$2() {
-	return getApiSupermeshProject();
+function _temp2$2(item) {
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row, { topic: item }, item.latest.thread.id);
 }
 function _temp$3(state) {
 	return state.trigger.filters;

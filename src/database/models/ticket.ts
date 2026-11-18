@@ -1,4 +1,4 @@
-import type { Insertable, Kysely, Selectable, Updateable } from 'kysely'
+import type { Insertable, Kysely, Selectable, SelectQueryBuilder, Updateable } from 'kysely'
 import type { CiState, DB, PullRequestState, TicketStatus } from '../types'
 import { Model } from 'kysely-model'
 import { Inbox } from './inbox'
@@ -53,6 +53,8 @@ export class Ticket extends Model<DB, 'ticket'> {
       .updateTable('ticket')
       .set({ status: 'running', startedAt, updatedAt })
       .where('id', '=', id)
+      .where('status', 'not in', ['done', 'cancelled'])
+      .where(eb => eb.or([eb('prState', 'is', null), eb('prState', 'not in', ['merged', 'closed'])]))
       .execute()
   }
 
@@ -111,6 +113,21 @@ export class Ticket extends Model<DB, 'ticket'> {
 
   async listRecent(limit = 100): Promise<Selectable<DB['ticket']>[]> {
     return this.db.selectFrom('ticket').selectAll().orderBy('createdAt', 'desc').orderBy('id').limit(Math.max(1, Math.min(1000, limit))).execute()
+  }
+
+  findManyQuery(): SelectQueryBuilder<DB, 'ticket', Selectable<DB['ticket']>> {
+    return this.db.selectFrom('ticket').selectAll().orderBy('createdAt', 'desc').orderBy('id')
+  }
+
+  async findManyPage(page = 1, pageSize = 8): Promise<{ data: Selectable<DB['ticket']>[], total: number }> {
+    const size = Math.max(1, Math.min(100, pageSize))
+    const offset = (Math.max(1, page) - 1) * size
+    const base = this.findManyQuery()
+    const [counted, data] = await Promise.all([
+      base.clearSelect().select(this.db.fn.count('ticket.id').as('count')).executeTakeFirst(),
+      base.limit(size).offset(offset).execute(),
+    ])
+    return { data, total: Number(counted?.count ?? 0) }
   }
 
   async listFiltered(filters: { projectId?: string, status?: TicketStatus, attentionOnly?: boolean, supervisorId?: string } = {}): Promise<(Selectable<DB['ticket']> & { attention: boolean | number })[]> {

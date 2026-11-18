@@ -4,7 +4,9 @@ export type PatchApiSupermeshProjectidResponse = { updatedAt: string; name: stri
 export type PutApiSupermeshProjectidSessionResponse = { sessionId: string };
 export type PostApiSupermeshProjectidOpeningResponse = { opened: true };
 export type PostApiSupermeshRepositoryResponse = { project: { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string }; workspaceId: string };
-export type GetApiSupermeshTicketResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[];
+export type GetApiSupermeshTicketResponse = { data: { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[]; total: number; page: number; pageSize: number };
+export type GetApiSupermeshTicketQueryPage = undefined | string;
+export type GetApiSupermeshTicketQueryPageSize = undefined | string;
 export type GetApiSupermeshTicketCurrentResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[];
 export type GetApiSupermeshTicketidResponse = {
   ticket: { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string };
@@ -134,6 +136,22 @@ export type GetApiSupermeshDeliveryResponse = {
 }[];
 export type GetApiSupermeshThreadResponse = { updatedAt: string; url: null | string; id: string; createdAt: string; channelId: string; kind: "issue" | "pull" | "chat" | "ci"; projectId: null | string; title: string; refId: string; triage: "pending" | "claimed" | "ignored"; triagedAt: null | string }[];
 export type GetApiSupermeshTriggerResponse = { at: string; url: null | string; text: string; id: string; channelId: string; kind: "push" | "ci" | "comment" | "open" | "close"; ref: null | string; threadId: string; actorName: null | string; human: number; mentioned: number }[];
+export type GetApiSupermeshTopicResponse = {
+  data: {
+    latest: { id: string; channel: string; kind: "push" | "ci" | "comment" | "open" | "close"; actor: string; human: false | true; mentioned: false | true; text: string; at: string; ref?: undefined | string; url?: undefined | string; thread: { id: string; kind: "issue" | "pull" | "chat" | "ci"; ref: string; title: string; triage: "pending" | "claimed" | "ignored"; project?: undefined | string; url?: undefined | string }; tickets: string[]; deliveries: { target: "main" | "project" | "supervisor" | "user"; project?: undefined | string; status: "pending" | "done" | "stalled"; read: false | true; attempts?: undefined | number; error?: undefined | string }[] };
+    events: { id: string; channel: string; kind: "push" | "ci" | "comment" | "open" | "close"; actor: string; human: false | true; mentioned: false | true; text: string; at: string; ref?: undefined | string; url?: undefined | string; thread: { id: string; kind: "issue" | "pull" | "chat" | "ci"; ref: string; title: string; triage: "pending" | "claimed" | "ignored"; project?: undefined | string; url?: undefined | string }; tickets: string[]; deliveries: { target: "main" | "project" | "supervisor" | "user"; project?: undefined | string; status: "pending" | "done" | "stalled"; read: false | true; attempts?: undefined | number; error?: undefined | string }[] }[];
+  }[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+export type GetApiSupermeshTopicQueryPage = undefined | string;
+export type GetApiSupermeshTopicQueryPageSize = undefined | string;
+export type GetApiSupermeshTopicQueryQuery = undefined | string;
+export type GetApiSupermeshTopicQueryChannel = undefined | string;
+export type GetApiSupermeshTopicQueryStatus = undefined | string;
+export type GetApiSupermeshTopicQueryKind = undefined | string;
+export type GetApiSupermeshTopicQueryMentionedOnly = undefined | string;
 export type GetApiSupermeshSubscriptionResponse = { createdAt: string; threadId: string; ticketId: string }[];
 export type GetApiSupermeshChannelResponse = { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] }[];
 export type PutApiSupermeshChannelidConfigurationResponse = { channel: { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] } };
@@ -213,6 +231,10 @@ export interface PutApiSupermeshProjectidSessionPath {
 export interface PostApiSupermeshProjectidOpeningPath {
   id: string;
 }
+export interface GetApiSupermeshTicketQuery {
+  page?: GetApiSupermeshTicketQueryPage;
+  pageSize?: GetApiSupermeshTicketQueryPageSize;
+}
 export interface GetApiSupermeshTicketidPath {
   id: string;
 }
@@ -221,6 +243,15 @@ export interface PatchApiSupermeshTicketidPath {
 }
 export interface PostApiSupermeshAskidAnswerPath {
   id: string;
+}
+export interface GetApiSupermeshTopicQuery {
+  page?: GetApiSupermeshTopicQueryPage;
+  pageSize?: GetApiSupermeshTopicQueryPageSize;
+  query?: GetApiSupermeshTopicQueryQuery;
+  channel?: GetApiSupermeshTopicQueryChannel;
+  status?: GetApiSupermeshTopicQueryStatus;
+  kind?: GetApiSupermeshTopicQueryKind;
+  mentionedOnly?: GetApiSupermeshTopicQueryMentionedOnly;
 }
 export interface PutApiSupermeshChannelidConfigurationPath {
   id: string;
