@@ -3,6 +3,7 @@
   "skills": {
     "unjs": {
       "source": "hairyf/skills",
+      "commit": "ffa1f904012f48f5bdf34ebb692daa09c778d47f",
       "sourceType": "github",
       "skillPath": "skills/unjs/SKILL.md",
       "computedHash": "15226b10def1963e612ee386cf862944597ce92350abf0cf83518f677df5c7e2"

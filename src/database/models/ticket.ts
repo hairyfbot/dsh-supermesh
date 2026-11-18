@@ -5,6 +5,7 @@ import { Inbox } from './inbox'
 
 const CLOSED_STATUS: readonly TicketStatus[] = ['done', 'cancelled']
 const closedName = (threadId: string): string => `thread_closed:${threadId}`
+let creation: Promise<unknown> = Promise.resolve()
 
 export class Ticket extends Model<DB, 'ticket'> {
   constructor(db: Kysely<DB>) {
@@ -147,7 +148,7 @@ export class Ticket extends Model<DB, 'ticket'> {
   async createWithThreads(projectId: string, title: string, threadIds: string[], description?: string): Promise<Selectable<DB['ticket']>> {
     if (!threadIds.length)
       throw new Error('至少需要一条来源话题')
-    return this.db.transaction().execute(async (trx) => {
+    const operation = creation.then(() => this.db.transaction().execute(async (trx) => {
       const project = await trx.selectFrom('project').selectAll().where('id', '=', projectId).executeTakeFirst()
       if (!project)
         throw new Error('项目不存在')
@@ -174,7 +175,9 @@ export class Ticket extends Model<DB, 'ticket'> {
       await trx.insertInto('ticket').values(row).execute()
       for (const [index, threadId] of ids.entries()) await trx.insertInto('ticket_thread').values({ ticketId: id, threadId, createdAt: new Date(Date.parse(now) + index).toISOString() }).execute()
       return (await new Ticket(trx).findById(id))!
-    })
+    }))
+    creation = operation.catch(() => undefined)
+    return operation
   }
 
   async requireOpen(id: string, projectId?: string): Promise<Selectable<DB['ticket']>> {

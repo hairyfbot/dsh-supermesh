@@ -3,288 +3,295 @@ import type { Selectable } from 'kysely'
 import type { DB } from '../database/types'
 import { randomUUID } from 'node:crypto'
 import { db } from '../database'
+import { singlet } from '../runtime/singlet'
 import { defineService } from '../utils/service'
 import { archive } from './archive'
 import { session } from './session'
 import { setting } from './setting'
 import { worktree } from './worktree'
 
-const operations = new Map<string, Promise<void>>()
 const eventQueues = new Map<string, Promise<void>>()
 let stopped = false
 let observing = false
 
 export const worker = defineService({
   start(): () => Promise<void> {
-    if (operations.size || eventQueues.size)
+    if (singlet.busy('worker:slots') || eventQueues.size)
       throw new Error('worker_busy')
     stopped = false
     observing = true
     return async () => {
       stopped = true
       observing = false
-      while (operations.size || eventQueues.size)
-        await Promise.allSettled([...operations.values(), ...eventQueues.values()])
+      while (singlet.keys().some(key => key.startsWith('worker:')) || eventQueues.size)
+        await Promise.allSettled([singlet.drain(), ...[...eventQueues.values()]])
     }
   },
-  reconcile(): Promise<void> {
-    return run('slots', async () => {
-      const settings = await setting.load()
-      for (const waiting of await db.ticket.listFiltered({ status: 'waiting' })) {
-        if (stopped)
-          break
-        if (waiting.paused || waiting.prepareError)
-          continue
-        if (await blockedByDependency(waiting.id))
-          continue
-        const links = await db.ticketLink.listDependsOn(waiting.id)
-        if (!links.length)
-          continue
-        if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
-          continue
-        await db.ticket.update(waiting.id, { status: 'queued', updatedAt: new Date().toISOString() })
-        await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
+  reconcile: singlet('worker:slots', async () => {
+    const settings = await setting.load()
+    for (const worker of await db.worker.listRunning()) {
+      if (stopped)
+        break
+      const ticket = await db.ticket.findById(worker.ticketId)
+      if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+        continue
+      if (ticket.prState === 'merged' || ticket.prState === 'closed') {
+        const now = new Date().toISOString()
+        await db.worker.end(worker.id, 'stopped', now)
+        await db.ticket.finish(ticket.id, 'done', now, now)
+        await releaseDependents(ticket.id)
+        continue
       }
-      let running = (await db.worker.listRunning()).length
-      for (const worker of await db.worker.listQueued()) {
-        if (stopped || running >= settings.maxWorkers)
-          break
-        const ticket = await db.ticket.findById(worker.ticketId)
-        if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled') {
-          await db.worker.end(worker.id, 'stopped', new Date().toISOString())
-          continue
+      const activity = await session.activity(worker.id).catch(() => null)
+      if (activity && (activity.running || activity.background || activity.queued))
+        continue
+      const last = await session.lastActivity(worker.id)
+      if (last && Date.now() - last < 120_000)
+        continue
+      const now = new Date().toISOString()
+      await db.worker.end(worker.id, worker.reportState === 'ready' ? 'completed' : 'stopped', now)
+      await db.ticket.update(ticket.id, { status: worker.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
+    }
+    for (const waiting of await db.ticket.listFiltered({ status: 'waiting' })) {
+      if (stopped)
+        break
+      if (waiting.paused || waiting.prepareError)
+        continue
+      if (await blockedByDependency(waiting.id))
+        continue
+      const links = await db.ticketLink.listDependsOn(waiting.id)
+      if (!links.length)
+        continue
+      if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
+        continue
+      await db.ticket.update(waiting.id, { status: 'queued', updatedAt: new Date().toISOString() })
+      await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
+    }
+    let running = (await db.worker.listRunning()).length
+    for (const worker of await db.worker.listQueued()) {
+      if (stopped || running >= settings.maxWorkers)
+        break
+      const ticket = await db.ticket.findById(worker.ticketId)
+      if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled') {
+        await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+        continue
+      }
+      if (ticket.prState === 'merged' || ticket.prState === 'closed') {
+        const now = new Date().toISOString()
+        await db.worker.end(worker.id, 'stopped', now)
+        await db.ticket.finish(ticket.id, 'done', now, now)
+        await releaseDependents(ticket.id)
+        continue
+      }
+      if (ticket.paused)
+        continue
+      if (await blockedByDependency(ticket.id))
+        continue
+      if ((await db.inbox.listByTicket(ticket.id)).some(message => message.kind === 'ask' && message.status === 'pending' && message.workerId === worker.id))
+        continue
+      const project = await db.project.findById(ticket.projectId)
+      if (!project) {
+        await db.ticket.setPrepareError(ticket.id, 'project_not_found', new Date().toISOString())
+        continue
+      }
+      if (!project.enabled)
+        continue
+      let started = false
+      try {
+        const branch = `dsh/${ticket.id}`
+        let directory = worker.worktree
+        const existing = await session.history(worker.id).then(() => true).catch(() => false)
+        if (existing) {
+          if (directory && worker.branch === branch)
+            await worktree.verify(project.directory, directory, branch)
+          directory = directory ?? project.directory
         }
-        if (ticket.prState === 'merged' || ticket.prState === 'closed') {
-          const now = new Date().toISOString()
-          await db.worker.end(worker.id, 'stopped', now)
-          await db.ticket.finish(ticket.id, 'done', now, now)
-          await releaseDependents(ticket.id)
-          continue
-        }
-        if (ticket.paused)
-          continue
-        if (await blockedByDependency(ticket.id))
-          continue
-        if ((await db.inbox.listByTicket(ticket.id)).some(message => message.kind === 'ask' && message.status === 'pending' && message.workerId === worker.id))
-          continue
-        const project = await db.project.findById(ticket.projectId)
-        if (!project) {
-          await db.ticket.setPrepareError(ticket.id, 'project_not_found', new Date().toISOString())
-          continue
-        }
-        if (!project.enabled)
-          continue
-        let started = false
-        try {
-          const branch = `dsh/${ticket.id}`
-          let directory = worker.worktree
-          const existing = await session.history(worker.id).then(() => true).catch(() => false)
-          if (existing) {
-            if (directory && worker.branch === branch)
-              await worktree.verify(project.directory, directory, branch)
-            directory = directory ?? project.directory
-          }
-          else {
-            await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory })
-            if (stopped)
-              throw new Error('worker_stopped')
-            if (directory && worker.branch === branch) {
-              await worktree.verify(project.directory, directory, branch)
-            }
-            else {
-              const created = await worktree.create(await session.activate(worker.id), ticket.id)
-              directory = created.worktree
-              await db.worker.update(worker.id, { branch: created.branch, worktree: directory })
-            }
-          }
-          if (!directory)
-            throw new Error('worker_directory_required')
+        else {
+          await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory })
           if (stopped)
             throw new Error('worker_stopped')
-          const threads = await db.ticketThread.listByTicket(ticket.id)
-          const sources = await Promise.all(threads.map(async (thread) => {
-            const latest = await db.trigger.findLatestByThread(thread.threadId)
-            return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId
-          }))
-          const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', `执行配置：${JSON.stringify({ autoMerge: settings.autoMerge, autoMergeMaxLines: settings.autoMergeMaxLines })}`, '来源话题：', ...sources, worker.recoveryNote ?? ''].filter(Boolean).join(String.fromCharCode(10))
-          const now = new Date().toISOString()
-          await db.worker.start(worker.id, now)
-          await db.ticket.start(ticket.id, now, now)
-          running++
-          started = true
-          await session.send(worker.id, prompt, 'queue', `supermesh:worker:${worker.id}`)
-          await db.ticket.setPrepareError(ticket.id, null, now)
-        }
-        catch (error) {
-          await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), new Date().toISOString())
-          if (stopped)
-            break
-          if (started) {
-            await session.stop(worker.id)
-            await db.worker.end(worker.id, 'failed', new Date().toISOString())
-            const latest = await db.ticket.findById(ticket.id)
-            if (latest && latest.prState === 'merged' && latest.status !== 'done')
-              await db.ticket.finish(latest.id, 'done', new Date().toISOString(), new Date().toISOString())
-            else if (!latest || (latest.status !== 'done' && latest.status !== 'cancelled'))
-              await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
-            running--
+          if (directory && worker.branch === branch) {
+            await worktree.verify(project.directory, directory, branch)
+          }
+          else {
+            const created = await worktree.create(await session.activate(worker.id), ticket.id)
+            directory = created.worktree
+            await db.worker.update(worker.id, { branch: created.branch, worktree: directory })
           }
         }
+        if (!directory)
+          throw new Error('worker_directory_required')
+        if (stopped)
+          throw new Error('worker_stopped')
+        const threads = await db.ticketThread.listByTicket(ticket.id)
+        const sources = await Promise.all(threads.map(async (thread) => {
+          const latest = await db.trigger.findLatestByThread(thread.threadId)
+          return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId
+        }))
+        const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', `执行配置：${JSON.stringify({ autoMerge: settings.autoMerge, autoMergeMaxLines: settings.autoMergeMaxLines })}`, '来源话题：', ...sources, worker.recoveryNote ?? ''].filter(Boolean).join(String.fromCharCode(10))
+        const now = new Date().toISOString()
+        await db.worker.start(worker.id, now)
+        await db.ticket.start(ticket.id, now, now)
+        running++
+        started = true
+        await session.send(worker.id, prompt, 'queue', `supermesh:worker:${worker.id}`)
+        await db.ticket.setPrepareError(ticket.id, null, now)
       }
-    })
-  },
-
-  reconcileBackground(): Promise<void> {
-    return run('background', async () => {
-      const now = new Date().toISOString()
-      for (const worker of await db.worker.listRunning()) {
+      catch (error) {
+        await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), new Date().toISOString())
         if (stopped)
           break
-        if (!worker.backgroundUntil)
-          continue
-        const activity = await session.activity(worker.id)
-        const expired = worker.backgroundUntil <= now
-        if (!expired && (activity.running || activity.background || activity.queued))
-          continue
-        if (expired)
+        if (started) {
           await session.stop(worker.id)
-        await finish(worker, expired ? 'stopped' : undefined)
+          await db.worker.end(worker.id, 'failed', new Date().toISOString())
+          const latest = await db.ticket.findById(ticket.id)
+          if (latest && latest.prState === 'merged' && latest.status !== 'done')
+            await db.ticket.finish(latest.id, 'done', new Date().toISOString(), new Date().toISOString())
+          else if (!latest || (latest.status !== 'done' && latest.status !== 'cancelled'))
+            await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
+          running--
+        }
       }
-    })
-  },
-  rescue(): Promise<void> {
-    return run('rescue', async () => {
-      for (const ticket of await db.ticket.listOpen()) {
-        if (stopped)
-          break
-        if (ticket.status !== 'waiting' || ticket.paused)
-          continue
-        if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
-          continue
+    }
+  }),
+
+  reconcileBackground: singlet('worker:background', async () => {
+    const now = new Date().toISOString()
+    for (const worker of await db.worker.listRunning()) {
+      if (stopped)
+        break
+      if (!worker.backgroundUntil)
+        continue
+      const activity = await session.activity(worker.id)
+      const expired = worker.backgroundUntil <= now
+      if (!expired && (activity.running || activity.background || activity.queued))
+        continue
+      if (expired)
+        await session.stop(worker.id)
+      await finish(worker, expired ? 'stopped' : undefined)
+    }
+  }),
+  rescue: singlet('worker:rescue', async () => {
+    for (const ticket of await db.ticket.listOpen()) {
+      if (stopped)
+        break
+      if (ticket.status !== 'waiting' || ticket.paused)
+        continue
+      if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
+        continue
+      const project = await db.project.findById(ticket.projectId)
+      if (!project?.enabled)
+        continue
+      if (ticket.prState === 'merged' || ticket.prState === 'closed') {
+        const now = new Date().toISOString()
+        await db.ticket.finish(ticket.id, 'done', now, now)
+        await releaseDependents(ticket.id)
+        continue
+      }
+      if (ticket.prepareError)
+        await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
+      await db.worker.queue(ticket.id, ticket.projectId)
+    }
+  }),
+  recover: singlet('worker:recovery', async () => {
+    for (const worker of await db.worker.listRunning()) {
+      if (stopped)
+        break
+      const ticket = await db.ticket.findById(worker.ticketId)
+      if (!ticket)
+        continue
+      if (ticket.status === 'done' || ticket.status === 'cancelled') {
+        if (await session.resolve(worker.id))
+          await session.stop(worker.id)
+        await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+        continue
+      }
+      if (ticket.paused)
+        continue
+      try {
         const project = await db.project.findById(ticket.projectId)
-        if (!project?.enabled)
+        if (project && !project.enabled)
           continue
-        if (ticket.prState === 'merged' || ticket.prState === 'closed') {
-          const now = new Date().toISOString()
-          await db.ticket.finish(ticket.id, 'done', now, now)
+        if (ticket.prState === 'merged') {
+          await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+          await db.ticket.finish(ticket.id, 'done', new Date().toISOString(), new Date().toISOString())
           await releaseDependents(ticket.id)
           continue
         }
-        if (ticket.prepareError)
-          await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
-        await db.worker.queue(ticket.id, ticket.projectId)
+        if (!project || !worker.worktree || !worker.branch) {
+          await db.worker.requeue(worker.id)
+          continue
+        }
+        await worktree.verify(project.directory, worker.worktree, worker.branch)
+        if (!(await session.resolve(worker.id))) {
+          await db.worker.requeue(worker.id)
+          continue
+        }
+        const activity = await session.activity(worker.id)
+        if (activity.background && !worker.backgroundUntil) {
+          const settings = await setting.load()
+          await db.worker.setBackgroundUntil(worker.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 60000).toISOString())
+        }
+        if (activity.running || activity.background || activity.queued)
+          continue
+        const note = '运行已恢复。先检查目录、git 历史与渠道的当前事实，再决定是否重做外部动作；不要重复开 PR 或发布评论。'
+        await db.worker.setRecoveryNote(worker.id, note)
+        const asks = await db.inbox.listByTicket(ticket.id)
+        if (!asks.some(message => message.kind === 'ask' && message.status === 'pending' && message.workerId === worker.id))
+          await session.send(worker.id, note, 'queue', `supermesh:recovery:${randomUUID()}`)
       }
-    })
-  },
-  recover(): Promise<void> {
-    return run('recovery', async () => {
-      for (const worker of await db.worker.listRunning()) {
+      catch (error) {
         if (stopped)
           break
-        const ticket = await db.ticket.findById(worker.ticketId)
-        if (!ticket)
-          continue
-        if (ticket.status === 'done' || ticket.status === 'cancelled') {
-          if (await session.resolve(worker.id))
-            await session.stop(worker.id)
-          await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+        const now = new Date().toISOString()
+        const latest = await db.ticket.findById(ticket.id)
+        if (latest && (latest.status === 'done' || latest.status === 'cancelled' || latest.prState === 'merged')) {
+          if (latest.prState === 'merged' && latest.status !== 'done')
+            await db.ticket.finish(latest.id, 'done', now, now)
+          await db.worker.end(worker.id, 'stopped', now)
           continue
         }
-        if (ticket.paused)
-          continue
-        try {
-          const project = await db.project.findById(ticket.projectId)
-          if (project && !project.enabled)
-            continue
-          if (ticket.prState === 'merged') {
-            await db.worker.end(worker.id, 'stopped', new Date().toISOString())
-            await db.ticket.finish(ticket.id, 'done', new Date().toISOString(), new Date().toISOString())
-            await releaseDependents(ticket.id)
-            continue
-          }
-          if (!project || !worker.worktree || !worker.branch) {
-            await db.worker.requeue(worker.id)
-            continue
-          }
-          await worktree.verify(project.directory, worker.worktree, worker.branch)
-          if (!(await session.resolve(worker.id))) {
-            await db.worker.requeue(worker.id)
-            continue
-          }
-          const activity = await session.activity(worker.id)
-          if (activity.background && !worker.backgroundUntil) {
-            const settings = await setting.load()
-            await db.worker.setBackgroundUntil(worker.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 60000).toISOString())
-          }
-          if (activity.running || activity.background || activity.queued)
-            continue
-          const note = '运行已恢复。先检查目录、git 历史与渠道的当前事实，再决定是否重做外部动作；不要重复开 PR 或发布评论。'
-          await db.worker.setRecoveryNote(worker.id, note)
-          const asks = await db.inbox.listByTicket(ticket.id)
-          if (!asks.some(message => message.kind === 'ask' && message.status === 'pending' && message.workerId === worker.id))
-            await session.send(worker.id, note, 'queue', `supermesh:recovery:${randomUUID()}`)
-        }
-        catch (error) {
-          if (stopped)
-            break
-          const now = new Date().toISOString()
-          const latest = await db.ticket.findById(ticket.id)
-          if (latest && (latest.status === 'done' || latest.status === 'cancelled' || latest.prState === 'merged')) {
-            if (latest.prState === 'merged' && latest.status !== 'done')
-              await db.ticket.finish(latest.id, 'done', now, now)
-            await db.worker.end(worker.id, 'stopped', now)
-            continue
-          }
-          await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now)
-          await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
-          await db.worker.end(worker.id, 'failed', now)
-        }
+        await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now)
+        await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
+        await db.worker.end(worker.id, 'failed', now)
       }
-    })
-  },
-  observe(source: Session, event: SessionEvent): Promise<void> {
-    if (!observing || stopped || event.type !== 'turn/end')
-      return Promise.resolve()
-    const previous = eventQueues.get(source.id) ?? Promise.resolve()
-    const action = (): Promise<void> => stopped
-      ? Promise.resolve()
-      : run(`event:${source.id}:${event.seq}`, async () => {
-          const identity = await session.resolve(source.id)
-          if (!identity || identity.role !== 'worker' || !identity.workerId)
-            return
-          const current = await db.worker.findById(identity.workerId)
-          if (!current || current.status !== 'running')
-            return
-          const activity = await session.activity(current.id)
-          if (activity.background) {
-            const settings = await setting.load()
-            if (!current.backgroundUntil)
-              await db.worker.setBackgroundUntil(current.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 60000).toISOString())
-            return
-          }
-          if (activity.queued)
-            return
-          await finish(current, event.data.reason.kind === 'error' ? 'failed' : event.data.reason.kind === 'aborted' ? 'stopped' : undefined)
-        })
-    const current = previous.then(action, action).finally(() => {
-      if (eventQueues.get(source.id) === current)
-        eventQueues.delete(source.id)
-    })
-    eventQueues.set(source.id, current)
-    return current
-  },
+    }
+  }),
+  observe: singlet(
+    source => `worker:event:${source.id}`,
+    async (source: Session, event: SessionEvent): Promise<void> => {
+      if (!observing || stopped || event.type !== 'turn/end')
+        return
+      const previous = eventQueues.get(source.id) ?? Promise.resolve()
+      const action = (): Promise<void> => stopped
+        ? Promise.resolve()
+        : (async () => {
+            const identity = await session.resolve(source.id)
+            if (!identity || identity.role !== 'worker' || !identity.workerId)
+              return
+            const current = await db.worker.findById(identity.workerId)
+            if (!current || current.status !== 'running')
+              return
+            const activity = await session.activity(current.id)
+            if (activity.background) {
+              const settings = await setting.load()
+              if (!current.backgroundUntil)
+                await db.worker.setBackgroundUntil(current.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 60000).toISOString())
+              return
+            }
+            if (activity.queued)
+              return
+            await finish(current, event.data.reason.kind === 'error' ? 'failed' : event.data.reason.kind === 'aborted' ? 'stopped' : undefined)
+          })()
+      const current = previous.then(action, action).finally(() => {
+        if (eventQueues.get(source.id) === current)
+          eventQueues.delete(source.id)
+      })
+      eventQueues.set(source.id, current)
+      return current
+    },
+  ),
 })
-
-function run(key: string, action: () => Promise<void>): Promise<void> {
-  if (stopped)
-    return Promise.reject(new Error('worker_stopped'))
-  const current = operations.get(key)
-  if (current)
-    return current
-  const task = Promise.resolve().then(action).finally(() => operations.delete(key))
-  operations.set(key, task)
-  return task
-}
 
 async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'stopped'): Promise<void> {
   const asks = (await db.inbox.listByTicket(current.ticketId)).filter(message => message.kind === 'ask' && message.workerId === current.id)

@@ -6,6 +6,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 import { getServerContext } from 'dsh-h3/utils'
+import { singlet } from '../runtime/singlet'
 import { server } from '../server'
 import { parseRepositoryRemote } from '../utils/repository'
 import { defineService } from '../utils/service'
@@ -20,24 +21,21 @@ declare module '@deepseek-ai/cordis' {
 }
 
 const execute = promisify(execFile)
-const operations = new Map<string, Promise<unknown>>()
 let controller = new AbortController()
-let stopped = false
 
 export const worktree = defineService({
   start(): () => Promise<void> {
-    if (operations.size)
+    if (singlet.busy())
       throw new Error('worktree_busy')
     controller = new AbortController()
-    stopped = false
     return async () => {
-      stopped = true
       controller.abort(new Error('worktree_stopped'))
-      await Promise.allSettled([...operations.values()])
+      await Promise.allSettled([singlet.drain()])
     }
   },
-  peek(directory: string): Promise<{ directory: string, remoteUrl: string | null } | null> {
-    return run(`peek:${resolve(directory)}`, async () => {
+  peek: singlet(
+    directory => `worktree:peek:${resolve(directory)}`,
+    async (directory: string): Promise<{ directory: string, remoteUrl: string | null } | null> => {
       const root = await realpath(directory)
       let gitRoot: string
       try {
@@ -53,42 +51,45 @@ export const worktree = defineService({
       const remotes = (await git(root, ['remote'])).split(String.fromCharCode(10))
       const remoteUrl = remotes.includes('origin') ? await git(root, ['config', '--get', 'remote.origin.url']) : null
       return { directory: root, remoteUrl }
-    })
-  },
-  async clone(remoteUrl: string, target: string, gitlabHost?: string, signal?: AbortSignal): Promise<{ directory: string, remoteUrl: string }> {
-    signal?.throwIfAborted()
-    const repository = parseRepositoryRemote(remoteUrl, gitlabHost)
-    const result = await run(`clone:${process.platform === 'win32' ? resolve(target).toLowerCase() : resolve(target)}`, async () => {
-      if (!isAbsolute(target))
-        throw new Error('invalid_repository_path')
-      const existing = await existingRepository(target, repository.webUrl, gitlabHost)
-      if (existing)
-        return existing
-      await mkdir(dirname(target), { recursive: true })
-      if (!samePath(await realpath(dirname(target)), dirname(target)))
+    },
+  ),
+  clone: singlet(
+    (remoteUrl, target) => `worktree:clone:${process.platform === 'win32' ? resolve(target).toLowerCase() : resolve(target)}:${remoteUrl}`,
+    async (remoteUrl: string, target: string, gitlabHost?: string, signal?: AbortSignal): Promise<{ directory: string, remoteUrl: string }> => {
+      signal?.throwIfAborted()
+      const repository = parseRepositoryRemote(remoteUrl, gitlabHost)
+      const result = await (async () => {
+        if (!isAbsolute(target))
+          throw new Error('invalid_repository_path')
+        const existing = await existingRepository(target, repository.webUrl, gitlabHost)
+        if (existing)
+          return existing
+        await mkdir(dirname(target), { recursive: true })
+        if (!samePath(await realpath(dirname(target)), dirname(target)))
+          throw new Error('repository_path_conflict')
+        const temporary = await mkdtemp(join(dirname(target), '.supermesh-clone-'))
+        try {
+          await git(temporary, ['-c', 'http.followRedirects=false', '-c', 'protocol.file.allow=never', 'clone', '--', repository.remoteUrl, temporary], signal, 120000)
+          const facts = await worktree.peek(temporary)
+          if (!facts?.remoteUrl || parseRepositoryRemote(facts.remoteUrl, gitlabHost).webUrl !== repository.webUrl)
+            throw new Error('repository_remote_mismatch')
+          signal?.throwIfAborted()
+          controller.signal.throwIfAborted()
+          const raced = await existingRepository(target, repository.webUrl, gitlabHost)
+          if (raced)
+            return raced
+          await rename(temporary, target)
+          return { directory: await realpath(target), remoteUrl: repository.remoteUrl }
+        }
+        finally {
+          await rm(temporary, { recursive: true, force: true })
+        }
+      })()
+      if (parseRepositoryRemote(result.remoteUrl, gitlabHost).webUrl !== repository.webUrl)
         throw new Error('repository_path_conflict')
-      const temporary = await mkdtemp(join(dirname(target), '.supermesh-clone-'))
-      try {
-        await git(temporary, ['-c', 'http.followRedirects=false', '-c', 'protocol.file.allow=never', 'clone', '--', repository.remoteUrl, temporary], signal, 120000)
-        const facts = await worktree.peek(temporary)
-        if (!facts?.remoteUrl || parseRepositoryRemote(facts.remoteUrl, gitlabHost).webUrl !== repository.webUrl)
-          throw new Error('repository_remote_mismatch')
-        signal?.throwIfAborted()
-        controller.signal.throwIfAborted()
-        const raced = await existingRepository(target, repository.webUrl, gitlabHost)
-        if (raced)
-          return raced
-        await rename(temporary, target)
-        return { directory: await realpath(target), remoteUrl: repository.remoteUrl }
-      }
-      finally {
-        await rm(temporary, { recursive: true, force: true })
-      }
-    })
-    if (parseRepositoryRemote(result.remoteUrl, gitlabHost).webUrl !== repository.webUrl)
-      throw new Error('repository_path_conflict')
-    return result
-  },
+      return result
+    },
+  ),
   async create(agent: Agent, ticketId: string): Promise<{ branch: string, worktree: string, baseCommit: string, repositoryRoot: string }> {
     if (!/^[a-z0-9][\w-]*$/i.test(ticketId))
       throw new Error('invalid_worktree_identity')
@@ -101,8 +102,9 @@ export const worktree = defineService({
       throw new Error('worktree_branch_conflict')
     return { branch: created.branch, worktree: created.path, baseCommit: created.baseCommit, repositoryRoot: created.repositoryRoot }
   },
-  async verify(directory: string, target: string, branch: string): Promise<void> {
-    return run(`verify:${resolve(target)}`, async () => {
+  verify: singlet(
+    (_directory, target) => `worktree:verify:${resolve(target)}`,
+    async (directory: string, target: string, branch: string): Promise<void> => {
       const root = await realpath(directory)
       const actual = await realpath(target)
       if (samePath(root, actual) || !samePath(target, actual))
@@ -114,8 +116,8 @@ export const worktree = defineService({
       const actualCommon = resolve(actual, await git(actual, ['rev-parse', '--git-common-dir']))
       if (!samePath(rootCommon, actualCommon) || await git(actual, ['branch', '--show-current']) !== branch)
         throw new Error('worktree_branch_conflict')
-    })
-  },
+    },
+  ),
 })
 
 async function existingRepository(target: string, webUrl: string, gitlabHost?: string): Promise<{ directory: string, remoteUrl: string } | null> {
@@ -150,15 +152,4 @@ async function git(cwd: string, args: string[], signal?: AbortSignal, timeout = 
 
 function samePath(left: string, right: string): boolean {
   return process.platform === 'win32' ? resolve(left).toLowerCase() === resolve(right).toLowerCase() : resolve(left) === resolve(right)
-}
-
-function run<T>(key: string, action: () => Promise<T>): Promise<T> {
-  if (stopped)
-    return Promise.reject(new Error('worktree_stopped'))
-  const current = operations.get(key)
-  if (current)
-    return current as Promise<T>
-  const task = Promise.resolve().then(action).finally(() => operations.delete(key))
-  operations.set(key, task)
-  return task
 }

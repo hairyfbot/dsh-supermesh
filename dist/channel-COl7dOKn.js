@@ -951,6 +951,7 @@ var Thread = class extends Model {
 // src/database/models/ticket.ts
 const CLOSED_STATUS = ["done", "cancelled"];
 const closedName = (threadId) => `thread_closed:${threadId}`;
+let creation = Promise.resolve();
 var Ticket = class Ticket extends Model {
 	constructor(db) {
 		super(db, "ticket", "id");
@@ -1042,7 +1043,7 @@ var Ticket = class Ticket extends Model {
 	}
 	async createWithThreads(projectId, title, threadIds, description) {
 		if (!threadIds.length) throw new Error("至少需要一条来源话题");
-		return this.db.transaction().execute(async (trx) => {
+		const operation = creation.then(() => this.db.transaction().execute(async (trx) => {
 			if (!await trx.selectFrom("project").selectAll().where("id", "=", projectId).executeTakeFirst()) throw new Error("项目不存在");
 			const ids = [...new Set(threadIds)];
 			const threads = await trx.selectFrom("thread").selectAll().where("id", "in", ids).execute();
@@ -1082,7 +1083,9 @@ var Ticket = class Ticket extends Model {
 				createdAt: new Date(Date.parse(now) + index).toISOString()
 			}).execute();
 			return await new Ticket(trx).findById(id);
-		});
+		}));
+		creation = operation.catch(() => void 0);
+		return operation;
 	}
 	async requireOpen(id, projectId) {
 		const row = await this.findById(id);
@@ -1309,10 +1312,10 @@ var Worker = class Worker extends Model {
 		return this.db.selectFrom("worker").selectAll().where("branch", "=", branch).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
 	}
 	async start(id, startedAt) {
-		await this.db.updateTable("worker").set({
+		await this.db.updateTable("worker").set((eb) => ({
 			status: "running",
-			startedAt
-		}).where("id", "=", id).execute();
+			startedAt: eb.fn.coalesce("startedAt", eb.val(startedAt))
+		})).where("id", "=", id).execute();
 	}
 	async end(id, endedReason, endedAt) {
 		await this.db.updateTable("worker").set({
@@ -1770,6 +1773,54 @@ var agent_model_patch_default = defineHandler(async (event) => {
 	};
 	return (await setting.save({ models })).models;
 });
+// src/runtime/singlet.ts
+const pending = /* @__PURE__ */ new Map();
+function resolveKey(keyOrGen, args) {
+	return typeof keyOrGen === "function" ? keyOrGen(...args) : keyOrGen;
+}
+/**
+* 【单飞原语】同一 key 正在执行时复用同一个 Promise，不排队、不阻塞调用方。
+*
+* @param keyOrGen 静态 key 或按入参生成 key 的函数
+* @param fn 需要单飞保护的异步函数
+*
+* @example
+* export const worker = defineService({
+*   reconcile: singlet('worker:slots', async () => {
+*     await db.worker.listRunning()
+*   }),
+*   process: singlet(id => `worker:process:${id}`, async (id: string) => {
+*     await runFor(id)
+*   }),
+* })
+*/
+function singlet(keyOrGen, fn) {
+	return ((...args) => {
+		const key = resolveKey(keyOrGen, args);
+		const current = pending.get(key);
+		if (current) return current.promise;
+		const task = Promise.resolve().then(() => fn(...args));
+		const record = {
+			promise: task,
+			startedAt: Date.now()
+		};
+		pending.set(key, record);
+		const settle = () => {
+			if (pending.get(key) === record) pending.delete(key);
+		};
+		task.then(settle, settle);
+		return task;
+	});
+}
+singlet.busy = function busy(key) {
+	return key === void 0 ? pending.size > 0 : pending.has(key);
+};
+singlet.keys = function keys() {
+	return [...pending.keys()];
+};
+singlet.drain = async function drain() {
+	while (pending.size) await Promise.allSettled([...pending.values()].map((record) => record.promise));
+};
 // src/service/session.ts
 const presets$1 = {
 	main: "orchestrator",
@@ -1778,9 +1829,8 @@ const presets$1 = {
 	worker: "worker"
 };
 const registered = /* @__PURE__ */ new Set();
-const operations$2 = /* @__PURE__ */ new Map();
 let controller$2 = new AbortController();
-let stopped$3 = false;
+let stopped$2 = false;
 const session = defineService({
 	register(id) {
 		registered.add(id);
@@ -1803,13 +1853,13 @@ const session = defineService({
 		return role;
 	},
 	start() {
-		if (operations$2.size) throw new Error("session_busy");
+		if (singlet.busy("session:workspace")) throw new Error("session_busy");
 		controller$2 = new AbortController();
-		stopped$3 = false;
+		stopped$2 = false;
 		return async () => {
-			stopped$3 = true;
+			stopped$2 = true;
 			controller$2.abort(/* @__PURE__ */ new Error("session_stopped"));
-			await Promise.allSettled([...operations$2.values()]);
+			await Promise.allSettled([singlet.drain()]);
 		};
 	},
 	async resolve(id) {
@@ -1862,86 +1912,82 @@ const session = defineService({
 		const id = await storage.getItem("orchestrator.id");
 		return id && (await session.resolve(id))?.role === "main" ? id : null;
 	},
-	async create(role, options) {
-		if (stopped$3) throw new Error("runtime_stopping");
-		return run$2(`session:create:${role}:${role === "worker" ? options.sessionId : role === "project" ? options.projectId : role === "supervisor" ? options.supervisorId : "main"}`, async () => {
-			const ctx = getServerContext(server);
-			const project = options.projectId ? await db.project.findById(options.projectId) : void 0;
-			const supervisor = options.supervisorId ? await db.supervisor.findById(options.supervisorId) : void 0;
-			if (role === "project" && !project) throw new Error("project_not_found");
-			if (role === "supervisor" && (!supervisor || supervisor.status !== "active")) throw new Error("supervisor_not_active");
-			if (role === "main") {
-				const existing = await session.findMain();
-				if (existing) {
-					await bindWorkspace(existing);
-					return existing;
-				}
+	create: singlet((role, options) => `session:create:${role}:${role === "worker" ? options.sessionId : role === "project" ? options.projectId : role === "supervisor" ? options.supervisorId : "main"}`, async (role, options) => {
+		if (stopped$2) throw new Error("runtime_stopping");
+		const ctx = getServerContext(server);
+		const project = options.projectId ? await db.project.findById(options.projectId) : void 0;
+		const supervisor = options.supervisorId ? await db.supervisor.findById(options.supervisorId) : void 0;
+		if (role === "project" && !project) throw new Error("project_not_found");
+		if (role === "supervisor" && (!supervisor || supervisor.status !== "active")) throw new Error("supervisor_not_active");
+		if (role === "main") {
+			const existing = await session.findMain();
+			if (existing) {
+				await bindWorkspace(existing);
+				return existing;
 			}
-			if (role === "project" && project?.orchestratorSessionId) {
-				const identity = await session.resolve(project.orchestratorSessionId);
-				if (identity?.role === "project" && identity.projectId === project.id) {
-					await bindWorkspace(project.orchestratorSessionId);
-					return project.orchestratorSessionId;
-				}
-				if (identity) throw new Error("session_binding_conflict");
+		}
+		if (role === "project" && project?.orchestratorSessionId) {
+			const identity = await session.resolve(project.orchestratorSessionId);
+			if (identity?.role === "project" && identity.projectId === project.id) {
+				await bindWorkspace(project.orchestratorSessionId);
+				return project.orchestratorSessionId;
 			}
-			if (role === "supervisor" && supervisor?.sessionId) {
-				const identity = await session.resolve(supervisor.sessionId);
-				if (identity?.role === "supervisor" && identity.supervisorId === supervisor.id) {
-					await bindWorkspace(supervisor.sessionId);
-					return supervisor.sessionId;
-				}
-				if (identity) throw new Error("session_binding_conflict");
+			if (identity) throw new Error("session_binding_conflict");
+		}
+		if (role === "supervisor" && supervisor?.sessionId) {
+			const identity = await session.resolve(supervisor.sessionId);
+			if (identity?.role === "supervisor" && identity.supervisorId === supervisor.id) {
+				await bindWorkspace(supervisor.sessionId);
+				return supervisor.sessionId;
 			}
-			const requestedId = options.sessionId ?? randomUUID();
-			if (role === "worker") {
-				const worker = await db.worker.findById(requestedId);
-				if (!worker || worker.ticketId !== options.ticketId || worker.status === "ended") throw new Error("worker_binding_required");
-				if (!options.directory) throw new Error("worker_directory_required");
-			}
-			const location = role === "worker" ? { cwd: options.directory } : { workspaceId: (await session.workspace()).id };
-			const id = (await ctx.sessionController.create({
-				sessionId: SessionId(requestedId),
-				...location,
-				agentPreset: presets$1[role]
-			})).sessionId;
-			if (id !== requestedId) throw new Error("session_identity_conflict");
-			if (role === "main") await storage.setItem("orchestrator.id", id);
-			if (project && role === "project") await db.project.setOrchestrator(project.id, id, (/* @__PURE__ */ new Date()).toISOString());
-			if (supervisor && role === "supervisor") await db.supervisor.attachSession(supervisor.id, id);
-			const title = role === "main" ? "[路由] 主编排" : role === "project" ? `[路由] ${project.name}` : role === "supervisor" ? `[协调] ${supervisor.title}` : void 0;
-			if (title) await ctx.sessionController.rename({
-				sessionId: id,
-				title
-			});
-			if (role !== "worker") await inbox.notify(await resolveAgent(id), true);
-			if (options.prompt) await session.send(id, options.prompt);
-			return id;
+			if (identity) throw new Error("session_binding_conflict");
+		}
+		const requestedId = options.sessionId ?? randomUUID();
+		if (role === "worker") {
+			const worker = await db.worker.findById(requestedId);
+			if (!worker || worker.ticketId !== options.ticketId || worker.status === "ended") throw new Error("worker_binding_required");
+			if (!options.directory) throw new Error("worker_directory_required");
+		}
+		const location = role === "worker" ? { cwd: options.directory } : { workspaceId: (await session.workspace()).id };
+		const id = (await ctx.sessionController.create({
+			sessionId: SessionId(requestedId),
+			...location,
+			agentPreset: presets$1[role]
+		})).sessionId;
+		if (id !== requestedId) throw new Error("session_identity_conflict");
+		if (role === "main") await storage.setItem("orchestrator.id", id);
+		if (project && role === "project") await db.project.setOrchestrator(project.id, id, (/* @__PURE__ */ new Date()).toISOString());
+		if (supervisor && role === "supervisor") await db.supervisor.attachSession(supervisor.id, id);
+		const title = role === "main" ? "[路由] 主编排" : role === "project" ? `[路由] ${project.name}` : role === "supervisor" ? `[协调] ${supervisor.title}` : void 0;
+		if (title) await ctx.sessionController.rename({
+			sessionId: id,
+			title
 		});
-	},
-	async send(id, text, mode = "queue", requestId = randomUUID()) {
+		if (role !== "worker") await inbox.notify(await resolveAgent(id), true);
+		if (options.prompt) await session.send(id, options.prompt);
+		return id;
+	}),
+	send: singlet((id, _text, _mode, requestId = "") => `session:send:${id}:${requestId}`, async (id, text, mode = "queue", requestId = randomUUID()) => {
 		if (!text.trim()) throw new Error("empty_message");
-		if (stopped$3) throw new Error("runtime_stopping");
-		return run$2(`session:send:${id}:${requestId}`, async () => {
-			const identity = await session.resolve(id);
-			if (!identity) {
-				const worker = await db.worker.findById(id);
-				throw new Error(worker ? worker.status === "ended" ? "worker_ended" : "worker_not_live_or_archived" : "unknown_session");
-			}
-			if (identity.workerId && (await db.worker.findById(id))?.status === "ended") throw new Error("worker_ended");
-			const ctx = getServerContext(server);
-			if (mode === "interrupt") await session.cancel(id, true);
-			await ctx.sessionController.prompt({
-				sessionId: SessionId(id),
-				requestId,
-				mode: identity.role !== "worker" && mode === "queue" ? "queue" : "steer",
-				content: [{
-					type: "text",
-					text
-				}]
-			}, controller$2.signal);
-		});
-	},
+		if (stopped$2) throw new Error("runtime_stopping");
+		const identity = await session.resolve(id);
+		if (!identity) {
+			const worker = await db.worker.findById(id);
+			throw new Error(worker ? worker.status === "ended" ? "worker_ended" : "worker_not_live_or_archived" : "unknown_session");
+		}
+		if (identity.workerId && (await db.worker.findById(id))?.status === "ended") throw new Error("worker_ended");
+		const ctx = getServerContext(server);
+		if (mode === "interrupt") await session.cancel(id, true);
+		await ctx.sessionController.prompt({
+			sessionId: SessionId(id),
+			requestId,
+			mode: identity.role !== "worker" && mode === "queue" ? "queue" : "steer",
+			content: [{
+				type: "text",
+				text
+			}]
+		}, controller$2.signal);
+	}),
 	async cancel(id, keepInbox = false) {
 		(await resolveAgent(id)).cancel({
 			kind: "hook",
@@ -1969,21 +2015,30 @@ const session = defineService({
 			next_offset: end < text.length ? end : null
 		};
 	},
-	workspace() {
-		return run$2("workspace:create", async () => {
-			await mkdir(DSH_PLUGIN_HOME, { recursive: true });
-			return getServerContext(server).workspaceRegistry.create(DSH_PLUGIN_HOME, "代理工作区");
-		});
-	},
-	activate(id) {
-		return run$2(`session:activate:${id}`, () => resolveAgent(id));
-	},
+	workspace: singlet("session:workspace", async () => {
+		await mkdir(DSH_PLUGIN_HOME, { recursive: true });
+		return getServerContext(server).workspaceRegistry.create(DSH_PLUGIN_HOME, "代理工作区");
+	}),
+	activate: singlet((id) => `session:activate:${id}`, (id) => resolveAgent(id)),
 	async lookup(id) {
 		if (!await session.resolve(id)) return null;
 		return getServerContext(server).agents.get(SessionId(id)) ?? null;
 	},
 	async history(id) {
 		return getServerContext(server).sessionQuery.readSession(SessionId(id));
+	},
+	async lastActivity(id) {
+		try {
+			const { events } = await getServerContext(server).sessionQuery.readSession(SessionId(id));
+			let latest = 0;
+			for (const event of events) {
+				const time = Number(event.time ?? 0);
+				if (time > latest) latest = time;
+			}
+			return latest || null;
+		} catch {
+			return null;
+		}
 	},
 	async receipts(id) {
 		const { events } = await getServerContext(server).sessionQuery.readSession(SessionId(id));
@@ -2047,47 +2102,36 @@ async function resolveAgent(id) {
 	if ("error" in result) throw result.error;
 	return result.agent;
 }
-function run$2(key, action) {
-	if (stopped$3) return Promise.reject(/* @__PURE__ */ new Error("runtime_stopping"));
-	const current = operations$2.get(key);
-	if (current) return current;
-	const task = Promise.resolve().then(action).finally(() => operations$2.delete(key));
-	operations$2.set(key, task);
-	return task;
-}
 // src/service/inbox.ts
-const operations$1 = /* @__PURE__ */ new Map();
 const deliveredAnswers = /* @__PURE__ */ new Set();
-let stopped$2 = false;
+let stopped$1 = false;
 const inbox = defineService({
-	async notify(agent, restore = false) {
-		return run$1(`notify:${agent.session.id}`, async () => {
-			if (agent.status !== "idle" && !restore) return;
-			const mailbox = await inbox.peek(agent.session.id);
-			if (!mailbox) return;
-			const revision = mailbox.messages.map((message) => [message.id, message.escalations]).sort().map((parts) => parts.join(":")).join("|");
-			if (!revision && !restore) return;
-			const { events } = await session.history(agent.session.id);
-			if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((message) => message.source.kind === (restore ? "supermesh-mailbox-context" : "supermesh-mailbox") && message.source.revision === revision)) return;
-			if (events.some((event) => (event.type === "user/message" ? [event.data] : event.type === "agent/inbox/spliced" ? event.data.inserted : []).some((message) => message.source.kind === (restore ? "supermesh-mailbox-context" : "supermesh-mailbox") && message.source.revision === revision))) return;
-			const text = `你有${mailbox.pendingCount}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`;
-			const message = createUserMessage({
-				content: [{
-					type: "text",
-					text
-				}],
-				source: {
-					kind: restore ? "supermesh-mailbox-context" : "supermesh-mailbox",
-					form: "notice",
-					summary: text,
-					revision
-				}
-			});
-			if (stopped$2 || !await session.resolve(agent.session.id)) return;
-			if (restore) agent.inject(message);
-			else if (agent.status === "idle") agent.followup(message);
+	notify: singlet((agent) => `inbox:notify:${agent.session.id}`, async (agent, restore = false) => {
+		if (agent.status !== "idle" && !restore) return;
+		const mailbox = await inbox.peek(agent.session.id);
+		if (!mailbox) return;
+		const revision = mailbox.messages.map((message) => [message.id, message.escalations]).sort().map((parts) => parts.join(":")).join("|");
+		if (!revision && !restore) return;
+		const { events } = await session.history(agent.session.id);
+		if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((message) => message.source.kind === (restore ? "supermesh-mailbox-context" : "supermesh-mailbox") && message.source.revision === revision)) return;
+		if (events.some((event) => (event.type === "user/message" ? [event.data] : event.type === "agent/inbox/spliced" ? event.data.inserted : []).some((message) => message.source.kind === (restore ? "supermesh-mailbox-context" : "supermesh-mailbox") && message.source.revision === revision))) return;
+		const text = `你有${mailbox.pendingCount}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`;
+		const message = createUserMessage({
+			content: [{
+				type: "text",
+				text
+			}],
+			source: {
+				kind: restore ? "supermesh-mailbox-context" : "supermesh-mailbox",
+				form: "notice",
+				summary: text,
+				revision
+			}
 		});
-	},
+		if (stopped$1 || !await session.resolve(agent.session.id)) return;
+		if (restore) agent.inject(message);
+		else if (agent.status === "idle") agent.followup(message);
+	}),
 	async peek(id, includeChannel = false) {
 		const identity = await session.resolve(id);
 		if (!identity) return null;
@@ -2130,129 +2174,117 @@ const inbox = defineService({
 		return db.inbox.completeScoped(ids, scope, (/* @__PURE__ */ new Date()).toISOString(), includeChannel);
 	},
 	start() {
-		if (operations$1.size) throw new Error("inbox_busy");
-		stopped$2 = false;
+		if (singlet.busy("inbox:delivery") || singlet.busy("inbox:answers")) throw new Error("inbox_busy");
+		stopped$1 = false;
 		deliveredAnswers.clear();
 		return async () => {
-			stopped$2 = true;
-			await Promise.allSettled([...operations$1.values()]);
+			stopped$1 = true;
+			await Promise.allSettled([singlet.drain()]);
 			deliveredAnswers.clear();
 		};
 	},
-	deliver() {
-		return run$1("delivery", async () => {
-			const settings = await setting.load();
-			const blocked = /* @__PURE__ */ new Set();
-			const notified = /* @__PURE__ */ new Set();
-			const receipts = /* @__PURE__ */ new Map();
-			for (const message of await db.inbox.listDelivery()) {
-				if (stopped$2) break;
-				const key = [
-					message.type,
-					message.projectId,
-					message.supervisorId,
-					message.ticketId
-				].join(":");
-				if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
-				if (message.type === "project" && message.projectId && !(await db.project.findById(message.projectId))?.enabled) continue;
-				if (message.type === "supervisor" && message.supervisorId && (await db.supervisor.findById(message.supervisorId))?.status !== "active") continue;
-				if (message.origin === "channel") {
-					if (blocked.has(key) || message.readAt) continue;
-					blocked.add(key);
-				} else if (notified.has(key)) continue;
-				if (message.status === "stalled" || message.nextRetryAt && message.nextRetryAt > (/* @__PURE__ */ new Date()).toISOString()) continue;
-				try {
-					const id = await recipient(message);
-					if (!id) throw new Error("recipient_session_unavailable");
-					if (message.origin !== "channel") {
-						const agent = await session.activate(id);
-						if (stopped$2) break;
-						if (agent.status === "idle") await inbox.notify(agent);
-						notified.add(key);
-						await db.inbox.resetDelivery(message.id);
-						continue;
-					}
-					let consumed = receipts.get(id);
-					if (!consumed) {
-						consumed = await session.receipts(id);
-						receipts.set(id, consumed);
-					}
-					const requestId = `supermesh:inbox:${message.id}:${message.escalations}`;
-					const receipt = consumed.find((item) => item.requestId === requestId);
-					if (receipt) {
-						await db.inbox.markRead([message.id], receipt.consumedAt);
-						blocked.delete(key);
-						continue;
-					}
-					if ((await session.activity(id)).running || stopped$2) continue;
-					await session.send(id, [
-						message.title ?? "",
-						`[Inbox ${message.id}]`,
-						message.triggerId ? `triggerId: ${message.triggerId}` : "",
-						message.threadId ? `threadId: ${message.threadId}` : "",
-						message.message
-					].filter(Boolean).join(String.fromCharCode(10)), "queue", requestId);
+	deliver: singlet("inbox:delivery", async () => {
+		const settings = await setting.load();
+		const blocked = /* @__PURE__ */ new Set();
+		const notified = /* @__PURE__ */ new Set();
+		const receipts = /* @__PURE__ */ new Map();
+		for (const message of await db.inbox.listDelivery()) {
+			if (stopped$1) break;
+			const key = [
+				message.type,
+				message.projectId,
+				message.supervisorId,
+				message.ticketId
+			].join(":");
+			if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
+			if (message.type === "project" && message.projectId && !(await db.project.findById(message.projectId))?.enabled) continue;
+			if (message.type === "supervisor" && message.supervisorId && (await db.supervisor.findById(message.supervisorId))?.status !== "active") continue;
+			if (message.origin === "channel") {
+				if (blocked.has(key) || message.readAt) continue;
+				blocked.add(key);
+			} else if (notified.has(key)) continue;
+			if (message.status === "stalled" || message.nextRetryAt && message.nextRetryAt > (/* @__PURE__ */ new Date()).toISOString()) continue;
+			try {
+				const id = await recipient(message);
+				if (!id) throw new Error("recipient_session_unavailable");
+				if (message.origin !== "channel") {
+					const agent = await session.activate(id);
+					if (stopped$1) break;
+					if (agent.status === "idle") await inbox.notify(agent);
+					notified.add(key);
 					await db.inbox.resetDelivery(message.id);
+					continue;
+				}
+				let consumed = receipts.get(id);
+				if (!consumed) {
+					consumed = await session.receipts(id);
+					receipts.set(id, consumed);
+				}
+				const requestId = `supermesh:inbox:${message.id}:${message.escalations}`;
+				const receipt = consumed.find((item) => item.requestId === requestId);
+				if (receipt) {
+					await db.inbox.markRead([message.id], receipt.consumedAt);
 					blocked.delete(key);
-				} catch (error) {
-					if (stopped$2) break;
-					const reason = error instanceof Error ? error.message : String(error);
-					const attempts = message.deliveryAttempts + 1;
-					const delay = Math.min(2 ** Math.min(attempts, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
-					await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delay).toISOString());
-					if (attempts >= settings.deliveryMaxAttempts) await db.inbox.markStalled(message.id, reason);
+					continue;
 				}
+				if ((await session.activity(id)).running || stopped$1) continue;
+				await session.send(id, [
+					message.title ?? "",
+					`[Inbox ${message.id}]`,
+					message.triggerId ? `triggerId: ${message.triggerId}` : "",
+					message.threadId ? `threadId: ${message.threadId}` : "",
+					message.message
+				].filter(Boolean).join(String.fromCharCode(10)), "queue", requestId);
+				await db.inbox.resetDelivery(message.id);
+				blocked.delete(key);
+			} catch (error) {
+				if (stopped$1) break;
+				const reason = error instanceof Error ? error.message : String(error);
+				const attempts = message.deliveryAttempts + 1;
+				const delay = Math.min(2 ** Math.min(attempts, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
+				await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delay).toISOString());
+				if (attempts >= settings.deliveryMaxAttempts) await db.inbox.markStalled(message.id, reason);
 			}
-		});
-	},
-	deliverAnswers() {
-		return run$1("answers", async () => {
-			for (const message of await db.inbox.listAnswered()) {
-				if (stopped$2) break;
-				if (!message.answer || message.nextRetryAt && message.nextRetryAt > (/* @__PURE__ */ new Date()).toISOString()) continue;
-				try {
-					if (message.answeredBy !== "user" && message.origin !== "worker") {
-						await db.inbox.enqueueAnswer(message);
-						continue;
-					}
-					let id = null;
-					if (message.origin === "worker") {
-						const worker = message.workerId ? await db.worker.findById(message.workerId) : void 0;
-						if (!worker) throw new Error("worker_not_found");
-						if (worker.status === "ended") throw new Error("worker_ended");
-						id = worker.id;
-					} else if (message.origin === "project" && message.projectId) {
-						const project = await db.project.findById(message.projectId);
-						if (project?.enabled) id = project.orchestratorSessionId;
-					} else if (message.origin === "supervisor" && message.supervisorId) {
-						const supervisor = await db.supervisor.findById(message.supervisorId);
-						if (supervisor?.status === "active") id = supervisor.sessionId;
-					} else if (message.origin === "main") id = await session.findMain();
-					if (!id || deliveredAnswers.has(`${message.id}:${id}`) || stopped$2) continue;
-					if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
-					await session.send(id, `[Answer ${message.id}] ${message.answer}`, "reply", `supermesh:answer:${message.id}`);
-					deliveredAnswers.add(`${message.id}:${id}`);
-					await db.inbox.resetDelivery(message.id);
-				} catch (error) {
-					if (stopped$2) break;
-					const reason = error instanceof Error ? error.message : String(error);
-					const settings = await setting.load();
-					const delays = Math.min(2 ** Math.min(message.deliveryAttempts + 1, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
-					await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delays).toISOString());
-					if (message.deliveryAttempts + 1 >= settings.deliveryMaxAttempts) await db.inbox.markStalled(message.id, reason);
+		}
+	}),
+	deliverAnswers: singlet("inbox:answers", async () => {
+		for (const message of await db.inbox.listAnswered()) {
+			if (stopped$1) break;
+			if (!message.answer || message.nextRetryAt && message.nextRetryAt > (/* @__PURE__ */ new Date()).toISOString()) continue;
+			try {
+				if (message.answeredBy !== "user" && message.origin !== "worker") {
+					await db.inbox.enqueueAnswer(message);
+					continue;
 				}
+				let id = null;
+				if (message.origin === "worker") {
+					const worker = message.workerId ? await db.worker.findById(message.workerId) : void 0;
+					if (!worker) throw new Error("worker_not_found");
+					if (worker.status === "ended") throw new Error("worker_ended");
+					id = worker.id;
+				} else if (message.origin === "project" && message.projectId) {
+					const project = await db.project.findById(message.projectId);
+					if (project?.enabled) id = project.orchestratorSessionId;
+				} else if (message.origin === "supervisor" && message.supervisorId) {
+					const supervisor = await db.supervisor.findById(message.supervisorId);
+					if (supervisor?.status === "active") id = supervisor.sessionId;
+				} else if (message.origin === "main") id = await session.findMain();
+				if (!id || deliveredAnswers.has(`${message.id}:${id}`) || stopped$1) continue;
+				if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
+				await session.send(id, `[Answer ${message.id}] ${message.answer}`, "reply", `supermesh:answer:${message.id}`);
+				deliveredAnswers.add(`${message.id}:${id}`);
+				await db.inbox.resetDelivery(message.id);
+			} catch (error) {
+				if (stopped$1) break;
+				const reason = error instanceof Error ? error.message : String(error);
+				const settings = await setting.load();
+				const delays = Math.min(2 ** Math.min(message.deliveryAttempts + 1, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
+				await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delays).toISOString());
+				if (message.deliveryAttempts + 1 >= settings.deliveryMaxAttempts) await db.inbox.markStalled(message.id, reason);
 			}
-		});
-	}
+		}
+	})
 });
-function run$1(key, action) {
-	if (stopped$2) return Promise.reject(/* @__PURE__ */ new Error("inbox_stopped"));
-	const current = operations$1.get(key);
-	if (current) return current;
-	const task = Promise.resolve().then(action).finally(() => operations$1.delete(key));
-	operations$1.set(key, task);
-	return task;
-}
 async function recipient(message) {
 	if (message.type === "main") return session.create("main", {});
 	if (message.type === "project" && message.projectId) return session.create("project", { projectId: message.projectId });
@@ -2994,45 +3026,39 @@ function parseRepositoryRemote(value, gitlabHost = "https://gitlab.com") {
 }
 // src/service/worktree.ts
 const execute = promisify(execFile);
-const operations = /* @__PURE__ */ new Map();
 let controller$1 = new AbortController();
-let stopped$1 = false;
 const worktree = defineService({
 	start() {
-		if (operations.size) throw new Error("worktree_busy");
+		if (singlet.busy()) throw new Error("worktree_busy");
 		controller$1 = new AbortController();
-		stopped$1 = false;
 		return async () => {
-			stopped$1 = true;
 			controller$1.abort(/* @__PURE__ */ new Error("worktree_stopped"));
-			await Promise.allSettled([...operations.values()]);
+			await Promise.allSettled([singlet.drain()]);
 		};
 	},
-	peek(directory) {
-		return run(`peek:${resolve(directory)}`, async () => {
-			const root = await realpath(directory);
-			let gitRoot;
-			try {
-				gitRoot = await git(root, ["rev-parse", "--show-toplevel"]);
-			} catch (error) {
-				if (error instanceof Error && "code" in error && error.code === 128 && "stderr" in error && typeof error.stderr === "string" && error.stderr.includes("not a git repository")) return null;
-				throw error;
-			}
-			if (!samePath$1(gitRoot, root)) return null;
-			return {
-				directory: root,
-				remoteUrl: (await git(root, ["remote"])).split(String.fromCharCode(10)).includes("origin") ? await git(root, [
-					"config",
-					"--get",
-					"remote.origin.url"
-				]) : null
-			};
-		});
-	},
-	async clone(remoteUrl, target, gitlabHost, signal) {
+	peek: singlet((directory) => `worktree:peek:${resolve(directory)}`, async (directory) => {
+		const root = await realpath(directory);
+		let gitRoot;
+		try {
+			gitRoot = await git(root, ["rev-parse", "--show-toplevel"]);
+		} catch (error) {
+			if (error instanceof Error && "code" in error && error.code === 128 && "stderr" in error && typeof error.stderr === "string" && error.stderr.includes("not a git repository")) return null;
+			throw error;
+		}
+		if (!samePath$1(gitRoot, root)) return null;
+		return {
+			directory: root,
+			remoteUrl: (await git(root, ["remote"])).split(String.fromCharCode(10)).includes("origin") ? await git(root, [
+				"config",
+				"--get",
+				"remote.origin.url"
+			]) : null
+		};
+	}),
+	clone: singlet((remoteUrl, target) => `worktree:clone:${process.platform === "win32" ? resolve(target).toLowerCase() : resolve(target)}:${remoteUrl}`, async (remoteUrl, target, gitlabHost, signal) => {
 		signal?.throwIfAborted();
 		const repository = parseRepositoryRemote(remoteUrl, gitlabHost);
-		const result = await run(`clone:${process.platform === "win32" ? resolve(target).toLowerCase() : resolve(target)}`, async () => {
+		const result = await (async () => {
 			if (!isAbsolute(target)) throw new Error("invalid_repository_path");
 			const existing = await existingRepository(target, repository.webUrl, gitlabHost);
 			if (existing) return existing;
@@ -3067,10 +3093,10 @@ const worktree = defineService({
 					force: true
 				});
 			}
-		});
+		})();
 		if (parseRepositoryRemote(result.remoteUrl, gitlabHost).webUrl !== repository.webUrl) throw new Error("repository_path_conflict");
 		return result;
-	},
+	}),
 	async create(agent, ticketId) {
 		if (!/^[a-z0-9][\w-]*$/i.test(ticketId)) throw new Error("invalid_worktree_identity");
 		const branch = `dsh/${ticketId}`;
@@ -3088,21 +3114,19 @@ const worktree = defineService({
 			repositoryRoot: created.repositoryRoot
 		};
 	},
-	async verify(directory, target, branch) {
-		return run(`verify:${resolve(target)}`, async () => {
-			const root = await realpath(directory);
-			const actual = await realpath(target);
-			if (samePath$1(root, actual) || !samePath$1(target, actual)) throw new Error("worktree_path_conflict");
-			const registered = (await git(root, [
-				"worktree",
-				"list",
-				"--porcelain",
-				"-z"
-			])).split("\0\0").map((entry) => entry.split("\0")).find((fields) => fields.some((field) => field.startsWith("worktree ") && samePath$1(field.slice(9), actual)));
-			if (!registered || registered.some((field) => field === "locked" || field.startsWith("locked "))) throw new Error("worktree_registration_conflict");
-			if (!samePath$1(resolve(root, await git(root, ["rev-parse", "--git-common-dir"])), resolve(actual, await git(actual, ["rev-parse", "--git-common-dir"]))) || await git(actual, ["branch", "--show-current"]) !== branch) throw new Error("worktree_branch_conflict");
-		});
-	}
+	verify: singlet((_directory, target) => `worktree:verify:${resolve(target)}`, async (directory, target, branch) => {
+		const root = await realpath(directory);
+		const actual = await realpath(target);
+		if (samePath$1(root, actual) || !samePath$1(target, actual)) throw new Error("worktree_path_conflict");
+		const registered = (await git(root, [
+			"worktree",
+			"list",
+			"--porcelain",
+			"-z"
+		])).split("\0\0").map((entry) => entry.split("\0")).find((fields) => fields.some((field) => field.startsWith("worktree ") && samePath$1(field.slice(9), actual)));
+		if (!registered || registered.some((field) => field === "locked" || field.startsWith("locked "))) throw new Error("worktree_registration_conflict");
+		if (!samePath$1(resolve(root, await git(root, ["rev-parse", "--git-common-dir"])), resolve(actual, await git(actual, ["rev-parse", "--git-common-dir"]))) || await git(actual, ["branch", "--show-current"]) !== branch) throw new Error("worktree_branch_conflict");
+	})
 });
 async function existingRepository(target, webUrl, gitlabHost) {
 	try {
@@ -3146,14 +3170,6 @@ async function git(cwd, args, signal, timeout = 15e3) {
 }
 function samePath$1(left, right) {
 	return process.platform === "win32" ? resolve(left).toLowerCase() === resolve(right).toLowerCase() : resolve(left) === resolve(right);
-}
-function run(key, action) {
-	if (stopped$1) return Promise.reject(/* @__PURE__ */ new Error("worktree_stopped"));
-	const current = operations.get(key);
-	if (current) return current;
-	const task = Promise.resolve().then(action).finally(() => operations.delete(key));
-	operations.set(key, task);
-	return task;
 }
 // src/service/project.ts
 let syncing;
@@ -3996,7 +4012,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-B4uRO0di.js");
+			const { shell } = await import("./shell-D2Kjckto.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4005,7 +4021,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-B4uRO0di.js");
+			const { shell } = await import("./shell-D2Kjckto.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4139,4 +4155,4 @@ async function save(kind, patch) {
 	}
 	return (await channel.list()).find((item) => item.kind === kind);
 }
-export { channelAuth as a, session as c, defineService as d, DSH_PLUGIN_HOME as f, worktree as i, channelProxyEnvironment as l, server as n, shell as o, db as p, project as r, inbox as s, channel as t, setting as u };
+export { channelAuth as a, session as c, setting as d, defineService as f, worktree as i, singlet as l, db as m, server as n, shell as o, DSH_PLUGIN_HOME as p, project as r, inbox as s, channel as t, channelProxyEnvironment as u };

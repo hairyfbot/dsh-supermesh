@@ -50,7 +50,7 @@ export class Worker extends Model<DB, 'worker'> {
   async start(id: string, startedAt: string): Promise<void> {
     await this.db
       .updateTable('worker')
-      .set({ status: 'running', startedAt })
+      .set(eb => ({ status: 'running' as const, startedAt: eb.fn.coalesce('startedAt', eb.val(startedAt)) }))
       .where('id', '=', id)
       .execute()
   }

@@ -12,6 +12,7 @@ import { realpathNormalize } from '@deepseek-ai/dsh-workspace'
 import { getServerContext } from 'dsh-h3/utils'
 import { DSH_PLUGIN_HOME } from '../config/paths'
 import { db } from '../database'
+import { singlet } from '../runtime/singlet'
 import { server } from '../server'
 import { storage } from '../storage'
 import { defineService } from '../utils/service'
@@ -22,7 +23,6 @@ interface Identity { role: Role, projectId?: string, supervisorId?: string, tick
 const presets = { main: 'orchestrator', project: 'manager', supervisor: 'supervisor', worker: 'worker' } as const
 
 const registered = new Set<string>()
-const operations = new Map<string, Promise<unknown>>()
 let controller = new AbortController()
 let stopped = false
 
@@ -52,14 +52,14 @@ export const session = defineService({
     return role
   },
   start(): () => Promise<void> {
-    if (operations.size)
+    if (singlet.busy('session:workspace'))
       throw new Error('session_busy')
     controller = new AbortController()
     stopped = false
     return async () => {
       stopped = true
       controller.abort(new Error('session_stopped'))
-      await Promise.allSettled([...operations.values()])
+      await Promise.allSettled([singlet.drain()])
     }
   },
   async resolve(id: string): Promise<Identity | null> {
@@ -105,10 +105,11 @@ export const session = defineService({
     const id = await storage.getItem<string>('orchestrator.id')
     return id && (await session.resolve(id))?.role === 'main' ? id : null
   },
-  async create(role: Role, options: { sessionId?: string, projectId?: string, supervisorId?: string, ticketId?: string, directory?: string, title?: string, prompt?: string }): Promise<string> {
-    if (stopped)
-      throw new Error('runtime_stopping')
-    return run(`session:create:${role}:${role === 'worker' ? options.sessionId : role === 'project' ? options.projectId : role === 'supervisor' ? options.supervisorId : 'main'}`, async () => {
+  create: singlet(
+    (role, options) => `session:create:${role}:${role === 'worker' ? options.sessionId : role === 'project' ? options.projectId : role === 'supervisor' ? options.supervisorId : 'main'}`,
+    async (role: Role, options: { sessionId?: string, projectId?: string, supervisorId?: string, ticketId?: string, directory?: string, title?: string, prompt?: string }): Promise<string> => {
+      if (stopped)
+        throw new Error('runtime_stopping')
       const ctx = getServerContext<Context>(server)
       const project = options.projectId ? await db.project.findById(options.projectId) : undefined
       const supervisor = options.supervisorId ? await db.supervisor.findById(options.supervisorId) : undefined
@@ -170,14 +171,15 @@ export const session = defineService({
       if (options.prompt)
         await session.send(id, options.prompt)
       return id
-    })
-  },
-  async send(id: string, text: string, mode: 'queue' | 'interrupt' | 'reply' = 'queue', requestId: string = randomUUID()): Promise<void> {
-    if (!text.trim())
-      throw new Error('empty_message')
-    if (stopped)
-      throw new Error('runtime_stopping')
-    return run(`session:send:${id}:${requestId}`, async () => {
+    },
+  ),
+  send: singlet(
+    (id, _text, _mode, requestId = '') => `session:send:${id}:${requestId}`,
+    async (id: string, text: string, mode: 'queue' | 'interrupt' | 'reply' = 'queue', requestId: string = randomUUID()): Promise<void> => {
+      if (!text.trim())
+        throw new Error('empty_message')
+      if (stopped)
+        throw new Error('runtime_stopping')
       const identity = await session.resolve(id)
       if (!identity) {
         const worker = await db.worker.findById(id)
@@ -194,8 +196,8 @@ export const session = defineService({
         mode: identity.role !== 'worker' && mode === 'queue' ? 'queue' : 'steer',
         content: [{ type: 'text', text }],
       }, controller.signal)
-    })
-  },
+    },
+  ),
   async cancel(id: string, keepInbox = false): Promise<void> {
     const agent = await resolveAgent(id)
     agent.cancel({ kind: 'hook', reason: 'supermesh_cancel' }, { keepInbox })
@@ -220,15 +222,11 @@ export const session = defineService({
     const end = Math.min(text.length, offset + limit)
     return { text: text.slice(offset, end), next_offset: end < text.length ? end : null }
   },
-  workspace() {
-    return run('workspace:create', async () => {
-      await mkdir(DSH_PLUGIN_HOME, { recursive: true })
-      return getServerContext<Context>(server).workspaceRegistry.create(DSH_PLUGIN_HOME, '代理工作区')
-    })
-  },
-  activate(id: string): Promise<Agent> {
-    return run(`session:activate:${id}`, () => resolveAgent(id))
-  },
+  workspace: singlet('session:workspace', async () => {
+    await mkdir(DSH_PLUGIN_HOME, { recursive: true })
+    return getServerContext<Context>(server).workspaceRegistry.create(DSH_PLUGIN_HOME, '代理工作区')
+  }),
+  activate: singlet(id => `session:activate:${id}`, (id: string) => resolveAgent(id)),
   async lookup(id: string): Promise<Agent | null> {
     if (!(await session.resolve(id)))
       return null
@@ -236,6 +234,21 @@ export const session = defineService({
   },
   async history(id: string) {
     return getServerContext<Context>(server).sessionQuery.readSession(SessionId(id))
+  },
+  async lastActivity(id: string): Promise<number | null> {
+    try {
+      const { events } = await getServerContext<Context>(server).sessionQuery.readSession(SessionId(id))
+      let latest = 0
+      for (const event of events) {
+        const time = Number((event as { time?: number }).time ?? 0)
+        if (time > latest)
+          latest = time
+      }
+      return latest || null
+    }
+    catch {
+      return null
+    }
   },
   async receipts(id: string): Promise<{ requestId: string, consumedAt: string }[]> {
     const { events } = await getServerContext<Context>(server).sessionQuery.readSession(SessionId(id))
@@ -300,15 +313,4 @@ async function resolveAgent(id: string): Promise<Agent> {
   if ('error' in result)
     throw result.error
   return result.agent
-}
-
-function run<T>(key: string, action: () => Promise<T>): Promise<T> {
-  if (stopped)
-    return Promise.reject(new Error('runtime_stopping'))
-  const current = operations.get(key)
-  if (current)
-    return current as Promise<T>
-  const task = Promise.resolve().then(action).finally(() => operations.delete(key))
-  operations.set(key, task)
-  return task
 }

@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-DbcCpMF8.js";
+import { a as channelAuth, c as session, d as setting, f as defineService, i as worktree, l as singlet, m as db, n as server, o as shell, p as DSH_PLUGIN_HOME, r as project, s as inbox, t as channel, u as channelProxyEnvironment } from "./channel-COl7dOKn.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -2164,222 +2164,235 @@ const archive = defineService({ async session(id) {
 	return false;
 } });
 // src/service/worker.ts
-const operations = /* @__PURE__ */ new Map();
 const eventQueues = /* @__PURE__ */ new Map();
 let stopped = false;
 let observing = false;
 const worker$1 = defineService({
 	start() {
-		if (operations.size || eventQueues.size) throw new Error("worker_busy");
+		if (singlet.busy("worker:slots") || eventQueues.size) throw new Error("worker_busy");
 		stopped = false;
 		observing = true;
 		return async () => {
 			stopped = true;
 			observing = false;
-			while (operations.size || eventQueues.size) await Promise.allSettled([...operations.values(), ...eventQueues.values()]);
+			while (singlet.keys().some((key) => key.startsWith("worker:")) || eventQueues.size) await Promise.allSettled([singlet.drain(), ...[...eventQueues.values()]]);
 		};
 	},
-	reconcile() {
-		return run("slots", async () => {
-			const settings = await setting.load();
-			for (const waiting of await db.ticket.listFiltered({ status: "waiting" })) {
-				if (stopped) break;
-				if (waiting.paused || waiting.prepareError) continue;
-				if (await blockedByDependency(waiting.id)) continue;
-				if (!(await db.ticketLink.listDependsOn(waiting.id)).length) continue;
-				if ((await db.worker.listByTicket(waiting.id)).some((worker) => worker.status !== "ended")) continue;
-				await db.ticket.update(waiting.id, {
-					status: "queued",
-					updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-				});
-				await db.worker.queue(waiting.id, waiting.projectId).catch(() => void 0);
+	reconcile: singlet("worker:slots", async () => {
+		const settings = await setting.load();
+		for (const worker of await db.worker.listRunning()) {
+			if (stopped) break;
+			const ticket = await db.ticket.findById(worker.ticketId);
+			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") continue;
+			if (ticket.prState === "merged" || ticket.prState === "closed") {
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.worker.end(worker.id, "stopped", now);
+				await db.ticket.finish(ticket.id, "done", now, now);
+				await releaseDependents(ticket.id);
+				continue;
 			}
-			let running = (await db.worker.listRunning()).length;
-			for (const worker of await db.worker.listQueued()) {
-				if (stopped || running >= settings.maxWorkers) break;
-				const ticket = await db.ticket.findById(worker.ticketId);
-				if (!ticket || ticket.status === "done" || ticket.status === "cancelled") {
-					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
-					continue;
-				}
-				if (ticket.prState === "merged" || ticket.prState === "closed") {
-					const now = (/* @__PURE__ */ new Date()).toISOString();
-					await db.worker.end(worker.id, "stopped", now);
-					await db.ticket.finish(ticket.id, "done", now, now);
-					await releaseDependents(ticket.id);
-					continue;
-				}
-				if (ticket.paused) continue;
-				if (await blockedByDependency(ticket.id)) continue;
-				if ((await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) continue;
-				const project = await db.project.findById(ticket.projectId);
-				if (!project) {
-					await db.ticket.setPrepareError(ticket.id, "project_not_found", (/* @__PURE__ */ new Date()).toISOString());
-					continue;
-				}
-				if (!project.enabled) continue;
-				let started = false;
-				try {
-					const branch = `dsh/${ticket.id}`;
-					let directory = worker.worktree;
-					if (await session.history(worker.id).then(() => true).catch(() => false)) {
-						if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
-						directory = directory ?? project.directory;
-					} else {
-						await session.create("worker", {
-							sessionId: worker.id,
-							ticketId: ticket.id,
-							projectId: project.id,
-							directory: project.directory
-						});
-						if (stopped) throw new Error("worker_stopped");
-						if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
-						else {
-							const created = await worktree.create(await session.activate(worker.id), ticket.id);
-							directory = created.worktree;
-							await db.worker.update(worker.id, {
-								branch: created.branch,
-								worktree: directory
-							});
-						}
-					}
-					if (!directory) throw new Error("worker_directory_required");
-					if (stopped) throw new Error("worker_stopped");
-					const threads = await db.ticketThread.listByTicket(ticket.id);
-					const sources = await Promise.all(threads.map(async (thread) => {
-						const latest = await db.trigger.findLatestByThread(thread.threadId);
-						return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId;
-					}));
-					const prompt = [
-						`${ticket.id}: ${ticket.title}`,
-						ticket.description ?? "",
-						`执行配置：${JSON.stringify({
-							autoMerge: settings.autoMerge,
-							autoMergeMaxLines: settings.autoMergeMaxLines
-						})}`,
-						"来源话题：",
-						...sources,
-						worker.recoveryNote ?? ""
-					].filter(Boolean).join(String.fromCharCode(10));
-					const now = (/* @__PURE__ */ new Date()).toISOString();
-					await db.worker.start(worker.id, now);
-					await db.ticket.start(ticket.id, now, now);
-					running++;
-					started = true;
-					await session.send(worker.id, prompt, "queue", `supermesh:worker:${worker.id}`);
-					await db.ticket.setPrepareError(ticket.id, null, now);
-				} catch (error) {
-					await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), (/* @__PURE__ */ new Date()).toISOString());
-					if (stopped) break;
-					if (started) {
-						await session.stop(worker.id);
-						await db.worker.end(worker.id, "failed", (/* @__PURE__ */ new Date()).toISOString());
-						const latest = await db.ticket.findById(ticket.id);
-						if (latest && latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
-						else if (!latest || latest.status !== "done" && latest.status !== "cancelled") await db.ticket.update(ticket.id, {
-							status: "waiting",
-							updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-						});
-						running--;
-					}
-				}
-			}
-		});
-	},
-	reconcileBackground() {
-		return run("background", async () => {
+			const activity = await session.activity(worker.id).catch(() => null);
+			if (activity && (activity.running || activity.background || activity.queued)) continue;
+			const last = await session.lastActivity(worker.id);
+			if (last && Date.now() - last < 12e4) continue;
 			const now = (/* @__PURE__ */ new Date()).toISOString();
-			for (const worker of await db.worker.listRunning()) {
-				if (stopped) break;
-				if (!worker.backgroundUntil) continue;
-				const activity = await session.activity(worker.id);
-				const expired = worker.backgroundUntil <= now;
-				if (!expired && (activity.running || activity.background || activity.queued)) continue;
-				if (expired) await session.stop(worker.id);
-				await finish(worker, expired ? "stopped" : void 0);
+			await db.worker.end(worker.id, worker.reportState === "ready" ? "completed" : "stopped", now);
+			await db.ticket.update(ticket.id, {
+				status: worker.reportState === "ready" ? "review" : "waiting",
+				updatedAt: now
+			});
+		}
+		for (const waiting of await db.ticket.listFiltered({ status: "waiting" })) {
+			if (stopped) break;
+			if (waiting.paused || waiting.prepareError) continue;
+			if (await blockedByDependency(waiting.id)) continue;
+			if (!(await db.ticketLink.listDependsOn(waiting.id)).length) continue;
+			if ((await db.worker.listByTicket(waiting.id)).some((worker) => worker.status !== "ended")) continue;
+			await db.ticket.update(waiting.id, {
+				status: "queued",
+				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+			});
+			await db.worker.queue(waiting.id, waiting.projectId).catch(() => void 0);
+		}
+		let running = (await db.worker.listRunning()).length;
+		for (const worker of await db.worker.listQueued()) {
+			if (stopped || running >= settings.maxWorkers) break;
+			const ticket = await db.ticket.findById(worker.ticketId);
+			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") {
+				await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
 			}
-		});
-	},
-	rescue() {
-		return run("rescue", async () => {
-			for (const ticket of await db.ticket.listOpen()) {
+			if (ticket.prState === "merged" || ticket.prState === "closed") {
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.worker.end(worker.id, "stopped", now);
+				await db.ticket.finish(ticket.id, "done", now, now);
+				await releaseDependents(ticket.id);
+				continue;
+			}
+			if (ticket.paused) continue;
+			if (await blockedByDependency(ticket.id)) continue;
+			if ((await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) continue;
+			const project = await db.project.findById(ticket.projectId);
+			if (!project) {
+				await db.ticket.setPrepareError(ticket.id, "project_not_found", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
+			}
+			if (!project.enabled) continue;
+			let started = false;
+			try {
+				const branch = `dsh/${ticket.id}`;
+				let directory = worker.worktree;
+				if (await session.history(worker.id).then(() => true).catch(() => false)) {
+					if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
+					directory = directory ?? project.directory;
+				} else {
+					await session.create("worker", {
+						sessionId: worker.id,
+						ticketId: ticket.id,
+						projectId: project.id,
+						directory: project.directory
+					});
+					if (stopped) throw new Error("worker_stopped");
+					if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
+					else {
+						const created = await worktree.create(await session.activate(worker.id), ticket.id);
+						directory = created.worktree;
+						await db.worker.update(worker.id, {
+							branch: created.branch,
+							worktree: directory
+						});
+					}
+				}
+				if (!directory) throw new Error("worker_directory_required");
+				if (stopped) throw new Error("worker_stopped");
+				const threads = await db.ticketThread.listByTicket(ticket.id);
+				const sources = await Promise.all(threads.map(async (thread) => {
+					const latest = await db.trigger.findLatestByThread(thread.threadId);
+					return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId;
+				}));
+				const prompt = [
+					`${ticket.id}: ${ticket.title}`,
+					ticket.description ?? "",
+					`执行配置：${JSON.stringify({
+						autoMerge: settings.autoMerge,
+						autoMergeMaxLines: settings.autoMergeMaxLines
+					})}`,
+					"来源话题：",
+					...sources,
+					worker.recoveryNote ?? ""
+				].filter(Boolean).join(String.fromCharCode(10));
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.worker.start(worker.id, now);
+				await db.ticket.start(ticket.id, now, now);
+				running++;
+				started = true;
+				await session.send(worker.id, prompt, "queue", `supermesh:worker:${worker.id}`);
+				await db.ticket.setPrepareError(ticket.id, null, now);
+			} catch (error) {
+				await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), (/* @__PURE__ */ new Date()).toISOString());
 				if (stopped) break;
-				if (ticket.status !== "waiting" || ticket.paused) continue;
-				if ((await db.worker.listByTicket(ticket.id)).some((worker) => worker.status !== "ended")) continue;
-				if (!(await db.project.findById(ticket.projectId))?.enabled) continue;
-				if (ticket.prState === "merged" || ticket.prState === "closed") {
-					const now = (/* @__PURE__ */ new Date()).toISOString();
-					await db.ticket.finish(ticket.id, "done", now, now);
+				if (started) {
+					await session.stop(worker.id);
+					await db.worker.end(worker.id, "failed", (/* @__PURE__ */ new Date()).toISOString());
+					const latest = await db.ticket.findById(ticket.id);
+					if (latest && latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
+					else if (!latest || latest.status !== "done" && latest.status !== "cancelled") await db.ticket.update(ticket.id, {
+						status: "waiting",
+						updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+					});
+					running--;
+				}
+			}
+		}
+	}),
+	reconcileBackground: singlet("worker:background", async () => {
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		for (const worker of await db.worker.listRunning()) {
+			if (stopped) break;
+			if (!worker.backgroundUntil) continue;
+			const activity = await session.activity(worker.id);
+			const expired = worker.backgroundUntil <= now;
+			if (!expired && (activity.running || activity.background || activity.queued)) continue;
+			if (expired) await session.stop(worker.id);
+			await finish(worker, expired ? "stopped" : void 0);
+		}
+	}),
+	rescue: singlet("worker:rescue", async () => {
+		for (const ticket of await db.ticket.listOpen()) {
+			if (stopped) break;
+			if (ticket.status !== "waiting" || ticket.paused) continue;
+			if ((await db.worker.listByTicket(ticket.id)).some((worker) => worker.status !== "ended")) continue;
+			if (!(await db.project.findById(ticket.projectId))?.enabled) continue;
+			if (ticket.prState === "merged" || ticket.prState === "closed") {
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.ticket.finish(ticket.id, "done", now, now);
+				await releaseDependents(ticket.id);
+				continue;
+			}
+			if (ticket.prepareError) await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
+			await db.worker.queue(ticket.id, ticket.projectId);
+		}
+	}),
+	recover: singlet("worker:recovery", async () => {
+		for (const worker of await db.worker.listRunning()) {
+			if (stopped) break;
+			const ticket = await db.ticket.findById(worker.ticketId);
+			if (!ticket) continue;
+			if (ticket.status === "done" || ticket.status === "cancelled") {
+				if (await session.resolve(worker.id)) await session.stop(worker.id);
+				await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
+			}
+			if (ticket.paused) continue;
+			try {
+				const project = await db.project.findById(ticket.projectId);
+				if (project && !project.enabled) continue;
+				if (ticket.prState === "merged") {
+					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+					await db.ticket.finish(ticket.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
 					await releaseDependents(ticket.id);
 					continue;
 				}
-				if (ticket.prepareError) await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
-				await db.worker.queue(ticket.id, ticket.projectId);
-			}
-		});
-	},
-	recover() {
-		return run("recovery", async () => {
-			for (const worker of await db.worker.listRunning()) {
-				if (stopped) break;
-				const ticket = await db.ticket.findById(worker.ticketId);
-				if (!ticket) continue;
-				if (ticket.status === "done" || ticket.status === "cancelled") {
-					if (await session.resolve(worker.id)) await session.stop(worker.id);
-					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+				if (!project || !worker.worktree || !worker.branch) {
+					await db.worker.requeue(worker.id);
 					continue;
 				}
-				if (ticket.paused) continue;
-				try {
-					const project = await db.project.findById(ticket.projectId);
-					if (project && !project.enabled) continue;
-					if (ticket.prState === "merged") {
-						await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
-						await db.ticket.finish(ticket.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
-						await releaseDependents(ticket.id);
-						continue;
-					}
-					if (!project || !worker.worktree || !worker.branch) {
-						await db.worker.requeue(worker.id);
-						continue;
-					}
-					await worktree.verify(project.directory, worker.worktree, worker.branch);
-					if (!await session.resolve(worker.id)) {
-						await db.worker.requeue(worker.id);
-						continue;
-					}
-					const activity = await session.activity(worker.id);
-					if (activity.background && !worker.backgroundUntil) {
-						const settings = await setting.load();
-						await db.worker.setBackgroundUntil(worker.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 6e4).toISOString());
-					}
-					if (activity.running || activity.background || activity.queued) continue;
-					const note = "运行已恢复。先检查目录、git 历史与渠道的当前事实，再决定是否重做外部动作；不要重复开 PR 或发布评论。";
-					await db.worker.setRecoveryNote(worker.id, note);
-					if (!(await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) await session.send(worker.id, note, "queue", `supermesh:recovery:${randomUUID()}`);
-				} catch (error) {
-					if (stopped) break;
-					const now = (/* @__PURE__ */ new Date()).toISOString();
-					const latest = await db.ticket.findById(ticket.id);
-					if (latest && (latest.status === "done" || latest.status === "cancelled" || latest.prState === "merged")) {
-						if (latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", now, now);
-						await db.worker.end(worker.id, "stopped", now);
-						continue;
-					}
-					await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now);
-					await db.ticket.update(ticket.id, {
-						status: "waiting",
-						updatedAt: now
-					});
-					await db.worker.end(worker.id, "failed", now);
+				await worktree.verify(project.directory, worker.worktree, worker.branch);
+				if (!await session.resolve(worker.id)) {
+					await db.worker.requeue(worker.id);
+					continue;
 				}
+				const activity = await session.activity(worker.id);
+				if (activity.background && !worker.backgroundUntil) {
+					const settings = await setting.load();
+					await db.worker.setBackgroundUntil(worker.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 6e4).toISOString());
+				}
+				if (activity.running || activity.background || activity.queued) continue;
+				const note = "运行已恢复。先检查目录、git 历史与渠道的当前事实，再决定是否重做外部动作；不要重复开 PR 或发布评论。";
+				await db.worker.setRecoveryNote(worker.id, note);
+				if (!(await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) await session.send(worker.id, note, "queue", `supermesh:recovery:${randomUUID()}`);
+			} catch (error) {
+				if (stopped) break;
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				const latest = await db.ticket.findById(ticket.id);
+				if (latest && (latest.status === "done" || latest.status === "cancelled" || latest.prState === "merged")) {
+					if (latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", now, now);
+					await db.worker.end(worker.id, "stopped", now);
+					continue;
+				}
+				await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now);
+				await db.ticket.update(ticket.id, {
+					status: "waiting",
+					updatedAt: now
+				});
+				await db.worker.end(worker.id, "failed", now);
 			}
-		});
-	},
-	observe(source, event) {
-		if (!observing || stopped || event.type !== "turn/end") return Promise.resolve();
+		}
+	}),
+	observe: singlet((source) => `worker:event:${source.id}`, async (source, event) => {
+		if (!observing || stopped || event.type !== "turn/end") return;
 		const previous = eventQueues.get(source.id) ?? Promise.resolve();
-		const action = () => stopped ? Promise.resolve() : run(`event:${source.id}:${event.seq}`, async () => {
+		const action = () => stopped ? Promise.resolve() : (async () => {
 			const identity = await session.resolve(source.id);
 			if (!identity || identity.role !== "worker" || !identity.workerId) return;
 			const current = await db.worker.findById(identity.workerId);
@@ -2392,22 +2405,14 @@ const worker$1 = defineService({
 			}
 			if (activity.queued) return;
 			await finish(current, event.data.reason.kind === "error" ? "failed" : event.data.reason.kind === "aborted" ? "stopped" : void 0);
-		});
+		})();
 		const current = previous.then(action, action).finally(() => {
 			if (eventQueues.get(source.id) === current) eventQueues.delete(source.id);
 		});
 		eventQueues.set(source.id, current);
 		return current;
-	}
+	})
 });
-function run(key, action) {
-	if (stopped) return Promise.reject(/* @__PURE__ */ new Error("worker_stopped"));
-	const current = operations.get(key);
-	if (current) return current;
-	const task = Promise.resolve().then(action).finally(() => operations.delete(key));
-	operations.set(key, task);
-	return task;
-}
 async function finish(current, reason) {
 	const asks = (await db.inbox.listByTicket(current.ticketId)).filter((message) => message.kind === "ask" && message.workerId === current.id);
 	if (!reason) {
