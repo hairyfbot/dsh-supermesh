@@ -78,7 +78,7 @@ export const worker = defineService({
             directory = directory ?? project.directory
           }
           else {
-            await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory, title: worker.title ?? ticket.title })
+            await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory })
             if (stopped)
               throw new Error('worker_stopped')
             if (directory && worker.branch === branch) {

@@ -162,7 +162,7 @@ export const session = defineService({
         await db.project.setOrchestrator(project.id, id, new Date().toISOString())
       if (supervisor && role === 'supervisor')
         await db.supervisor.attachSession(supervisor.id, id)
-      const title = role === 'main' ? '[路由] 主编排' : role === 'project' ? `[路由] ${project!.name}` : role === 'supervisor' ? `[协调] ${supervisor!.title}` : options.title
+      const title = role === 'main' ? '[路由] 主编排' : role === 'project' ? `[路由] ${project!.name}` : role === 'supervisor' ? `[协调] ${supervisor!.title}` : undefined
       if (title)
         await ctx.sessionController.rename({ sessionId: id, title })
       if (role !== 'worker')

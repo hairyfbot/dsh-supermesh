@@ -1897,7 +1897,7 @@ const session = defineService({
 			if (role === "main") await storage.setItem("mainSessionId", id);
 			if (project && role === "project") await db.project.setOrchestrator(project.id, id, (/* @__PURE__ */ new Date()).toISOString());
 			if (supervisor && role === "supervisor") await db.supervisor.attachSession(supervisor.id, id);
-			const title = role === "main" ? "[路由] 主编排" : role === "project" ? `[路由] ${project.name}` : role === "supervisor" ? `[协调] ${supervisor.title}` : options.title;
+			const title = role === "main" ? "[路由] 主编排" : role === "project" ? `[路由] ${project.name}` : role === "supervisor" ? `[协调] ${supervisor.title}` : void 0;
 			if (title) await ctx.sessionController.rename({
 				sessionId: id,
 				title
@@ -3745,7 +3745,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-2woNRreX.js");
+			const { shell } = await import("./shell-lwMXhAD8.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3754,7 +3754,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-2woNRreX.js");
+			const { shell } = await import("./shell-lwMXhAD8.js");
 			await shell.refresh();
 			return view;
 		});
