@@ -175,7 +175,7 @@ export const worker = defineService({
     for (const ticket of await db.ticket.listOpen()) {
       if (stopped)
         break
-      if (ticket.status !== 'waiting' || ticket.paused)
+      if (ticket.status !== 'waiting')
         continue
       if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
         continue
@@ -188,6 +188,8 @@ export const worker = defineService({
         await releaseDependents(ticket.id)
         continue
       }
+      if (ticket.paused)
+        continue
       if (ticket.prepareError)
         await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
       await db.worker.queue(ticket.id, ticket.projectId)

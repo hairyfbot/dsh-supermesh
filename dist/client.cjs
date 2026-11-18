@@ -60385,7 +60385,7 @@ function GraphNodeCard(t0) {
 				tone: "quiet"
 			},
 			paused: {
-				label: "overviewStatusIntervention",
+				label: "ticketStatusPaused",
 				tone: "danger"
 			},
 			error: {
@@ -61056,7 +61056,7 @@ function GraphCanvas(t0) {
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [t(selected.label), selected.subtitle ? ` · ${selected.subtitle}` : ""] }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: "text-(--dsw-alias-label-tertiary)",
-						children: t(selected.status === "not_created" ? "graphNotCreated" : selected.status === "queued" ? "graphQueued" : selected.status === "running" ? "graphRunning" : selected.status === "background" ? "graphBackground" : selected.status === "done" ? "graphDone" : selected.status === "cancelled" ? "graphCancelled" : selected.status === "waiting" ? "overviewStatusWaiting" : selected.status === "review" ? "overviewStatusReview" : selected.status === "paused" || selected.status === "error" ? "overviewStatusIntervention" : "graphIdle")
+						children: t(selected.status === "not_created" ? "graphNotCreated" : selected.status === "queued" ? "graphQueued" : selected.status === "running" ? "graphRunning" : selected.status === "background" ? "graphBackground" : selected.status === "done" ? "graphDone" : selected.status === "cancelled" ? "graphCancelled" : selected.status === "waiting" ? "overviewStatusWaiting" : selected.status === "review" ? "overviewStatusReview" : selected.status === "paused" ? "ticketStatusPaused" : selected.status === "error" ? "overviewStatusIntervention" : "graphIdle")
 					}),
 					selected.sessionId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 						size: "sm",

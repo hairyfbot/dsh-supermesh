@@ -3,6 +3,7 @@ import type { DB } from '../../database/types'
 import type { ChannelItem, DeliveryResult, GitLabRunner, ReadResult } from './types'
 import { createHash } from 'node:crypto'
 import { db } from '../../database'
+import { singlet } from '../../runtime/singlet'
 import { project as projects } from '../../service/project'
 import { setting } from '../../service/setting'
 import { FetchGitLabRunner, GitLabError, gitlabSite } from './runner'
@@ -15,18 +16,12 @@ interface Cursor { since: string, signature?: string, through?: string }
 interface Receipt { remoteId: string, providerId: string, marker: string, url: string }
 
 export class GitLabChannel {
-  private readonly operations = new Map<string, Promise<unknown>>()
   private readonly publishing = new Map<string, Promise<void>>()
 
   constructor(private readonly runner: GitLabRunner = new FetchGitLabRunner()) {}
 
   private exclusive<T>(key: string, action: () => Promise<T>): Promise<T> {
-    const current = this.operations.get(key)
-    if (current)
-      return current as Promise<T>
-    const task = action().finally(() => this.operations.delete(key))
-    this.operations.set(key, task)
-    return task
+    return singlet(`gitlab:exclusive:${key}`, action)()
   }
 
   private async site(): Promise<string> {

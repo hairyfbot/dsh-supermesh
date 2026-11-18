@@ -1,16 +1,94 @@
-import { a as channelAuth, c as session, d as setting, f as defineService, i as worktree, l as singlet, m as db, n as server, o as shell, p as DSH_PLUGIN_HOME, r as project, s as inbox, t as channel, u as channelProxyEnvironment } from "./channel-COl7dOKn.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, m as db, n as server, o as shell, p as singlet, r as project, s as inbox, t as channel, u as setting } from "./channel-Dr2z16FN.js";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
-import { dirname, join, resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { createRouteDispatcher } from "@deepseek-ai/dsh-http-proxy";
 import { getServerContext } from "dsh-h3/utils";
 import { fetch } from "undici";
 import { mkdir, readFile, rename as rename$1, writeFile } from "node:fs/promises";
 import { Cron } from "croner";
-import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+// src/ai/_shared/prompt-file.ts
+let cached;
+/**
+* 从当前模块往上找 `package.json` 得到包根目录。
+* 不能写死 `../..`：源码在 `src/ai/_shared/`、打包后在 `dist/`，层级不同。
+* 与官方 `infra/paths.ts` 的 `packageRoot` 同一策略。
+*/
+function packageRoot() {
+	if (cached) return cached;
+	let directory = dirname(fileURLToPath(import.meta.url));
+	for (let depth = 0; depth < 6; depth++) {
+		const manifest = join(directory, "package.json");
+		if (existsSync(manifest)) try {
+			if (JSON.parse(readFileSync(manifest, "utf8")).name === "dsh-supermesh") return cached = directory;
+		} catch {}
+		const parent = dirname(directory);
+		if (parent === directory) break;
+		directory = parent;
+	}
+	throw new Error("dsh-supermesh package root not found");
+}
+function packaged(name) {
+	const path = join(packageRoot(), "assets", "prompts", `${name}.md`);
+	let text;
+	try {
+		text = readFileSync(path, "utf8").replaceAll("\r\n", "\n");
+	} catch (error) {
+		throw error.code === "ENOENT" ? new Error(`Missing packaged prompt: ${path}`, { cause: error }) : error;
+	}
+	if (!text.trim()) throw new Error(`Empty packaged prompt: ${path}`);
+	return text;
+}
+const cache = /* @__PURE__ */ new Map();
+/**
+* 读 `assets/prompts/<name>.md`，段内换行合并为空格、段间只留单换行。
+* 与官方 `skill-files.ts` 的 `promptFile` 一致：让模型按段落读，不被手写换行干扰。
+*/
+function promptFile(name) {
+	const hit = cache.get(name);
+	if (hit !== void 0) return hit;
+	const text = packaged(name).trim().split(/\n(?:[ \t]*\n)+/).map((paragraph) => paragraph.split("\n").map((line) => line.trim()).join(" ")).join("\n");
+	cache.set(name, text);
+	return text;
+}
+// src/ai/_shared/compose-prompt.ts
+/** 所有角色都读：职责划分 + 话题订阅 + 回复规则。 */
+function common() {
+	return [
+		promptFile("shared"),
+		promptFile("subscriptions"),
+		promptFile("replies")
+	];
+}
+/** 团队可改的三个段落：沟通、任务范围、交付要求（含合并与署名规则）。 */
+function teamSections() {
+	return [
+		promptFile("team/communication"),
+		promptFile("team/scope"),
+		promptFile("team/delivery")
+	];
+}
+/** 只有编排类角色读：渠道 CLI 用法。 */
+function channelNotes() {
+	return [promptFile("cli")];
+}
+/**
+* 组装一个角色的系统提示词，顺序对齐官方 `promptParts`：
+* 共用段 → 角色段 → 团队段落 → 执行细则 → 渠道说明。
+*/
+function composePrompt(role) {
+	return [
+		...common(),
+		promptFile(role),
+		...teamSections(),
+		role === "worker" ? promptFile("work") : "",
+		...channelNotes()
+	].filter(Boolean).join("\n\n");
+}
 // src/ai/_shared/plugins/index.ts
 const IS_WINDOWS = process.platform === "win32";
 const agentInstructions = {
@@ -213,17 +291,12 @@ var ExecFileGhRunner = class {
 // src/channel/github/channel.ts
 var GitHubChannel = class {
 	runner;
-	operations = /* @__PURE__ */ new Map();
 	publishing = /* @__PURE__ */ new Map();
 	constructor(runner = new ExecFileGhRunner()) {
 		this.runner = runner;
 	}
 	exclusive(key, action) {
-		const current = this.operations.get(key);
-		if (current) return current;
-		const task = action().finally(() => this.operations.delete(key));
-		this.operations.set(key, task);
-		return task;
+		return singlet(`github:exclusive:${key}`, action)();
 	}
 	async request(path, signal, method = "GET", body) {
 		signal?.throwIfAborted();
@@ -1088,17 +1161,12 @@ function gitlabSite(host) {
 // src/channel/gitlab/channel.ts
 var GitLabChannel = class {
 	runner;
-	operations = /* @__PURE__ */ new Map();
 	publishing = /* @__PURE__ */ new Map();
 	constructor(runner = new FetchGitLabRunner()) {
 		this.runner = runner;
 	}
 	exclusive(key, action) {
-		const current = this.operations.get(key);
-		if (current) return current;
-		const task = action().finally(() => this.operations.delete(key));
-		this.operations.set(key, task);
-		return task;
+		return singlet(`gitlab:exclusive:${key}`, action)();
 	}
 	async site() {
 		return gitlabSite((await db.channel.findById("gitlab"))?.host ?? null);
@@ -2320,7 +2388,7 @@ const worker$1 = defineService({
 	rescue: singlet("worker:rescue", async () => {
 		for (const ticket of await db.ticket.listOpen()) {
 			if (stopped) break;
-			if (ticket.status !== "waiting" || ticket.paused) continue;
+			if (ticket.status !== "waiting") continue;
 			if ((await db.worker.listByTicket(ticket.id)).some((worker) => worker.status !== "ended")) continue;
 			if (!(await db.project.findById(ticket.projectId))?.enabled) continue;
 			if (ticket.prState === "merged" || ticket.prState === "closed") {
@@ -2329,6 +2397,7 @@ const worker$1 = defineService({
 				await releaseDependents(ticket.id);
 				continue;
 			}
+			if (ticket.paused) continue;
 			if (ticket.prepareError) await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
 			await db.worker.queue(ticket.id, ticket.projectId);
 		}
@@ -2486,66 +2555,403 @@ async function deferWhileWaiting(current) {
 async function archiveWorker(id) {
 	await archive.session(id);
 }
+// src/ai/manager/tools/ticket.ts
+const list_ticket$2 = defineTool({
+	name: "list_ticket",
+	description: "列本项目的任务。判重时必看。",
+	parameters: {
+		status: {
+			type: "string",
+			enum: [
+				"waiting",
+				"queued",
+				"running",
+				"review",
+				"done",
+				"cancelled"
+			],
+			description: "只看某个状态；省略表示不含已终态的票。"
+		},
+		attentionOnly: {
+			type: "boolean",
+			description: "true 时只返回存在指向它的 pending ask 的票。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "本项目任务列表：id、标题、状态、PR 状态、有无 pending ask。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		return JSON.stringify(await db.ticket.listFiltered({
+			...args,
+			projectId: identity.projectId
+		}));
+	}
+});
+const link_ticket = defineTool({
+	name: "link_ticket",
+	description: "建一张工单到另一张工单的关联。限本项目；跨项目依赖由 Supervisor 的 link_dependency 记。",
+	parameters: {
+		ticketId: {
+			type: "string",
+			required: true,
+			description: "发起关联的票，必须是本项目的。"
+		},
+		relatedId: {
+			type: "string",
+			required: true,
+			description: "被指向的那张票。"
+		},
+		kind: {
+			type: "string",
+			enum: ["depends", "relates"],
+			required: true,
+			description: "depends 前置依赖：relatedId 没做完，ticketId 停在 waiting。relates 只是相关，谁都不等谁。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "关联结果。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId);
+		const related = await db.ticket.findById(args.relatedId);
+		if (!related || related.projectId !== identity.projectId) throw new Error("跨项目关联应由 Supervisor 处理");
+		if (ticket.id === related.id) throw new Error("工单不能关联自己");
+		await db.ticketLink.link(ticket.id, related.id, args.kind, (/* @__PURE__ */ new Date()).toISOString());
+		if (args.kind === "depends" && related.status !== "done" && related.status !== "cancelled") await db.ticket.save(ticket.id, {
+			status: "waiting",
+			updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+		});
+		return JSON.stringify({ linked: true });
+	}
+});
+const stop_ticket = defineTool({
+	name: "stop_ticket",
+	description: "按人的明确要求结单为 cancelled。必须绑一条 human=true 的触发 —— 停止是人的决定，不是编排的判断。",
+	parameters: {
+		ticketId: {
+			type: "string",
+			required: true,
+			description: "要停的票。"
+		},
+		triggerId: {
+			type: "string",
+			required: true,
+			description: "人说停的那条触发。必须是 human=true，否则拒绝。"
+		},
+		reason: {
+			type: "string",
+			description: "一句话说明为什么停，写进记录。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "结单结果。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId);
+		const trigger = await db.trigger.findById(args.triggerId);
+		if (!trigger || trigger.human !== 1) throw new Error("停止工单必须绑定 human=true 的触发");
+		if (!(await db.ticketThread.listByTicket(ticket.id)).some((row) => row.threadId === trigger.threadId)) throw new Error("停止触发不属于当前工单来源");
+		for (const worker of await db.worker.listByTicket(ticket.id)) {
+			if (worker.status === "ended") continue;
+			if (worker.status === "running") await session.cancel(worker.id);
+			await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+		}
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		await db.ticket.finish(ticket.id, "cancelled", now, now);
+		await db.inbox.returnPendingTicket(ticket.id, args.reason ?? "人类要求停止", now);
+		for (const link of await db.supervisorTicket.listByTicket(ticket.id)) await db.inbox.enqueue({
+			type: "supervisor",
+			supervisorId: link.supervisorId,
+			projectId: ticket.projectId,
+			origin: "project",
+			kind: "ticket",
+			ticketId: ticket.id,
+			title: "dropped",
+			message: args.reason ?? "人类要求停止"
+		});
+		return JSON.stringify({
+			id: ticket.id,
+			status: "cancelled"
+		});
+	}
+});
+const retry_ticket = defineTool({
+	name: "retry_ticket",
+	description: "重开卡住的票：结束旧 Worker，开一个新的。只对还开着、卡在 failed 的票有效。",
+	parameters: { ticketId: {
+		type: "string",
+		required: true,
+		description: "要重开的票。已到终态的票不适用 —— 那张只能由插件在人类消息到达时复活。"
+	} },
+	output: {
+		schema: {
+			type: "string",
+			description: "重开结果。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId);
+		const old = (await db.worker.listByTicket(ticket.id)).at(-1);
+		if (!old || old.reportState !== "failed") throw new Error("只允许重试 failed Worker");
+		if (old.status === "running") await session.cancel(old.id);
+		await db.worker.end(old.id, "restarted", (/* @__PURE__ */ new Date()).toISOString());
+		const worker = await db.worker.queue(ticket.id, identity.projectId, old.branch ?? void 0);
+		if (old.branch && old.worktree) await db.worker.update(worker.id, {
+			branch: old.branch,
+			worktree: old.worktree
+		});
+		await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
+		await worker$1.reconcile();
+		return JSON.stringify(await db.worker.findById(worker.id));
+	}
+});
+// src/ai/manager/tools/worker.ts
+const create_worker = defineTool({
+	name: "create_worker",
+	description: "给一张票开 Worker：建 worktree、切分支、起会话一次配好。并发满了就让它留在 queued。",
+	parameters: {
+		ticketId: {
+			type: "string",
+			required: true,
+			description: "要开跑的票，必须是本项目的。"
+		},
+		branch: {
+			type: "string",
+			description: "分支名，省略则用 dsh/<任务号>。末段必须是任务号，PR 归哪张票就靠这个字符串比对。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "新 Worker 的 id、分支与 worktree 路径。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const worker = await db.worker.queue(args.ticketId, identity.projectId, args.branch);
+		await db.ticket.setPrepareError(args.ticketId, null, (/* @__PURE__ */ new Date()).toISOString());
+		await worker$1.reconcile();
+		return JSON.stringify(await db.worker.findById(worker.id));
+	}
+});
+const send = defineTool({
+	name: "send",
+	description: "直接将完整消息交给活跃 Worker，跳过业务排队；只有需要立刻止损才用 interrupt。Worker 没有收件箱。",
+	parameters: {
+		workerId: {
+			type: "string",
+			required: true,
+			description: "目标 Worker。"
+		},
+		text: {
+			type: "string",
+			required: true,
+			description: "要说的话。"
+		},
+		mode: {
+			type: "string",
+			enum: [
+				"queue",
+				"interrupt",
+				"reply"
+			],
+			required: true,
+			description: "queue 也直接 steer 到最近一步；interrupt 中止当前回合再 steer；reply 回答它的 ask 并直接 steer。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "投递结果。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const worker = await db.worker.findById(args.workerId);
+		if (!worker) throw new Error("Worker 不存在");
+		const ticket = await db.ticket.findById(worker.ticketId);
+		if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
+		if (worker.status === "ended") throw new Error("Worker 已结束");
+		if (ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单已结束");
+		if (!await session.lookup(worker.id)) throw new Error("Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送");
+		if (args.mode === "reply") {
+			const asks = (await db.inbox.listByTicket(ticket.id)).filter((row) => row.workerId === worker.id && row.kind === "ask" && row.status === "pending");
+			if (asks.length !== 1 || !db.inbox.owns(asks[0], {
+				type: "project",
+				projectId: identity.projectId
+			})) throw new Error("reply 必须唯一对应当前项目编排待答的 ask");
+			await db.inbox.answerScoped(asks[0].id, args.text, {
+				type: "project",
+				projectId: identity.projectId
+			}, (/* @__PURE__ */ new Date()).toISOString());
+			await session.send(worker.id, `[Answer ${asks[0].id}] ${args.text}`, "reply", `supermesh:answer:${asks[0].id}`);
+		} else await session.send(worker.id, args.text, args.mode);
+		return JSON.stringify({
+			sent: true,
+			mode: args.mode
+		});
+	}
+});
+const view = defineTool({
+	name: "view",
+	description: "读 Worker 会话正文，分片返回。这不是 report —— report 是结构化状态通道。",
+	parameters: {
+		workerId: {
+			type: "string",
+			required: true,
+			description: "要读的 Worker。"
+		},
+		offset: {
+			type: "integer",
+			description: "从上次的 next_offset 续读；0 表示从头读。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "会话正文分片，末尾附 next_offset。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const worker = await db.worker.findById(args.workerId);
+		if (!worker || (await db.ticket.findById(worker.ticketId))?.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
+		if (args.offset !== void 0 && (!Number.isInteger(args.offset) || args.offset < 0)) throw new Error("offset 必须是非负整数");
+		return JSON.stringify(await session.view(worker.id, args.offset));
+	}
+});
+const cancel = defineTool({
+	name: "cancel",
+	description: "中止 Worker 当前回合。那一次回合一并作废。",
+	parameters: {
+		workerId: {
+			type: "string",
+			required: true,
+			description: "要中止的 Worker。"
+		},
+		keepInbox: {
+			type: "boolean",
+			description: "true 保留官方 Agent 尚未接收的输入；省略则清除。不涉及业务收件箱。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "中止结果。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const worker = await db.worker.findById(args.workerId);
+		if (!worker) throw new Error("Worker 不存在");
+		const ticket = await db.ticket.findById(worker.ticketId);
+		if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
+		if (worker.status === "ended") throw new Error("Worker 已结束");
+		await session.cancel(worker.id, args.keepInbox);
+		return JSON.stringify({ cancelled: true });
+	}
+});
+const rename = defineTool({
+	name: "rename",
+	description: "改 Worker 会话的标题，方便在会话列表里认出来。",
+	parameters: {
+		workerId: {
+			type: "string",
+			required: true,
+			description: "要改名的 Worker。"
+		},
+		title: {
+			type: "string",
+			required: true,
+			description: "新标题。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "改名结果。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
+		const worker = await db.worker.findById(args.workerId);
+		if (!worker) throw new Error("Worker 不存在");
+		const ticket = await db.ticket.findById(worker.ticketId);
+		if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
+		if (worker.status === "ended") throw new Error("Worker 已结束");
+		await session.rename(worker.id, args.title);
+		await db.worker.update(worker.id, { title: args.title });
+		return JSON.stringify({
+			id: worker.id,
+			title: args.title
+		});
+	}
+});
 // src/ai/manager/index.ts
 const manager = definePreset({
 	id: "manager",
 	name: "项目编排",
 	description: "一个仓库一个：派 Worker、看汇报、收尾，任务走到哪一步由它推。不写代码。",
-	instruction: `你是某个仓库的项目编排。长驻，管这个仓库下所有任务。
-
-当前工作目录是 Supermesh 的共享代理工作区，不是代码仓库。先用 read_mailbox 读取你的项目 id、仓库地址和本地目录；读代码时用仓库绝对路径。克隆、改代码、切换分支和提交都是 Worker 的事。
-
-## 你管三件事
-
-**派活。** 一张票该开跑时，create_worker。建 worktree、开分支、起会话一次性配好。
-槽位满了就让它留在 queued，不要硬开 —— 硬开的后果是两个 Worker 抢同一个端口。
-
-**看着。** Worker 的汇报会进你的收件箱。ready 说明能审了，failed 说明要重试，
-dropped 说明这活不用做了。收工的时候留下 branch 和 worktree，那是唯一记录。
-
-**收尾。** PR 合了、CI 绿了、人说行了，就把票推到 done。
-合并和关闭**不会**产生新触发 —— 别等它，自己去看。
-
-## 绝不阻塞
-
-你是常驻编排，一次阻塞就没人处理收件箱。任何形式的等待都不允许：
-
-- 不用 sleep、timeout、Wait、until 循环或轮询延后表态
-- 不用子代理、协作或任何会挂起你的机制
-- 需要「等」的时候，直接结束这一轮：把该做的事做完、该报的报上去，
-  Worker 的结果会以新消息进来，下一条消息唤醒你。
-
-宁可这一轮什么都不做，也不要占着会话等。
-
-## 分支命名
-
-\`dsh/<任务号>\`，例如 \`dsh/T-105\`。**末段必须是任务号**，
-PR 归哪张票就是靠这个字符串比对，猜错就挂到别的票上了。
-
-## 收件箱
-
-每条消息处理完就 inbox_kill 掉，别留着。会话结束时会提示「你有 N 条消息未处理」，
-那时候还有 pending 就是没干完。
-
-消息的优先级：**ask 排最前**，因为提问方那条线停着。其余按到达顺序。
-
-## 求助
-
-Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
-
-- 问主编排 → escalate，问题原文不动，只换回答的人
-- 问人 → 你没有 ask，只能 escalate 上去让主编排问
-
-不要替人做决定。不要给一个「大概是这样」的答案让 Worker 去猜。
-
-## 边界
-
-**不写代码。** 你觉得改动只有两行、自己动手更快 —— 也不动手。
-自己改的话没人 review，也没人知道改过。
-
-**不跨项目。** 你的视野就是这个仓库。需要别的项目配合，报给主编排。
-
-**不取消票。** 取消是人的决定。做不了就报 failed，让人看见。`,
+	instruction: composePrompt("manager"),
 	order: 5,
 	tools: [
 		read_channel,
@@ -2557,395 +2963,15 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
 		ask$2,
 		escalate,
 		supervisor_list$1,
-		defineTool({
-			name: "list_ticket",
-			description: "列本项目的任务。判重时必看。",
-			parameters: {
-				status: {
-					type: "string",
-					enum: [
-						"waiting",
-						"queued",
-						"running",
-						"review",
-						"done",
-						"cancelled"
-					],
-					description: "只看某个状态；省略表示不含已终态的票。"
-				},
-				attentionOnly: {
-					type: "boolean",
-					description: "true 时只返回存在指向它的 pending ask 的票。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "本项目任务列表：id、标题、状态、PR 状态、有无 pending ask。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (!identity) throw new Error("当前会话没有 Supermesh 身份");
-				if (identity.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				return JSON.stringify(await db.ticket.listFiltered({
-					...args,
-					projectId: identity.projectId
-				}));
-			}
-		}),
-		defineTool({
-			name: "link_ticket",
-			description: "建一张工单到另一张工单的关联。限本项目；跨项目依赖由 Supervisor 的 link_dependency 记。",
-			parameters: {
-				ticketId: {
-					type: "string",
-					required: true,
-					description: "发起关联的票，必须是本项目的。"
-				},
-				relatedId: {
-					type: "string",
-					required: true,
-					description: "被指向的那张票。"
-				},
-				kind: {
-					type: "string",
-					enum: ["depends", "relates"],
-					required: true,
-					description: "depends 前置依赖：relatedId 没做完，ticketId 停在 waiting。relates 只是相关，谁都不等谁。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "关联结果。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId);
-				const related = await db.ticket.findById(args.relatedId);
-				if (!related || related.projectId !== identity.projectId) throw new Error("跨项目关联应由 Supervisor 处理");
-				if (ticket.id === related.id) throw new Error("工单不能关联自己");
-				await db.ticketLink.link(ticket.id, related.id, args.kind, (/* @__PURE__ */ new Date()).toISOString());
-				if (args.kind === "depends" && related.status !== "done" && related.status !== "cancelled") await db.ticket.save(ticket.id, {
-					status: "waiting",
-					updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-				});
-				return JSON.stringify({ linked: true });
-			}
-		}),
-		defineTool({
-			name: "stop_ticket",
-			description: "按人的明确要求结单为 cancelled。必须绑一条 human=true 的触发 —— 停止是人的决定，不是编排的判断。",
-			parameters: {
-				ticketId: {
-					type: "string",
-					required: true,
-					description: "要停的票。"
-				},
-				triggerId: {
-					type: "string",
-					required: true,
-					description: "人说停的那条触发。必须是 human=true，否则拒绝。"
-				},
-				reason: {
-					type: "string",
-					description: "一句话说明为什么停，写进记录。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "结单结果。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId);
-				const trigger = await db.trigger.findById(args.triggerId);
-				if (!trigger || trigger.human !== 1) throw new Error("停止工单必须绑定 human=true 的触发");
-				if (!(await db.ticketThread.listByTicket(ticket.id)).some((row) => row.threadId === trigger.threadId)) throw new Error("停止触发不属于当前工单来源");
-				for (const worker of await db.worker.listByTicket(ticket.id)) {
-					if (worker.status === "ended") continue;
-					if (worker.status === "running") await session.cancel(worker.id);
-					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
-				}
-				const now = (/* @__PURE__ */ new Date()).toISOString();
-				await db.ticket.finish(ticket.id, "cancelled", now, now);
-				await db.inbox.returnPendingTicket(ticket.id, args.reason ?? "人类要求停止", now);
-				for (const link of await db.supervisorTicket.listByTicket(ticket.id)) await db.inbox.enqueue({
-					type: "supervisor",
-					supervisorId: link.supervisorId,
-					projectId: ticket.projectId,
-					origin: "project",
-					kind: "ticket",
-					ticketId: ticket.id,
-					title: "dropped",
-					message: args.reason ?? "人类要求停止"
-				});
-				return JSON.stringify({
-					id: ticket.id,
-					status: "cancelled"
-				});
-			}
-		}),
-		defineTool({
-			name: "retry_ticket",
-			description: "重开卡住的票：结束旧 Worker，开一个新的。只对还开着、卡在 failed 的票有效。",
-			parameters: { ticketId: {
-				type: "string",
-				required: true,
-				description: "要重开的票。已到终态的票不适用 —— 那张只能由插件在人类消息到达时复活。"
-			} },
-			output: {
-				schema: {
-					type: "string",
-					description: "重开结果。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const ticket = await db.ticket.requireOpen(args.ticketId, identity.projectId);
-				const old = (await db.worker.listByTicket(ticket.id)).at(-1);
-				if (!old || old.reportState !== "failed") throw new Error("只允许重试 failed Worker");
-				if (old.status === "running") await session.cancel(old.id);
-				await db.worker.end(old.id, "restarted", (/* @__PURE__ */ new Date()).toISOString());
-				const worker = await db.worker.queue(ticket.id, identity.projectId, old.branch ?? void 0);
-				if (old.branch && old.worktree) await db.worker.update(worker.id, {
-					branch: old.branch,
-					worktree: old.worktree
-				});
-				await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
-				await worker$1.reconcile();
-				return JSON.stringify(await db.worker.findById(worker.id));
-			}
-		}),
-		defineTool({
-			name: "create_worker",
-			description: "给一张票开 Worker：建 worktree、切分支、起会话一次配好。并发满了就让它留在 queued。",
-			parameters: {
-				ticketId: {
-					type: "string",
-					required: true,
-					description: "要开跑的票，必须是本项目的。"
-				},
-				branch: {
-					type: "string",
-					description: "分支名，省略则用 dsh/<任务号>。末段必须是任务号，PR 归哪张票就靠这个字符串比对。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "新 Worker 的 id、分支与 worktree 路径。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const worker = await db.worker.queue(args.ticketId, identity.projectId, args.branch);
-				await db.ticket.setPrepareError(args.ticketId, null, (/* @__PURE__ */ new Date()).toISOString());
-				await worker$1.reconcile();
-				return JSON.stringify(await db.worker.findById(worker.id));
-			}
-		}),
-		defineTool({
-			name: "send",
-			description: "直接将完整消息交给活跃 Worker，跳过业务排队；只有需要立刻止损才用 interrupt。Worker 没有收件箱。",
-			parameters: {
-				workerId: {
-					type: "string",
-					required: true,
-					description: "目标 Worker。"
-				},
-				text: {
-					type: "string",
-					required: true,
-					description: "要说的话。"
-				},
-				mode: {
-					type: "string",
-					enum: [
-						"queue",
-						"interrupt",
-						"reply"
-					],
-					required: true,
-					description: "queue 也直接 steer 到最近一步；interrupt 中止当前回合再 steer；reply 回答它的 ask 并直接 steer。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "投递结果。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const worker = await db.worker.findById(args.workerId);
-				if (!worker) throw new Error("Worker 不存在");
-				const ticket = await db.ticket.findById(worker.ticketId);
-				if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
-				if (worker.status === "ended") throw new Error("Worker 已结束");
-				if (ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单已结束");
-				if (!await session.lookup(worker.id)) throw new Error("Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送");
-				if (args.mode === "reply") {
-					const asks = (await db.inbox.listByTicket(ticket.id)).filter((row) => row.workerId === worker.id && row.kind === "ask" && row.status === "pending");
-					if (asks.length !== 1 || !db.inbox.owns(asks[0], {
-						type: "project",
-						projectId: identity.projectId
-					})) throw new Error("reply 必须唯一对应当前项目编排待答的 ask");
-					await db.inbox.answerScoped(asks[0].id, args.text, {
-						type: "project",
-						projectId: identity.projectId
-					}, (/* @__PURE__ */ new Date()).toISOString());
-					await session.send(worker.id, `[Answer ${asks[0].id}] ${args.text}`, "reply", `supermesh:answer:${asks[0].id}`);
-				} else await session.send(worker.id, args.text, args.mode);
-				return JSON.stringify({
-					sent: true,
-					mode: args.mode
-				});
-			}
-		}),
-		defineTool({
-			name: "view",
-			description: "读 Worker 会话正文，分片返回。这不是 report —— report 是结构化状态通道。",
-			parameters: {
-				workerId: {
-					type: "string",
-					required: true,
-					description: "要读的 Worker。"
-				},
-				offset: {
-					type: "integer",
-					description: "从上次的 next_offset 续读；0 表示从头读。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "会话正文分片，末尾附 next_offset。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const worker = await db.worker.findById(args.workerId);
-				if (!worker || (await db.ticket.findById(worker.ticketId))?.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
-				if (args.offset !== void 0 && (!Number.isInteger(args.offset) || args.offset < 0)) throw new Error("offset 必须是非负整数");
-				return JSON.stringify(await session.view(worker.id, args.offset));
-			}
-		}),
-		defineTool({
-			name: "cancel",
-			description: "中止 Worker 当前回合。那一次回合一并作废。",
-			parameters: {
-				workerId: {
-					type: "string",
-					required: true,
-					description: "要中止的 Worker。"
-				},
-				keepInbox: {
-					type: "boolean",
-					description: "true 保留官方 Agent 尚未接收的输入；省略则清除。不涉及业务收件箱。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "中止结果。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const worker = await db.worker.findById(args.workerId);
-				if (!worker) throw new Error("Worker 不存在");
-				const ticket = await db.ticket.findById(worker.ticketId);
-				if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
-				if (worker.status === "ended") throw new Error("Worker 已结束");
-				await session.cancel(worker.id, args.keepInbox);
-				return JSON.stringify({ cancelled: true });
-			}
-		}),
-		defineTool({
-			name: "rename",
-			description: "改 Worker 会话的标题，方便在会话列表里认出来。",
-			parameters: {
-				workerId: {
-					type: "string",
-					required: true,
-					description: "要改名的 Worker。"
-				},
-				title: {
-					type: "string",
-					required: true,
-					description: "新标题。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "改名结果。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (identity?.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
-				const worker = await db.worker.findById(args.workerId);
-				if (!worker) throw new Error("Worker 不存在");
-				const ticket = await db.ticket.findById(worker.ticketId);
-				if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
-				if (worker.status === "ended") throw new Error("Worker 已结束");
-				await session.rename(worker.id, args.title);
-				await db.worker.update(worker.id, { title: args.title });
-				return JSON.stringify({
-					id: worker.id,
-					title: args.title
-				});
-			}
-		})
+		list_ticket$2,
+		link_ticket,
+		stop_ticket,
+		retry_ticket,
+		create_worker,
+		send,
+		view,
+		cancel,
+		rename
 	],
 	plugins: [
 		agentInstructions,
@@ -3610,63 +3636,53 @@ const create_ticket = defineTool({
 		return JSON.stringify(await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description));
 	}
 });
+const list_ticket$1 = defineTool({
+	name: "list_ticket",
+	description: "列全部任务，可跨项目筛选。判重、找某张票的现状都靠它。",
+	parameters: {
+		status: {
+			type: "string",
+			enum: [
+				"waiting",
+				"queued",
+				"running",
+				"review",
+				"done",
+				"cancelled"
+			],
+			description: "只看某个状态；省略表示不含已终态的票。"
+		},
+		projectId: {
+			type: "string",
+			description: "只看某个项目的票。省略表示所有项目。"
+		},
+		attentionOnly: {
+			type: "boolean",
+			description: "true 时只返回存在指向它的 pending ask 的票 —— 也就是需要人介入的那些。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "任务列表，每张票一行：id、项目、标题、状态、PR 状态、有无 pending ask。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "main") throw new Error("仅主编排可调用");
+		return JSON.stringify(await db.ticket.listFiltered(args));
+	}
+});
 // src/ai/orchestrator/index.ts
 const orchestrator = definePreset({
 	id: "orchestrator",
 	name: "主编排",
-	instruction: `你是 Supermesh 的主编排。全局只有一个，管所有项目。
-
-你运行在 Supermesh 的共享代理工作区，不是任一项目的代码仓库。收到消息先用 read_mailbox 读取邮件、可用项目 id 与仓库地址，再决定话题归属，不从显示名或当前目录猜项目。
-
-## 你只管路由
-
-你不写代码、不建分支、不碰仓库。你做的每个决定都是「这件事该归谁」：
-
-- 话题归哪个项目 → 判一次，记下来，之后不再打扰你
-- 一件事要不要开票 → 要，就开票派下去
-- 跨项目卡住了 → 拉一个 Supervisor
-- 只有人能拍板 → 问人
-
-判断完就结束这一轮。不要盯着执行细节，那不是你的事。
-
-## 判断顺序
-
-收到触发后，按这个顺序走，**每一步都可能提前结束**：
-
-1. **已经是老话题了吗** —— 用 list_ticket 看这条话题是否已挂在某张票上。
-   挂了就别再判一次，那条触发会自动进对应项目的收件箱。
-2. **需要开新票吗** —— 消息明确指向某张已有票 → attach_thread_to_ticket，
-   不重复才 create_ticket。判重看「同一个改动意图」，不看措辞；只是相似不算指向。
-3. **要不要人拍板** —— 涉及删数据、改 CI 配置、动权限、花钱，先 ask。
-4. **派下去** —— dispatch_ticket 给项目编排。
-
-## 三个边界
-
-**不要什么都问人。** 你手上有完整上下文，能自己判断的自己判断。
-问人的门槛是「我也不该知道」——权限、预算、产品取舍。不是「我不太确定」。
-
-**不要重复开票。** 同一件事开两张票，两个 Worker 会改同一处代码，
-冲突时谁也说不清该以谁为准。
-
-**不要越过项目编排直接指挥 Worker。** 你连 Worker 的 id 都不该持有。
-
-**不要阻塞。** 不用 sleep、timeout、Wait、until 循环或轮询延后表态，也不用子代理。
-要等的直接结束这一轮，结果会以新消息进来。
-
-## 跨项目
-
-两个以上项目互相等的时候才拉 Supervisor。判断标准很硬：
-**一边的产出是另一边的输入，且都不是几分钟能完事的。**
-
-单个项目内部的依赖不归 Supervisor 管 —— 项目编排自己会处理。
-
-拉起来之后你就不管了，它收工时你会收到一条通知。
-
-## 收尾
-
-会话结束前看一眼 inbox_list。还有 pending 就说明这一轮没做完，
-处理完再结束。不要留着自己也解释不清的未处理消息。`,
-	description: "全局只有一个，管所有项目和渠道：分诊话题、开票派活、跨项目卡住时拉临时协调者。不写代码。",
+	instruction: composePrompt("orchestrator"),
 	order: 4,
 	tools: [
 		read_channel,
@@ -3681,48 +3697,7 @@ const orchestrator = definePreset({
 		close_supervisor,
 		attach_tickets_to_supervisor,
 		detach_tickets_from_supervisor,
-		defineTool({
-			name: "list_ticket",
-			description: "列全部任务，可跨项目筛选。判重、找某张票的现状都靠它。",
-			parameters: {
-				status: {
-					type: "string",
-					enum: [
-						"waiting",
-						"queued",
-						"running",
-						"review",
-						"done",
-						"cancelled"
-					],
-					description: "只看某个状态；省略表示不含已终态的票。"
-				},
-				projectId: {
-					type: "string",
-					description: "只看某个项目的票。省略表示所有项目。"
-				},
-				attentionOnly: {
-					type: "boolean",
-					description: "true 时只返回存在指向它的 pending ask 的票 —— 也就是需要人介入的那些。"
-				}
-			},
-			output: {
-				schema: {
-					type: "string",
-					description: "任务列表，每张票一行：id、项目、标题、状态、PR 状态、有无 pending ask。"
-				},
-				render: (_args, value) => [{
-					type: "text",
-					text: value
-				}]
-			},
-			execute: async (args, exec) => {
-				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (!identity) throw new Error("当前会话没有 Supermesh 身份");
-				if (identity.role !== "main") throw new Error("仅主编排可调用");
-				return JSON.stringify(await db.ticket.listFiltered(args));
-			}
-		}),
+		list_ticket$1,
 		create_ticket,
 		dispatch_ticket,
 		note_ticket,
@@ -3816,316 +3791,211 @@ const link_dependency = defineTool({
 		return JSON.stringify({ linked: true });
 	}
 });
+const report$1 = defineTool({
+	name: "report",
+	description: "报给主编排，不等答复。",
+	parameters: {
+		state: {
+			type: "string",
+			enum: [
+				"progress",
+				"ready",
+				"failed",
+				"dropped"
+			],
+			required: true,
+			description: "progress 在跑 / ready 做完了 / failed 失败了 / dropped 不用做了。"
+		},
+		summary: {
+			type: "string",
+			required: true,
+			description: "一句话摘要。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "是否已投递。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
+		return JSON.stringify(await db.inbox.enqueue({
+			type: "main",
+			supervisorId: identity.supervisorId,
+			origin: "supervisor",
+			kind: "notice",
+			title: args.state,
+			message: args.summary
+		}));
+	}
+});
+const ask$1 = defineTool({
+	name: "ask",
+	description: "问主编排，这条线停下等答复。要加人、加项目、或需要上级拍板时用它。",
+	parameters: { question: {
+		type: "string",
+		required: true,
+		description: "要主编排回答的问题，一句话说清。"
+	} },
+	output: {
+		schema: {
+			type: "string",
+			description: "ask 的 id。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
+		return JSON.stringify(await db.inbox.enqueueAsk({
+			type: "main",
+			supervisorId: identity.supervisorId,
+			origin: "supervisor",
+			kind: "ask",
+			message: args.question
+		}));
+	}
+});
+// src/ai/supervisor/index.ts
+const supervisor = definePreset({
+	id: "supervisor",
+	name: "临时协调者",
+	instruction: composePrompt("supervisor"),
+	order: 6,
+	tools: [
+		read_channel,
+		answer,
+		read_mailbox,
+		inbox_list,
+		inbox_kill,
+		dispatch_ticket,
+		note_ticket,
+		list_ticket,
+		report$1,
+		ask$1,
+		link_dependency
+	],
+	plugins: [
+		agentInstructions,
+		compaction,
+		commandGoal,
+		skillFilesystem,
+		timeContext,
+		toolBash,
+		toolExecutorPtc,
+		toolFs,
+		toolFsSearch,
+		toolJobs,
+		toolPresent,
+		toolPwsh,
+		toolSkill,
+		toolTodo,
+		toolWeb
+	]
+});
+// src/ai/worker/tools/index.ts
+const report = defineTool({
+	name: "report",
+	description: "报告进度。发完继续干活，不等回复。要对方动脑子的走 ask。",
+	parameters: {
+		state: {
+			type: "string",
+			enum: [
+				"progress",
+				"ready",
+				"failed",
+				"dropped"
+			],
+			required: true,
+			description: "progress 在跑 / ready 干完了（PR 已开）/ failed 失败了 / dropped 不用做了。「我在等答复」不占状态位。"
+		},
+		summary: {
+			type: "string",
+			required: true,
+			description: "一句话摘要，短。给机器和面板看，详细解释写正文。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "是否已投递。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "worker" || !identity.workerId || !identity.ticketId) throw new Error("仅 Worker 可调用");
+		const worker = await db.worker.findById(identity.workerId);
+		if (!worker || worker.status === "ended") throw new Error("Worker 已结束");
+		return JSON.stringify(await db.worker.reportProgress(worker.id, args.state, args.summary));
+	}
+});
+const ask = defineTool({
+	name: "ask",
+	description: "问项目编排。发完这条工作线停下，等答案被 prompt 回来。不要一边问一边继续做。",
+	parameters: { question: {
+		type: "string",
+		required: true,
+		description: "要问的问题，一句话说清卡在哪。"
+	} },
+	output: {
+		schema: {
+			type: "string",
+			description: "ask 的 id。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "worker" || !identity.workerId || !identity.ticketId) throw new Error("仅 Worker 可调用");
+		const ticket = await db.ticket.requireOpen(identity.ticketId);
+		const worker = await db.worker.findById(identity.workerId);
+		if (!worker || worker.status === "ended") throw new Error("Worker 已结束");
+		return JSON.stringify(await db.inbox.enqueueAsk({
+			type: "project",
+			projectId: ticket.projectId,
+			origin: "worker",
+			kind: "ask",
+			ticketId: ticket.id,
+			workerId: worker.id,
+			message: args.question
+		}));
+	}
+});
 // src/ai/index.ts
 const agents = {
 	manager,
 	orchestrator,
-	supervisor: definePreset({
-		id: "supervisor",
-		name: "临时协调者",
-		instruction: `你是临时协调者。你存在的唯一理由：
-**一件事跨了两个以上项目，得有人在中间看。**
-
-## 每次醒来的第一件事
-
-调 list_tickets。**不要只信收件箱里那一条消息** —— 那条消息是别人转述的，
-真实进度在票上。转述可能过时，票不会。
-
-## 你协调什么
-
-发现依赖关系、决定谁先做、把两边的结论对齐。
-
-依赖写进库（link_dependency），不要记在脑子里 —— 你随时可能被重启，
-而重启后没人知道你上次想到哪了。
-
-## 你不做什么
-
-**不改代码。** 需要改就让项目编排去派 Worker。
-
-**不做产品决定。** 两边要求冲突、都说自己对的时候，往上问。
-
-**不阻塞。** 不用 sleep、timeout、Wait、until 循环或轮询延后表态，也不用子代理。
-需要等的就直接结束这一轮，结果会以新消息进来。
-
-**不管收工。** 收工是插件按事实推导的，不是你的动作：
-
-- 关联工单**全部 done** → 自动关停，你会直接消失，不用做任何事
-- 有工单 **cancelled** → 插件通知主编排，由它决定关掉你、摘掉那张票、还是继续等
-
-你不用判断「是不是差不多了」—— 这件事本来就轮不到会话判断。你的活是推进，
-推进到没有依赖可理的时候，收尾自然会发生。
-
-## 边界
-
-你的视野是**这几张票之间**的关系，不是整个系统。
-该看全局的是主编排，你只在被拉起来的那件事上有发言权。`,
-		description: "只在任务跨两个以上项目时临时拉起，协调依赖、对齐两边的结论，用完即弃。不写代码。",
-		order: 6,
-		tools: [
-			read_channel,
-			answer,
-			read_mailbox,
-			inbox_list,
-			inbox_kill,
-			dispatch_ticket,
-			note_ticket,
-			list_ticket,
-			defineTool({
-				name: "report",
-				description: "报给主编排，不等答复。",
-				parameters: {
-					state: {
-						type: "string",
-						enum: [
-							"progress",
-							"ready",
-							"failed",
-							"dropped"
-						],
-						required: true,
-						description: "progress 在跑 / ready 做完了 / failed 失败了 / dropped 不用做了。"
-					},
-					summary: {
-						type: "string",
-						required: true,
-						description: "一句话摘要。"
-					}
-				},
-				output: {
-					schema: {
-						type: "string",
-						description: "是否已投递。"
-					},
-					render: (_args, value) => [{
-						type: "text",
-						text: value
-					}]
-				},
-				execute: async (args, exec) => {
-					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
-					if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
-					return JSON.stringify(await db.inbox.enqueue({
-						type: "main",
-						supervisorId: identity.supervisorId,
-						origin: "supervisor",
-						kind: "notice",
-						title: args.state,
-						message: args.summary
-					}));
-				}
-			}),
-			defineTool({
-				name: "ask",
-				description: "问主编排，这条线停下等答复。要加人、加项目、或需要上级拍板时用它。",
-				parameters: { question: {
-					type: "string",
-					required: true,
-					description: "要主编排回答的问题，一句话说清。"
-				} },
-				output: {
-					schema: {
-						type: "string",
-						description: "ask 的 id。"
-					},
-					render: (_args, value) => [{
-						type: "text",
-						text: value
-					}]
-				},
-				execute: async (args, exec) => {
-					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
-					if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
-					return JSON.stringify(await db.inbox.enqueueAsk({
-						type: "main",
-						supervisorId: identity.supervisorId,
-						origin: "supervisor",
-						kind: "ask",
-						message: args.question
-					}));
-				}
-			}),
-			link_dependency
-		],
-		plugins: [
-			agentInstructions,
-			compaction,
-			commandGoal,
-			skillFilesystem,
-			timeContext,
-			toolBash,
-			toolExecutorPtc,
-			toolFs,
-			toolFsSearch,
-			toolJobs,
-			toolPresent,
-			toolPwsh,
-			toolSkill,
-			toolTodo,
-			toolWeb
-		]
-	}),
+	supervisor,
 	worker: definePreset({
 		id: "worker",
 		name: "执行会话",
-		instruction: `你是执行会话。当前工作目录是一个专属 worktree，
-分支已经建好，只属于这一张票。
-
-## 干活
-
-改代码、跑测试，明确 git add 本任务文件后用 git commit 提交、git push 推送；GitHub 用 gh pr create，GitLab 用 glab mr create 发布，再用 report 汇报 ready 和实际 PR/MR URL。
-GitHub 操作用 gh，GitLab 操作用 glab；命令由独立 CLI 包装脚本绑定已配置的机器人账号，Git 自动使用对应渠道的提交身份。禁止使用全局 CLI 登录身份，不运行 auth login，不读取或输出 token。
-发布前检查当前分支、origin 和已有 PR/MR，复用当前票分支的已有结果，避免重复发布。
-不要自动纳入不明文件；仅提交本任务明确暂存的改动，发布前确认本任务改动已全部提交。
-PR 描述中的正式 issue 链接必须从 read_channel 的 ticket/<当前任务号> 及关联 thread 上下文取得，不得猜造。
-
-## 交付
-
-UI 变更的 PR 描述必须同时包含明确标注的 Before 和 After 真实应用截图或演示，并注明基线及变更版本。
-两边使用相同场景、视口、主题和相关 UI 状态；后续 UI 改动后更新证据。只有 After、设计稿、占位标记都不是完整证据。
-不要暴露私有渠道内容或凭据。无法取得真实基线时如实说明缺失与限制，交付保持未完成，不得汇报 UI PR ready。
-你负责捕获和验证对照，编排会话还需核对证据后才能交付 ready。
-
-按匹配规则、任务、提示及仓库指令请求所需 review；报告 ready 不必等待审批，审批到达后自行核实当前 head 的指令要求和证据。
-GitHub 自动合并由你按以下交付要求直接调用原生 CLI，不经宿主合并服务。运行上下文给出当前 autoMerge 和 autoMergeMaxLines；不要从消息猜造或更改这些配置。
-发布用 gh 和 glab 的渠道机器人身份；自动合并必须使用 gh-default，它绕过机器人配置、使用你默认登录的 gh 账号。未开启 autoMerge 时所有 PR 均由人工合并。
-仅对你从当前票分支打开且已 ready 的 PR，在 additions + deletions 严格小于 autoMergeMaxLines、所有指令要求的审批均覆盖当前 head 时，才可开启自动合并。
-涉及用户可见变化时，指令还必须明确谁有权审批此类变化，且其审批覆盖当前 head；不得自行指定管理员代替该授权，不得把 marker 当成证据或授权。
-使用的原生命令必须是 gh-default pr merge <number> --auto --merge --match-head-commit <sha> --repo <repository>；不得改为直接 merge、squash、--admin 或 bot API 合并。
-任何条件不再成立（包括请求修改），以及每次向 PR push 前，先用 gh-default pr merge <number> --disable-auto --repo <repository> 撤销；撤销未确认不得 push。
-新 head 满足条件后才重新开启。不满足自动合并条件时在报告中说明需人工合并；不得代任何 reviewer 审批或使用其身份 review。
-GitLab 用原生 glab 发布、查看及更新 MR，当前不启用自动合并，交由人工合并。
-审批是否为任务所需、指令是否完整、UI 对照是否真实且与当前版本一致属于你和编排会话必须核实的语义判断，机械检查不替代这些判断。
-
-首次评估真人 reviewer 的反馈时，将该人逐 PR 记入 report 的 credited reviewers，并为 PR 分支的每个提交补上一次 Co-authored-by trailer；后续新增提交沿用所有已记名 reviewer。
-先撤销自动合并，再 git fetch origin；从 PR 读取 baseRefName，计算 base=$(git merge-base HEAD origin/<base branch>) 和 old=$(git rev-parse origin/<head branch>)。
-用 FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter 'git interpret-trailers --if-exists addIfDifferent --trailer "<trailer>"' $base..HEAD，仅改提交消息；每人一个 trailer，内容为 Co-authored-by: <name or login> <id+login@users.noreply.github.com>，id 从渠道只读用户资料取得，不能猜。
-仅消息改写时用 git push --force-with-lease=<head branch>:$old 推送本票分支；lease 被拒绝立即停下并报告，不得覆盖远端新提交。
-审批同样覆盖仅消息改写、tree 完全相同的提交副本；必须核验相同 tree，不能自行把任意旧提交视为已审批。
-PR 已合并时不改写，在报告记录尚未记名的人；不得用空提交记名。不记 bot（包括 [bot] 及指令指定的 review bot）、PR 作者、agent 账号或指令指定的 commit author。
-如果真人正在解决同一问题，且其分支或 PR 包含本票代码（本票提交或移植的本票改动），通过渠道能力立即关闭本票 PR，不询问，关闭说明只用一句话指向真人 PR。
-只是相关但不含本票代码不是关闭理由。关闭 PR 即结束本票，不再发送其他消息。
-
-**不要**切分支、不要碰别人的 worktree、不要无条件 force push；仅上述 reviewer 记名的消息改写可使用已核实的 force-with-lease。
-这个 worktree 之外的一切都不归你管。
-
-## 汇报与提问
-
-\`report\` 说事实，发完继续干活：
-
-| state | 什么时候用 |
-| --- | --- |
-| progress | 阶段性推进，值得说一句 |
-| ready | 干完了，PR 已开 |
-| failed | 干不了，说清卡在哪 |
-| dropped | 这事不用做（复现不了、已被别人修了） |
-
-\`ask\` 要一句话才能继续。**发完这条工作线就停下**，答案到了会重新 prompt 你。
-能自己判断的不要 ask —— 你手上有仓库、有 CI、有历史，大部分事你自己就能定。
-
-## 渠道
-
-读原文用 read_channel，路径写法见对应的 \`supermesh-channel-<id>\` skill。
-要说话用 reply_channel，锚点是触发 id，不用猜发到哪。
-
-**先回复再干活。** 人需要知道我们接下了。但只对真人请求回复 ——
-CI 事件、自动化动作不需要你说「收到」。
-
-## 恢复
-
-如果醒来时发现自己有 recoveryNote，说明上次被重启打断了。
-**先查目录、git 历史和远端，再决定要不要重做外部动作。**
-
-重复开 PR、重复发评论是这类事故里最常见的一种。
-
-## 后台任务
-
-起了服务器、跑了长测试，回合结束前用 report 说清楚还在跑什么。
-框架会让票继续占着槽位，最多 30 分钟。
-
-不要留一个没人接的后台进程就结束 —— 那等于把烂摊子丢给下一个会话。`,
-		description: "在一张任务专属的 worktree 里干活：改代码、跑测试、开 PR，用 report 汇报进度。",
+		instruction: composePrompt("worker"),
 		order: 7,
 		tools: [
 			read_channel,
 			reply_channel,
-			defineTool({
-				name: "report",
-				description: "报告进度。发完继续干活，不等回复。要对方动脑子的走 ask。",
-				parameters: {
-					state: {
-						type: "string",
-						enum: [
-							"progress",
-							"ready",
-							"failed",
-							"dropped"
-						],
-						required: true,
-						description: "progress 在跑 / ready 干完了（PR 已开）/ failed 失败了 / dropped 不用做了。「我在等答复」不占状态位。"
-					},
-					summary: {
-						type: "string",
-						required: true,
-						description: "一句话摘要，短。给机器和面板看，详细解释写正文。"
-					}
-				},
-				output: {
-					schema: {
-						type: "string",
-						description: "是否已投递。"
-					},
-					render: (_args, value) => [{
-						type: "text",
-						text: value
-					}]
-				},
-				execute: async (args, exec) => {
-					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
-					if (identity.role !== "worker" || !identity.workerId || !identity.ticketId) throw new Error("仅 Worker 可调用");
-					const worker = await db.worker.findById(identity.workerId);
-					if (!worker || worker.status === "ended") throw new Error("Worker 已结束");
-					return JSON.stringify(await db.worker.reportProgress(worker.id, args.state, args.summary));
-				}
-			}),
-			defineTool({
-				name: "ask",
-				description: "问项目编排。发完这条工作线停下，等答案被 prompt 回来。不要一边问一边继续做。",
-				parameters: { question: {
-					type: "string",
-					required: true,
-					description: "要问的问题，一句话说清卡在哪。"
-				} },
-				output: {
-					schema: {
-						type: "string",
-						description: "ask 的 id。"
-					},
-					render: (_args, value) => [{
-						type: "text",
-						text: value
-					}]
-				},
-				execute: async (args, exec) => {
-					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
-					if (identity.role !== "worker" || !identity.workerId || !identity.ticketId) throw new Error("仅 Worker 可调用");
-					const ticket = await db.ticket.requireOpen(identity.ticketId);
-					const worker = await db.worker.findById(identity.workerId);
-					if (!worker || worker.status === "ended") throw new Error("Worker 已结束");
-					return JSON.stringify(await db.inbox.enqueueAsk({
-						type: "project",
-						projectId: ticket.projectId,
-						origin: "worker",
-						kind: "ask",
-						ticketId: ticket.id,
-						workerId: worker.id,
-						message: args.question
-					}));
-				}
-			})
+			report,
+			ask
 		],
 		plugins: [
 			agentInstructions,

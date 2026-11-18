@@ -145,7 +145,7 @@ export function GraphCanvas({ nodes, edges, groups }: { nodes: readonly GraphNod
             {t(selected.label)}
             {selected.subtitle ? ` · ${selected.subtitle}` : ''}
           </span>
-          <span className="text-(--dsw-alias-label-tertiary)">{t(selected.status === 'not_created' ? 'graphNotCreated' : selected.status === 'queued' ? 'graphQueued' : selected.status === 'running' ? 'graphRunning' : selected.status === 'background' ? 'graphBackground' : selected.status === 'done' ? 'graphDone' : selected.status === 'cancelled' ? 'graphCancelled' : selected.status === 'waiting' ? 'overviewStatusWaiting' : selected.status === 'review' ? 'overviewStatusReview' : selected.status === 'paused' || selected.status === 'error' ? 'overviewStatusIntervention' : 'graphIdle')}</span>
+          <span className="text-(--dsw-alias-label-tertiary)">{t(selected.status === 'not_created' ? 'graphNotCreated' : selected.status === 'queued' ? 'graphQueued' : selected.status === 'running' ? 'graphRunning' : selected.status === 'background' ? 'graphBackground' : selected.status === 'done' ? 'graphDone' : selected.status === 'cancelled' ? 'graphCancelled' : selected.status === 'waiting' ? 'overviewStatusWaiting' : selected.status === 'review' ? 'overviewStatusReview' : selected.status === 'paused' ? 'ticketStatusPaused' : selected.status === 'error' ? 'overviewStatusIntervention' : 'graphIdle')}</span>
           {selected.sessionId && <Button size="sm" variant="outline" onClick={() => ctx.uiWorkspace.openSession(selected.sessionId as SessionId)}>{t('overviewOpenSession')}</Button>}
           {selected.taskId && (
             <Button

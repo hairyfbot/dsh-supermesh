@@ -1,3 +1,4 @@
+import { basename, delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import process from "node:process";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
@@ -8,7 +9,6 @@ import { Model } from "kysely-model";
 import { createStorage } from "unstorage";
 import fs from "unstorage/drivers/fs";
 import { homedir } from "node:os";
-import { basename, delimiter, dirname, isAbsolute, join, resolve } from "node:path";
 import { execFile, spawn } from "node:child_process";
 import { credentialRef } from "@deepseek-ai/dsh-credentials";
 import { createRouteDispatcher, proxyEnvironmentForChild } from "@deepseek-ai/dsh-http-proxy";
@@ -1505,6 +1505,54 @@ const { error } = await new Migrator({
 	provider: new MigrationProvider(database, migrations)
 }).migrateToLatest();
 if (error) throw error;
+// src/runtime/singlet.ts
+const pending = /* @__PURE__ */ new Map();
+function resolveKey(keyOrGen, args) {
+	return typeof keyOrGen === "function" ? keyOrGen(...args) : keyOrGen;
+}
+/**
+* 【单飞原语】同一 key 正在执行时复用同一个 Promise，不排队、不阻塞调用方。
+*
+* @param keyOrGen 静态 key 或按入参生成 key 的函数
+* @param fn 需要单飞保护的异步函数
+*
+* @example
+* export const worker = defineService({
+*   reconcile: singlet('worker:slots', async () => {
+*     await db.worker.listRunning()
+*   }),
+*   process: singlet(id => `worker:process:${id}`, async (id: string) => {
+*     await runFor(id)
+*   }),
+* })
+*/
+function singlet(keyOrGen, fn) {
+	return ((...args) => {
+		const key = resolveKey(keyOrGen, args);
+		const current = pending.get(key);
+		if (current) return current.promise;
+		const task = Promise.resolve().then(() => fn(...args));
+		const record = {
+			promise: task,
+			startedAt: Date.now()
+		};
+		pending.set(key, record);
+		const settle = () => {
+			if (pending.get(key) === record) pending.delete(key);
+		};
+		task.then(settle, settle);
+		return task;
+	});
+}
+singlet.busy = function busy(key) {
+	return key === void 0 ? pending.size > 0 : pending.has(key);
+};
+singlet.keys = function keys() {
+	return [...pending.keys()];
+};
+singlet.drain = async function drain() {
+	while (pending.size) await Promise.allSettled([...pending.values()].map((record) => record.promise));
+};
 const DSH_PLUGIN_HOME = `${process.env.DSH_HOME ?? join(homedir(), ".dsh")}/.supermesh`;
 // src/storage/index.ts
 const storage = createStorage({ driver: fs({
@@ -1773,54 +1821,6 @@ var agent_model_patch_default = defineHandler(async (event) => {
 	};
 	return (await setting.save({ models })).models;
 });
-// src/runtime/singlet.ts
-const pending = /* @__PURE__ */ new Map();
-function resolveKey(keyOrGen, args) {
-	return typeof keyOrGen === "function" ? keyOrGen(...args) : keyOrGen;
-}
-/**
-* 【单飞原语】同一 key 正在执行时复用同一个 Promise，不排队、不阻塞调用方。
-*
-* @param keyOrGen 静态 key 或按入参生成 key 的函数
-* @param fn 需要单飞保护的异步函数
-*
-* @example
-* export const worker = defineService({
-*   reconcile: singlet('worker:slots', async () => {
-*     await db.worker.listRunning()
-*   }),
-*   process: singlet(id => `worker:process:${id}`, async (id: string) => {
-*     await runFor(id)
-*   }),
-* })
-*/
-function singlet(keyOrGen, fn) {
-	return ((...args) => {
-		const key = resolveKey(keyOrGen, args);
-		const current = pending.get(key);
-		if (current) return current.promise;
-		const task = Promise.resolve().then(() => fn(...args));
-		const record = {
-			promise: task,
-			startedAt: Date.now()
-		};
-		pending.set(key, record);
-		const settle = () => {
-			if (pending.get(key) === record) pending.delete(key);
-		};
-		task.then(settle, settle);
-		return task;
-	});
-}
-singlet.busy = function busy(key) {
-	return key === void 0 ? pending.size > 0 : pending.has(key);
-};
-singlet.keys = function keys() {
-	return [...pending.keys()];
-};
-singlet.drain = async function drain() {
-	while (pending.size) await Promise.allSettled([...pending.values()].map((record) => record.promise));
-};
 // src/service/session.ts
 const presets$1 = {
 	main: "orchestrator",
@@ -4012,7 +4012,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-D2Kjckto.js");
+			const { shell } = await import("./shell-BbNpES3o.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4021,7 +4021,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-D2Kjckto.js");
+			const { shell } = await import("./shell-BbNpES3o.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4155,4 +4155,4 @@ async function save(kind, patch) {
 	}
 	return (await channel.list()).find((item) => item.kind === kind);
 }
-export { channelAuth as a, session as c, setting as d, defineService as f, worktree as i, singlet as l, db as m, server as n, shell as o, DSH_PLUGIN_HOME as p, project as r, inbox as s, channel as t, channelProxyEnvironment as u };
+export { channelAuth as a, session as c, defineService as d, DSH_PLUGIN_HOME as f, worktree as i, channelProxyEnvironment as l, db as m, server as n, shell as o, singlet as p, project as r, inbox as s, channel as t, setting as u };

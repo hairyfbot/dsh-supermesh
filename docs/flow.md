@@ -116,6 +116,27 @@ stateDiagram-v2
 **没有 `attention`。** 工单可以一边 `running` 一边等人，覆盖 `status` 会丢掉它跑到哪一步。
 「需介入」是派生的：存在指向它、`kind=ask`、`status=pending` 的 `Inbox`。
 
+### 暂停是 `paused` 开关，不是 `status` 取值
+
+`paused` 与 `status` 正交：它不是第六种状态，而是叠加在任意未终态上的一道闸。
+
+```
+暂停时：不派工、不建新 Worker、不投递、不出口。
+       源话题继续记录 trigger。
+       正在跑的回合不打断（打断会留下半成品），跑完不重开。
+解除：回到本来的 status，重新参与派工。
+```
+
+**暂停不阻止事实结单。** PR 合并 / 关闭是外部事实，与「要不要继续派工」无关：
+`prState` 到终态时照常推成 `done`。让暂停挡住结单，票会永远停在 `waiting`，
+而它指向的改动早已在 main 上 —— 这是虚报「还有活」。
+
+### 孤儿票：`prUrl` 永远为空的 `waiting`
+
+同一话题被并发建出两张票时，后一张拿不到 PR（PR 只能挂一张）。
+它不会自己走到终态，需要人 `stop_ticket`（`cancelled`）收掉。
+根治在建票侧：`create_ticket` 必须对同一 `threadId` 串行。
+
 ### 任务之间的关联
 
 | kind | 影响 | 谁写 |
