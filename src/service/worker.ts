@@ -45,6 +45,11 @@ export const worker = defineService({
       const activity = await session.activity(worker.id).catch(() => null)
       if (activity && (activity.running || activity.background || activity.queued))
         continue
+      // 本轮刚启动时，会话里可能还只有上一轮的事件，最后活动时间远早于 startedAt。
+      // 只按会话历史判活会让新一轮在若干毫秒内被判死，所以 startedAt 也给一段宽限。
+      const started = worker.startedAt ? Date.parse(worker.startedAt) : Number.NaN
+      if (Number.isFinite(started) && Date.now() - started < 120_000)
+        continue
       const last = await session.lastActivity(worker.id)
       if (last && Date.now() - last < 120_000)
         continue
@@ -112,11 +117,16 @@ export const worker = defineService({
       try {
         const branch = `dsh/${ticket.id}`
         let directory = worker.worktree
-        const existing = await session.history(worker.id).then(() => true).catch(() => false)
+        // 复用判据必须与 activate 一致：归档后的会话仍有 history，但 resolve 返回 null，
+        // 复用它只会在激活时 unknown_session，票就永远卡在 queued。
+        const existing = await session.resolve(worker.id).then(Boolean).catch(() => false)
         if (existing) {
           if (directory && worker.branch === branch)
             await worktree.verify(project.directory, directory, branch)
           directory = directory ?? project.directory
+          // 复用同一 worker 时上一轮会话已 end-seed；prompt 的契约是「先显式恢复会话再投递」，
+          // 不在这里恢复，后面的 send 只会进空气，Worker 永远收不到这一轮的 prompt。
+          await session.activate(worker.id)
         }
         else {
           await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory })
@@ -150,7 +160,18 @@ export const worker = defineService({
         await db.ticket.setPrepareError(ticket.id, null, now)
       }
       catch (error) {
-        await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), new Date().toISOString())
+        const reason = error instanceof Error ? error.message : String(error)
+        // 会话相关的失败（已归档 / id 被占）只有换新 worker 记录才能恢复：
+        // 老 id 的会话归档后既激活不了、也建不了同 id，继续复用只会一直失败。
+        if (reason === 'unknown_session' || reason === 'session_identity_conflict') {
+          await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+          await db.worker.queue(ticket.id, ticket.projectId, worker.branch ?? undefined, true).catch(() => undefined)
+          await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
+          if (stopped)
+            break
+          continue
+        }
+        await db.ticket.setPrepareError(ticket.id, reason, new Date().toISOString())
         if (stopped)
           break
         if (started) {
@@ -349,9 +370,11 @@ async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'st
     else
       await db.ticket.update(ticket.id, { status: !reason && current.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
   }
-  if (!reason && current.reportState !== 'failed')
-    await archiveWorker(current.id)
   const ended = await db.ticket.findById(current.ticketId)
+  // 只有票真正终结才归档会话。票还在 review / waiting 时，后续的 review 意见要复用这个 worker，
+  // 会话一旦归档，resolve 就返回 null，下一轮会直接以 unknown_session 失败。
+  if (!reason && current.reportState !== 'failed' && ended && (ended.status === 'done' || ended.status === 'cancelled'))
+    await archiveWorker(current.id)
   if (ended && (ended.status === 'done' || ended.status === 'cancelled'))
     await releaseDependents(ended.id)
 }

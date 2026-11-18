@@ -311,6 +311,12 @@ export class GitHubChannel {
         }
         continue
       }
+      // 票停在 review（Worker 已报 ready）时，PR 上又来新的真人意见，必须重新派工，
+      // 否则意见进了收件箱却没有 Worker 去改，PR 永远停在旧提交（flow.md 8.2）。
+      if (ticket.status === 'review' && !ticket.paused && human) {
+        await db.ticket.update(ticketId, { status: 'waiting', updatedAt: new Date().toISOString() })
+        await db.worker.queue(ticketId, ticket.projectId).catch(() => undefined)
+      }
       targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
     }
     if (!subscriptions.length)
