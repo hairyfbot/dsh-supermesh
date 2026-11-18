@@ -23,7 +23,6 @@ export function GitlabDetail(): ReactNode {
     refetchOnMount: 'always',
   })
   const channel = channels.data?.find(channel => channel.id === 'gitlab')
-  const [expectedAccount, setExpectedAccount] = useState(channel?.expectedAccount ?? '')
   const id = useId()
   const savingRequest = useRef(false)
   const [saving, setSaving] = useState(false)
@@ -159,7 +158,7 @@ export function GitlabDetail(): ReactNode {
     setSaving(true)
     setNotice('')
     try {
-      const result = await putApiSupermeshChannelIdConfiguration({ id: 'gitlab' }, { host: host.trim(), ...(expectedAccount.trim() !== (channel?.expectedAccount ?? '').trim() ? { expectedAccount: expectedAccount.trim() } : {}), ...(token.trim() && !channel?.hasCredential ? { enabled: true } : {}), commitName: commitName.trim(), commitEmail: commitEmail.trim(), ...(token.trim() ? { token: token.trim() } : {}) }, { signal: lifetime.current.signal })
+      const result = await putApiSupermeshChannelIdConfiguration({ id: 'gitlab' }, { host: host.trim(), ...(token.trim() && !channel?.hasCredential ? { enabled: true } : {}), commitName: commitName.trim(), commitEmail: commitEmail.trim(), ...(token.trim() ? { token: token.trim() } : {}) }, { signal: lifetime.current.signal })
       if (lifetime.current.signal.aborted)
         return
       if (!('channel' in result))
@@ -182,7 +181,6 @@ export function GitlabDetail(): ReactNode {
   }
   function reset(saved = channel): void {
     setHost(saved?.host ?? 'https://gitlab.com')
-    setExpectedAccount(saved?.expectedAccount ?? '')
     setCommitName(saved?.commitName ?? '')
     setCommitEmail(saved?.commitEmail ?? '')
     setToken('')
@@ -262,7 +260,6 @@ export function GitlabDetail(): ReactNode {
     return URL.canParse(value.trim()) ? new URL(value.trim()).href : value.trim()
   }
   const dirty = normalizeHost(host) !== normalizeHost(channel?.host ?? 'https://gitlab.com')
-    || expectedAccount.trim() !== (channel?.expectedAccount ?? '').trim()
     || commitName.trim() !== (channel?.commitName ?? '').trim()
     || commitEmail.trim() !== (channel?.commitEmail ?? '').trim()
     || Boolean(token.trim())
@@ -330,11 +327,6 @@ export function GitlabDetail(): ReactNode {
             </div>
           </Section>
           <Section title={t('channelAccount')} description={t('channelAccountDescription')}>
-            <div className="flex flex-col gap-2">
-              <label htmlFor={`${id}-username`} className="text-xs font-medium">{t('channelLoginName')}</label>
-              <Input id={`${id}-username`} value={expectedAccount} onChange={event => setExpectedAccount(event.target.value)} disabled={busy} maxLength={100} placeholder="supermesh-bot" autoComplete="off" spellCheck={false} aria-describedby={`${id}-username-help`} />
-              <p id={`${id}-username-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelLoginNameHelp')}</p>
-            </div>
             <div className="grid gap-3 @min-[540px]:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${id}-commit-name`} className="text-xs font-medium">{t('channelCommitName')}</label>

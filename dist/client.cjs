@@ -6409,8 +6409,6 @@ const dicts = {
 		channelHostInvalid: "请输入有效的 HTTPS 站点地址，不要包含账号、密码、项目路径、查询参数或片段。",
 		channelAccount: "渠道账号",
 		channelAccountDescription: "通过授权登录或 Token 验证账号，保存实际登录身份。",
-		channelLoginName: "预期账号名",
-		channelLoginNameHelp: "身份验证结果必须与此账号一致，不一致时拒绝保存。",
 		channelCommitName: "Git 提交名称",
 		channelCommitEmail: "Git 提交邮箱",
 		channelCommitHelp: "保存 Git 提交身份；凭据与提交身份分别管理。",
@@ -6828,8 +6826,6 @@ const dicts = {
 		channelHostInvalid: "Enter a valid HTTPS host URL without credentials, project paths, query parameters, or fragments.",
 		channelAccount: "Channel account",
 		channelAccountDescription: "Specify the expected bot identity. The authenticated account must match.",
-		channelLoginName: "Expected username",
-		channelLoginNameHelp: "Saving must be rejected if the authenticated username does not match.",
 		channelCommitName: "Git commit name",
 		channelCommitEmail: "Git commit email",
 		channelCommitHelp: "Save the Git commit identity. Credentials and commit identity are managed separately.",
@@ -7932,7 +7928,6 @@ function GitlabDetail() {
 		refetchOnMount: "always"
 	});
 	const channel_0 = channels.data?.find((channel) => channel.id === "gitlab");
-	const [expectedAccount, setExpectedAccount] = (0, react.useState)(channel_0?.expectedAccount ?? "");
 	const id = (0, react.useId)();
 	const savingRequest = (0, react.useRef)(false);
 	const [saving, setSaving] = (0, react.useState)(false);
@@ -8053,7 +8048,6 @@ function GitlabDetail() {
 		try {
 			const result = await putApiSupermeshChannelIdConfiguration({ id: "gitlab" }, {
 				host: host.trim(),
-				...expectedAccount.trim() !== (channel_0?.expectedAccount ?? "").trim() ? { expectedAccount: expectedAccount.trim() } : {},
 				...token.trim() && !channel_0?.hasCredential ? { enabled: true } : {},
 				commitName: commitName.trim(),
 				commitEmail: commitEmail.trim(),
@@ -8074,7 +8068,6 @@ function GitlabDetail() {
 	};
 	function reset(saved_1 = channel_0) {
 		setHost(saved_1?.host ?? "https://gitlab.com");
-		setExpectedAccount(saved_1?.expectedAccount ?? "");
 		setCommitName(saved_1?.commitName ?? "");
 		setCommitEmail(saved_1?.commitEmail ?? "");
 		setToken("");
@@ -8137,7 +8130,7 @@ function GitlabDetail() {
 	function normalizeHost(value_2) {
 		return URL.canParse(value_2.trim()) ? new URL(value_2.trim()).href : value_2.trim();
 	}
-	const dirty = normalizeHost(host) !== normalizeHost(channel_0?.host ?? "https://gitlab.com") || expectedAccount.trim() !== (channel_0?.expectedAccount ?? "").trim() || commitName.trim() !== (channel_0?.commitName ?? "").trim() || commitEmail.trim() !== (channel_0?.commitEmail ?? "").trim() || Boolean(token.trim());
+	const dirty = normalizeHost(host) !== normalizeHost(channel_0?.host ?? "https://gitlab.com") || commitName.trim() !== (channel_0?.commitName ?? "").trim() || commitEmail.trim() !== (channel_0?.commitEmail ?? "").trim() || Boolean(token.trim());
 	function validateHost() {
 		const url = URL.canParse(host.trim()) ? new URL(host.trim()) : null;
 		const valid = Boolean(url && url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash && url.pathname === "/");
@@ -8261,32 +8254,6 @@ function GitlabDetail() {
 					description: t("channelAccountDescription"),
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: "flex flex-col gap-2",
-							children: [
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-									htmlFor: `${id}-username`,
-									className: "text-xs font-medium",
-									children: t("channelLoginName")
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-									id: `${id}-username`,
-									value: expectedAccount,
-									onChange: (event_0) => setExpectedAccount(event_0.target.value),
-									disabled: busy,
-									maxLength: 100,
-									placeholder: "supermesh-bot",
-									autoComplete: "off",
-									spellCheck: false,
-									"aria-describedby": `${id}-username-help`
-								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-									id: `${id}-username-help`,
-									className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-									children: t("channelLoginNameHelp")
-								})
-							]
-						}),
-						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: "grid gap-3 @min-[540px]:grid-cols-2",
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: "flex flex-col gap-2",
@@ -8298,7 +8265,7 @@ function GitlabDetail() {
 									id: `${id}-commit-name`,
 									placeholder: "Supermesh Bot",
 									value: commitName,
-									onChange: (event_1) => setCommitName(event_1.target.value),
+									onChange: (event_0) => setCommitName(event_0.target.value),
 									disabled: busy,
 									maxLength: 200,
 									autoComplete: "off"
@@ -8314,7 +8281,7 @@ function GitlabDetail() {
 									type: "email",
 									placeholder: "bot@example.com",
 									value: commitEmail,
-									onChange: (event_2) => setCommitEmail(event_2.target.value),
+									onChange: (event_1) => setCommitEmail(event_1.target.value),
 									disabled: busy,
 									maxLength: 254,
 									autoComplete: "off",
@@ -8403,7 +8370,7 @@ function GitlabDetail() {
 										className: "w-full min-w-0",
 										type: "password",
 										value: token,
-										onChange: (event_3) => setToken(event_3.target.value),
+										onChange: (event_2) => setToken(event_2.target.value),
 										disabled: busy,
 										autoComplete: "new-password",
 										placeholder: t("channelTokenPlaceholder"),

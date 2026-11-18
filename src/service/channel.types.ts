@@ -8,7 +8,6 @@ export interface ChannelConnection {
 
 export interface ChannelConfiguration {
   host?: string
-  expectedAccount?: string
   enabled?: boolean
   commitName?: string
   commitEmail?: string
@@ -26,7 +25,6 @@ export interface ChannelView {
   supported: boolean
   hasCredential: boolean
   status: 'unsupported' | 'unconfigured' | 'disabled' | 'offline' | 'online'
-  expectedAccount?: string
   commitName: string
   commitEmail: string
   accounts: { id: string, channelId: string, role: 'bot' | 'admin', name: string, avatar: string | null, status: 'online' | 'offline', createdAt: string }[]

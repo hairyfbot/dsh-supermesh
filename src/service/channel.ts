@@ -90,15 +90,13 @@ function legacyRef(kind: 'github' | 'gitlab') {
   return credentialRef(kind === 'github' ? 'NEXUS_GITHUB_TOKEN' : 'NEXUS_GITLAB_TOKEN')
 }
 
-function readMetadata(raw: string | undefined, kind: ChannelKind): { commitName: string, commitEmail: string, expectedAccount?: string } {
+function readMetadata(raw: string | undefined, kind: ChannelKind): { commitName: string, commitEmail: string } {
   if (!raw)
     return { commitName: '', commitEmail: '' }
   const value: unknown = JSON.parse(raw)
   if (!value || typeof value !== 'object' || !('commitName' in value) || !('commitEmail' in value) || typeof value.commitName !== 'string' || typeof value.commitEmail !== 'string')
     throw new Error('invalid_channel_metadata')
-  if (kind === 'gitlab' && 'expectedAccount' in value && typeof value.expectedAccount !== 'string')
-    throw new Error('invalid_channel_metadata')
-  return { commitName: value.commitName, commitEmail: value.commitEmail, ...(kind === 'gitlab' && 'expectedAccount' in value && value.expectedAccount ? { expectedAccount: value.expectedAccount as string } : {}) }
+  return { commitName: value.commitName, commitEmail: value.commitEmail }
 }
 
 async function removeCredentials(kind: string): Promise<ChannelView> {
@@ -120,16 +118,13 @@ async function removeCredentials(kind: string): Promise<ChannelView> {
 async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelView> {
   if (kind !== 'github' && kind !== 'gitlab')
     throw new TypeError('channel_unsupported')
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch) || Object.keys(patch).some(key => !['host', 'enabled', 'expectedAccount', 'commitName', 'commitEmail', 'token'].includes(key)) || (patch.enabled !== undefined && typeof patch.enabled !== 'boolean') || ['host', 'commitName', 'commitEmail', 'token'].some(key => patch[key as keyof ChannelConfiguration] !== undefined && typeof patch[key as keyof ChannelConfiguration] !== 'string'))
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch) || Object.keys(patch).some(key => !['host', 'enabled', 'commitName', 'commitEmail', 'token'].includes(key)) || (patch.enabled !== undefined && typeof patch.enabled !== 'boolean') || ['host', 'commitName', 'commitEmail', 'token'].some(key => patch[key as keyof ChannelConfiguration] !== undefined && typeof patch[key as keyof ChannelConfiguration] !== 'string'))
     throw new TypeError('invalid_channel_config')
   if (patch.token !== undefined && (!patch.token.trim() || patch.token.length > 8192 || /[\r\n]/.test(patch.token)))
     throw new TypeError('invalid_channel_token')
   if ((patch.commitName?.length ?? 0) > 200 || (patch.commitEmail?.length ?? 0) > 254 || /[\r\n]/.test((patch.commitName ?? '') + (patch.commitEmail ?? '')) || (patch.commitEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(patch.commitEmail.trim())))
     throw new TypeError('invalid_commit_identity')
-  if (kind === 'gitlab' && patch.expectedAccount !== undefined && (typeof patch.expectedAccount !== 'string' || patch.expectedAccount.length > 100 || (patch.expectedAccount.trim() && !/^[a-z0-9][\w.-]*$/i.test(patch.expectedAccount.trim()))))
-    throw new TypeError('invalid_expected_account')
   const current = (await channel.list()).find(item => item.kind === kind)!
-  const expectedAccount = kind === 'gitlab' ? patch.expectedAccount?.trim() ?? current.expectedAccount : undefined
   let url: URL
   try {
     url = new URL(patch.host ?? current.host ?? (kind === 'github' ? 'https://github.com' : 'https://gitlab.com'))
@@ -173,16 +168,12 @@ async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelV
       const login = kind === 'github' ? user.login : user.username ?? user.name
       if (typeof login !== 'string' || !login.trim() || login.length > 200 || /[\r\n]/.test(login))
         throw new Error('channel_auth_failed')
-      if (expectedAccount && (typeof user.username !== 'string' || user.username.toLowerCase() !== expectedAccount.toLowerCase()))
-        throw new TypeError('channel_identity_mismatch')
       account = { name: login.trim(), avatar: null }
     }
     finally {
       await dispatcher.close()
     }
   }
-  if (kind === 'gitlab' && !token && expectedAccount && current.accounts.some(account => account.role === 'bot' && account.name.toLowerCase() !== expectedAccount.toLowerCase()))
-    throw new TypeError('channel_identity_mismatch')
   const enabled = patch.enabled ?? (Boolean(account) || current.enabled)
   if (enabled && !account && !current.accounts.some(account => account.role === 'bot' && account.status === 'online'))
     throw new TypeError('channel_account_required')
@@ -190,7 +181,7 @@ async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelV
   if (token)
     await credentials().set(ref(kind), token)
   try {
-    await db.channel.saveConfiguration(kind, current.name, kind === 'gitlab' ? url.origin : null, enabled, { commitName: patch.commitName?.trim() ?? current.commitName, commitEmail: patch.commitEmail?.trim() ?? current.commitEmail, ...(expectedAccount ? { expectedAccount } : {}) }, account, ...(hostChanged ? [true] as const : []))
+    await db.channel.saveConfiguration(kind, current.name, kind === 'gitlab' ? url.origin : null, enabled, { commitName: patch.commitName?.trim() ?? current.commitName, commitEmail: patch.commitEmail?.trim() ?? current.commitEmail }, account, ...(hostChanged ? [true] as const : []))
   }
   catch {
     if (token) {

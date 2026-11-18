@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-BrkcwALp.js";
+import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-CKbi6Bfj.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -483,8 +483,9 @@ var GitHubChannel = class {
 		}
 		if (firstError) throw firstError;
 		const signature = digest$1(revisions.sort());
-		await this.save(repository, `cursor:${name}`, cursor.signature === signature && cursor.through ? { since: cursor.through } : {
-			since: cursor.since,
+		const overlap = (/* @__PURE__ */ new Date(Date.parse(startedAt) - 12e4)).toISOString();
+		await this.save(repository, `cursor:${name}`, {
+			since: overlap < cursor.since ? cursor.since : overlap,
 			signature,
 			through: startedAt
 		});

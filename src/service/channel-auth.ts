@@ -104,6 +104,10 @@ async function authenticate(task: Authentication): Promise<void> {
   env.GLAB_CHECK_UPDATE = 'false'
   env.GLAB_SKIP_TLS_VERIFY = 'false'
   env.GLAB_API_PROTOCOL = 'https'
+  // glab 的 keyring 不理会 GLAB_CONFIG_DIR：登录后 token 进系统 keyring，
+  // 后续 `glab config get token` 会读到全局个人 token 而不是刚登录的 bot，
+  // 导致凭据落库成错的身份。强制走文件存储才能按目录隔离。
+  env.GLAB_USE_KEYRING = 'false'
   env.GH_PAGER = 'cat'
   env.NO_COLOR = '1'
   const timeout = setTimeout(() => task.controller.abort(), lifetime)

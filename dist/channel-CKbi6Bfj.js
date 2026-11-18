@@ -2463,12 +2463,14 @@ async function refresh() {
 		const hostKey = cli === "gh" ? "GH_HOST" : "GITLAB_HOST";
 		const host = cli === "gh" ? "github.com" : gitlabHost;
 		const shellPath = shellPathOf(basePath);
+		const keyringKeys = cli === "glab" ? ["GLAB_USE_KEYRING"] : [];
 		await own(join(bin, cli), [
 			"#!/bin/sh",
 			`unset ${removed.filter((key) => /TOKEN/.test(key)).join(" ")}`,
 			`export PATH=${quote(shellPath)}`,
 			`export ${configKey}=${quote(join(directory, cli).replaceAll("\\", "/"))}`,
 			`export ${hostKey}=${quote(host)}`,
+			...keyringKeys.map((key) => `export ${key}=false`),
 			executable ? `exec ${quote(executable.replaceAll("\\", "/"))} "$@"` : `echo '${cli} is not installed' >&2; exit 127`,
 			""
 		].join("\n"), 448);
@@ -2480,6 +2482,7 @@ async function refresh() {
 			`set "PATH=${cmd(basePath)}"`,
 			`set "${configKey}=${cmd(join(directory, cli))}"`,
 			`set "${hostKey}=${host}"`,
+			...keyringKeys.map((key) => `set "${key}=false"`),
 			executable ? `"${cmd(executable)}" %*` : `echo ${cli} is not installed 1>&2 & exit /b 127`,
 			"exit /b %errorlevel%",
 			""
@@ -2639,6 +2642,7 @@ async function authenticate(task) {
 	env.GLAB_CHECK_UPDATE = "false";
 	env.GLAB_SKIP_TLS_VERIFY = "false";
 	env.GLAB_API_PROTOCOL = "https";
+	env.GLAB_USE_KEYRING = "false";
 	env.GH_PAGER = "cat";
 	env.NO_COLOR = "1";
 	const timeout = setTimeout(() => task.controller.abort(), lifetime);
@@ -4434,7 +4438,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DmhUwIO7.js");
+			const { shell } = await import("./shell-BxpgyEJ1.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4443,7 +4447,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DmhUwIO7.js");
+			const { shell } = await import("./shell-BxpgyEJ1.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4465,11 +4469,9 @@ function readMetadata(raw, kind) {
 	};
 	const value = JSON.parse(raw);
 	if (!value || typeof value !== "object" || !("commitName" in value) || !("commitEmail" in value) || typeof value.commitName !== "string" || typeof value.commitEmail !== "string") throw new Error("invalid_channel_metadata");
-	if (kind === "gitlab" && "expectedAccount" in value && typeof value.expectedAccount !== "string") throw new Error("invalid_channel_metadata");
 	return {
 		commitName: value.commitName,
-		commitEmail: value.commitEmail,
-		...kind === "gitlab" && "expectedAccount" in value && value.expectedAccount ? { expectedAccount: value.expectedAccount } : {}
+		commitEmail: value.commitEmail
 	};
 }
 async function removeCredentials(kind) {
@@ -4489,7 +4491,6 @@ async function save(kind, patch) {
 	if (!patch || typeof patch !== "object" || Array.isArray(patch) || Object.keys(patch).some((key) => ![
 		"host",
 		"enabled",
-		"expectedAccount",
 		"commitName",
 		"commitEmail",
 		"token"
@@ -4501,9 +4502,7 @@ async function save(kind, patch) {
 	].some((key) => patch[key] !== void 0 && typeof patch[key] !== "string")) throw new TypeError("invalid_channel_config");
 	if (patch.token !== void 0 && (!patch.token.trim() || patch.token.length > 8192 || /[\r\n]/.test(patch.token))) throw new TypeError("invalid_channel_token");
 	if ((patch.commitName?.length ?? 0) > 200 || (patch.commitEmail?.length ?? 0) > 254 || /[\r\n]/.test((patch.commitName ?? "") + (patch.commitEmail ?? "")) || patch.commitEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(patch.commitEmail.trim())) throw new TypeError("invalid_commit_identity");
-	if (kind === "gitlab" && patch.expectedAccount !== void 0 && (typeof patch.expectedAccount !== "string" || patch.expectedAccount.length > 100 || patch.expectedAccount.trim() && !/^[a-z0-9][\w.-]*$/i.test(patch.expectedAccount.trim()))) throw new TypeError("invalid_expected_account");
 	const current = (await channel.list()).find((item) => item.kind === kind);
-	const expectedAccount = kind === "gitlab" ? patch.expectedAccount?.trim() ?? current.expectedAccount : void 0;
 	let url;
 	try {
 		url = new URL(patch.host ?? current.host ?? (kind === "github" ? "https://github.com" : "https://gitlab.com"));
@@ -4548,7 +4547,6 @@ async function save(kind, patch) {
 			const user = identity;
 			const login = kind === "github" ? user.login : user.username ?? user.name;
 			if (typeof login !== "string" || !login.trim() || login.length > 200 || /[\r\n]/.test(login)) throw new Error("channel_auth_failed");
-			if (expectedAccount && (typeof user.username !== "string" || user.username.toLowerCase() !== expectedAccount.toLowerCase())) throw new TypeError("channel_identity_mismatch");
 			account = {
 				name: login.trim(),
 				avatar: null
@@ -4557,7 +4555,6 @@ async function save(kind, patch) {
 			await dispatcher.close();
 		}
 	}
-	if (kind === "gitlab" && !token && expectedAccount && current.accounts.some((account) => account.role === "bot" && account.name.toLowerCase() !== expectedAccount.toLowerCase())) throw new TypeError("channel_identity_mismatch");
 	const enabled = patch.enabled ?? (Boolean(account) || current.enabled);
 	if (enabled && !account && !current.accounts.some((account) => account.role === "bot" && account.status === "online")) throw new TypeError("channel_account_required");
 	const previous = token ? await credentials().resolve(ref(kind)) : void 0;
@@ -4565,8 +4562,7 @@ async function save(kind, patch) {
 	try {
 		await db.channel.saveConfiguration(kind, current.name, kind === "gitlab" ? url.origin : null, enabled, {
 			commitName: patch.commitName?.trim() ?? current.commitName,
-			commitEmail: patch.commitEmail?.trim() ?? current.commitEmail,
-			...expectedAccount ? { expectedAccount } : {}
+			commitEmail: patch.commitEmail?.trim() ?? current.commitEmail
 		}, account, ...hostChanged ? [true] : []);
 	} catch {
 		if (token) {

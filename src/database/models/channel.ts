@@ -7,7 +7,7 @@ export class Channel extends Model<DB, 'channel'> {
     super(db, 'channel', 'id')
   }
 
-  async saveConfiguration(id: string, name: string, host: string | null, enabled: boolean, metadata: { commitName: string, commitEmail: string, expectedAccount?: string }, account?: { name: string, avatar: string | null }, hostChanged = false): Promise<void> {
+  async saveConfiguration(id: string, name: string, host: string | null, enabled: boolean, metadata: { commitName: string, commitEmail: string }, account?: { name: string, avatar: string | null }, hostChanged = false): Promise<void> {
     const now = new Date().toISOString()
     await this.db.transaction().execute(async (trx) => {
       const previous = await trx.selectFrom('channel').selectAll().where('id', '=', id).executeTakeFirst()

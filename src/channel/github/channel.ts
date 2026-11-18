@@ -226,9 +226,11 @@ export class GitHubChannel {
     if (firstError)
       throw firstError
     const signature = digest(revisions.sort())
-    await this.save(repository, `cursor:${name}`, cursor.signature === signature && cursor.through
-      ? { since: cursor.through }
-      : { since: cursor.since, signature, through: startedAt })
+    // 本次已读完 [cursor.since, startedAt)，since 推进到本次起点。
+    // 不能推进到 cursor.through：那会跳过上次窗口与本次窗口之间的新条目，正是漏采的原因。
+    // 留两分钟重叠，防止 GitHub 的 updated_at 索引延迟让刚更新的条目落在窗外。
+    const overlap = new Date(Date.parse(startedAt) - 120_000).toISOString()
+    await this.save(repository, `cursor:${name}`, { since: overlap < cursor.since ? cursor.since : overlap, signature, through: startedAt })
   }
 
   private async ensureThread(target: Resource, row: Record<string, unknown>): Promise<Thread> {

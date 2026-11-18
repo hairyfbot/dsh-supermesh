@@ -95,9 +95,12 @@ async function refresh(): Promise<void> {
     const hostKey = cli === 'gh' ? 'GH_HOST' : 'GITLAB_HOST'
     const host = cli === 'gh' ? 'github.com' : gitlabHost
     const shellPath = shellPathOf(basePath)
-    await own(join(bin, cli), ['#!/bin/sh', `unset ${removed.filter(key => /TOKEN/.test(key)).join(' ')}`, `export PATH=${quote(shellPath)}`, `export ${configKey}=${quote(join(directory, cli).replaceAll('\\', '/'))}`, `export ${hostKey}=${quote(host)}`, executable ? `exec ${quote(executable.replaceAll('\\', '/'))} "$@"` : `echo '${cli} is not installed' >&2; exit 127`, ''].join('\n'), 0o700)
+    // glab 的 keyring 不理会 GLAB_CONFIG_DIR，会读到系统里的个人 token；
+    // 强制文件存储，保证包装器只认本目录下这份 bot 凭据。
+    const keyringKeys = cli === 'glab' ? ['GLAB_USE_KEYRING'] : []
+    await own(join(bin, cli), ['#!/bin/sh', `unset ${removed.filter(key => /TOKEN/.test(key)).join(' ')}`, `export PATH=${quote(shellPath)}`, `export ${configKey}=${quote(join(directory, cli).replaceAll('\\', '/'))}`, `export ${hostKey}=${quote(host)}`, ...keyringKeys.map(key => `export ${key}=false`), executable ? `exec ${quote(executable.replaceAll('\\', '/'))} "$@"` : `echo '${cli} is not installed' >&2; exit 127`, ''].join('\n'), 0o700)
     const cmd = (value: string) => value.replaceAll('%', '%%')
-    await own(join(bin, `${cli}.cmd`), ['@echo off', 'setlocal', ...removed.filter(key => /TOKEN/.test(key)).map(key => `set "${key}="`), `set "PATH=${cmd(basePath)}"`, `set "${configKey}=${cmd(join(directory, cli))}"`, `set "${hostKey}=${host}"`, executable ? `"${cmd(executable)}" %*` : `echo ${cli} is not installed 1>&2 & exit /b 127`, 'exit /b %errorlevel%', ''].join('\r\n'), 0o700)
+    await own(join(bin, `${cli}.cmd`), ['@echo off', 'setlocal', ...removed.filter(key => /TOKEN/.test(key)).map(key => `set "${key}="`), `set "PATH=${cmd(basePath)}"`, `set "${configKey}=${cmd(join(directory, cli))}"`, `set "${hostKey}=${host}"`, ...keyringKeys.map(key => `set "${key}=false"`), executable ? `"${cmd(executable)}" %*` : `echo ${cli} is not installed 1>&2 & exit /b 127`, 'exit /b %errorlevel%', ''].join('\r\n'), 0o700)
   }
   const nativeGh = await nativeCli('gh')
   const escaping = ['GH_CONFIG_DIR', 'GH_HOST', ...removed.filter(key => /TOKEN/.test(key))]
