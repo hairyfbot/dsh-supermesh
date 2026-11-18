@@ -112,6 +112,7 @@ catalogs:
     '@types/react': 19.3.0
   utils:
     '@reause/core': ^0.1.9
+    '@tanstack/react-query': ^5.107.1
     croner: ^11.0.0
     dsh-h3: ^0.2.2
     dsh-taiwind: ^0.3.3

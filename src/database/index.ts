@@ -1,4 +1,5 @@
 import type { DB } from './types'
+import process from 'node:process'
 import { DatabaseSync } from 'node:sqlite'
 import { NodeSqliteDialect } from '@fileshed/kysely-node-sqlite'
 import { Kysely } from 'kysely'

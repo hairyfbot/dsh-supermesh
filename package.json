@@ -84,7 +84,7 @@
     "@deepseek-ai/dsh-http-proxy": "catalog:",
     "@fileshed/kysely-node-sqlite": "catalog:database",
     "@reause/core": "catalog:utils",
-    "@tanstack/react-query": "^5.107.1",
+    "@tanstack/react-query": "catalog:utils",
     "croner": "catalog:utils",
     "dsh-h3": "catalog:utils",
     "dsh-taiwind": "catalog:utils",
