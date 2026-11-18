@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshTicket } from '../../../apis'
+import { getApiSupermeshTicketCount } from '../../../apis'
 import { TasksIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
@@ -15,20 +15,14 @@ const SEGMENTS = [
 
 export function TaskCard({ onMore }: { onMore: () => void }): ReactNode {
   const { t } = useTranslation()
-  const { data: tickets, isLoading, error } = useQuery({ queryKey: keys.ticketPage(1, 100), queryFn: () => getApiSupermeshTicket({ page: '1', pageSize: '100' }) })
-  const list = tickets?.data ?? []
-  const now = Date.now()
-  const added = list.filter(ticket => Date.parse(ticket.createdAt) >= now - 86400000).length
+  const { data: counts, isLoading, error } = useQuery({ queryKey: keys.ticketCount, queryFn: () => getApiSupermeshTicketCount(), refetchInterval: 30_000 })
   const segments = SEGMENTS.map(segment => ({
     ...segment,
-    value: list.filter((ticket) => {
-      const closed = ticket.status === 'done' || ticket.status === 'cancelled'
-      if (segment.name === 'overviewCompleted')
-        return ticket.status === 'done'
-      if (segment.name === 'overviewBlocked')
-        return !closed && Boolean(ticket.paused || ticket.prepareError)
-      return !closed && !ticket.paused && !ticket.prepareError && ['running', 'queued', 'review'].includes(ticket.status)
-    }).length,
+    value: ({
+      overviewInProgress: counts?.inProgress,
+      overviewCompleted: counts?.completed,
+      overviewBlocked: counts?.blocked,
+    } as Record<string, number | undefined>)[segment.name] ?? 0,
   }))
   return (
     <SummaryCard title={t('overviewTaskSummary')} icon={<TasksIcon width={18} height={18} className="shrink-0" />} actionLabel={t('overviewMoreTasks')} onMore={onMore}>
@@ -40,7 +34,7 @@ export function TaskCard({ onMore }: { onMore: () => void }): ReactNode {
               <div className="flex min-h-0 flex-1 items-center justify-between gap-3">
                 <div className="flex h-full min-w-0 flex-col">
                   <p className="flex items-baseline gap-1.5 tabular-nums">
-                    <span className="text-[32px] leading-10 font-semibold tracking-tight">{added}</span>
+                    <span className="text-[32px] leading-10 font-semibold tracking-tight">{counts?.added ?? 0}</span>
                     <span className="text-xs text-(--dsw-alias-label-secondary)">{t('overviewAdded')}</span>
                   </p>
                   <dl className="mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-(--dsw-alias-label-secondary)">

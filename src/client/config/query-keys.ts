@@ -2,6 +2,7 @@ export const keys = {
   project: ['project'] as const,
   ticket: ['ticket'] as const,
   ticketPage: (page: number, pageSize: number) => ['ticket', 'page', page, pageSize] as const,
+  ticketCount: ['ticket', 'count'] as const,
   topic: ['topic'] as const,
   topicPage: (page: number, pageSize: number, filters: unknown) => ['topic', 'page', page, pageSize, filters] as const,
   ticketCurrent: ['ticket', 'current'] as const,

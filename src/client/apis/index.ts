@@ -73,6 +73,14 @@ export async function getApiSupermeshTicket(query?: Types.GetApiSupermeshTicketQ
 }
 
 /** @method get */
+export async function getApiSupermeshTicketCount(config?: RequestInit) {
+  const response = await fetch("/api/supermesh/ticket/count", {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiSupermeshTicketCountResponse>;
+}
+
+/** @method get */
 export async function getApiSupermeshTicketCurrent(config?: RequestInit) {
   const response = await fetch("/api/supermesh/ticket/current", {
     ...config,

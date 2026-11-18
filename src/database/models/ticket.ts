@@ -131,6 +131,11 @@ export class Ticket extends Model<DB, 'ticket'> {
     return { data, total: Number(counted?.count ?? 0) }
   }
 
+  /** 全量票，供统计类接口使用；不受分页上限影响。 */
+  async listAll(): Promise<Selectable<DB['ticket']>[]> {
+    return this.findManyQuery().execute()
+  }
+
   async listFiltered(filters: { projectId?: string, status?: TicketStatus, attentionOnly?: boolean, supervisorId?: string } = {}): Promise<(Selectable<DB['ticket']> & { attention: boolean | number })[]> {
     let query = this.db.selectFrom('ticket').selectAll('ticket').select(eb => eb.exists(eb.selectFrom('inbox').select('id').whereRef('inbox.ticketId', '=', 'ticket.id').where('kind', '=', 'ask').where('inbox.status', '=', 'pending')).as('attention'))
     if (filters.projectId)

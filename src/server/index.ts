@@ -40,6 +40,7 @@ import ticketGet from './routes/ticket.[id].get'
 import ticketPatch from './routes/ticket.[id].patch'
 import ticketCurrentGet from './routes/ticket.current.get'
 import ticketsGet from './routes/ticket.get'
+import ticketCountGet from './routes/ticket.count.get'
 import topicCountGet from './routes/topic.count.get'
 import topicGet from './routes/topic.get'
 import triggerGet from './routes/trigger.get'
@@ -72,6 +73,7 @@ export const server = defineWebServer<ServerOptions>((app) => {
   app.post('/api/supermesh/repository', repositoryPost)
 
   app.get('/api/supermesh/ticket', ticketsGet)
+  app.get('/api/supermesh/ticket/count', ticketCountGet)
   app.get('/api/supermesh/ticket/current', ticketCurrentGet)
   app.get('/api/supermesh/ticket/:id', ticketGet)
   app.patch('/api/supermesh/ticket/:id', ticketPatch)
