@@ -11,7 +11,6 @@ export const worker = definePreset({
   order: 7,
   tools: [
     channel.read_channel,
-    channel.reply_channel,
 
     tools.report,
     tools.ask,

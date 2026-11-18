@@ -215,6 +215,12 @@ export const reply_channel = defineTool({
       if (!tickets.some(ticket => ticket?.projectId === identity.projectId))
         throw new Error('触发不属于当前项目')
     }
+    // 一条话题上同一次事件只由一个人发声。
+    // 「读过没有」只能证明它看过上下文，挡不住三个角色各自看过后各说一遍 ——
+    // 真正的判据是这条话题上已经有谁就同一个 trigger 说过话。
+    const said = await db.inbox.listByThread(thread.id)
+    if (said.some(message => message.triggerId === trigger.id && message.origin !== identity.role))
+      return JSON.stringify({ status: 'suppressed', reason: 'another_role_already_replied' })
     const ticketId = identity.ticketId ?? null
     const row = await db.inbox.enqueue({ id: replyKey(trigger.id, args.text), type: 'user', origin: identity.role, kind: 'notice', projectId: identity.projectId ?? thread.projectId, supervisorId: identity.supervisorId ?? null, workerId: identity.workerId ?? null, triggerId: trigger.id, threadId: thread.id, ticketId, message: args.text })
     return JSON.stringify({ id: row.id, status: 'queued' })

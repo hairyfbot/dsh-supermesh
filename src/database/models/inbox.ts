@@ -135,6 +135,11 @@ export class Inbox extends Model<DB, 'inbox'> {
     return this.db.selectFrom('inbox').selectAll().orderBy('createdAt', 'desc').orderBy('id').limit(Math.max(1, Math.min(1000, limit))).execute()
   }
 
+  /** 一条话题上所有已入队的对外消息，用于判断「这次事件是不是已经有人说过了」。 */
+  async listByThread(threadId: string): Promise<Selectable<DB['inbox']>[]> {
+    return this.db.selectFrom('inbox').selectAll().where('threadId', '=', threadId).where('type', '=', 'user').execute()
+  }
+
   async enqueue(value: Pick<Insertable<DB['inbox']>, 'type' | 'origin' | 'kind' | 'message'> & Partial<Insertable<DB['inbox']>>): Promise<Selectable<DB['inbox']>> {
     if (!['user', 'main', 'project', 'supervisor'].includes(value.type))
       throw new Error('invalid_inbox_recipient')
