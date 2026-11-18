@@ -10,10 +10,25 @@ import { ExecFileGhRunner, GhError } from './runner'
 type Thread = Selectable<DB['thread']>
 type Inbox = Selectable<DB['inbox']>
 interface Resource { repository: string, number: number, kind: 'issue' | 'pull' }
+
+/** 已结束的 PR 只在这么久之内继续轮询；更早的彻底不碰，避免历史堆积拖慢采集。 */
+const POLL_HORIZON_MS = 14 * 24 * 3600_000
+
+/**
+ * 是否该轮询这个 PR：有活票就必须轮询；否则仅在近 `POLL_HORIZON_MS` 有活动时才轮询。
+ * 与官方 `sources/poll.ts` 的 `polled` 同一策略。
+ */
+export async function polled(ticketIds: string[], updatedAt: string | null): Promise<boolean> {
+  const tickets = await Promise.all(ticketIds.map(id => db.ticket.findById(id)))
+  if (tickets.some(ticket => !!ticket && !['done', 'cancelled'].includes(ticket.status)))
+    return true
+  const times = [updatedAt ?? '', ...tickets.map(ticket => ticket?.endedAt ?? '')].map(Date.parse).filter(Number.isFinite)
+  return times.length > 0 && Date.now() - Math.max(...times) < POLL_HORIZON_MS
+}
 interface Identity { providerId: string, login: string, repositoryId: string, defaultBranch: string | null }
 interface CiSnapshot { state: 'pending' | 'running' | 'passing' | 'failing', checks: Record<string, unknown>[], statuses: Record<string, unknown>[] }
 interface PullFact { head: string, base: string, state: 'open' | 'closed' | 'merged', ciState: CiSnapshot['state'], collectedAt: string, updatedAt: string, ciError?: string, url: string }
-interface Cursor { since: string, signature?: string, through?: string }
+interface Cursor { since: string, signature?: string, through?: string, etag?: string, etagSince?: string }
 interface Receipt { remoteId: string, providerId: string, marker: string, url: string }
 
 export class GitHubChannel {
@@ -25,9 +40,9 @@ export class GitHubChannel {
     return singlet(`github:exclusive:${key}`, action)()
   }
 
-  private async request(path: string, signal?: AbortSignal, method: 'GET' | 'POST' | 'PATCH' = 'GET', body?: Record<string, unknown>): Promise<unknown> {
+  private async request(path: string, signal?: AbortSignal, method: 'GET' | 'POST' | 'PATCH' = 'GET', body?: Record<string, unknown>, headers?: Record<string, string>): Promise<unknown> {
     signal?.throwIfAborted()
-    return this.runner.request({ site: 'github.com', path, method, body, signal })
+    return this.runner.request({ site: 'github.com', path, method, body, headers, signal })
   }
 
   private async state<T>(repository: string, name: string): Promise<T | undefined> {
@@ -170,7 +185,17 @@ export class GitHubChannel {
           }
         }, signal))
         for (const thread of await db.thread.listByChannel('github')) {
-          if (thread.kind !== 'pull' || !thread.url || !(await db.ticketThread.listTicketIds(thread.id)).length)
+          if (thread.kind !== 'pull' || !thread.url)
+            continue
+          const ticketIds = await db.ticketThread.listTicketIds(thread.id)
+          if (!ticketIds.length)
+            continue
+          // 只轮询活票或近 14 天有活动的 PR：否则历史 PR 会随仓库增长线性拖慢整个采集。
+          if (!(await polled(ticketIds, thread.updatedAt)))
+            continue
+          // 已合并/已关闭且绑定票已结单的 PR，状态已成定局，不必每轮重查详情与 CI。
+          const settled = await Promise.all(ticketIds.map(id => db.ticket.findById(id)))
+          if (settled.every(ticket => !!ticket && ['done', 'cancelled'].includes(ticket.status) && !!ticket.prState && ['merged', 'closed'].includes(ticket.prState)))
             continue
           await attempt(async () => {
             const target = parseResource(thread.url!)
@@ -179,10 +204,11 @@ export class GitHubChannel {
             const root = `repos/${repo}/pulls/${target.number}`
             for (const [path, kind] of [['reviews', 'review'], ['comments', 'review_comment']] as const) {
               await attempt(async () => {
-                for (const row of await this.pages(`${root}/${path}`, signal)) {
+                // 走增量游标而非全量翻页：每次只取上次之后的变化，避免逐个 PR 翻历史。
+                await this.stream(repo, `pull:${target.number}:${path}`, `${root}/${path}?sort=updated&direction=asc`, baseline, async (row) => {
                   await this.acceptAnswers(thread, row)
                   await this.ingest(thread, row, 'comment', baseline, kind)
-                }
+                }, signal)
               })
             }
             const result = await this.collectPullRequest(projectId, thread.id, signal)
@@ -208,7 +234,13 @@ export class GitHubChannel {
   private async stream(repository: string, name: string, path: string, baseline: string, accept: (row: Record<string, unknown>) => Promise<void>, signal?: AbortSignal): Promise<void> {
     const cursor = await this.state<Cursor>(repository, `cursor:${name}`) ?? { since: baseline }
     const startedAt = now()
-    const rows = await this.pages(`${path}&since=${encodeURIComponent(cursor.since)}`, signal)
+    const since = cursor.since
+    // 游标未动时带 If-None-Match：未变更会返回 304，不消耗 rate limit。
+    const conditional: Record<string, string> | undefined = cursor.etag && cursor.etagSince === since ? { 'If-None-Match': cursor.etag } : undefined
+    const value = await this.request(`${path}&since=${encodeURIComponent(since)}&per_page=100`, signal, 'GET', undefined, conditional)
+    if (value && typeof value === 'object' && (value as { notModified?: boolean }).notModified)
+      return
+    const rows = array(value).map(record)
     const revisions = []
     let firstError: unknown
     for (const row of rows) {
@@ -226,11 +258,14 @@ export class GitHubChannel {
     if (firstError)
       throw firstError
     const signature = digest(revisions.sort())
-    // 本次已读完 [cursor.since, startedAt)，since 推进到本次起点。
-    // 不能推进到 cursor.through：那会跳过上次窗口与本次窗口之间的新条目，正是漏采的原因。
-    // 留两分钟重叠，防止 GitHub 的 updated_at 索引延迟让刚更新的条目落在窗外。
-    const overlap = new Date(Date.parse(startedAt) - 120_000).toISOString()
-    await this.save(repository, `cursor:${name}`, { since: overlap < cursor.since ? cursor.since : overlap, signature, through: startedAt })
+    // 本次已读完 [since, startedAt)，since 推进到起点前 5 秒重叠（与官方 cursorAt 同值）。
+    // 重叠靠确定性触发 id 去重；不能推进到 cursor.through，那会漏掉两个窗口之间的条目。
+    const next = new Date(Date.parse(startedAt) - 5_000).toISOString()
+    await this.save(repository, `cursor:${name}`, {
+      since: next < cursor.since ? cursor.since : next,
+      signature,
+      through: startedAt,
+    })
   }
 
   private async ensureThread(target: Resource, row: Record<string, unknown>): Promise<Thread> {
@@ -447,6 +482,8 @@ export class GitHubChannel {
     const body = typeof row.body === 'string' ? row.body : ''
     const answers = new Map<string, string>()
     const conflicts = new Set<string>()
+    // 不带编号的回答：同话题只有一条待答问题时用它作答。
+    let anonymous: string | undefined
     let fenced = false
     for (const line of body.split(/\r?\n/)) {
       if (/^\s*~{3}|^\s*```/.test(line)) {
@@ -455,19 +492,30 @@ export class GitHubChannel {
       }
       if (fenced)
         continue
-      if (!/^answer[ \t]/i.test(line))
+      if (!/^answer(?:[ \t:：]|$)/i.test(line))
         continue
-      const content = line.slice(7).trim()
+      const content = line.slice(6).trim().replace(/^[:：]\s*/, '').trim()
+      if (!content)
+        continue
+      // `answer <id>: 内容` 才按编号归属；否则整行就是回答。
       const separator = content.indexOf(': ')
-      if (separator < 1)
+      const candidate = separator > 0 ? content.slice(0, separator).trim() : ''
+      if (candidate && /^[0-9a-f][\w:-]{7,}$/i.test(candidate) && content.slice(separator + 2).trim()) {
+        const answer = content.slice(separator + 2).trim()
+        if (answers.has(candidate) && answers.get(candidate) !== answer)
+          conflicts.add(candidate)
+        answers.set(candidate, answer)
         continue
-      const id = content.slice(0, separator).trim()
-      const answer = content.slice(separator + 2).trim()
-      if (!answer || /\s/.test(id))
-        continue
-      if (answers.has(id) && answers.get(id) !== answer)
-        conflicts.add(id)
-      answers.set(id, answer)
+      }
+      anonymous ??= content
+    }
+    // 无编号回答绑定到本话题唯一待答的 ask；多于一条则不猜。
+    if (anonymous !== undefined) {
+      const pending = (await db.inbox.listPendingAsk()).filter(ask => ask.type === 'user')
+      const scoped = pending.filter(ask => ask.threadId === thread.id)
+      const only = scoped.length === 1 ? scoped[0] : (scoped.length === 0 && pending.length === 1 ? pending[0] : undefined)
+      if (only)
+        answers.set(only.id, anonymous)
     }
     for (const [id, answer] of answers) {
       if (conflicts.has(id))
@@ -581,7 +629,7 @@ export class GitHubChannel {
         await this.destination(current)
         await db.inbox.recordDeliveryFailure(row.id, 'publishing', now())
         posting = true
-        const body = row.kind === 'ask' ? `${row.message}\n\n问题编号：${row.id}\n请回复：answer ${row.id}: 你的回答` : row.message
+        const body = row.kind === 'ask' ? `${row.message}\n\n回复格式：\`answer: 你的回答\`` : row.message
         remote = record(await this.request(root, signal, 'POST', { body: `${body}\n\n${marker}` }))
       }
       if (identity(record(remote.user).id) !== environment.providerId || !text(remote.body).includes(marker))

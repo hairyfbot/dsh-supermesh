@@ -8,6 +8,7 @@ import { keys } from '../../../config/query-keys'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 import { groupTopics, recordsOf, sourceHref, THREAD_KINDS, TRIAGE } from '../model'
+import { AnswerBox } from './components/answer-box'
 import { Event } from './components/event'
 
 export function TriggerDetail(): ReactNode {
@@ -135,6 +136,7 @@ export function TriggerDetail(): ReactNode {
             <h3 className="m-0 text-sm font-medium">{t('triggerLinkedTasks')}</h3>
             <div className="mt-3 flex flex-wrap gap-2">{tickets.length ? tickets.map(ticket => <Button key={ticket} size="sm" variant="outline" onClick={() => openTicket(ticket)}>{ticket}</Button>) : <Empty compact className="[&>p]:text-xs [&>p]:text-(--dsw-alias-label-tertiary)" title={t('triggerNoTask')} />}</div>
           </section>
+          <AnswerBox threadId={latest.thread.id} />
           <p className="m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">{t('triggerExternalText')}</p>
           {href && <p className="m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">{t('triggerSampleLink')}</p>}
         </aside>

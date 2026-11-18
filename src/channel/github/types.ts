@@ -3,6 +3,7 @@ export interface GhRequest {
   method: 'GET' | 'POST' | 'PATCH' | 'PUT'
   path: string
   body?: Record<string, unknown>
+  headers?: Record<string, string>
   signal?: AbortSignal
 }
 

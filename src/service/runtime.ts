@@ -94,15 +94,27 @@ async function activate(): Promise<() => Promise<void>> {
     unregister.push(scheduler.use({ id: 'supermesh:github', cron: '*/30 * * * * *' }, () => track(async () => {
       await project.sync()
       const collected = await github.collectAll(controller.signal)
+      const failures = collected.filter(result => !result.ok)
+      if (failures.length)
+        throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
+    })))
+    // 投递独立于采集：采集要遍历全部历史 PR，耗时可达数分钟；
+    // 串在一起会让人的回答和确认排在采集之后，表现为「回复迟迟不出现」。
+    unregister.push(scheduler.use({ id: 'supermesh:github:flush', cron: '*/10 * * * * *' }, () => track(async () => {
       const flushed = await github.flush(controller.signal)
-      const failures = [...collected, ...flushed].filter(result => !result.ok)
+      const failures = flushed.filter(result => !result.ok)
       if (failures.length)
         throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
     })))
     unregister.push(scheduler.use({ id: 'supermesh:gitlab', cron: '*/30 * * * * *' }, () => track(async () => {
       const collected = await gitlab.collectAll(controller.signal)
+      const failures = collected.filter(result => !result.ok)
+      if (failures.length)
+        throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
+    })))
+    unregister.push(scheduler.use({ id: 'supermesh:gitlab:flush', cron: '*/10 * * * * *' }, () => track(async () => {
       const flushed = await gitlab.flush(controller.signal)
-      const failures = [...collected, ...flushed].filter(result => !result.ok)
+      const failures = flushed.filter(result => !result.ok)
       if (failures.length)
         throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
     })))

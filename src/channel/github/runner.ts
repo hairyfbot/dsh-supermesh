@@ -26,6 +26,8 @@ export class ExecFileGhRunner implements GhRunner {
     }
     env.GH_TOKEN = token
     const args = ['api', '--hostname', request.site, '--method', request.method, '--include', request.path]
+    for (const [key, value] of Object.entries(request.headers ?? {}))
+      args.push('-H', `${key}: ${value}`)
     if (request.body)
       args.push('--input', '-')
     return new Promise((resolve, reject) => {
@@ -33,6 +35,11 @@ export class ExecFileGhRunner implements GhRunner {
         const response = stdout.replace(/\r\n/g, '\n')
         const status = Number(/^HTTP\/\S+ (\d+)/m.exec(response)?.[1])
         const retryAfter = /^retry-after: (\d+)/im.exec(response)?.[1]
+        // 304 不是错误：条件请求命中未变更，调用方按「无变化」处理。
+        if (status === 304) {
+          resolve({ notModified: true })
+          return
+        }
         if (error) {
           const code = (error as NodeJS.ErrnoException).code
           reject(new GhError(code === 'ENOENT' ? 'gh_missing' : status === 401 || /gh auth login|not logged/i.test(stderr) ? 'not_logged_in' : status === 429 || /rate limit/i.test(stderr) ? 'rate_limited' : status === 403 ? 'forbidden' : status === 404 ? 'not_found' : status >= 400 && status < 500 ? 'remote_rejected' : code === 'ABORT_ERR' ? 'interrupted' : 'transport_unknown', retryAfter ? Number(retryAfter) : undefined))
