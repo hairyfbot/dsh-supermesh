@@ -60080,11 +60080,16 @@ function TaskCard(t0) {
 		if ($[13] !== list) {
 			t5 = (segment) => ({
 				...segment,
-				value: list.filter((ticket_0) => segment.name === "overviewCompleted" ? ticket_0.status === "done" : segment.name === "overviewBlocked" ? Boolean(ticket_0.paused || ticket_0.prepareError) : [
-					"running",
-					"queued",
-					"review"
-				].includes(ticket_0.status) && !ticket_0.paused && !ticket_0.prepareError).length
+				value: list.filter((ticket_0) => {
+					const closed = ticket_0.status === "done" || ticket_0.status === "cancelled";
+					if (segment.name === "overviewCompleted") return ticket_0.status === "done";
+					if (segment.name === "overviewBlocked") return !closed && Boolean(ticket_0.paused || ticket_0.prepareError);
+					return !closed && !ticket_0.paused && !ticket_0.prepareError && [
+						"running",
+						"queued",
+						"review"
+					].includes(ticket_0.status);
+				}).length
 			});
 			$[13] = list;
 			$[14] = t5;
@@ -61454,7 +61459,7 @@ function Row$1(t0) {
 				tone: "quiet"
 			}
 		};
-		intervention = Boolean(task.prepareError || task.paused);
+		intervention = Boolean(task.prepareError || task.paused) && task.status !== "done" && task.status !== "cancelled";
 		let t11;
 		if ($[36] !== subscriptions || $[37] !== task.id || $[38] !== triggers) {
 			let t12;
@@ -61532,7 +61537,7 @@ function Row$1(t0) {
 		t5 = "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)";
 		T0 = _deepseek_ai_dsh_client_ui_primitives.Tag;
 		t3 = intervention ? "danger" : status[task.status].tone;
-		t4 = t(task.paused ? "ticketStatusPaused" : task.prepareError ? "overviewStatusIntervention" : status[task.status].label);
+		t4 = t(intervention ? task.paused ? "ticketStatusPaused" : "overviewStatusIntervention" : status[task.status].label);
 		$[10] = refreshedAt;
 		$[11] = subscriptions;
 		$[12] = t;
@@ -64613,7 +64618,7 @@ function PrStatus(t0) {
 }
 // src/client/pages/ticket/detail/components/relations.tsx
 function Relations(t0) {
-	const $ = (0, import_dist.c)(31);
+	const $ = (0, import_dist.c)(13);
 	const { links, ticketId, empty, clear } = t0;
 	const { openTicket } = useActions();
 	const { t } = useTranslation();
@@ -64627,120 +64632,83 @@ function Relations(t0) {
 	} else t1 = $[0];
 	const { data: tickets, error } = useQuery(t1);
 	let t2;
-	if ($[1] !== t) {
-		t2 = t("overviewStatusWaiting");
-		$[1] = t;
-		$[2] = t2;
-	} else t2 = $[2];
 	let t3;
-	if ($[3] !== t) {
-		t3 = t("ticketStatusQueued");
-		$[3] = t;
-		$[4] = t3;
-	} else t3 = $[4];
-	let t4;
-	if ($[5] !== t) {
-		t4 = t("overviewStatusRunning");
-		$[5] = t;
-		$[6] = t4;
-	} else t4 = $[6];
-	let t5;
-	if ($[7] !== t) {
-		t5 = t("overviewStatusReview");
-		$[7] = t;
-		$[8] = t5;
-	} else t5 = $[8];
-	let t6;
-	if ($[9] !== t) {
-		t6 = t("overviewCompleted");
-		$[9] = t;
-		$[10] = t6;
-	} else t6 = $[10];
-	let t7;
-	if ($[11] !== t) {
-		t7 = t("ticketStatusCancelled");
-		$[11] = t;
-		$[12] = t7;
-	} else t7 = $[12];
-	let t8;
-	if ($[13] !== t2 || $[14] !== t3 || $[15] !== t4 || $[16] !== t5 || $[17] !== t6 || $[18] !== t7) {
-		t8 = {
-			waiting: t2,
-			queued: t3,
-			running: t4,
-			review: t5,
-			done: t6,
-			cancelled: t7
-		};
-		$[13] = t2;
-		$[14] = t3;
-		$[15] = t4;
-		$[16] = t5;
-		$[17] = t6;
-		$[18] = t7;
-		$[19] = t8;
-	} else t8 = $[19];
-	const labels = t8;
-	if (error) {
-		const t9 = error instanceof Error ? error.message : "任务列表加载失败";
-		let t10;
-		if ($[20] !== t9) {
-			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "alert",
-				className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
-				children: t9
-			});
-			$[20] = t9;
-			$[21] = t10;
-		} else t10 = $[21];
-		return t10;
-	}
-	let t9;
-	if ($[22] !== clear || $[23] !== empty || $[24] !== labels || $[25] !== links || $[26] !== openTicket || $[27] !== t || $[28] !== ticketId || $[29] !== tickets?.data) {
-		t9 = links.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "m-0 flex list-none flex-col gap-2 p-0",
-			children: links.map((link) => {
-				const id = link.ticketId === ticketId ? link.relatedId : link.ticketId;
-				const task_0 = tickets?.data.find((task) => task.id === id);
-				return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-					className: "flex flex-wrap items-center gap-x-2 gap-y-1",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-						variant: "ghost",
-						size: "sm",
-						className: "max-w-full !h-auto !justify-start !whitespace-normal text-left",
-						onClick: () => openTicket(id),
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-(--dsw-alias-label-secondary)",
-							children: id
-						}), task_0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "[overflow-wrap:anywhere]",
-							children: task_0.title
+	if ($[1] !== clear || $[2] !== empty || $[3] !== error || $[4] !== links || $[5] !== openTicket || $[6] !== t || $[7] !== ticketId || $[8] !== tickets?.data) {
+		t3 = Symbol.for("react.early_return_sentinel");
+		bb0: {
+			const statusLabels = {
+				waiting: "overviewStatusWaiting",
+				queued: "ticketStatusQueued",
+				running: "overviewStatusRunning",
+				review: "overviewStatusReview",
+				done: "overviewCompleted",
+				cancelled: "ticketStatusCancelled"
+			};
+			if (error) {
+				const t4 = error instanceof Error ? error.message : "任务列表加载失败";
+				let t5;
+				if ($[11] !== t4) {
+					t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						role: "alert",
+						className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
+						children: t4
+					});
+					$[11] = t4;
+					$[12] = t5;
+				} else t5 = $[12];
+				t3 = t5;
+				break bb0;
+			}
+			t2 = links.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+				className: "m-0 flex list-none flex-col gap-2 p-0",
+				children: links.map((link) => {
+					const id = link.ticketId === ticketId ? link.relatedId : link.ticketId;
+					const task_0 = tickets?.data.find((task) => task.id === id);
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
+						className: "flex flex-wrap items-center gap-x-2 gap-y-1",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+							variant: "ghost",
+							size: "sm",
+							className: "max-w-full !h-auto !justify-start !whitespace-normal text-left",
+							onClick: () => openTicket(id),
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: "text-xs text-(--dsw-alias-label-secondary)",
+								children: id
+							}), task_0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: "[overflow-wrap:anywhere]",
+								children: task_0.title
+							})]
+						}), task_0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
+							tone: task_0.prepareError ? "danger" : task_0.status === "done" ? "success" : task_0.status === "review" ? "warning" : task_0.status === "running" ? "info" : "quiet",
+							children: task_0.paused && task_0.status !== "done" && task_0.status !== "cancelled" ? t("ticketStatusPaused") : t(statusLabels[task_0.status])
 						})]
-					}), task_0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-						tone: task_0.prepareError ? "danger" : task_0.status === "done" ? "success" : task_0.status === "review" ? "warning" : task_0.status === "running" ? "info" : "quiet",
-						children: task_0.paused ? t("ticketStatusPaused") : labels[task_0.status]
-					})]
-				}, link.ticketId + link.relatedId + link.kind);
-			})
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-			inline: true,
-			title: empty,
-			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
-				state: clear ? "done" : "idle",
-				size: 7
-			})
-		});
-		$[22] = clear;
-		$[23] = empty;
-		$[24] = labels;
-		$[25] = links;
-		$[26] = openTicket;
-		$[27] = t;
-		$[28] = ticketId;
-		$[29] = tickets?.data;
-		$[30] = t9;
-	} else t9 = $[30];
-	return t9;
+					}, link.ticketId + link.relatedId + link.kind);
+				})
+			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+				inline: true,
+				title: empty,
+				icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
+					state: clear ? "done" : "idle",
+					size: 7
+				})
+			});
+		}
+		$[1] = clear;
+		$[2] = empty;
+		$[3] = error;
+		$[4] = links;
+		$[5] = openTicket;
+		$[6] = t;
+		$[7] = ticketId;
+		$[8] = tickets?.data;
+		$[9] = t2;
+		$[10] = t3;
+	} else {
+		t2 = $[9];
+		t3 = $[10];
+	}
+	if (t3 !== Symbol.for("react.early_return_sentinel")) return t3;
+	return t2;
 }
 function _temp$11() {
 	return getApiSupermeshTicket({
@@ -64750,7 +64718,7 @@ function _temp$11() {
 }
 // src/client/pages/ticket/detail/page.tsx
 function TicketDetail() {
-	const $ = (0, import_dist.c)(130);
+	const $ = (0, import_dist.c)(122);
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { go } = useActions();
@@ -64912,139 +64880,95 @@ function TicketDetail() {
 	} else t17 = $[37];
 	const supervisors = t17;
 	let t18;
-	if ($[38] !== t) {
-		t18 = t("overviewStatusWaiting");
-		$[38] = t;
-		$[39] = t18;
-	} else t18 = $[39];
 	let t19;
-	if ($[40] !== t) {
-		t19 = t("ticketStatusQueued");
-		$[40] = t;
-		$[41] = t19;
-	} else t19 = $[41];
 	let t20;
-	if ($[42] !== t) {
-		t20 = t("overviewStatusRunning");
-		$[42] = t;
-		$[43] = t20;
-	} else t20 = $[43];
 	let t21;
-	if ($[44] !== t) {
-		t21 = t("overviewStatusReview");
-		$[44] = t;
-		$[45] = t21;
-	} else t21 = $[45];
 	let t22;
-	if ($[46] !== t) {
-		t22 = t("overviewCompleted");
-		$[46] = t;
-		$[47] = t22;
-	} else t22 = $[47];
 	let t23;
-	if ($[48] !== t) {
-		t23 = t("ticketStatusCancelled");
-		$[48] = t;
-		$[49] = t23;
-	} else t23 = $[49];
 	let t24;
-	if ($[50] !== t18 || $[51] !== t19 || $[52] !== t20 || $[53] !== t21 || $[54] !== t22 || $[55] !== t23) {
-		t24 = {
-			waiting: t18,
-			queued: t19,
-			running: t20,
-			review: t21,
-			done: t22,
-			cancelled: t23
+	if ($[38] !== cancel.isPending || $[39] !== channel_0 || $[40] !== ctx || $[41] !== detail || $[42] !== error || $[43] !== go || $[44] !== isLoading || $[45] !== latest || $[46] !== pause || $[47] !== returnTo || $[48] !== seconds || $[49] !== supervisors || $[50] !== t || $[51] !== task || $[52] !== unavailable) {
+		const statusLabels = {
+			waiting: "overviewStatusWaiting",
+			queued: "ticketStatusQueued",
+			running: "overviewStatusRunning",
+			review: "overviewStatusReview",
+			done: "overviewCompleted",
+			cancelled: "ticketStatusCancelled"
 		};
-		$[50] = t18;
-		$[51] = t19;
-		$[52] = t20;
-		$[53] = t21;
-		$[54] = t22;
-		$[55] = t23;
-		$[56] = t24;
-	} else t24 = $[56];
-	const labels = t24;
-	let t25;
-	if ($[57] !== t) {
-		t25 = t("ticketDetail");
-		$[57] = t;
-		$[58] = t25;
-	} else t25 = $[58];
-	let t26;
-	if ($[59] === Symbol.for("react.memo_cache_sentinel")) {
-		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
-			width: 16,
-			height: 16
-		});
-		$[59] = t26;
-	} else t26 = $[59];
-	let t27;
-	if ($[60] !== go || $[61] !== returnTo) {
-		t27 = () => go(returnTo);
-		$[60] = go;
-		$[61] = returnTo;
-		$[62] = t27;
-	} else t27 = $[62];
-	let t28;
-	if ($[63] !== t) {
-		t28 = t("ticketBack");
-		$[63] = t;
-		$[64] = t28;
-	} else t28 = $[64];
-	let t29;
-	if ($[65] !== t27 || $[66] !== t28) {
-		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			variant: "ghost",
-			size: "sm",
-			icon: t26,
-			onClick: t27,
-			children: t28
-		}) });
-		$[65] = t27;
-		$[66] = t28;
-		$[67] = t29;
-	} else t29 = $[67];
-	let t30;
-	if ($[68] !== isLoading) {
-		t30 = isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			role: "status",
-			children: "加载中…"
-		});
-		$[68] = isLoading;
-		$[69] = t30;
-	} else t30 = $[69];
-	let t31;
-	if ($[70] !== error || $[71] !== unavailable) {
-		t31 = (error || unavailable) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			role: "alert",
-			children: error instanceof Error ? error.message : "任务不存在或无法读取"
-		});
-		$[70] = error;
-		$[71] = unavailable;
-		$[72] = t31;
-	} else t31 = $[72];
-	let t32;
-	if ($[73] !== error || $[74] !== isLoading || $[75] !== t || $[76] !== task || $[77] !== unavailable) {
-		t32 = !task && !isLoading && !error && !unavailable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-			title: t("ticketNotFound"),
-			description: t("ticketNotFoundDescription"),
-			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SupermeshIcon, {
-				width: 28,
-				height: 28
-			})
-		});
-		$[73] = error;
-		$[74] = isLoading;
-		$[75] = t;
-		$[76] = task;
-		$[77] = unavailable;
-		$[78] = t32;
-	} else t32 = $[78];
-	let t33;
-	if ($[79] !== cancel.isPending || $[80] !== channel_0 || $[81] !== ctx || $[82] !== detail || $[83] !== labels || $[84] !== latest || $[85] !== pause || $[86] !== seconds || $[87] !== supervisors || $[88] !== t || $[89] !== task) {
-		t33 = task && detail && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+		const attention = Boolean(task?.prepareError || task?.paused) && task?.status !== "done" && task?.status !== "cancelled";
+		t18 = "@container flex min-w-0 flex-col gap-5 pb-10";
+		if ($[60] !== t) {
+			t19 = t("ticketDetail");
+			$[60] = t;
+			$[61] = t19;
+		} else t19 = $[61];
+		let t25;
+		if ($[62] === Symbol.for("react.memo_cache_sentinel")) {
+			t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
+				width: 16,
+				height: 16
+			});
+			$[62] = t25;
+		} else t25 = $[62];
+		let t26;
+		if ($[63] !== go || $[64] !== returnTo) {
+			t26 = () => go(returnTo);
+			$[63] = go;
+			$[64] = returnTo;
+			$[65] = t26;
+		} else t26 = $[65];
+		let t27;
+		if ($[66] !== t) {
+			t27 = t("ticketBack");
+			$[66] = t;
+			$[67] = t27;
+		} else t27 = $[67];
+		if ($[68] !== t26 || $[69] !== t27) {
+			t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "ghost",
+				size: "sm",
+				icon: t25,
+				onClick: t26,
+				children: t27
+			}) });
+			$[68] = t26;
+			$[69] = t27;
+			$[70] = t20;
+		} else t20 = $[70];
+		if ($[71] !== isLoading) {
+			t21 = isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "status",
+				children: "加载中…"
+			});
+			$[71] = isLoading;
+			$[72] = t21;
+		} else t21 = $[72];
+		if ($[73] !== error || $[74] !== unavailable) {
+			t22 = (error || unavailable) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				role: "alert",
+				children: error instanceof Error ? error.message : "任务不存在或无法读取"
+			});
+			$[73] = error;
+			$[74] = unavailable;
+			$[75] = t22;
+		} else t22 = $[75];
+		if ($[76] !== error || $[77] !== isLoading || $[78] !== t || $[79] !== task || $[80] !== unavailable) {
+			t23 = !task && !isLoading && !error && !unavailable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+				title: t("ticketNotFound"),
+				description: t("ticketNotFoundDescription"),
+				icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SupermeshIcon, {
+					width: 28,
+					height: 28
+				})
+			});
+			$[76] = error;
+			$[77] = isLoading;
+			$[78] = t;
+			$[79] = task;
+			$[80] = unavailable;
+			$[81] = t23;
+		} else t23 = $[81];
+		t24 = task && detail && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 				className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -65055,8 +64979,8 @@ function TicketDetail() {
 							className: "text-xs text-(--dsw-alias-label-tertiary)",
 							children: task.id
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-							tone: task.prepareError || task.paused ? "danger" : task.status === "done" ? "success" : task.status === "running" ? "info" : task.status === "review" ? "warning" : "quiet",
-							children: task.paused ? t("ticketStatusPaused") : task.prepareError ? t("overviewStatusIntervention") : labels[task.status]
+							tone: attention ? "danger" : task.status === "done" ? "success" : task.status === "running" ? "info" : task.status === "review" ? "warning" : "quiet",
+							children: attention ? t(task.paused ? "ticketStatusPaused" : "overviewStatusIntervention") : t(statusLabels[task.status])
 						})]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 						className: "m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]",
@@ -65199,8 +65123,8 @@ function TicketDetail() {
 						title: t("graphSupervisor"),
 						children: supervisors.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 							className: "m-0 flex list-none flex-col gap-2 p-0",
-							children: supervisors.map((t34) => {
-								const { id: id_1, group: group_0 } = t34;
+							children: supervisors.map((t28) => {
+								const { id: id_1, group: group_0 } = t28;
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 									className: "flex flex-wrap items-center justify-between gap-2",
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -65228,143 +65152,162 @@ function TicketDetail() {
 				})]
 			})
 		] });
-		$[79] = cancel.isPending;
-		$[80] = channel_0;
-		$[81] = ctx;
-		$[82] = detail;
-		$[83] = labels;
-		$[84] = latest;
-		$[85] = pause;
-		$[86] = seconds;
-		$[87] = supervisors;
-		$[88] = t;
-		$[89] = task;
-		$[90] = t33;
-	} else t33 = $[90];
-	let t34;
-	if ($[91] === Symbol.for("react.memo_cache_sentinel")) {
-		t34 = () => setConfirming(false);
-		$[91] = t34;
-	} else t34 = $[91];
-	let t35;
-	if ($[92] !== t) {
-		t35 = t("ticketCancelTitle");
-		$[92] = t;
-		$[93] = t35;
-	} else t35 = $[93];
-	let t36;
-	if ($[94] !== t) {
-		t36 = t("ticketCancelDismiss");
-		$[94] = t;
-		$[95] = t36;
-	} else t36 = $[95];
-	let t37;
-	if ($[96] !== t) {
-		t37 = t("ticketCancelDescription");
-		$[96] = t;
-		$[97] = t37;
-	} else t37 = $[97];
-	const t38 = cancel.isPending;
-	let t39;
-	if ($[98] === Symbol.for("react.memo_cache_sentinel")) {
-		t39 = () => setConfirming(false);
-		$[98] = t39;
-	} else t39 = $[98];
-	let t40;
-	if ($[99] !== t) {
-		t40 = t("ticketCancelDismiss");
-		$[99] = t;
-		$[100] = t40;
-	} else t40 = $[100];
-	let t41;
-	if ($[101] !== cancel.isPending || $[102] !== t40) {
-		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+		$[38] = cancel.isPending;
+		$[39] = channel_0;
+		$[40] = ctx;
+		$[41] = detail;
+		$[42] = error;
+		$[43] = go;
+		$[44] = isLoading;
+		$[45] = latest;
+		$[46] = pause;
+		$[47] = returnTo;
+		$[48] = seconds;
+		$[49] = supervisors;
+		$[50] = t;
+		$[51] = task;
+		$[52] = unavailable;
+		$[53] = t18;
+		$[54] = t19;
+		$[55] = t20;
+		$[56] = t21;
+		$[57] = t22;
+		$[58] = t23;
+		$[59] = t24;
+	} else {
+		t18 = $[53];
+		t19 = $[54];
+		t20 = $[55];
+		t21 = $[56];
+		t22 = $[57];
+		t23 = $[58];
+		t24 = $[59];
+	}
+	let t25;
+	if ($[82] === Symbol.for("react.memo_cache_sentinel")) {
+		t25 = () => setConfirming(false);
+		$[82] = t25;
+	} else t25 = $[82];
+	let t26;
+	if ($[83] !== t) {
+		t26 = t("ticketCancelTitle");
+		$[83] = t;
+		$[84] = t26;
+	} else t26 = $[84];
+	let t27;
+	if ($[85] !== t) {
+		t27 = t("ticketCancelDismiss");
+		$[85] = t;
+		$[86] = t27;
+	} else t27 = $[86];
+	let t28;
+	if ($[87] !== t) {
+		t28 = t("ticketCancelDescription");
+		$[87] = t;
+		$[88] = t28;
+	} else t28 = $[88];
+	const t29 = cancel.isPending;
+	let t30;
+	if ($[89] === Symbol.for("react.memo_cache_sentinel")) {
+		t30 = () => setConfirming(false);
+		$[89] = t30;
+	} else t30 = $[89];
+	let t31;
+	if ($[90] !== t) {
+		t31 = t("ticketCancelDismiss");
+		$[90] = t;
+		$[91] = t31;
+	} else t31 = $[91];
+	let t32;
+	if ($[92] !== cancel.isPending || $[93] !== t31) {
+		t32 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			variant: "outline",
-			disabled: t38,
-			onClick: t39,
-			children: t40
+			disabled: t29,
+			onClick: t30,
+			children: t31
 		});
-		$[101] = cancel.isPending;
-		$[102] = t40;
-		$[103] = t41;
-	} else t41 = $[103];
-	const t42 = cancel.isPending;
-	let t43;
-	if ($[104] !== cancel) {
-		t43 = () => cancel.mutate(void 0, { onSuccess: () => setConfirming(false) });
-		$[104] = cancel;
-		$[105] = t43;
-	} else t43 = $[105];
-	const t44 = cancel.isPending ? "ticketCancelling" : "ticketCancelConfirm";
-	let t45;
-	if ($[106] !== t || $[107] !== t44) {
-		t45 = t(t44);
-		$[106] = t;
-		$[107] = t44;
-		$[108] = t45;
-	} else t45 = $[108];
-	let t46;
-	if ($[109] !== cancel.isPending || $[110] !== t43 || $[111] !== t45) {
-		t46 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+		$[92] = cancel.isPending;
+		$[93] = t31;
+		$[94] = t32;
+	} else t32 = $[94];
+	const t33 = cancel.isPending;
+	let t34;
+	if ($[95] !== cancel) {
+		t34 = () => cancel.mutate(void 0, { onSuccess: () => setConfirming(false) });
+		$[95] = cancel;
+		$[96] = t34;
+	} else t34 = $[96];
+	const t35 = cancel.isPending ? "ticketCancelling" : "ticketCancelConfirm";
+	let t36;
+	if ($[97] !== t || $[98] !== t35) {
+		t36 = t(t35);
+		$[97] = t;
+		$[98] = t35;
+		$[99] = t36;
+	} else t36 = $[99];
+	let t37;
+	if ($[100] !== cancel.isPending || $[101] !== t34 || $[102] !== t36) {
+		t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 			variant: "primary",
 			className: "border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)",
-			disabled: t42,
-			onClick: t43,
-			children: t45
+			disabled: t33,
+			onClick: t34,
+			children: t36
 		});
-		$[109] = cancel.isPending;
-		$[110] = t43;
-		$[111] = t45;
-		$[112] = t46;
-	} else t46 = $[112];
-	let t47;
-	if ($[113] !== t41 || $[114] !== t46) {
-		t47 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [t41, t46] });
-		$[113] = t41;
-		$[114] = t46;
-		$[115] = t47;
-	} else t47 = $[115];
-	let t48;
-	if ($[116] !== confirming || $[117] !== t35 || $[118] !== t36 || $[119] !== t37 || $[120] !== t47) {
-		t48 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+		$[100] = cancel.isPending;
+		$[101] = t34;
+		$[102] = t36;
+		$[103] = t37;
+	} else t37 = $[103];
+	let t38;
+	if ($[104] !== t32 || $[105] !== t37) {
+		t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [t32, t37] });
+		$[104] = t32;
+		$[105] = t37;
+		$[106] = t38;
+	} else t38 = $[106];
+	let t39;
+	if ($[107] !== confirming || $[108] !== t26 || $[109] !== t27 || $[110] !== t28 || $[111] !== t38) {
+		t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 			open: confirming,
-			onClose: t34,
-			title: t35,
-			closeLabel: t36,
-			description: t37,
-			footer: t47
+			onClose: t25,
+			title: t26,
+			closeLabel: t27,
+			description: t28,
+			footer: t38
 		});
-		$[116] = confirming;
-		$[117] = t35;
-		$[118] = t36;
-		$[119] = t37;
-		$[120] = t47;
-		$[121] = t48;
-	} else t48 = $[121];
-	let t49;
-	if ($[122] !== t25 || $[123] !== t29 || $[124] !== t30 || $[125] !== t31 || $[126] !== t32 || $[127] !== t33 || $[128] !== t48) {
-		t49 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "@container flex min-w-0 flex-col gap-5 pb-10",
-			"aria-label": t25,
+		$[107] = confirming;
+		$[108] = t26;
+		$[109] = t27;
+		$[110] = t28;
+		$[111] = t38;
+		$[112] = t39;
+	} else t39 = $[112];
+	let t40;
+	if ($[113] !== t18 || $[114] !== t19 || $[115] !== t20 || $[116] !== t21 || $[117] !== t22 || $[118] !== t23 || $[119] !== t24 || $[120] !== t39) {
+		t40 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: t18,
+			"aria-label": t19,
 			children: [
-				t29,
-				t30,
-				t31,
-				t32,
-				t33,
-				t48
+				t20,
+				t21,
+				t22,
+				t23,
+				t24,
+				t39
 			]
 		});
-		$[122] = t25;
-		$[123] = t29;
-		$[124] = t30;
-		$[125] = t31;
-		$[126] = t32;
-		$[127] = t33;
-		$[128] = t48;
-		$[129] = t49;
-	} else t49 = $[129];
-	return t49;
+		$[113] = t18;
+		$[114] = t19;
+		$[115] = t20;
+		$[116] = t21;
+		$[117] = t22;
+		$[118] = t23;
+		$[119] = t24;
+		$[120] = t39;
+		$[121] = t40;
+	} else t40 = $[121];
+	return t40;
 }
 function _temp7$2(link_0) {
 	return link_0.kind === "relates";

@@ -110,6 +110,7 @@ export const session = defineService({
     async (role: Role, options: { sessionId?: string, projectId?: string, supervisorId?: string, ticketId?: string, directory?: string, title?: string, prompt?: string }): Promise<string> => {
       if (stopped)
         throw new Error('runtime_stopping')
+
       const ctx = getServerContext<Context>(server)
       const project = options.projectId ? await db.project.findById(options.projectId) : undefined
       const supervisor = options.supervisorId ? await db.supervisor.findById(options.supervisorId) : undefined
@@ -121,6 +122,7 @@ export const session = defineService({
         const existing = await session.findMain()
         if (existing) {
           await bindWorkspace(existing)
+          await ctx.workspaceRegistry.pinSession(SessionId(existing)).catch(() => undefined)
           return existing
         }
       }
@@ -166,6 +168,8 @@ export const session = defineService({
       const title = role === 'main' ? '[路由] 主编排' : role === 'project' ? `[路由] ${project!.name}` : role === 'supervisor' ? `[协调] ${supervisor!.title}` : undefined
       if (title)
         await ctx.sessionController.rename({ sessionId: id, title })
+      if (role === 'main')
+        await ctx.workspaceRegistry.pinSession(SessionId(id)).catch(() => undefined)
       if (role !== 'worker')
         await inbox.notify(await resolveAgent(id), true)
       if (options.prompt)

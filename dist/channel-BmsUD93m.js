@@ -1938,6 +1938,7 @@ const session = defineService({
 			const existing = await session.findMain();
 			if (existing) {
 				await bindWorkspace(existing);
+				await getServerContext(server).workspaceRegistry.pinSession(SessionId(existing)).catch(() => void 0);
 				return existing;
 			}
 		}
@@ -1978,6 +1979,7 @@ const session = defineService({
 			sessionId: id,
 			title
 		});
+		if (role === "main") await ctx.workspaceRegistry.pinSession(SessionId(id)).catch(() => void 0);
 		if (role !== "worker") await inbox.notify(await resolveAgent(id), true);
 		if (options.prompt) await session.send(id, options.prompt);
 		return id;
@@ -4432,7 +4434,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-Dy647auH.js");
+			const { shell } = await import("./shell-Div7JgIS.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4441,7 +4443,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-Dy647auH.js");
+			const { shell } = await import("./shell-Div7JgIS.js");
 			await shell.refresh();
 			return view;
 		});

@@ -64,7 +64,8 @@ export function TicketDetail(): ReactNode {
   const channel = channelList?.find(channel => channel.id === task?.channelId)
   const seconds = task?.status !== 'waiting' && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? new Date()).getTime() - new Date(task.startedAt).getTime()) / 1000)) : null
   const supervisors = [...new Set(detail?.inbox.map(message => message.supervisorId).filter((id): id is string => Boolean(id)))].map(id => ({ id, group: groupList?.find(group => group.id === `supervisor:${id}`) }))
-  const labels = { waiting: t('overviewStatusWaiting'), queued: t('ticketStatusQueued'), running: t('overviewStatusRunning'), review: t('overviewStatusReview'), done: t('overviewCompleted'), cancelled: t('ticketStatusCancelled') }
+  const statusLabels = { waiting: 'overviewStatusWaiting', queued: 'ticketStatusQueued', running: 'overviewStatusRunning', review: 'overviewStatusReview', done: 'overviewCompleted', cancelled: 'ticketStatusCancelled' } as const
+  const attention = Boolean(task?.prepareError || task?.paused) && task?.status !== 'done' && task?.status !== 'cancelled'
   return (
     <section className="@container flex min-w-0 flex-col gap-5 pb-10" aria-label={t('ticketDetail')}>
       <div><Button variant="ghost" size="sm" icon={<ArrowLeftIcon width={16} height={16} />} onClick={() => go(returnTo)}>{t('ticketBack')}</Button></div>
@@ -77,7 +78,7 @@ export function TicketDetail(): ReactNode {
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-3">
                 <span className="text-xs text-(--dsw-alias-label-tertiary)">{task.id}</span>
-                <Tag tone={task.prepareError || task.paused ? 'danger' : task.status === 'done' ? 'success' : task.status === 'running' ? 'info' : task.status === 'review' ? 'warning' : 'quiet'}>{task.paused ? t('ticketStatusPaused') : task.prepareError ? t('overviewStatusIntervention') : labels[task.status]}</Tag>
+                <Tag tone={attention ? 'danger' : task.status === 'done' ? 'success' : task.status === 'running' ? 'info' : task.status === 'review' ? 'warning' : 'quiet'}>{attention ? t(task.paused ? 'ticketStatusPaused' : 'overviewStatusIntervention') : t(statusLabels[task.status])}</Tag>
               </div>
               <h2 className="m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]">{task.title}</h2>
             </div>

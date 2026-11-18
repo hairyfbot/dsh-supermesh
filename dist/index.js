@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-DbNMI064.js";
+import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-BmsUD93m.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

@@ -29,7 +29,7 @@ export function Row({ task, nodes, channels, triggers, subscriptions, refreshedA
     done: { label: 'overviewCompleted', tone: 'success' },
     cancelled: { label: 'ticketStatusCancelled', tone: 'quiet' },
   } as const
-  const intervention = Boolean(task.prepareError || task.paused)
+  const intervention = Boolean(task.prepareError || task.paused) && task.status !== 'done' && task.status !== 'cancelled'
   const ticketSubscriptions = subscriptions.filter(subscription => subscription.ticketId === task.id)
   const trigger = triggers
     .filter(trigger => ticketSubscriptions.some(subscription => subscription.threadId === trigger.threadId))
@@ -51,7 +51,7 @@ export function Row({ task, nodes, channels, triggers, subscriptions, refreshedA
             {task.title}
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)">
-            <Tag tone={intervention ? 'danger' : status[task.status].tone}>{t(task.paused ? 'ticketStatusPaused' : task.prepareError ? 'overviewStatusIntervention' : status[task.status].label)}</Tag>
+            <Tag tone={intervention ? 'danger' : status[task.status].tone}>{t(intervention ? (task.paused ? 'ticketStatusPaused' : 'overviewStatusIntervention') : status[task.status].label)}</Tag>
             {intervention
               ? <span>{task.prepareError ?? t('ticketStatusPaused')}</span>
               : (
