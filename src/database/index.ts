@@ -20,7 +20,9 @@ import { Trigger } from './models/trigger'
 import { Worker } from './models/worker'
 import { MigrationProvider } from './utils/migration'
 
-const database = new DatabaseSync('data.db')
+const worker = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID
+const file = worker ? `data.worker-${worker}.db` : 'data.db'
+const database = new DatabaseSync(file)
 
 const connection = new Kysely<DB>({
   dialect: new NodeSqliteDialect({ database }),
