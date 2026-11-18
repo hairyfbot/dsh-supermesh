@@ -24,7 +24,7 @@ export const channel = defineService({
       const enabled = supported && Boolean(row?.enabled)
       const stored = await db.sourceState.find(preset.id, 'configuration')
       const configured = hasCredential || members.length > 0 || Boolean(stored)
-      const metadata = readMetadata(stored?.value, preset.id)
+      const metadata = readMetadata(stored?.value)
       return {
         id: preset.id,
         kind: preset.id,
@@ -90,7 +90,7 @@ function legacyRef(kind: 'github' | 'gitlab') {
   return credentialRef(kind === 'github' ? 'NEXUS_GITHUB_TOKEN' : 'NEXUS_GITLAB_TOKEN')
 }
 
-function readMetadata(raw: string | undefined, kind: ChannelKind): { commitName: string, commitEmail: string } {
+function readMetadata(raw: string | undefined): { commitName: string, commitEmail: string } {
   if (!raw)
     return { commitName: '', commitEmail: '' }
   const value: unknown = JSON.parse(raw)
