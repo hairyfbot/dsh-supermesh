@@ -14,6 +14,7 @@ export default antfu(
       'soruce/**',
       'temp/**',
       '.temp/**',
+      'dist/**',
       'docs/specs/**',
       'src/client/apis',
       'src/database/migrations.ts',
