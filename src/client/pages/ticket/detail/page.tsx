@@ -1,8 +1,9 @@
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
-import { Button, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshChannel, getApiSupermeshGroup, getApiSupermeshTicketId } from '../../../apis'
+import { Button, Modal, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { getApiSupermeshChannel, getApiSupermeshGroup, getApiSupermeshTicketId, patchApiSupermeshTicketId } from '../../../apis'
 import { Empty } from '../../../components/empty'
 import { ActivityIcon, ArrowLeftIcon, ChannelsIcon, GitBranchIcon, GitHubIcon, SupermeshIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
@@ -46,6 +47,16 @@ export function TicketDetail(): ReactNode {
     refetchOnMount: 'always',
   })
 
+  const client = useQueryClient()
+  const pause = useMutation({
+    mutationFn: (paused: boolean) => patchApiSupermeshTicketId({ id: ticketId ?? '' }, { paused, reason: paused ? 'paused_by_user' : 'resumed_by_user' }),
+    onSettled: () => client.invalidateQueries(),
+  })
+  const cancel = useMutation({
+    mutationFn: () => patchApiSupermeshTicketId({ id: ticketId ?? '' }, { status: 'cancelled', reason: 'cancelled_by_user' }),
+    onSettled: () => client.invalidateQueries(),
+  })
+  const [confirming, setConfirming] = useState(false)
   const detail = stored?.ticket?.id === ticketId ? stored : null
   const task = detail?.ticket
   const unavailable = stored !== undefined && !detail
@@ -73,6 +84,27 @@ export function TicketDetail(): ReactNode {
             <div className="flex min-w-0 flex-col items-end gap-1.5">
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <PrStatus ticket={task} />
+                {task.status !== 'done' && task.status !== 'cancelled' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pause.isPending}
+                      onClick={() => pause.mutate(!task.paused)}
+                    >
+                      {task.paused ? t('ticketResume') : t('ticketPause')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={cancel.isPending}
+                      className="border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)"
+                      onClick={() => setConfirming(true)}
+                    >
+                      {t('ticketCancel')}
+                    </Button>
+                  </>
+                )}
                 {latest?.id && (latest.status === 'running' || latest.startedAt) && <Button variant="outline" size="sm" onClick={() => ctx.uiWorkspace.openSession(latest.id as SessionId)}>{t('overviewOpenSession')}</Button>}
 
               </div>
@@ -128,6 +160,26 @@ export function TicketDetail(): ReactNode {
           </div>
         </>
       )}
+      <Modal
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title={t('ticketCancelTitle')}
+        closeLabel={t('ticketCancelDismiss')}
+        description={t('ticketCancelDescription')}
+        footer={(
+          <>
+            <Button variant="outline" disabled={cancel.isPending} onClick={() => setConfirming(false)}>{t('ticketCancelDismiss')}</Button>
+            <Button
+              variant="primary"
+              className="border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)"
+              disabled={cancel.isPending}
+              onClick={() => cancel.mutate(undefined, { onSuccess: () => setConfirming(false) })}
+            >
+              {t(cancel.isPending ? 'ticketCancelling' : 'ticketCancelConfirm')}
+            </Button>
+          </>
+        )}
+      />
     </section>
   )
 }

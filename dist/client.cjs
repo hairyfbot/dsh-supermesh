@@ -4710,6 +4710,15 @@ async function getApiSupermeshTicket(query, config) {
 async function getApiSupermeshTicketId(paths, config) {
 	return (await fetch(`/api/supermesh/ticket/${paths.id}`, { ...config })).json();
 }
+/** @method patch */
+async function patchApiSupermeshTicketId(paths, body, config) {
+	return (await fetch(`/api/supermesh/ticket/${paths.id}`, {
+		headers: { "Content-Type": "application/json" },
+		method: "PATCH",
+		body: JSON.stringify(body),
+		...config
+	})).json();
+}
 /** @method post */
 async function postApiSupermeshAskIdAnswer(paths, body, config) {
 	return (await fetch(`/api/supermesh/ask/${paths.id}/answer`, {
@@ -4755,6 +4764,11 @@ async function getApiSupermeshTrigger(config) {
 async function getApiSupermeshTopic(query, config) {
 	const querystr = new URLSearchParams(Object.entries(query || {}));
 	return (await fetch(`/api/supermesh/topic?${querystr}`, { ...config })).json();
+}
+/** @method get */
+async function getApiSupermeshTopicCount(query, config) {
+	const querystr = new URLSearchParams(Object.entries(query || {}));
+	return (await fetch(`/api/supermesh/topic/count?${querystr}`, { ...config })).json();
 }
 /** @method get */
 async function getApiSupermeshSubscription(config) {
@@ -6429,6 +6443,14 @@ const dicts = {
 		ticketStatusQueued: "排队中",
 		ticketStatusCancelled: "已取消",
 		ticketStatusPaused: "已暂停",
+		ticketPause: "暂停任务",
+		ticketResume: "恢复任务",
+		ticketCancel: "取消任务",
+		ticketCancelTitle: "取消这个任务？",
+		ticketCancelDescription: "取消后任务会停止运行并标记为已取消，未完成的邮件会一并关闭。此操作不可撤销。",
+		ticketCancelConfirm: "确认取消",
+		ticketCancelling: "正在取消…",
+		ticketCancelDismiss: "返回",
 		ticketDurationUnknown: "暂无时长",
 		graphNotCreated: "尚未创建",
 		graphActive: "运行中",
@@ -6840,6 +6862,14 @@ const dicts = {
 		ticketStatusQueued: "Queued",
 		ticketStatusCancelled: "Cancelled",
 		ticketStatusPaused: "Paused",
+		ticketPause: "Pause task",
+		ticketResume: "Resume task",
+		ticketCancel: "Cancel task",
+		ticketCancelTitle: "Cancel this task?",
+		ticketCancelDescription: "The task stops running and is marked as cancelled; open mails are closed. This cannot be undone.",
+		ticketCancelConfirm: "Cancel task",
+		ticketCancelling: "Cancelling…",
+		ticketCancelDismiss: "Back",
 		ticketDurationUnknown: "Duration unavailable",
 		graphNotCreated: "Not created",
 		graphActive: "Running",
@@ -7232,7 +7262,7 @@ function FeishuDetail() {
 	const { data: channels, error } = useQuery(t0);
 	let t1;
 	if ($[1] !== channels) {
-		t1 = channels?.find(_temp2$16)?.name;
+		t1 = channels?.find(_temp2$17)?.name;
 		$[1] = channels;
 		$[2] = t1;
 	} else t1 = $[2];
@@ -7303,7 +7333,7 @@ function FeishuDetail() {
 	} else t9 = $[18];
 	return t9;
 }
-function _temp2$16(channel) {
+function _temp2$17(channel) {
 	return channel.id === "feishu";
 }
 function _temp$28() {
@@ -59396,7 +59426,7 @@ function ActivityCard(t0) {
 		} else t5 = $[5];
 		const recent = (triggers ?? []).filter(t5);
 		t2 = recent.length;
-		t3 = recent.filter(_temp2$15).length;
+		t3 = recent.filter(_temp2$16).length;
 		let t6;
 		if ($[6] === Symbol.for("react.memo_cache_sentinel")) {
 			t6 = (trigger_1) => Date.parse(trigger_1.at) >= now - 36e5;
@@ -59522,7 +59552,7 @@ function ActivityCard(t0) {
 	} else t12 = $[32];
 	return t12;
 }
-function _temp2$15(trigger_0) {
+function _temp2$16(trigger_0) {
 	return !trigger_0.mentioned;
 }
 function _temp$25() {
@@ -59545,7 +59575,7 @@ function AskCard() {
 	let t1;
 	if ($[1] !== client) {
 		t1 = {
-			mutationFn: _temp2$14,
+			mutationFn: _temp2$15,
 			onSettled: () => client.invalidateQueries({ queryKey: keys.pending })
 		};
 		$[1] = client;
@@ -59561,7 +59591,7 @@ function AskCard() {
 	if ($[3] !== answer || $[4] !== failure || $[5] !== pending || $[6] !== pendingError) {
 		t6 = Symbol.for("react.early_return_sentinel");
 		bb0: {
-			const asks = pending?.filter(_temp3$9) ?? [];
+			const asks = pending?.filter(_temp3$10) ?? [];
 			let t7;
 			if ($[12] !== answer) {
 				t7 = (id, text) => {
@@ -59683,10 +59713,10 @@ function AskCard() {
 	} else t9 = $[28];
 	return t9;
 }
-function _temp3$9(message) {
+function _temp3$10(message) {
 	return message.kind === "ask";
 }
-function _temp2$14(input) {
+function _temp2$15(input) {
 	return postApiSupermeshAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer });
 }
 function _temp$24() {
@@ -59800,14 +59830,14 @@ function ChannelCard(t0) {
 	let t6;
 	let t7;
 	if ($[1] !== channels || $[2] !== error || $[3] !== isLoading || $[4] !== onMore || $[5] !== t) {
-		const items = (channels ?? []).map(_temp2$13);
+		const items = (channels ?? []).map(_temp2$14);
 		T0 = SummaryCard;
 		if ($[13] !== t) {
 			t2 = t("overviewChannels");
 			$[13] = t;
 			$[14] = t2;
 		} else t2 = $[14];
-		t3 = `${items.filter(_temp3$8).length}/${items.length}`;
+		t3 = `${items.filter(_temp3$9).length}/${items.length}`;
 		if ($[15] === Symbol.for("react.memo_cache_sentinel")) {
 			t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelsIcon, {
 				width: 18,
@@ -59902,10 +59932,10 @@ function ChannelCard(t0) {
 function _temp4$6(channel_1) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ChannelTile, { channel: channel_1 }, channel_1.name);
 }
-function _temp3$8(channel_0) {
+function _temp3$9(channel_0) {
 	return channel_0.connected;
 }
-function _temp2$13(channel) {
+function _temp2$14(channel) {
 	return {
 		kind: channel.kind,
 		name: channel.name,
@@ -59956,7 +59986,7 @@ function TaskChart(t0) {
 					cornerRadius: 4,
 					stroke: "none",
 					isAnimationActive: false,
-					children: segments.map(_temp2$12)
+					children: segments.map(_temp2$13)
 				})
 			})
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
@@ -59990,7 +60020,7 @@ function TaskChart(t0) {
 	} else t3 = $[9];
 	return t3;
 }
-function _temp2$12(segment_0) {
+function _temp2$13(segment_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment_0.color }, segment_0.name);
 }
 function _temp$22(segment_1) {
@@ -60593,8 +60623,8 @@ function GraphCanvas(t0) {
 					const members = nodes.filter((node_0) => group.nodeIds.includes(node_0.id));
 					if (!members.length) return [];
 					const inset = 16 + index * 6;
-					const x_0 = Math.min(...members.map(_temp2$11)) - inset;
-					const y_0 = Math.min(...members.map(_temp3$7)) - 12 - index * 6;
+					const x_0 = Math.min(...members.map(_temp2$12)) - inset;
+					const y_0 = Math.min(...members.map(_temp3$8)) - 12 - index * 6;
 					return [{
 						...group,
 						x: x_0,
@@ -61102,10 +61132,10 @@ function _temp5$4(node_4) {
 function _temp4$5(node_3) {
 	return node_3.x;
 }
-function _temp3$7(node_2) {
+function _temp3$8(node_2) {
 	return node_2.y;
 }
-function _temp2$11(node_1) {
+function _temp2$12(node_1) {
 	return node_1.x;
 }
 function _temp$20(state) {
@@ -61129,7 +61159,7 @@ function Graph() {
 	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.edge,
-			queryFn: _temp2$10,
+			queryFn: _temp2$11,
 			refetchInterval: 15e3
 		};
 		$[1] = t1;
@@ -61139,7 +61169,7 @@ function Graph() {
 	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
 		t2 = {
 			queryKey: keys.group,
-			queryFn: _temp3$6,
+			queryFn: _temp3$7,
 			refetchInterval: 15e3
 		};
 		$[2] = t2;
@@ -61260,10 +61290,10 @@ function _temp4$4(edge) {
 		kind: edge.kind === "dependency" ? "dependency" : edge.kind === "association" ? "association" : "flow"
 	};
 }
-function _temp3$6() {
+function _temp3$7() {
 	return getApiSupermeshGroup();
 }
-function _temp2$10() {
+function _temp2$11() {
 	return getApiSupermeshEdge();
 }
 function _temp$19() {
@@ -61434,7 +61464,7 @@ function Row$1(t0) {
 				$[41] = t12;
 			} else t12 = $[41];
 			const ticketSubscriptions = subscriptions.filter(t12);
-			t11 = triggers.filter((trigger) => ticketSubscriptions.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp2$9);
+			t11 = triggers.filter((trigger) => ticketSubscriptions.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp2$10);
 			$[36] = subscriptions;
 			$[37] = task.id;
 			$[38] = triggers;
@@ -61703,7 +61733,7 @@ function Row$1(t0) {
 	} else t24 = $[107];
 	return t24;
 }
-function _temp2$9(a, b) {
+function _temp2$10(a, b) {
 	return b.at.localeCompare(a.at);
 }
 function _temp$17(node_0) {
@@ -61726,7 +61756,7 @@ function TaskList() {
 	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.node,
-			queryFn: _temp2$8,
+			queryFn: _temp2$9,
 			refetchInterval: 15e3
 		};
 		$[1] = t1;
@@ -61736,7 +61766,7 @@ function TaskList() {
 	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
 		t2 = {
 			queryKey: keys.channel,
-			queryFn: _temp3$5
+			queryFn: _temp3$6
 		};
 		$[2] = t2;
 	} else t2 = $[2];
@@ -61903,10 +61933,10 @@ function _temp5$3() {
 function _temp4$3() {
 	return getApiSupermeshTrigger();
 }
-function _temp3$5() {
+function _temp3$6() {
 	return getApiSupermeshChannel();
 }
-function _temp2$8() {
+function _temp2$9() {
 	return getApiSupermeshNode();
 }
 function _temp$16() {
@@ -63564,7 +63594,7 @@ function Setting() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.setting,
-			queryFn: _temp2$7
+			queryFn: _temp2$8
 		};
 		$[0] = t0;
 	} else t0 = $[0];
@@ -63573,7 +63603,7 @@ function Setting() {
 	let t1;
 	if ($[1] !== client) {
 		t1 = {
-			mutationFn: _temp3$4,
+			mutationFn: _temp3$5,
 			onSettled: () => client.invalidateQueries({ queryKey: keys.setting })
 		};
 		$[1] = client;
@@ -64203,10 +64233,10 @@ function Setting() {
 	} else t31 = $[175];
 	return t31;
 }
-function _temp3$4(input) {
+function _temp3$5(input) {
 	return patchApiSupermeshSetting(input);
 }
-function _temp2$7() {
+function _temp2$8() {
 	return getApiSupermeshSetting();
 }
 function _temp$13(state) {
@@ -64228,7 +64258,7 @@ function Arrivals(t0) {
 				$[5] = triggers;
 				$[6] = t3;
 			} else t3 = $[6];
-			const arrivals = [...triggers.map(_temp$12), ...inbox.filter(t3).map(_temp2$6)].sort(_temp3$3);
+			const arrivals = [...triggers.map(_temp$12), ...inbox.filter(t3).map(_temp2$7)].sort(_temp3$4);
 			let t4;
 			if ($[7] !== t) {
 				t4 = (arrival) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
@@ -64322,10 +64352,10 @@ function Arrivals(t0) {
 	if (t2 !== Symbol.for("react.early_return_sentinel")) return t2;
 	return t1;
 }
-function _temp3$3(a, b) {
+function _temp3$4(a, b) {
 	return b.at.localeCompare(a.at);
 }
-function _temp2$6(message_0) {
+function _temp2$7(message_0) {
 	return {
 		id: `inbox-${message_0.id}`,
 		message: message_0.message,
@@ -64720,7 +64750,7 @@ function _temp$11() {
 }
 // src/client/pages/ticket/detail/page.tsx
 function TicketDetail() {
-	const $ = (0, import_dist.c)(82);
+	const $ = (0, import_dist.c)(130);
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { go } = useActions();
@@ -64779,171 +64809,225 @@ function TicketDetail() {
 		$[9] = t5;
 	} else t5 = $[9];
 	const { data: groupList } = useQuery(t5);
-	const detail = stored?.ticket?.id === ticketId ? stored : null;
-	const task = detail?.ticket;
-	const unavailable = stored !== void 0 && !detail;
+	const client = useQueryClient();
 	let t6;
-	if ($[10] !== detail?.executions) {
-		t6 = detail?.executions.toSorted(_temp2$5).at(-1);
-		$[10] = detail?.executions;
+	if ($[10] !== ticketId) {
+		t6 = (paused) => patchApiSupermeshTicketId({ id: ticketId ?? "" }, {
+			paused,
+			reason: paused ? "paused_by_user" : "resumed_by_user"
+		});
+		$[10] = ticketId;
 		$[11] = t6;
 	} else t6 = $[11];
-	const latest = t6;
 	let t7;
-	if ($[12] !== channelList || $[13] !== task?.channelId) {
-		t7 = channelList?.find((channel) => channel.id === task?.channelId);
-		$[12] = channelList;
-		$[13] = task?.channelId;
-		$[14] = t7;
-	} else t7 = $[14];
-	const channel_0 = t7;
+	if ($[12] !== client) {
+		t7 = () => client.invalidateQueries();
+		$[12] = client;
+		$[13] = t7;
+	} else t7 = $[13];
 	let t8;
-	if ($[15] !== task) {
-		t8 = task?.status !== "waiting" && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? /* @__PURE__ */ new Date()).getTime() - new Date(task.startedAt).getTime()) / 1e3)) : null;
-		$[15] = task;
+	if ($[14] !== t6 || $[15] !== t7) {
+		t8 = {
+			mutationFn: t6,
+			onSettled: t7
+		};
+		$[14] = t6;
+		$[15] = t7;
 		$[16] = t8;
 	} else t8 = $[16];
-	const seconds = t8;
+	const pause = useMutation(t8);
 	let t9;
-	if ($[17] !== detail?.inbox) {
-		t9 = new Set(detail?.inbox.map(_temp3$2).filter(_temp4$2));
-		$[17] = detail?.inbox;
+	if ($[17] !== ticketId) {
+		t9 = () => patchApiSupermeshTicketId({ id: ticketId ?? "" }, {
+			status: "cancelled",
+			reason: "cancelled_by_user"
+		});
+		$[17] = ticketId;
 		$[18] = t9;
 	} else t9 = $[18];
 	let t10;
-	if ($[19] !== t9) {
-		t10 = [...t9];
-		$[19] = t9;
+	if ($[19] !== client) {
+		t10 = () => client.invalidateQueries();
+		$[19] = client;
 		$[20] = t10;
 	} else t10 = $[20];
 	let t11;
-	if ($[21] !== groupList || $[22] !== t10) {
-		t11 = t10.map((id_0) => ({
+	if ($[21] !== t10 || $[22] !== t9) {
+		t11 = {
+			mutationFn: t9,
+			onSettled: t10
+		};
+		$[21] = t10;
+		$[22] = t9;
+		$[23] = t11;
+	} else t11 = $[23];
+	const cancel = useMutation(t11);
+	const [confirming, setConfirming] = (0, react.useState)(false);
+	const detail = stored?.ticket?.id === ticketId ? stored : null;
+	const task = detail?.ticket;
+	const unavailable = stored !== void 0 && !detail;
+	let t12;
+	if ($[24] !== detail?.executions) {
+		t12 = detail?.executions.toSorted(_temp2$6).at(-1);
+		$[24] = detail?.executions;
+		$[25] = t12;
+	} else t12 = $[25];
+	const latest = t12;
+	let t13;
+	if ($[26] !== channelList || $[27] !== task?.channelId) {
+		t13 = channelList?.find((channel) => channel.id === task?.channelId);
+		$[26] = channelList;
+		$[27] = task?.channelId;
+		$[28] = t13;
+	} else t13 = $[28];
+	const channel_0 = t13;
+	let t14;
+	if ($[29] !== task) {
+		t14 = task?.status !== "waiting" && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? /* @__PURE__ */ new Date()).getTime() - new Date(task.startedAt).getTime()) / 1e3)) : null;
+		$[29] = task;
+		$[30] = t14;
+	} else t14 = $[30];
+	const seconds = t14;
+	let t15;
+	if ($[31] !== detail?.inbox) {
+		t15 = new Set(detail?.inbox.map(_temp3$3).filter(_temp4$2));
+		$[31] = detail?.inbox;
+		$[32] = t15;
+	} else t15 = $[32];
+	let t16;
+	if ($[33] !== t15) {
+		t16 = [...t15];
+		$[33] = t15;
+		$[34] = t16;
+	} else t16 = $[34];
+	let t17;
+	if ($[35] !== groupList || $[36] !== t16) {
+		t17 = t16.map((id_0) => ({
 			id: id_0,
 			group: groupList?.find((group) => group.id === `supervisor:${id_0}`)
 		}));
-		$[21] = groupList;
-		$[22] = t10;
-		$[23] = t11;
-	} else t11 = $[23];
-	const supervisors = t11;
-	let t12;
-	if ($[24] !== t) {
-		t12 = t("overviewStatusWaiting");
-		$[24] = t;
-		$[25] = t12;
-	} else t12 = $[25];
-	let t13;
-	if ($[26] !== t) {
-		t13 = t("ticketStatusQueued");
-		$[26] = t;
-		$[27] = t13;
-	} else t13 = $[27];
-	let t14;
-	if ($[28] !== t) {
-		t14 = t("overviewStatusRunning");
-		$[28] = t;
-		$[29] = t14;
-	} else t14 = $[29];
-	let t15;
-	if ($[30] !== t) {
-		t15 = t("overviewStatusReview");
-		$[30] = t;
-		$[31] = t15;
-	} else t15 = $[31];
-	let t16;
-	if ($[32] !== t) {
-		t16 = t("overviewCompleted");
-		$[32] = t;
-		$[33] = t16;
-	} else t16 = $[33];
-	let t17;
-	if ($[34] !== t) {
-		t17 = t("ticketStatusCancelled");
-		$[34] = t;
-		$[35] = t17;
-	} else t17 = $[35];
+		$[35] = groupList;
+		$[36] = t16;
+		$[37] = t17;
+	} else t17 = $[37];
+	const supervisors = t17;
 	let t18;
-	if ($[36] !== t12 || $[37] !== t13 || $[38] !== t14 || $[39] !== t15 || $[40] !== t16 || $[41] !== t17) {
-		t18 = {
-			waiting: t12,
-			queued: t13,
-			running: t14,
-			review: t15,
-			done: t16,
-			cancelled: t17
-		};
-		$[36] = t12;
-		$[37] = t13;
-		$[38] = t14;
-		$[39] = t15;
-		$[40] = t16;
-		$[41] = t17;
-		$[42] = t18;
-	} else t18 = $[42];
-	const labels = t18;
+	if ($[38] !== t) {
+		t18 = t("overviewStatusWaiting");
+		$[38] = t;
+		$[39] = t18;
+	} else t18 = $[39];
 	let t19;
-	if ($[43] !== t) {
-		t19 = t("ticketDetail");
-		$[43] = t;
-		$[44] = t19;
-	} else t19 = $[44];
+	if ($[40] !== t) {
+		t19 = t("ticketStatusQueued");
+		$[40] = t;
+		$[41] = t19;
+	} else t19 = $[41];
 	let t20;
-	if ($[45] === Symbol.for("react.memo_cache_sentinel")) {
-		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
-			width: 16,
-			height: 16
-		});
-		$[45] = t20;
-	} else t20 = $[45];
+	if ($[42] !== t) {
+		t20 = t("overviewStatusRunning");
+		$[42] = t;
+		$[43] = t20;
+	} else t20 = $[43];
 	let t21;
-	if ($[46] !== go || $[47] !== returnTo) {
-		t21 = () => go(returnTo);
-		$[46] = go;
-		$[47] = returnTo;
-		$[48] = t21;
-	} else t21 = $[48];
+	if ($[44] !== t) {
+		t21 = t("overviewStatusReview");
+		$[44] = t;
+		$[45] = t21;
+	} else t21 = $[45];
 	let t22;
-	if ($[49] !== t) {
-		t22 = t("ticketBack");
-		$[49] = t;
-		$[50] = t22;
-	} else t22 = $[50];
+	if ($[46] !== t) {
+		t22 = t("overviewCompleted");
+		$[46] = t;
+		$[47] = t22;
+	} else t22 = $[47];
 	let t23;
-	if ($[51] !== t21 || $[52] !== t22) {
-		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-			variant: "ghost",
-			size: "sm",
-			icon: t20,
-			onClick: t21,
-			children: t22
-		}) });
-		$[51] = t21;
-		$[52] = t22;
-		$[53] = t23;
-	} else t23 = $[53];
+	if ($[48] !== t) {
+		t23 = t("ticketStatusCancelled");
+		$[48] = t;
+		$[49] = t23;
+	} else t23 = $[49];
 	let t24;
-	if ($[54] !== isLoading) {
-		t24 = isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			role: "status",
-			children: "加载中…"
-		});
-		$[54] = isLoading;
-		$[55] = t24;
-	} else t24 = $[55];
+	if ($[50] !== t18 || $[51] !== t19 || $[52] !== t20 || $[53] !== t21 || $[54] !== t22 || $[55] !== t23) {
+		t24 = {
+			waiting: t18,
+			queued: t19,
+			running: t20,
+			review: t21,
+			done: t22,
+			cancelled: t23
+		};
+		$[50] = t18;
+		$[51] = t19;
+		$[52] = t20;
+		$[53] = t21;
+		$[54] = t22;
+		$[55] = t23;
+		$[56] = t24;
+	} else t24 = $[56];
+	const labels = t24;
 	let t25;
-	if ($[56] !== error || $[57] !== unavailable) {
-		t25 = (error || unavailable) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			role: "alert",
-			children: error instanceof Error ? error.message : "任务不存在或无法读取"
-		});
-		$[56] = error;
-		$[57] = unavailable;
+	if ($[57] !== t) {
+		t25 = t("ticketDetail");
+		$[57] = t;
 		$[58] = t25;
 	} else t25 = $[58];
 	let t26;
-	if ($[59] !== error || $[60] !== isLoading || $[61] !== t || $[62] !== task || $[63] !== unavailable) {
-		t26 = !task && !isLoading && !error && !unavailable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+	if ($[59] === Symbol.for("react.memo_cache_sentinel")) {
+		t26 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
+			width: 16,
+			height: 16
+		});
+		$[59] = t26;
+	} else t26 = $[59];
+	let t27;
+	if ($[60] !== go || $[61] !== returnTo) {
+		t27 = () => go(returnTo);
+		$[60] = go;
+		$[61] = returnTo;
+		$[62] = t27;
+	} else t27 = $[62];
+	let t28;
+	if ($[63] !== t) {
+		t28 = t("ticketBack");
+		$[63] = t;
+		$[64] = t28;
+	} else t28 = $[64];
+	let t29;
+	if ($[65] !== t27 || $[66] !== t28) {
+		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			variant: "ghost",
+			size: "sm",
+			icon: t26,
+			onClick: t27,
+			children: t28
+		}) });
+		$[65] = t27;
+		$[66] = t28;
+		$[67] = t29;
+	} else t29 = $[67];
+	let t30;
+	if ($[68] !== isLoading) {
+		t30 = isLoading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "status",
+			children: "加载中…"
+		});
+		$[68] = isLoading;
+		$[69] = t30;
+	} else t30 = $[69];
+	let t31;
+	if ($[70] !== error || $[71] !== unavailable) {
+		t31 = (error || unavailable) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			children: error instanceof Error ? error.message : "任务不存在或无法读取"
+		});
+		$[70] = error;
+		$[71] = unavailable;
+		$[72] = t31;
+	} else t31 = $[72];
+	let t32;
+	if ($[73] !== error || $[74] !== isLoading || $[75] !== t || $[76] !== task || $[77] !== unavailable) {
+		t32 = !task && !isLoading && !error && !unavailable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			title: t("ticketNotFound"),
 			description: t("ticketNotFoundDescription"),
 			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SupermeshIcon, {
@@ -64951,16 +65035,16 @@ function TicketDetail() {
 				height: 28
 			})
 		});
-		$[59] = error;
-		$[60] = isLoading;
-		$[61] = t;
-		$[62] = task;
-		$[63] = unavailable;
-		$[64] = t26;
-	} else t26 = $[64];
-	let t27;
-	if ($[65] !== channel_0 || $[66] !== ctx || $[67] !== detail || $[68] !== labels || $[69] !== latest || $[70] !== seconds || $[71] !== supervisors || $[72] !== t || $[73] !== task) {
-		t27 = task && detail && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
+		$[73] = error;
+		$[74] = isLoading;
+		$[75] = t;
+		$[76] = task;
+		$[77] = unavailable;
+		$[78] = t32;
+	} else t32 = $[78];
+	let t33;
+	if ($[79] !== cancel.isPending || $[80] !== channel_0 || $[81] !== ctx || $[82] !== detail || $[83] !== labels || $[84] !== latest || $[85] !== pause || $[86] !== seconds || $[87] !== supervisors || $[88] !== t || $[89] !== task) {
+		t33 = task && detail && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 				className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -64982,12 +65066,29 @@ function TicketDetail() {
 					className: "flex min-w-0 flex-col items-end gap-1.5",
 					children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: "flex flex-wrap items-center justify-end gap-2",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PrStatus, { ticket: task }), latest?.id && (latest.status === "running" || latest.startedAt) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							variant: "outline",
-							size: "sm",
-							onClick: () => ctx.uiWorkspace.openSession(latest.id),
-							children: t("overviewOpenSession")
-						})]
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(PrStatus, { ticket: task }),
+							task.status !== "done" && task.status !== "cancelled" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "outline",
+								size: "sm",
+								disabled: pause.isPending,
+								onClick: () => pause.mutate(!task.paused),
+								children: task.paused ? t("ticketResume") : t("ticketPause")
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "outline",
+								size: "sm",
+								disabled: cancel.isPending,
+								className: "border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)",
+								onClick: () => setConfirming(true),
+								children: t("ticketCancel")
+							})] }),
+							latest?.id && (latest.status === "running" || latest.startedAt) && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								variant: "outline",
+								size: "sm",
+								onClick: () => ctx.uiWorkspace.openSession(latest.id),
+								children: t("overviewOpenSession")
+							})
+						]
 					})
 				})]
 			}),
@@ -65098,8 +65199,8 @@ function TicketDetail() {
 						title: t("graphSupervisor"),
 						children: supervisors.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 							className: "m-0 flex list-none flex-col gap-2 p-0",
-							children: supervisors.map((t28) => {
-								const { id: id_1, group: group_0 } = t28;
+							children: supervisors.map((t34) => {
+								const { id: id_1, group: group_0 } = t34;
 								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
 									className: "flex flex-wrap items-center justify-between gap-2",
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -65127,39 +65228,143 @@ function TicketDetail() {
 				})]
 			})
 		] });
-		$[65] = channel_0;
-		$[66] = ctx;
-		$[67] = detail;
-		$[68] = labels;
-		$[69] = latest;
-		$[70] = seconds;
-		$[71] = supervisors;
-		$[72] = t;
-		$[73] = task;
-		$[74] = t27;
-	} else t27 = $[74];
-	let t28;
-	if ($[75] !== t19 || $[76] !== t23 || $[77] !== t24 || $[78] !== t25 || $[79] !== t26 || $[80] !== t27) {
-		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+		$[79] = cancel.isPending;
+		$[80] = channel_0;
+		$[81] = ctx;
+		$[82] = detail;
+		$[83] = labels;
+		$[84] = latest;
+		$[85] = pause;
+		$[86] = seconds;
+		$[87] = supervisors;
+		$[88] = t;
+		$[89] = task;
+		$[90] = t33;
+	} else t33 = $[90];
+	let t34;
+	if ($[91] === Symbol.for("react.memo_cache_sentinel")) {
+		t34 = () => setConfirming(false);
+		$[91] = t34;
+	} else t34 = $[91];
+	let t35;
+	if ($[92] !== t) {
+		t35 = t("ticketCancelTitle");
+		$[92] = t;
+		$[93] = t35;
+	} else t35 = $[93];
+	let t36;
+	if ($[94] !== t) {
+		t36 = t("ticketCancelDismiss");
+		$[94] = t;
+		$[95] = t36;
+	} else t36 = $[95];
+	let t37;
+	if ($[96] !== t) {
+		t37 = t("ticketCancelDescription");
+		$[96] = t;
+		$[97] = t37;
+	} else t37 = $[97];
+	const t38 = cancel.isPending;
+	let t39;
+	if ($[98] === Symbol.for("react.memo_cache_sentinel")) {
+		t39 = () => setConfirming(false);
+		$[98] = t39;
+	} else t39 = $[98];
+	let t40;
+	if ($[99] !== t) {
+		t40 = t("ticketCancelDismiss");
+		$[99] = t;
+		$[100] = t40;
+	} else t40 = $[100];
+	let t41;
+	if ($[101] !== cancel.isPending || $[102] !== t40) {
+		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			variant: "outline",
+			disabled: t38,
+			onClick: t39,
+			children: t40
+		});
+		$[101] = cancel.isPending;
+		$[102] = t40;
+		$[103] = t41;
+	} else t41 = $[103];
+	const t42 = cancel.isPending;
+	let t43;
+	if ($[104] !== cancel) {
+		t43 = () => cancel.mutate(void 0, { onSuccess: () => setConfirming(false) });
+		$[104] = cancel;
+		$[105] = t43;
+	} else t43 = $[105];
+	const t44 = cancel.isPending ? "ticketCancelling" : "ticketCancelConfirm";
+	let t45;
+	if ($[106] !== t || $[107] !== t44) {
+		t45 = t(t44);
+		$[106] = t;
+		$[107] = t44;
+		$[108] = t45;
+	} else t45 = $[108];
+	let t46;
+	if ($[109] !== cancel.isPending || $[110] !== t43 || $[111] !== t45) {
+		t46 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			variant: "primary",
+			className: "border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)",
+			disabled: t42,
+			onClick: t43,
+			children: t45
+		});
+		$[109] = cancel.isPending;
+		$[110] = t43;
+		$[111] = t45;
+		$[112] = t46;
+	} else t46 = $[112];
+	let t47;
+	if ($[113] !== t41 || $[114] !== t46) {
+		t47 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [t41, t46] });
+		$[113] = t41;
+		$[114] = t46;
+		$[115] = t47;
+	} else t47 = $[115];
+	let t48;
+	if ($[116] !== confirming || $[117] !== t35 || $[118] !== t36 || $[119] !== t37 || $[120] !== t47) {
+		t48 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+			open: confirming,
+			onClose: t34,
+			title: t35,
+			closeLabel: t36,
+			description: t37,
+			footer: t47
+		});
+		$[116] = confirming;
+		$[117] = t35;
+		$[118] = t36;
+		$[119] = t37;
+		$[120] = t47;
+		$[121] = t48;
+	} else t48 = $[121];
+	let t49;
+	if ($[122] !== t25 || $[123] !== t29 || $[124] !== t30 || $[125] !== t31 || $[126] !== t32 || $[127] !== t33 || $[128] !== t48) {
+		t49 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: "@container flex min-w-0 flex-col gap-5 pb-10",
-			"aria-label": t19,
+			"aria-label": t25,
 			children: [
-				t23,
-				t24,
-				t25,
-				t26,
-				t27
+				t29,
+				t30,
+				t31,
+				t32,
+				t33,
+				t48
 			]
 		});
-		$[75] = t19;
-		$[76] = t23;
-		$[77] = t24;
-		$[78] = t25;
-		$[79] = t26;
-		$[80] = t27;
-		$[81] = t28;
-	} else t28 = $[81];
-	return t28;
+		$[122] = t25;
+		$[123] = t29;
+		$[124] = t30;
+		$[125] = t31;
+		$[126] = t32;
+		$[127] = t33;
+		$[128] = t48;
+		$[129] = t49;
+	} else t49 = $[129];
+	return t49;
 }
 function _temp7$2(link_0) {
 	return link_0.kind === "relates";
@@ -65173,10 +65378,10 @@ function _temp5$2(topic) {
 function _temp4$2(id) {
 	return Boolean(id);
 }
-function _temp3$2(message) {
+function _temp3$3(message) {
 	return message.supervisorId;
 }
-function _temp2$5(a, b) {
+function _temp2$6(a, b) {
 	return a.createdAt.localeCompare(b.createdAt);
 }
 function _temp$10(state) {
@@ -65396,7 +65601,7 @@ function Ticket() {
 	if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
 		t4 = {
 			queryKey: keys.channel,
-			queryFn: _temp2$4
+			queryFn: _temp2$5
 		};
 		$[8] = t4;
 	} else t4 = $[8];
@@ -65405,7 +65610,7 @@ function Ticket() {
 	if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
 		t5 = {
 			queryKey: keys.trigger,
-			queryFn: _temp3$1,
+			queryFn: _temp3$2,
 			refetchInterval: 3e4
 		};
 		$[9] = t5;
@@ -65561,10 +65766,10 @@ function _temp5$1(query) {
 function _temp4$1() {
 	return getApiSupermeshSubscription();
 }
-function _temp3$1() {
+function _temp3$2() {
 	return getApiSupermeshTrigger();
 }
-function _temp2$4() {
+function _temp2$5() {
 	return getApiSupermeshChannel();
 }
 function _temp$9() {
@@ -65606,20 +65811,6 @@ function deliveryStatus(record) {
 	if (record.deliveries.some((delivery) => delivery.status === "pending")) return "pending";
 	return record.deliveries.length ? "done" : "not-delivered";
 }
-function filterRecords(records, filters) {
-	const query = filters.query.trim().toLocaleLowerCase();
-	return records.filter((record) => (filters.channel === "all" || record.channel === filters.channel) && (filters.status === "all" || (filters.status === "not-delivered" ? !record.deliveries.length : record.deliveries.some((delivery) => delivery.status === filters.status))) && (filters.kind === "all" || record.kind === filters.kind) && (!filters.mentionedOnly || record.mentioned) && (!query || [
-		record.id,
-		record.actor,
-		record.channel,
-		record.thread.ref,
-		record.thread.project,
-		record.ref,
-		record.thread.title,
-		record.text,
-		...record.tickets
-	].join(" ").toLocaleLowerCase().includes(query))).sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id));
-}
 function groupTopics(records) {
 	const grouped = /* @__PURE__ */ new Map();
 	for (const record of records) {
@@ -65634,9 +65825,6 @@ function groupTopics(records) {
 			events
 		};
 	}).sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id));
-}
-function filterTopics(topics, filters) {
-	return topics.filter((topic) => filterRecords(topic.events, filters).length > 0);
 }
 const TRIAGE = {
 	pending: "triggerTriagePending",
@@ -66080,7 +66268,7 @@ function TriggerDetail() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.project,
-			queryFn: _temp2$3,
+			queryFn: _temp2$4,
 			staleTime: 0,
 			gcTime: 0,
 			refetchOnMount: "always"
@@ -66092,7 +66280,7 @@ function TriggerDetail() {
 	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.trigger,
-			queryFn: _temp3,
+			queryFn: _temp3$1,
 			refetchInterval: 3e4,
 			staleTime: 0,
 			gcTime: 0,
@@ -66729,10 +66917,10 @@ function _temp5() {
 function _temp4() {
 	return getApiSupermeshThread();
 }
-function _temp3() {
+function _temp3$1() {
 	return getApiSupermeshTrigger();
 }
-function _temp2$3() {
+function _temp2$4() {
 	return getApiSupermeshProject();
 }
 function _temp$7(state) {
@@ -67271,68 +67459,91 @@ function _temp$5(event) {
 }
 // src/client/pages/trigger/components/summary.tsx
 function Summary(t0) {
-	const $ = (0, import_dist.c)(21);
-	const { topics } = t0;
+	const $ = (0, import_dist.c)(26);
+	const { filters } = t0;
 	const { t } = useTranslation();
 	const { setTriggerFilters } = useActions();
 	const selected = useStore(_temp$4);
 	let t1;
-	if ($[0] !== t) {
-		t1 = t("triggerReceived");
-		$[0] = t;
+	if ($[0] !== filters) {
+		t1 = Object.fromEntries(Object.entries(filters).filter(_temp2$3));
+		$[0] = filters;
 		$[1] = t1;
 	} else t1 = $[1];
+	const params = t1;
 	let t2;
-	if ($[2] !== t1 || $[3] !== topics.length) {
+	if ($[2] !== params) {
 		t2 = {
+			queryKey: [
+				"supermesh",
+				"topic",
+				"count",
+				params
+			],
+			queryFn: () => getApiSupermeshTopicCount(params),
+			refetchInterval: 3e4
+		};
+		$[2] = params;
+		$[3] = t2;
+	} else t2 = $[3];
+	const data = useQuery(t2).data;
+	let t3;
+	if ($[4] !== t) {
+		t3 = t("triggerReceived");
+		$[4] = t;
+		$[5] = t3;
+	} else t3 = $[5];
+	const t4 = data?.all ?? 0;
+	let t5;
+	if ($[6] !== t3 || $[7] !== t4) {
+		t5 = {
 			value: "all",
-			label: t1,
-			count: topics.length,
+			label: t3,
+			count: t4,
 			color: "var(--dsw-alias-label-primary)"
 		};
-		$[2] = t1;
-		$[3] = topics.length;
-		$[4] = t2;
-	} else t2 = $[4];
-	let t3;
-	if ($[5] !== t || $[6] !== topics) {
-		t3 = [
+		$[6] = t3;
+		$[7] = t4;
+		$[8] = t5;
+	} else t5 = $[8];
+	let t6;
+	if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
+		t6 = [
 			"pending",
 			"done",
 			"stalled"
-		].map((value) => ({
-			value,
-			label: t(STATUSES[value].label),
-			count: filterTopics(topics, {
-				query: "",
-				channel: "all",
-				kind: "all",
-				mentionedOnly: false,
-				status: value
-			}).length,
-			color: `var(--dsw-alias-state-${value === "stalled" ? "error" : value === "done" ? "success" : "business"}-primary)`
+		];
+		$[9] = t6;
+	} else t6 = $[9];
+	let t7;
+	if ($[10] !== data || $[11] !== t) {
+		t7 = t6.map((value_0) => ({
+			value: value_0,
+			label: t(STATUSES[value_0].label),
+			count: data?.[value_0] ?? 0,
+			color: `var(--dsw-alias-state-${value_0 === "stalled" ? "error" : value_0 === "done" ? "success" : "business"}-primary)`
 		}));
-		$[5] = t;
-		$[6] = topics;
-		$[7] = t3;
-	} else t3 = $[7];
-	let t4;
-	if ($[8] !== t2 || $[9] !== t3) {
-		t4 = [t2, ...t3];
-		$[8] = t2;
-		$[9] = t3;
-		$[10] = t4;
-	} else t4 = $[10];
-	const cards = t4;
-	let t5;
-	if ($[11] !== t) {
-		t5 = t("triggerSummary");
+		$[10] = data;
 		$[11] = t;
-		$[12] = t5;
-	} else t5 = $[12];
-	let t6;
-	if ($[13] !== cards || $[14] !== selected || $[15] !== setTriggerFilters || $[16] !== t) {
-		t6 = cards.map((card) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+		$[12] = t7;
+	} else t7 = $[12];
+	let t8;
+	if ($[13] !== t5 || $[14] !== t7) {
+		t8 = [t5, ...t7];
+		$[13] = t5;
+		$[14] = t7;
+		$[15] = t8;
+	} else t8 = $[15];
+	const cards = t8;
+	let t9;
+	if ($[16] !== t) {
+		t9 = t("triggerSummary");
+		$[16] = t;
+		$[17] = t9;
+	} else t9 = $[17];
+	let t10;
+	if ($[18] !== cards || $[19] !== selected || $[20] !== setTriggerFilters || $[21] !== t) {
+		t10 = cards.map((card) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 			type: "button",
 			"aria-pressed": selected === card.value,
 			onClick: () => setTriggerFilters({ status: card.value }),
@@ -67351,31 +67562,35 @@ function Summary(t0) {
 				})]
 			})]
 		}, card.value));
-		$[13] = cards;
-		$[14] = selected;
-		$[15] = setTriggerFilters;
-		$[16] = t;
-		$[17] = t6;
-	} else t6 = $[17];
-	let t7;
-	if ($[18] !== t5 || $[19] !== t6) {
-		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+		$[18] = cards;
+		$[19] = selected;
+		$[20] = setTriggerFilters;
+		$[21] = t;
+		$[22] = t10;
+	} else t10 = $[22];
+	let t11;
+	if ($[23] !== t10 || $[24] !== t9) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "grid grid-cols-2 gap-3 @min-[740px]:grid-cols-4",
 			role: "group",
-			"aria-label": t5,
-			children: t6
+			"aria-label": t9,
+			children: t10
 		});
-		$[18] = t5;
-		$[19] = t6;
-		$[20] = t7;
-	} else t7 = $[20];
-	return t7;
+		$[23] = t10;
+		$[24] = t9;
+		$[25] = t11;
+	} else t11 = $[25];
+	return t11;
+}
+function _temp2$3(t0) {
+	const [, value] = t0;
+	return value !== void 0 && value !== "";
 }
 function _temp$4(state) {
 	return state.trigger.filters.status;
 }
 function Trigger() {
-	const $ = (0, import_dist.c)(82);
+	const $ = (0, import_dist.c)(102);
 	const { t } = useTranslation();
 	const filters = useStore(_temp$3);
 	const { resetTriggerFilters } = useActions();
@@ -67385,17 +67600,18 @@ function Trigger() {
 	const t2 = filters.status === "all" ? void 0 : filters.status;
 	const t3 = filters.kind === "all" ? void 0 : KINDS[filters.kind];
 	const t4 = filters.mentionedOnly ? "true" : void 0;
-	let query;
+	let params;
 	let t5;
 	let t6;
 	if ($[0] !== page || $[1] !== t0 || $[2] !== t1 || $[3] !== t2 || $[4] !== t3 || $[5] !== t4) {
-		query = {
+		const query = {
 			query: t0,
 			channel: t1,
 			status: t2,
 			kind: t3,
 			mentionedOnly: t4
 		};
+		params = Object.fromEntries(Object.entries(query).filter(_temp2$2));
 		t6 = useQuery;
 		t5 = keys.topicPage(page, 5, query);
 		$[0] = page;
@@ -67404,23 +67620,23 @@ function Trigger() {
 		$[3] = t2;
 		$[4] = t3;
 		$[5] = t4;
-		$[6] = query;
+		$[6] = params;
 		$[7] = t5;
 		$[8] = t6;
 	} else {
-		query = $[6];
+		params = $[6];
 		t5 = $[7];
 		t6 = $[8];
 	}
 	let t7;
-	if ($[9] !== page || $[10] !== query) {
+	if ($[9] !== page || $[10] !== params) {
 		t7 = () => getApiSupermeshTopic({
-			...query,
+			...params,
 			page: String(page),
 			pageSize: String(5)
 		});
 		$[9] = page;
-		$[10] = query;
+		$[10] = params;
 		$[11] = t7;
 	} else t7 = $[11];
 	let t8;
@@ -67435,272 +67651,316 @@ function Trigger() {
 		$[14] = t8;
 	} else t8 = $[14];
 	const topic = t6(t8);
-	let t9;
-	if ($[15] !== topic.data?.data) {
-		t9 = topic.data?.data ?? [];
-		$[15] = topic.data?.data;
-		$[16] = t9;
-	} else t9 = $[16];
-	const records = t9;
-	const total = topic.data?.total ?? 0;
-	const pageCount = Math.max(1, Math.ceil(total / 5));
-	const current = Math.min(page, pageCount);
-	const error = topic.error;
-	const loading = topic.isLoading;
 	let content;
-	if (error) {
-		const t10 = error.message || "触发记录加载失败，请重试。";
-		let t11;
-		if ($[17] !== t10) {
-			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "alert",
-				className: "m-0 px-4 py-6 text-xs text-(--dsw-alias-state-error-primary)",
-				children: t10
-			});
-			$[17] = t10;
-			$[18] = t11;
-		} else t11 = $[18];
-		content = t11;
-	} else if (loading) {
-		let t10;
-		if ($[19] === Symbol.for("react.memo_cache_sentinel")) {
-			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "status",
-				className: "m-0 px-4 py-6 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-				children: "正在载入触发记录…"
-			});
-			$[19] = t10;
-		} else t10 = $[19];
-		content = t10;
-	} else if (total) {
-		let t10;
-		if ($[20] !== records) {
-			t10 = records.map(_temp2$2);
-			$[20] = records;
-			$[21] = t10;
-		} else t10 = $[21];
-		let t11;
-		if ($[22] !== t10) {
-			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-				className: "m-0 list-none p-0",
-				children: t10
-			});
-			$[22] = t10;
-			$[23] = t11;
-		} else t11 = $[23];
-		content = t11;
-	} else {
-		let t10;
-		if ($[24] !== t) {
-			t10 = t("triggerEmpty");
-			$[24] = t;
-			$[25] = t10;
-		} else t10 = $[25];
-		let t11;
-		if ($[26] !== t) {
-			t11 = t("triggerEmptyDescription");
-			$[26] = t;
-			$[27] = t11;
-		} else t11 = $[27];
-		let t12;
-		if ($[28] === Symbol.for("react.memo_cache_sentinel")) {
-			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
-				width: 24,
-				height: 24
-			});
-			$[28] = t12;
-		} else t12 = $[28];
-		let t13;
-		if ($[29] !== t) {
-			t13 = t("triggerReset");
-			$[29] = t;
-			$[30] = t13;
-		} else t13 = $[30];
-		let t14;
-		if ($[31] !== resetTriggerFilters || $[32] !== t13) {
-			t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-				size: "sm",
-				variant: "outline",
-				onClick: resetTriggerFilters,
-				children: t13
-			});
-			$[31] = resetTriggerFilters;
-			$[32] = t13;
-			$[33] = t14;
-		} else t14 = $[33];
-		let t15;
-		if ($[34] !== t10 || $[35] !== t11 || $[36] !== t14) {
-			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-				className: "!min-h-0 !gap-3 !py-6",
-				title: t10,
-				description: t11,
-				icon: t12,
-				children: t14
-			});
-			$[34] = t10;
-			$[35] = t11;
-			$[36] = t14;
-			$[37] = t15;
-		} else t15 = $[37];
-		content = t15;
-	}
+	let current;
+	let error;
+	let loading;
+	let pageCount;
 	let t10;
-	if ($[38] !== t) {
-		t10 = t("tabTriggers");
-		$[38] = t;
-		$[39] = t10;
-	} else t10 = $[39];
 	let t11;
-	if ($[40] !== t) {
-		t11 = t("triggerTitle");
-		$[40] = t;
-		$[41] = t11;
-	} else t11 = $[41];
 	let t12;
-	if ($[42] !== t11) {
-		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
-			className: "m-0 text-base leading-6 font-medium",
-			children: t11
-		});
-		$[42] = t11;
-		$[43] = t12;
-	} else t12 = $[43];
 	let t13;
-	if ($[44] !== t) {
-		t13 = t("triggerDescription");
-		$[44] = t;
-		$[45] = t13;
-	} else t13 = $[45];
 	let t14;
-	if ($[46] !== t13) {
-		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-			children: t13
-		});
-		$[46] = t13;
-		$[47] = t14;
-	} else t14 = $[47];
 	let t15;
-	if ($[48] !== t12 || $[49] !== t14) {
-		t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
-			className: "flex flex-wrap items-start justify-between gap-3",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t12, t14] })
-		});
-		$[48] = t12;
-		$[49] = t14;
-		$[50] = t15;
-	} else t15 = $[50];
 	let t16;
-	if ($[51] !== records) {
-		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Summary, { topics: records });
-		$[51] = records;
-		$[52] = t16;
-	} else t16 = $[52];
 	let t17;
-	if ($[53] === Symbol.for("react.memo_cache_sentinel")) {
-		t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
-		$[53] = t17;
-	} else t17 = $[53];
-	let t18;
-	if ($[54] !== records.length || $[55] !== t || $[56] !== total) {
-		t18 = t("triggerResultCount", {
+	let t9;
+	let total;
+	if ($[15] !== page || $[16] !== params || $[17] !== resetTriggerFilters || $[18] !== t || $[19] !== topic.data?.data || $[20] !== topic.data?.total || $[21] !== topic.error || $[22] !== topic.isLoading) {
+		const records = topic.data?.data ?? [];
+		total = topic.data?.total ?? 0;
+		pageCount = Math.max(1, Math.ceil(total / 5));
+		current = Math.min(page, pageCount);
+		error = topic.error;
+		loading = topic.isLoading;
+		if (error) {
+			const t18 = error.message || "触发记录加载失败，请重试。";
+			let t19;
+			if ($[38] !== t18) {
+				t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					role: "alert",
+					className: "m-0 px-4 py-6 text-xs text-(--dsw-alias-state-error-primary)",
+					children: t18
+				});
+				$[38] = t18;
+				$[39] = t19;
+			} else t19 = $[39];
+			content = t19;
+		} else if (loading) {
+			let t18;
+			if ($[40] === Symbol.for("react.memo_cache_sentinel")) {
+				t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					role: "status",
+					className: "m-0 px-4 py-6 text-xs leading-5 text-(--dsw-alias-label-secondary)",
+					children: "正在载入触发记录…"
+				});
+				$[40] = t18;
+			} else t18 = $[40];
+			content = t18;
+		} else if (total) content = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+			className: "m-0 list-none p-0",
+			children: records.map(_temp3)
+		});
+		else {
+			let t18;
+			if ($[41] !== t) {
+				t18 = t("triggerEmpty");
+				$[41] = t;
+				$[42] = t18;
+			} else t18 = $[42];
+			let t19;
+			if ($[43] !== t) {
+				t19 = t("triggerEmptyDescription");
+				$[43] = t;
+				$[44] = t19;
+			} else t19 = $[44];
+			let t20;
+			if ($[45] === Symbol.for("react.memo_cache_sentinel")) {
+				t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ActivityIcon, {
+					width: 24,
+					height: 24
+				});
+				$[45] = t20;
+			} else t20 = $[45];
+			let t21;
+			if ($[46] !== t) {
+				t21 = t("triggerReset");
+				$[46] = t;
+				$[47] = t21;
+			} else t21 = $[47];
+			let t22;
+			if ($[48] !== resetTriggerFilters || $[49] !== t21) {
+				t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+					size: "sm",
+					variant: "outline",
+					onClick: resetTriggerFilters,
+					children: t21
+				});
+				$[48] = resetTriggerFilters;
+				$[49] = t21;
+				$[50] = t22;
+			} else t22 = $[50];
+			let t23;
+			if ($[51] !== t18 || $[52] !== t19 || $[53] !== t22) {
+				t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+					className: "!min-h-0 !gap-3 !py-6",
+					title: t18,
+					description: t19,
+					icon: t20,
+					children: t22
+				});
+				$[51] = t18;
+				$[52] = t19;
+				$[53] = t22;
+				$[54] = t23;
+			} else t23 = $[54];
+			content = t23;
+		}
+		t14 = "@container flex min-w-0 flex-col gap-5 pb-10";
+		if ($[55] !== t) {
+			t15 = t("tabTriggers");
+			$[55] = t;
+			$[56] = t15;
+		} else t15 = $[56];
+		let t18;
+		if ($[57] !== t) {
+			t18 = t("triggerTitle");
+			$[57] = t;
+			$[58] = t18;
+		} else t18 = $[58];
+		let t19;
+		if ($[59] !== t18) {
+			t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
+				className: "m-0 text-base leading-6 font-medium",
+				children: t18
+			});
+			$[59] = t18;
+			$[60] = t19;
+		} else t19 = $[60];
+		let t20;
+		if ($[61] !== t) {
+			t20 = t("triggerDescription");
+			$[61] = t;
+			$[62] = t20;
+		} else t20 = $[62];
+		let t21;
+		if ($[63] !== t20) {
+			t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+				className: "m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
+				children: t20
+			});
+			$[63] = t20;
+			$[64] = t21;
+		} else t21 = $[64];
+		if ($[65] !== t19 || $[66] !== t21) {
+			t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("header", {
+				className: "flex flex-wrap items-start justify-between gap-3",
+				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", { children: [t19, t21] })
+			});
+			$[65] = t19;
+			$[66] = t21;
+			$[67] = t16;
+		} else t16 = $[67];
+		if ($[68] !== params) {
+			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Summary, { filters: params });
+			$[68] = params;
+			$[69] = t17;
+		} else t17 = $[69];
+		t12 = "flex flex-col gap-3";
+		if ($[70] === Symbol.for("react.memo_cache_sentinel")) {
+			t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
+			$[70] = t13;
+		} else t13 = $[70];
+		t11 = "flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)";
+		t9 = "status";
+		t10 = t("triggerResultCount", {
 			count: records.length,
 			total
 		});
-		$[54] = records.length;
-		$[55] = t;
-		$[56] = total;
-		$[57] = t18;
-	} else t18 = $[57];
-	let t19;
-	if ($[58] !== t18) {
-		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: "flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)",
-			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				role: "status",
-				children: t18
-			})
+		$[15] = page;
+		$[16] = params;
+		$[17] = resetTriggerFilters;
+		$[18] = t;
+		$[19] = topic.data?.data;
+		$[20] = topic.data?.total;
+		$[21] = topic.error;
+		$[22] = topic.isLoading;
+		$[23] = content;
+		$[24] = current;
+		$[25] = error;
+		$[26] = loading;
+		$[27] = pageCount;
+		$[28] = t10;
+		$[29] = t11;
+		$[30] = t12;
+		$[31] = t13;
+		$[32] = t14;
+		$[33] = t15;
+		$[34] = t16;
+		$[35] = t17;
+		$[36] = t9;
+		$[37] = total;
+	} else {
+		content = $[23];
+		current = $[24];
+		error = $[25];
+		loading = $[26];
+		pageCount = $[27];
+		t10 = $[28];
+		t11 = $[29];
+		t12 = $[30];
+		t13 = $[31];
+		t14 = $[32];
+		t15 = $[33];
+		t16 = $[34];
+		t17 = $[35];
+		t9 = $[36];
+		total = $[37];
+	}
+	let t18;
+	if ($[71] !== t10 || $[72] !== t9) {
+		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+			role: t9,
+			children: t10
 		});
-		$[58] = t18;
-		$[59] = t19;
-	} else t19 = $[59];
+		$[71] = t10;
+		$[72] = t9;
+		$[73] = t18;
+	} else t18 = $[73];
+	let t19;
+	if ($[74] !== t11 || $[75] !== t18) {
+		t19 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
+			className: t11,
+			children: t18
+		});
+		$[74] = t11;
+		$[75] = t18;
+		$[76] = t19;
+	} else t19 = $[76];
 	let t20;
-	if ($[60] !== content) {
+	if ($[77] !== content) {
 		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)",
 			children: content
 		});
-		$[60] = content;
-		$[61] = t20;
-	} else t20 = $[61];
+		$[77] = content;
+		$[78] = t20;
+	} else t20 = $[78];
 	let t21;
-	if ($[62] !== current || $[63] !== error || $[64] !== loading || $[65] !== pageCount || $[66] !== total) {
+	if ($[79] !== current || $[80] !== error || $[81] !== loading || $[82] !== pageCount || $[83] !== total) {
 		t21 = !error && !loading && total > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Pagination, {
 			page: current,
 			pageCount,
 			onChange: setPage
 		});
-		$[62] = current;
-		$[63] = error;
-		$[64] = loading;
-		$[65] = pageCount;
-		$[66] = total;
-		$[67] = t21;
-	} else t21 = $[67];
+		$[79] = current;
+		$[80] = error;
+		$[81] = loading;
+		$[82] = pageCount;
+		$[83] = total;
+		$[84] = t21;
+	} else t21 = $[84];
 	let t22;
-	if ($[68] !== t) {
+	if ($[85] !== t) {
 		t22 = t("triggerPreviewNotice");
-		$[68] = t;
-		$[69] = t22;
-	} else t22 = $[69];
+		$[85] = t;
+		$[86] = t22;
+	} else t22 = $[86];
 	let t23;
-	if ($[70] !== t22) {
+	if ($[87] !== t22) {
 		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t22
 		});
-		$[70] = t22;
-		$[71] = t23;
-	} else t23 = $[71];
+		$[87] = t22;
+		$[88] = t23;
+	} else t23 = $[88];
 	let t24;
-	if ($[72] !== t19 || $[73] !== t20 || $[74] !== t21 || $[75] !== t23) {
+	if ($[89] !== t12 || $[90] !== t13 || $[91] !== t19 || $[92] !== t20 || $[93] !== t21 || $[94] !== t23) {
 		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex flex-col gap-3",
+			className: t12,
 			children: [
-				t17,
+				t13,
 				t19,
 				t20,
 				t21,
 				t23
 			]
 		});
-		$[72] = t19;
-		$[73] = t20;
-		$[74] = t21;
-		$[75] = t23;
-		$[76] = t24;
-	} else t24 = $[76];
+		$[89] = t12;
+		$[90] = t13;
+		$[91] = t19;
+		$[92] = t20;
+		$[93] = t21;
+		$[94] = t23;
+		$[95] = t24;
+	} else t24 = $[95];
 	let t25;
-	if ($[77] !== t10 || $[78] !== t15 || $[79] !== t16 || $[80] !== t24) {
+	if ($[96] !== t14 || $[97] !== t15 || $[98] !== t16 || $[99] !== t17 || $[100] !== t24) {
 		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "@container flex min-w-0 flex-col gap-5 pb-10",
-			"aria-label": t10,
+			className: t14,
+			"aria-label": t15,
 			children: [
-				t15,
 				t16,
+				t17,
 				t24
 			]
 		});
-		$[77] = t10;
-		$[78] = t15;
-		$[79] = t16;
-		$[80] = t24;
-		$[81] = t25;
-	} else t25 = $[81];
+		$[96] = t14;
+		$[97] = t15;
+		$[98] = t16;
+		$[99] = t17;
+		$[100] = t24;
+		$[101] = t25;
+	} else t25 = $[101];
 	return t25;
 }
-function _temp2$2(item) {
+function _temp3(item) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row, { topic: item }, item.latest.thread.id);
+}
+function _temp2$2(t0) {
+	const [, value] = t0;
+	return value !== void 0;
 }
 function _temp$3(state) {
 	return state.trigger.filters;

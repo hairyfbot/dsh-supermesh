@@ -21,11 +21,14 @@ export function TaskCard({ onMore }: { onMore: () => void }): ReactNode {
   const added = list.filter(ticket => Date.parse(ticket.createdAt) >= now - 86400000).length
   const segments = SEGMENTS.map(segment => ({
     ...segment,
-    value: list.filter(ticket => segment.name === 'overviewCompleted'
-      ? ticket.status === 'done'
-      : segment.name === 'overviewBlocked'
-        ? Boolean(ticket.paused || ticket.prepareError)
-        : ['running', 'queued', 'review'].includes(ticket.status) && !ticket.paused && !ticket.prepareError).length,
+    value: list.filter((ticket) => {
+      const closed = ticket.status === 'done' || ticket.status === 'cancelled'
+      if (segment.name === 'overviewCompleted')
+        return ticket.status === 'done'
+      if (segment.name === 'overviewBlocked')
+        return !closed && Boolean(ticket.paused || ticket.prepareError)
+      return !closed && !ticket.paused && !ticket.prepareError && ['running', 'queued', 'review'].includes(ticket.status)
+    }).length,
   }))
   return (
     <SummaryCard title={t('overviewTaskSummary')} icon={<TasksIcon width={18} height={18} className="shrink-0" />} actionLabel={t('overviewMoreTasks')} onMore={onMore}>

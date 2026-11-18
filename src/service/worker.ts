@@ -171,6 +171,18 @@ export const worker = defineService({
       await finish(worker, expired ? 'stopped' : undefined)
     }
   }),
+  cancel: singlet(
+    (ticketId: string) => `worker:cancel:${ticketId}`,
+    async (ticketId: string): Promise<void> => {
+      const now = new Date().toISOString()
+      for (const current of await db.worker.listByTicket(ticketId)) {
+        if (current.status === 'ended')
+          continue
+        await session.stop(current.id).catch(() => undefined)
+        await db.worker.end(current.id, 'stopped', now)
+      }
+    },
+  ),
   rescue: singlet('worker:rescue', async () => {
     for (const ticket of await db.ticket.listOpen()) {
       if (stopped)

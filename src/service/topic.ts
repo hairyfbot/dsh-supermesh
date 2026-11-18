@@ -1,6 +1,7 @@
 import type { Selectable } from 'kysely'
 import type { DB, InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '../database/types'
 import { db } from '../database'
+import { defineService } from '../utils/service'
 
 export type DeliveryStatus = InboxStatus | 'not-delivered'
 
@@ -33,11 +34,28 @@ export interface TopicRow {
   events: TopicEvent[]
 }
 
+/** 四个统计卡片的全量计数，按话题去重，不受分页影响。 */
+export interface TopicCounts {
+  all: number
+  pending: number
+  done: number
+  stalled: number
+}
+
 export interface TopicPage {
   data: TopicRow[]
   total: number
   page: number
   pageSize: number
+}
+
+/** 一条触发按投递事实推出的状态：有受阻就是受阻，有排队就是排队。 */
+function eventStatus(event: TopicEvent): 'stalled' | 'pending' | 'done' | 'not-delivered' {
+  if (event.deliveries.some(item => item.status === 'stalled'))
+    return 'stalled'
+  if (event.deliveries.some(item => item.status === 'pending'))
+    return 'pending'
+  return event.deliveries.length ? 'done' : 'not-delivered'
 }
 
 function matchEvent(event: TopicEvent, filters: TopicFilters, thread: Selectable<DB['thread']>, projectName?: string): boolean {
@@ -49,10 +67,7 @@ function matchEvent(event: TopicEvent, filters: TopicFilters, thread: Selectable
   if (filters.mentionedOnly && !event.mentioned)
     return false
   if (filters.status && filters.status !== 'all') {
-    const status = event.deliveries.some(item => item.status === 'stalled')
-      ? 'stalled'
-      : event.deliveries.some(item => item.status === 'pending') ? 'pending' : event.deliveries.length ? 'done' : 'not-delivered'
-    if (status !== filters.status)
+    if (eventStatus(event) !== filters.status)
       return false
   }
   if (query) {
@@ -63,57 +78,78 @@ function matchEvent(event: TopicEvent, filters: TopicFilters, thread: Selectable
   return true
 }
 
-export const topic = {
+export const topic = defineService({
   async page(filters: TopicFilters, page = 1, pageSize = 5): Promise<TopicPage> {
     const size = Math.max(1, Math.min(100, pageSize))
-    const [triggers, threads, projects, subscriptions, deliveries] = await Promise.all([
-      db.trigger.listRecent(1000),
-      db.thread.listRecent(1000),
-      db.project.listAll(),
-      db.ticketThread.listAll(),
-      db.inbox.listRecent(),
-    ])
-    const threadById = new Map(threads.map(item => [item.id, item]))
-    const projectById = new Map(projects.map(item => [item.id, item]))
-    const grouped = new Map<string, TopicEvent[]>()
-    for (const item of triggers) {
-      const thread = threadById.get(item.threadId)
-      if (!thread)
-        continue
-      const event: TopicEvent = {
-        id: item.id,
-        channel: item.channelId,
-        kind: item.kind,
-        actor: item.actorName ?? '',
-        human: Boolean(item.human),
-        mentioned: Boolean(item.mentioned),
-        text: item.text,
-        at: item.at,
-        ref: item.ref ?? undefined,
-        url: item.url ?? undefined,
-        thread: { id: thread.id, kind: thread.kind, ref: thread.refId, title: thread.title, triage: thread.triage, project: thread.projectId ? projectById.get(thread.projectId)?.name : undefined, url: thread.url ?? undefined },
-        tickets: subscriptions.filter(link => link.threadId === thread.id).map(link => link.ticketId),
-        deliveries: deliveries.filter(message => message.triggerId === item.id).map(message => ({
-          target: message.type,
-          project: message.projectId ? projectById.get(message.projectId)?.name : undefined,
-          status: message.status,
-          read: Boolean(message.readAt),
-          attempts: message.deliveryAttempts,
-          error: message.deliveryError ?? undefined,
-        })),
-      }
-      if (!matchEvent(event, filters, thread, projectById.get(thread.projectId ?? '')?.name))
-        continue
-      const events = grouped.get(thread.id) ?? []
-      events.push(event)
-      grouped.set(thread.id, events)
-    }
-    const rows: TopicRow[] = [...grouped.values()].map((events) => {
-      events.sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id))
-      return { latest: events[0], events }
-    })
-    rows.sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id))
+    const rows = await collect(filters)
     const offset = (Math.max(1, page) - 1) * size
     return { data: rows.slice(offset, offset + size), total: rows.length, page: Math.max(1, page), pageSize: size }
   },
+  /** 统计卡片用：按话题去重的全量计数，与分页和当前页数据无关。 */
+  async count(filters: TopicFilters): Promise<TopicCounts> {
+    const rows = await collect({ ...filters, status: undefined })
+    const counts: TopicCounts = { all: rows.length, pending: 0, done: 0, stalled: 0 }
+    for (const row of rows) {
+      const status = eventStatus(row.latest)
+      if (status === 'pending')
+        counts.pending++
+      else if (status === 'done')
+        counts.done++
+      else if (status === 'stalled')
+        counts.stalled++
+    }
+    return counts
+  },
+})
+
+/** 按筛选条件装配全量话题行（未分页），page 与 count 共用。 */
+async function collect(filters: TopicFilters): Promise<TopicRow[]> {
+  const [triggers, threads, projects, subscriptions, deliveries] = await Promise.all([
+    db.trigger.listRecent(1000),
+    db.thread.listRecent(1000),
+    db.project.listAll(),
+    db.ticketThread.listAll(),
+    db.inbox.listRecent(),
+  ])
+  const threadById = new Map(threads.map(item => [item.id, item]))
+  const projectById = new Map(projects.map(item => [item.id, item]))
+  const grouped = new Map<string, TopicEvent[]>()
+  for (const item of triggers) {
+    const thread = threadById.get(item.threadId)
+    if (!thread)
+      continue
+    const event: TopicEvent = {
+      id: item.id,
+      channel: item.channelId,
+      kind: item.kind,
+      actor: item.actorName ?? '',
+      human: Boolean(item.human),
+      mentioned: Boolean(item.mentioned),
+      text: item.text,
+      at: item.at,
+      ref: item.ref ?? undefined,
+      url: item.url ?? undefined,
+      thread: { id: thread.id, kind: thread.kind, ref: thread.refId, title: thread.title, triage: thread.triage, project: thread.projectId ? projectById.get(thread.projectId)?.name : undefined, url: thread.url ?? undefined },
+      tickets: subscriptions.filter(link => link.threadId === thread.id).map(link => link.ticketId),
+      deliveries: deliveries.filter(message => message.triggerId === item.id).map(message => ({
+        target: message.type,
+        project: message.projectId ? projectById.get(message.projectId)?.name : undefined,
+        status: message.status,
+        read: Boolean(message.readAt),
+        attempts: message.deliveryAttempts,
+        error: message.deliveryError ?? undefined,
+      })),
+    }
+    if (!matchEvent(event, filters, thread, projectById.get(thread.projectId ?? '')?.name))
+      continue
+    const events = grouped.get(thread.id) ?? []
+    events.push(event)
+    grouped.set(thread.id, events)
+  }
+  const rows: TopicRow[] = [...grouped.values()].map((events) => {
+    events.sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id))
+    return { latest: events[0], events }
+  })
+  rows.sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id))
+  return rows
 }

@@ -1,16 +1,33 @@
 import type { ReactNode } from 'react'
-import type { DeliveryStatus, Topic } from '../model'
+import type * as Types from '../../../apis/index.type'
+import type { DeliveryStatus } from '../model'
+import { useQuery } from '@tanstack/react-query'
+import { getApiSupermeshTopicCount } from '../../../apis'
 import { useActions, useStore } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
-import { filterTopics, STATUSES } from '../model'
+import { STATUSES } from '../model'
 
-export function Summary({ topics }: { topics: readonly Topic[] }): ReactNode {
+export interface TriggerFiltersForCount {
+  query?: string
+  channel?: string
+  kind?: string
+  mentionedOnly?: string
+}
+
+export function Summary({ filters }: { filters: TriggerFiltersForCount }): ReactNode {
   const { t } = useTranslation()
   const { setTriggerFilters } = useActions()
   const selected = useStore(state => state.trigger.filters.status)
+  const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined && value !== ''))
+  const counts = useQuery({
+    queryKey: ['supermesh', 'topic', 'count', params],
+    queryFn: () => getApiSupermeshTopicCount(params),
+    refetchInterval: 30_000,
+  })
+  const data = counts.data as Types.GetApiSupermeshTopicCountResponse | undefined
   const cards: { value: 'all' | DeliveryStatus, label: string, count: number, color: string }[] = [
-    { value: 'all', label: t('triggerReceived'), count: topics.length, color: 'var(--dsw-alias-label-primary)' },
-    ...(['pending', 'done', 'stalled'] as const).map(value => ({ value, label: t(STATUSES[value].label), count: filterTopics(topics, { query: '', channel: 'all', kind: 'all', mentionedOnly: false, status: value }).length, color: `var(--dsw-alias-state-${value === 'stalled' ? 'error' : value === 'done' ? 'success' : 'business'}-primary)` })),
+    { value: 'all', label: t('triggerReceived'), count: data?.all ?? 0, color: 'var(--dsw-alias-label-primary)' },
+    ...(['pending', 'done', 'stalled'] as const).map(value => ({ value, label: t(STATUSES[value].label), count: data?.[value] ?? 0, color: `var(--dsw-alias-state-${value === 'stalled' ? 'error' : value === 'done' ? 'success' : 'business'}-primary)` })),
   ]
   return (
     <div className="grid grid-cols-2 gap-3 @min-[740px]:grid-cols-4" role="group" aria-label={t('triggerSummary')}>

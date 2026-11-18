@@ -1480,8 +1480,8 @@ var MigrationProvider = class {
 	}
 };
 // src/database/index.ts
-const worker = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID;
-const file = worker ? `data.worker-${worker}.db` : "data.db";
+const worker$1 = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID;
+const file = worker$1 ? `data.worker-${worker$1}.db` : "data.db";
 const database = new DatabaseSync(file);
 const connection = new Kysely({ dialect: new NodeSqliteDialect({ database }) });
 const db = Object.assign(connection, {
@@ -1507,11 +1507,17 @@ const { error } = await new Migrator({
 if (error) throw error;
 // src/runtime/singlet.ts
 const pending = /* @__PURE__ */ new Map();
+/** 超过这个时长还占着 key 的，视为卡死：不再复用它的 Promise，改为重新执行。 */
+const STALE_MS = 12e4;
 function resolveKey(keyOrGen, args) {
 	return typeof keyOrGen === "function" ? keyOrGen(...args) : keyOrGen;
 }
 /**
 * 【单飞原语】同一 key 正在执行时复用同一个 Promise，不排队、不阻塞调用方。
+*
+* 超过 `STALE_MS` 仍未结束的记录判定为卡死并让位：新调用重新执行，
+* 而不是继续等一个可能永不 settle 的 Promise。原任务之后才结束时，
+* 它的 settle 不会误删新记录（按记录身份比对）。
 *
 * @param keyOrGen 静态 key 或按入参生成 key 的函数
 * @param fn 需要单飞保护的异步函数
@@ -1530,11 +1536,12 @@ function singlet(keyOrGen, fn) {
 	return ((...args) => {
 		const key = resolveKey(keyOrGen, args);
 		const current = pending.get(key);
-		if (current) return current.promise;
+		if (current && Date.now() - current.startedAt < 12e4) return current.promise;
 		const task = Promise.resolve().then(() => fn(...args));
 		const record = {
 			promise: task,
-			startedAt: Date.now()
+			startedAt: Date.now(),
+			key
 		};
 		pending.set(key, record);
 		const settle = () => {
@@ -1549,6 +1556,14 @@ singlet.busy = function busy(key) {
 };
 singlet.keys = function keys() {
 	return [...pending.keys()];
+};
+/** 卡住超过 `STALE_MS` 的 key 与已运行时长，用于排查采集或投递停摆。 */
+singlet.stale = function stale() {
+	const now = Date.now();
+	return [...pending.values()].map((record) => ({
+		key: record.key,
+		runningMs: now - record.startedAt
+	})).filter((record) => record.runningMs >= STALE_MS);
 };
 singlet.drain = async function drain() {
 	while (pending.size) await Promise.allSettled([...pending.values()].map((record) => record.promise));
@@ -1830,7 +1845,7 @@ const presets$1 = {
 };
 const registered = /* @__PURE__ */ new Set();
 let controller$2 = new AbortController();
-let stopped$2 = false;
+let stopped$3 = false;
 const session = defineService({
 	register(id) {
 		registered.add(id);
@@ -1855,9 +1870,9 @@ const session = defineService({
 	start() {
 		if (singlet.busy("session:workspace")) throw new Error("session_busy");
 		controller$2 = new AbortController();
-		stopped$2 = false;
+		stopped$3 = false;
 		return async () => {
-			stopped$2 = true;
+			stopped$3 = true;
 			controller$2.abort(/* @__PURE__ */ new Error("session_stopped"));
 			await Promise.allSettled([singlet.drain()]);
 		};
@@ -1913,7 +1928,7 @@ const session = defineService({
 		return id && (await session.resolve(id))?.role === "main" ? id : null;
 	},
 	create: singlet((role, options) => `session:create:${role}:${role === "worker" ? options.sessionId : role === "project" ? options.projectId : role === "supervisor" ? options.supervisorId : "main"}`, async (role, options) => {
-		if (stopped$2) throw new Error("runtime_stopping");
+		if (stopped$3) throw new Error("runtime_stopping");
 		const ctx = getServerContext(server);
 		const project = options.projectId ? await db.project.findById(options.projectId) : void 0;
 		const supervisor = options.supervisorId ? await db.supervisor.findById(options.supervisorId) : void 0;
@@ -1969,7 +1984,7 @@ const session = defineService({
 	}),
 	send: singlet((id, _text, _mode, requestId = "") => `session:send:${id}:${requestId}`, async (id, text, mode = "queue", requestId = randomUUID()) => {
 		if (!text.trim()) throw new Error("empty_message");
-		if (stopped$2) throw new Error("runtime_stopping");
+		if (stopped$3) throw new Error("runtime_stopping");
 		const identity = await session.resolve(id);
 		if (!identity) {
 			const worker = await db.worker.findById(id);
@@ -2104,7 +2119,7 @@ async function resolveAgent(id) {
 }
 // src/service/inbox.ts
 const deliveredAnswers = /* @__PURE__ */ new Set();
-let stopped$1 = false;
+let stopped$2 = false;
 const inbox = defineService({
 	notify: singlet((agent) => `inbox:notify:${agent.session.id}`, async (agent, restore = false) => {
 		if (agent.status !== "idle" && !restore) return;
@@ -2128,7 +2143,7 @@ const inbox = defineService({
 				revision
 			}
 		});
-		if (stopped$1 || !await session.resolve(agent.session.id)) return;
+		if (stopped$2 || !await session.resolve(agent.session.id)) return;
 		if (restore) agent.inject(message);
 		else if (agent.status === "idle") agent.followup(message);
 	}),
@@ -2175,10 +2190,10 @@ const inbox = defineService({
 	},
 	start() {
 		if (singlet.busy("inbox:delivery") || singlet.busy("inbox:answers")) throw new Error("inbox_busy");
-		stopped$1 = false;
+		stopped$2 = false;
 		deliveredAnswers.clear();
 		return async () => {
-			stopped$1 = true;
+			stopped$2 = true;
 			await Promise.allSettled([singlet.drain()]);
 			deliveredAnswers.clear();
 		};
@@ -2189,7 +2204,7 @@ const inbox = defineService({
 		const notified = /* @__PURE__ */ new Set();
 		const receipts = /* @__PURE__ */ new Map();
 		for (const message of await db.inbox.listDelivery()) {
-			if (stopped$1) break;
+			if (stopped$2) break;
 			const key = [
 				message.type,
 				message.projectId,
@@ -2209,7 +2224,7 @@ const inbox = defineService({
 				if (!id) throw new Error("recipient_session_unavailable");
 				if (message.origin !== "channel") {
 					const agent = await session.activate(id);
-					if (stopped$1) break;
+					if (stopped$2) break;
 					if (agent.status === "idle") await inbox.notify(agent);
 					notified.add(key);
 					await db.inbox.resetDelivery(message.id);
@@ -2227,7 +2242,7 @@ const inbox = defineService({
 					blocked.delete(key);
 					continue;
 				}
-				if ((await session.activity(id)).running || stopped$1) continue;
+				if ((await session.activity(id)).running || stopped$2) continue;
 				await session.send(id, [
 					message.title ?? "",
 					`[Inbox ${message.id}]`,
@@ -2238,7 +2253,7 @@ const inbox = defineService({
 				await db.inbox.resetDelivery(message.id);
 				blocked.delete(key);
 			} catch (error) {
-				if (stopped$1) break;
+				if (stopped$2) break;
 				const reason = error instanceof Error ? error.message : String(error);
 				const attempts = message.deliveryAttempts + 1;
 				const delay = Math.min(2 ** Math.min(attempts, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
@@ -2249,7 +2264,7 @@ const inbox = defineService({
 	}),
 	deliverAnswers: singlet("inbox:answers", async () => {
 		for (const message of await db.inbox.listAnswered()) {
-			if (stopped$1) break;
+			if (stopped$2) break;
 			if (!message.answer || message.nextRetryAt && message.nextRetryAt > (/* @__PURE__ */ new Date()).toISOString()) continue;
 			try {
 				if (message.answeredBy !== "user" && message.origin !== "worker") {
@@ -2269,13 +2284,13 @@ const inbox = defineService({
 					const supervisor = await db.supervisor.findById(message.supervisorId);
 					if (supervisor?.status === "active") id = supervisor.sessionId;
 				} else if (message.origin === "main") id = await session.findMain();
-				if (!id || deliveredAnswers.has(`${message.id}:${id}`) || stopped$1) continue;
+				if (!id || deliveredAnswers.has(`${message.id}:${id}`) || stopped$2) continue;
 				if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
 				await session.send(id, `[Answer ${message.id}] ${message.answer}`, "reply", `supermesh:answer:${message.id}`);
 				deliveredAnswers.add(`${message.id}:${id}`);
 				await db.inbox.resetDelivery(message.id);
 			} catch (error) {
-				if (stopped$1) break;
+				if (stopped$2) break;
 				const reason = error instanceof Error ? error.message : String(error);
 				const settings = await setting.load();
 				const delays = Math.min(2 ** Math.min(message.deliveryAttempts + 1, 20), settings.deliveryRetryCeilingSeconds) * 1e3;
@@ -3174,15 +3189,15 @@ function samePath$1(left, right) {
 // src/service/project.ts
 let syncing;
 let controller = new AbortController();
-let stopped = false;
+let stopped$1 = false;
 const repositories = /* @__PURE__ */ new Map();
 const project = defineService({
 	start() {
 		if (repositories.size || syncing) throw new Error("project_busy");
 		controller = new AbortController();
-		stopped = false;
+		stopped$1 = false;
 		return async () => {
-			stopped = true;
+			stopped$1 = true;
 			controller.abort(/* @__PURE__ */ new Error("project_stopped"));
 			await Promise.allSettled([...repositories.values(), ...syncing ? [syncing] : []]);
 		};
@@ -3210,12 +3225,12 @@ const project = defineService({
 		return ctx.sessionController.openWorkspacePath({ path: current.directory }, signal);
 	},
 	sync() {
-		if (stopped) return Promise.reject(/* @__PURE__ */ new Error("project_stopped"));
+		if (stopped$1) return Promise.reject(/* @__PURE__ */ new Error("project_stopped"));
 		return queueSync();
 	}
 });
 async function addRepository(remoteUrl, name, requestSignal) {
-	if (stopped) throw new Error("project_stopped");
+	if (stopped$1) throw new Error("project_stopped");
 	const signal = requestSignal ? AbortSignal.any([controller.signal, requestSignal]) : controller.signal;
 	const remote = parseGitRemote(remoteUrl);
 	const platform = remote.host === "github.com" ? "github" : remote.host;
@@ -3717,11 +3732,366 @@ var ticket__id__get_default = defineHandler(async (event) => {
 		inbox
 	};
 });
+// src/service/archive.ts
+const archive = defineService({ async session(id) {
+	if (!(await setting.load()).autoArchiveWorkers) return false;
+	const ctx = getServerContext(server);
+	await session.stop(id).catch(() => void 0);
+	for (let attempt = 0; attempt < 3; attempt++) try {
+		await ctx.workspaceRegistry.archiveSession(id, { stopActivity: true });
+		return true;
+	} catch (error) {
+		if (attempt === 2) {
+			ctx.logger.warn("supermesh: archiving session %s failed: %s", id, error instanceof Error ? error.message : String(error));
+			return false;
+		}
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+	return false;
+} });
+// src/service/worker.ts
+const eventQueues = /* @__PURE__ */ new Map();
+let stopped = false;
+let observing = false;
+const worker = defineService({
+	start() {
+		if (singlet.busy("worker:slots") || eventQueues.size) throw new Error("worker_busy");
+		stopped = false;
+		observing = true;
+		return async () => {
+			stopped = true;
+			observing = false;
+			while (singlet.keys().some((key) => key.startsWith("worker:")) || eventQueues.size) await Promise.allSettled([singlet.drain(), ...[...eventQueues.values()]]);
+		};
+	},
+	reconcile: singlet("worker:slots", async () => {
+		const settings = await setting.load();
+		for (const worker of await db.worker.listRunning()) {
+			if (stopped) break;
+			const ticket = await db.ticket.findById(worker.ticketId);
+			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") continue;
+			if (ticket.prState === "merged" || ticket.prState === "closed") {
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.worker.end(worker.id, "stopped", now);
+				await db.ticket.finish(ticket.id, "done", now, now);
+				await releaseDependents(ticket.id);
+				continue;
+			}
+			const activity = await session.activity(worker.id).catch(() => null);
+			if (activity && (activity.running || activity.background || activity.queued)) continue;
+			const last = await session.lastActivity(worker.id);
+			if (last && Date.now() - last < 12e4) continue;
+			const now = (/* @__PURE__ */ new Date()).toISOString();
+			await db.worker.end(worker.id, worker.reportState === "ready" ? "completed" : "stopped", now);
+			await db.ticket.update(ticket.id, {
+				status: worker.reportState === "ready" ? "review" : "waiting",
+				updatedAt: now
+			});
+		}
+		for (const waiting of await db.ticket.listFiltered({ status: "waiting" })) {
+			if (stopped) break;
+			if (waiting.paused || waiting.prepareError) continue;
+			if (await blockedByDependency(waiting.id)) continue;
+			if (!(await db.ticketLink.listDependsOn(waiting.id)).length) continue;
+			if ((await db.worker.listByTicket(waiting.id)).some((worker) => worker.status !== "ended")) continue;
+			await db.ticket.update(waiting.id, {
+				status: "queued",
+				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+			});
+			await db.worker.queue(waiting.id, waiting.projectId).catch(() => void 0);
+		}
+		let running = (await db.worker.listRunning()).length;
+		for (const worker of await db.worker.listQueued()) {
+			if (stopped || running >= settings.maxWorkers) break;
+			const ticket = await db.ticket.findById(worker.ticketId);
+			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") {
+				await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
+			}
+			if (ticket.prState === "merged" || ticket.prState === "closed") {
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.worker.end(worker.id, "stopped", now);
+				await db.ticket.finish(ticket.id, "done", now, now);
+				await releaseDependents(ticket.id);
+				continue;
+			}
+			if (ticket.paused) continue;
+			if (await blockedByDependency(ticket.id)) continue;
+			if ((await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) continue;
+			const project = await db.project.findById(ticket.projectId);
+			if (!project) {
+				await db.ticket.setPrepareError(ticket.id, "project_not_found", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
+			}
+			if (!project.enabled) continue;
+			let started = false;
+			try {
+				const branch = `dsh/${ticket.id}`;
+				let directory = worker.worktree;
+				if (await session.history(worker.id).then(() => true).catch(() => false)) {
+					if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
+					directory = directory ?? project.directory;
+				} else {
+					await session.create("worker", {
+						sessionId: worker.id,
+						ticketId: ticket.id,
+						projectId: project.id,
+						directory: project.directory
+					});
+					if (stopped) throw new Error("worker_stopped");
+					if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
+					else {
+						const created = await worktree.create(await session.activate(worker.id), ticket.id);
+						directory = created.worktree;
+						await db.worker.update(worker.id, {
+							branch: created.branch,
+							worktree: directory
+						});
+					}
+				}
+				if (!directory) throw new Error("worker_directory_required");
+				if (stopped) throw new Error("worker_stopped");
+				const threads = await db.ticketThread.listByTicket(ticket.id);
+				const sources = await Promise.all(threads.map(async (thread) => {
+					const latest = await db.trigger.findLatestByThread(thread.threadId);
+					return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId;
+				}));
+				const prompt = [
+					`${ticket.id}: ${ticket.title}`,
+					ticket.description ?? "",
+					`执行配置：${JSON.stringify({
+						autoMerge: settings.autoMerge,
+						autoMergeMaxLines: settings.autoMergeMaxLines
+					})}`,
+					"来源话题：",
+					...sources,
+					worker.recoveryNote ?? ""
+				].filter(Boolean).join(String.fromCharCode(10));
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.worker.start(worker.id, now);
+				await db.ticket.start(ticket.id, now, now);
+				running++;
+				started = true;
+				await session.send(worker.id, prompt, "queue", `supermesh:worker:${worker.id}`);
+				await db.ticket.setPrepareError(ticket.id, null, now);
+			} catch (error) {
+				await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), (/* @__PURE__ */ new Date()).toISOString());
+				if (stopped) break;
+				if (started) {
+					await session.stop(worker.id);
+					await db.worker.end(worker.id, "failed", (/* @__PURE__ */ new Date()).toISOString());
+					const latest = await db.ticket.findById(ticket.id);
+					if (latest && latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
+					else if (!latest || latest.status !== "done" && latest.status !== "cancelled") await db.ticket.update(ticket.id, {
+						status: "waiting",
+						updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+					});
+					running--;
+				}
+			}
+		}
+	}),
+	reconcileBackground: singlet("worker:background", async () => {
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		for (const worker of await db.worker.listRunning()) {
+			if (stopped) break;
+			if (!worker.backgroundUntil) continue;
+			const activity = await session.activity(worker.id);
+			const expired = worker.backgroundUntil <= now;
+			if (!expired && (activity.running || activity.background || activity.queued)) continue;
+			if (expired) await session.stop(worker.id);
+			await finish(worker, expired ? "stopped" : void 0);
+		}
+	}),
+	cancel: singlet((ticketId) => `worker:cancel:${ticketId}`, async (ticketId) => {
+		const now = (/* @__PURE__ */ new Date()).toISOString();
+		for (const current of await db.worker.listByTicket(ticketId)) {
+			if (current.status === "ended") continue;
+			await session.stop(current.id).catch(() => void 0);
+			await db.worker.end(current.id, "stopped", now);
+		}
+	}),
+	rescue: singlet("worker:rescue", async () => {
+		for (const ticket of await db.ticket.listOpen()) {
+			if (stopped) break;
+			if (ticket.status !== "waiting") continue;
+			if ((await db.worker.listByTicket(ticket.id)).some((worker) => worker.status !== "ended")) continue;
+			if (!(await db.project.findById(ticket.projectId))?.enabled) continue;
+			if (ticket.prState === "merged" || ticket.prState === "closed") {
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				await db.ticket.finish(ticket.id, "done", now, now);
+				await releaseDependents(ticket.id);
+				continue;
+			}
+			if (ticket.paused) continue;
+			if (ticket.prepareError) await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
+			await db.worker.queue(ticket.id, ticket.projectId);
+		}
+	}),
+	recover: singlet("worker:recovery", async () => {
+		for (const worker of await db.worker.listRunning()) {
+			if (stopped) break;
+			const ticket = await db.ticket.findById(worker.ticketId);
+			if (!ticket) continue;
+			if (ticket.status === "done" || ticket.status === "cancelled") {
+				if (await session.resolve(worker.id)) await session.stop(worker.id);
+				await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
+			}
+			if (ticket.paused) continue;
+			try {
+				const project = await db.project.findById(ticket.projectId);
+				if (project && !project.enabled) continue;
+				if (ticket.prState === "merged") {
+					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+					await db.ticket.finish(ticket.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
+					await releaseDependents(ticket.id);
+					continue;
+				}
+				if (!project || !worker.worktree || !worker.branch) {
+					await db.worker.requeue(worker.id);
+					continue;
+				}
+				await worktree.verify(project.directory, worker.worktree, worker.branch);
+				if (!await session.resolve(worker.id)) {
+					await db.worker.requeue(worker.id);
+					continue;
+				}
+				const activity = await session.activity(worker.id);
+				if (activity.background && !worker.backgroundUntil) {
+					const settings = await setting.load();
+					await db.worker.setBackgroundUntil(worker.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 6e4).toISOString());
+				}
+				if (activity.running || activity.background || activity.queued) continue;
+				const note = "运行已恢复。先检查目录、git 历史与渠道的当前事实，再决定是否重做外部动作；不要重复开 PR 或发布评论。";
+				await db.worker.setRecoveryNote(worker.id, note);
+				if (!(await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) await session.send(worker.id, note, "queue", `supermesh:recovery:${randomUUID()}`);
+			} catch (error) {
+				if (stopped) break;
+				const now = (/* @__PURE__ */ new Date()).toISOString();
+				const latest = await db.ticket.findById(ticket.id);
+				if (latest && (latest.status === "done" || latest.status === "cancelled" || latest.prState === "merged")) {
+					if (latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", now, now);
+					await db.worker.end(worker.id, "stopped", now);
+					continue;
+				}
+				await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now);
+				await db.ticket.update(ticket.id, {
+					status: "waiting",
+					updatedAt: now
+				});
+				await db.worker.end(worker.id, "failed", now);
+			}
+		}
+	}),
+	observe: singlet((source) => `worker:event:${source.id}`, async (source, event) => {
+		if (!observing || stopped || event.type !== "turn/end") return;
+		const previous = eventQueues.get(source.id) ?? Promise.resolve();
+		const action = () => stopped ? Promise.resolve() : (async () => {
+			const identity = await session.resolve(source.id);
+			if (!identity || identity.role !== "worker" || !identity.workerId) return;
+			const current = await db.worker.findById(identity.workerId);
+			if (!current || current.status !== "running") return;
+			const activity = await session.activity(current.id);
+			if (activity.background) {
+				const settings = await setting.load();
+				if (!current.backgroundUntil) await db.worker.setBackgroundUntil(current.id, new Date(Date.now() + Math.min(30, settings.backgroundLimitMinutes) * 6e4).toISOString());
+				return;
+			}
+			if (activity.queued) return;
+			await finish(current, event.data.reason.kind === "error" ? "failed" : event.data.reason.kind === "aborted" ? "stopped" : void 0);
+		})();
+		const current = previous.then(action, action).finally(() => {
+			if (eventQueues.get(source.id) === current) eventQueues.delete(source.id);
+		});
+		eventQueues.set(source.id, current);
+		return current;
+	})
+});
+async function finish(current, reason) {
+	const asks = (await db.inbox.listByTicket(current.ticketId)).filter((message) => message.kind === "ask" && message.workerId === current.id);
+	if (!reason) {
+		if (asks.some((message) => message.status === "pending")) {
+			await deferWhileWaiting(current);
+			return;
+		}
+		const answered = asks.filter((message) => message.answer);
+		if (answered.length) {
+			const receipts = await session.receipts(current.id);
+			if (answered.some((message) => !receipts.some((receipt) => receipt.requestId === `supermesh:answer:${message.id}`))) {
+				await deferWhileWaiting(current);
+				return;
+			}
+		}
+	}
+	if (stopped) return;
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	await db.worker.setBackgroundUntil(current.id, null);
+	await db.worker.end(current.id, reason ?? (current.reportState === "failed" ? "failed" : "completed"), now);
+	const ticket = await db.ticket.findById(current.ticketId);
+	if (ticket && ticket.status !== "done" && ticket.status !== "cancelled") {
+		if (ticket.prState === "merged" || ticket.prState === "closed") await db.ticket.finish(ticket.id, "done", now, now);
+		else if (!reason && current.reportState === "dropped") await db.ticket.finish(ticket.id, "done", now, now);
+		else await db.ticket.update(ticket.id, {
+			status: !reason && current.reportState === "ready" ? "review" : "waiting",
+			updatedAt: now
+		});
+	}
+	if (!reason && current.reportState !== "failed") await archiveWorker(current.id);
+	const ended = await db.ticket.findById(current.ticketId);
+	if (ended && (ended.status === "done" || ended.status === "cancelled")) await releaseDependents(ended.id);
+}
+async function blockedByDependency(ticketId) {
+	const links = await db.ticketLink.listDependsOn(ticketId);
+	if (!links.length) return false;
+	for (const link of links) {
+		const related = await db.ticket.findById(link.relatedId);
+		if (!related || related.status === "done" || related.status === "cancelled") continue;
+		return true;
+	}
+	return false;
+}
+async function releaseDependents(relatedId) {
+	for (const link of await db.ticketLink.listDependents(relatedId)) {
+		const ticket = await db.ticket.findById(link.ticketId);
+		if (!ticket || ticket.status !== "waiting" || ticket.paused) continue;
+		if (await blockedByDependency(ticket.id)) continue;
+		if ((await db.worker.listByTicket(ticket.id)).some((worker) => worker.status !== "ended")) continue;
+		await db.ticket.update(ticket.id, {
+			status: "queued",
+			updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+		});
+		await db.worker.queue(ticket.id, ticket.projectId).catch(() => void 0);
+	}
+}
+async function deferWhileWaiting(current) {
+	const ticket = await db.ticket.findById(current.ticketId);
+	if (!ticket || ticket.status === "done" || ticket.status === "cancelled") return;
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	await db.worker.end(current.id, "completed", now);
+	if (ticket.prState === "merged") {
+		await db.ticket.finish(ticket.id, "done", now, now);
+		return;
+	}
+	await db.ticket.update(ticket.id, {
+		status: "waiting",
+		updatedAt: now
+	});
+}
+async function archiveWorker(id) {
+	await archive.session(id);
+}
 // src/server/routes/ticket.[id].patch.ts
 var ticket__id__patch_default = defineHandler(async (event) => {
 	const id = getRouterParam(event, "id", { decode: true });
 	const body = await readBody(event);
-	if (!id?.trim() || !body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).some((key) => key !== "reason" && key !== "paused") || typeof body.paused !== "boolean" || typeof body.reason !== "string" || !body.reason.trim()) throw new HTTPError({
+	const allowed = [
+		"reason",
+		"paused",
+		"status"
+	];
+	const validShape = body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every((key) => allowed.includes(key)) && (body.paused === void 0 || typeof body.paused === "boolean") && (body.status === void 0 || body.status === "cancelled") && (body.reason === void 0 || typeof body.reason === "string" && body.reason.trim().length > 0) && (body.paused !== void 0 || body.status !== void 0);
+	if (!id?.trim() || !validShape) throw new HTTPError({
 		status: 400,
 		message: "invalid_ticket_patch"
 	});
@@ -3734,7 +4104,13 @@ var ticket__id__patch_default = defineHandler(async (event) => {
 		status: 409,
 		message: "ticket_closed"
 	});
-	const updated = await db.ticket.setPausedIfOpen(id, body.paused, (/* @__PURE__ */ new Date()).toISOString());
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	if (body.status === "cancelled") {
+		await worker.cancel(id);
+		await db.ticket.finish(id, "cancelled", now, now);
+		return await db.ticket.findById(id);
+	}
+	const updated = await db.ticket.setPausedIfOpen(id, body.paused, now);
 	if (!updated) throw new HTTPError({
 		status: 409,
 		message: "ticket_closed"
@@ -3770,13 +4146,19 @@ var ticket_get_default = defineHandler(async (event) => {
 	};
 });
 // src/service/topic.ts
+/** 一条触发按投递事实推出的状态：有受阻就是受阻，有排队就是排队。 */
+function eventStatus(event) {
+	if (event.deliveries.some((item) => item.status === "stalled")) return "stalled";
+	if (event.deliveries.some((item) => item.status === "pending")) return "pending";
+	return event.deliveries.length ? "done" : "not-delivered";
+}
 function matchEvent(event, filters, thread, projectName) {
 	const query = (filters.query ?? "").trim().toLocaleLowerCase();
 	if (filters.channel && filters.channel !== "all" && event.channel !== filters.channel) return false;
 	if (filters.kind && filters.kind !== "all" && event.kind !== filters.kind) return false;
 	if (filters.mentionedOnly && !event.mentioned) return false;
 	if (filters.status && filters.status !== "all") {
-		if ((event.deliveries.some((item) => item.status === "stalled") ? "stalled" : event.deliveries.some((item) => item.status === "pending") ? "pending" : event.deliveries.length ? "done" : "not-delivered") !== filters.status) return false;
+		if (eventStatus(event) !== filters.status) return false;
 	}
 	if (query) {
 		if (![
@@ -3793,8 +4175,41 @@ function matchEvent(event, filters, thread, projectName) {
 	}
 	return true;
 }
-const topic = { async page(filters, page = 1, pageSize = 5) {
-	const size = Math.max(1, Math.min(100, pageSize));
+const topic = defineService({
+	async page(filters, page = 1, pageSize = 5) {
+		const size = Math.max(1, Math.min(100, pageSize));
+		const rows = await collect(filters);
+		const offset = (Math.max(1, page) - 1) * size;
+		return {
+			data: rows.slice(offset, offset + size),
+			total: rows.length,
+			page: Math.max(1, page),
+			pageSize: size
+		};
+	},
+	/** 统计卡片用：按话题去重的全量计数，与分页和当前页数据无关。 */
+	async count(filters) {
+		const rows = await collect({
+			...filters,
+			status: void 0
+		});
+		const counts = {
+			all: rows.length,
+			pending: 0,
+			done: 0,
+			stalled: 0
+		};
+		for (const row of rows) {
+			const status = eventStatus(row.latest);
+			if (status === "pending") counts.pending++;
+			else if (status === "done") counts.done++;
+			else if (status === "stalled") counts.stalled++;
+		}
+		return counts;
+	}
+});
+/** 按筛选条件装配全量话题行（未分页），page 与 count 共用。 */
+async function collect(filters) {
 	const [triggers, threads, projects, subscriptions, deliveries] = await Promise.all([
 		db.trigger.listRecent(1e3),
 		db.thread.listRecent(1e3),
@@ -3851,14 +4266,18 @@ const topic = { async page(filters, page = 1, pageSize = 5) {
 		};
 	});
 	rows.sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id));
-	const offset = (Math.max(1, page) - 1) * size;
-	return {
-		data: rows.slice(offset, offset + size),
-		total: rows.length,
-		page: Math.max(1, page),
-		pageSize: size
-	};
-} };
+	return rows;
+}
+// src/server/routes/topic.count.get.ts
+var topic_count_get_default = defineHandler(async (event) => {
+	const query = getQuery(event);
+	return topic.count({
+		query: query.query || void 0,
+		channel: query.channel || void 0,
+		kind: query.kind,
+		mentionedOnly: query.mentionedOnly === "true"
+	});
+});
 // src/server/routes/topic.get.ts
 var topic_get_default = defineHandler(async (event) => {
 	const query = getQuery(event);
@@ -3920,6 +4339,7 @@ const server = defineWebServer((app) => {
 	app.get("/api/supermesh/thread", thread_get_default);
 	app.get("/api/supermesh/trigger", trigger_get_default);
 	app.get("/api/supermesh/topic", topic_get_default);
+	app.get("/api/supermesh/topic/count", topic_count_get_default);
 	app.get("/api/supermesh/subscription", subscription_get_default);
 	app.get("/api/supermesh/channel", channel_get_default);
 	app.put("/api/supermesh/channel/:id/configuration", channel__id__configuration_put_default);
@@ -4012,7 +4432,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BbNpES3o.js");
+			const { shell } = await import("./shell-Dy647auH.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4021,7 +4441,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BbNpES3o.js");
+			const { shell } = await import("./shell-Dy647auH.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4155,4 +4575,4 @@ async function save(kind, patch) {
 	}
 	return (await channel.list()).find((item) => item.kind === kind);
 }
-export { channelAuth as a, session as c, defineService as d, DSH_PLUGIN_HOME as f, worktree as i, channelProxyEnvironment as l, db as m, server as n, shell as o, singlet as p, project as r, inbox as s, channel as t, setting as u };
+export { project as a, shell as c, channelProxyEnvironment as d, setting as f, db as g, singlet as h, archive as i, inbox as l, DSH_PLUGIN_HOME as m, server as n, worktree as o, defineService as p, worker as r, channelAuth as s, channel as t, session as u };

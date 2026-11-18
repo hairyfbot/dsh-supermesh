@@ -28,9 +28,10 @@ export function Trigger(): ReactNode {
     kind: filters.kind === 'all' ? undefined : KINDS[filters.kind],
     mentionedOnly: filters.mentionedOnly ? 'true' : undefined,
   }
+  const params = Object.fromEntries(Object.entries(query).filter(([, value]) => value !== undefined))
   const topic = useQuery({
     queryKey: keys.topicPage(page, TRIGGER_PAGE_SIZE, query),
-    queryFn: () => getApiSupermeshTopic({ ...query, page: String(page), pageSize: String(TRIGGER_PAGE_SIZE) }),
+    queryFn: () => getApiSupermeshTopic({ ...params, page: String(page), pageSize: String(TRIGGER_PAGE_SIZE) }),
     refetchInterval: 30_000,
   })
   const records = topic.data?.data ?? []
@@ -64,7 +65,7 @@ export function Trigger(): ReactNode {
           <p className="m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('triggerDescription')}</p>
         </div>
       </header>
-      <Summary topics={records} />
+      <Summary filters={params} />
       <div className="flex flex-col gap-3">
         <Filters />
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)">

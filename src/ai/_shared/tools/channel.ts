@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { github } from '../../../channel/github/channel'
 import { gitlab } from '../../../channel/gitlab/channel'
@@ -148,10 +149,15 @@ export const reply_channel = defineTool({
         throw new Error('触发不属于当前项目')
     }
     const ticketId = identity.ticketId ?? null
-    const row = await db.inbox.enqueue({ type: 'user', origin: identity.role, kind: 'notice', projectId: identity.projectId ?? thread.projectId, supervisorId: identity.supervisorId ?? null, workerId: identity.workerId ?? null, triggerId: trigger.id, threadId: thread.id, ticketId, message: args.text })
+    const row = await db.inbox.enqueue({ id: replyKey(trigger.id, args.text), type: 'user', origin: identity.role, kind: 'notice', projectId: identity.projectId ?? thread.projectId, supervisorId: identity.supervisorId ?? null, workerId: identity.workerId ?? null, triggerId: trigger.id, threadId: thread.id, ticketId, message: args.text })
     return JSON.stringify({ id: row.id, status: 'queued' })
   },
 })
+
+/** 同一条触发 + 同一正文只入队一次，与官方 `key('reply', triggerId, text)` 同义。 */
+function replyKey(triggerId: string, body: string): string {
+  return `reply:${createHash('sha256').update(JSON.stringify([triggerId, body])).digest('hex').slice(0, 32)}`
+}
 
 async function isThreadId(value: string): Promise<boolean> {
   if (!/^[\w-]+:[\w./-]+$/.test(value))

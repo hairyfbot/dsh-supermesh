@@ -216,6 +216,15 @@ export async function getApiSupermeshTopic(query?: Types.GetApiSupermeshTopicQue
 }
 
 /** @method get */
+export async function getApiSupermeshTopicCount(query?: Types.GetApiSupermeshTopicCountQuery, config?: RequestInit) {
+  const querystr = new URLSearchParams(Object.entries(query || {}));
+  const response = await fetch(`/api/supermesh/topic/count?${querystr}`, {
+    ...config,
+  });
+  return response.json() as Promise<Types.GetApiSupermeshTopicCountResponse>;
+}
+
+/** @method get */
 export async function getApiSupermeshSubscription(config?: RequestInit) {
   const response = await fetch("/api/supermesh/subscription", {
     ...config,
