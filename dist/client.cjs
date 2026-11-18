@@ -7071,6 +7071,21 @@ function Default(props) {
 	const { children, as, ...rest } = props;
 	return wrapper(as, rest, children);
 }
+function Then(props) {
+	const { children, as, ...rest } = props;
+	return Object.keys(props).includes("cond") ? wrapper(If, props, children) : wrapper(as, rest, children);
+}
+function If(props) {
+	const { then, cond, else: _else, children = props.then, as, ...rest } = props;
+	const elements = react.Children.toArray(children);
+	const thenChild = elements.find((c) => c.type === Then);
+	const elseChild = elements.find((c) => c.type === Else);
+	return wrapper(as, rest, thenChild || elseChild ? cond ? thenChild : elseChild : cond ? children : _else);
+}
+function Else(props) {
+	const { children, as, ...rest } = props;
+	return Object.keys(props).includes("cond") ? wrapper(If, props, children) : wrapper(as, rest, children);
+}
 function Switch$2(props) {
 	const { as, value, children, ...rest } = props;
 	const isUseValue = props.value !== void 0;
@@ -61668,7 +61683,7 @@ function _temp$17(node_0) {
 }
 // src/client/pages/overview/components/task-list.tsx
 function TaskList() {
-	const $ = (0, import_dist.c)(20);
+	const $ = (0, import_dist.c)(39);
 	const { t } = useTranslation();
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
@@ -61765,36 +61780,88 @@ function TaskList() {
 		$[11] = t6;
 	} else t6 = $[11];
 	const refreshedAt = t6;
-	let t7;
-	if ($[12] !== channel || $[13] !== list || $[14] !== node || $[15] !== refreshedAt || $[16] !== subscription || $[17] !== t || $[18] !== trigger) {
-		t7 = list.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
-			className: "pl-0",
-			children: list.map((task) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, {
+	const t7 = list.length;
+	let t8;
+	if ($[12] !== t) {
+		t8 = t("overviewTasksEmpty");
+		$[12] = t;
+		$[13] = t8;
+	} else t8 = $[13];
+	let t9;
+	if ($[14] !== t) {
+		t9 = t("overviewTasksEmptyDescription");
+		$[14] = t;
+		$[15] = t9;
+	} else t9 = $[15];
+	let t10;
+	if ($[16] === Symbol.for("react.memo_cache_sentinel")) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
+			width: 28,
+			height: 28
+		});
+		$[16] = t10;
+	} else t10 = $[16];
+	let t11;
+	if ($[17] !== t8 || $[18] !== t9) {
+		t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
+			title: t8,
+			description: t9,
+			icon: t10
+		});
+		$[17] = t8;
+		$[18] = t9;
+		$[19] = t11;
+	} else t11 = $[19];
+	let t12;
+	if ($[20] !== channel || $[21] !== list || $[22] !== node || $[23] !== refreshedAt || $[24] !== subscription || $[25] !== trigger) {
+		let t13;
+		if ($[27] !== channel || $[28] !== node || $[29] !== refreshedAt || $[30] !== subscription || $[31] !== trigger) {
+			t13 = (task) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, {
 				task,
 				nodes: node.data ?? [],
 				channels: channel.data ?? [],
 				triggers: trigger.data ?? [],
 				subscriptions: subscription.data ?? [],
 				refreshedAt
-			}, task.id))
-		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-			title: t("overviewTasksEmpty"),
-			description: t("overviewTasksEmptyDescription"),
-			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
-				width: 28,
-				height: 28
-			})
+			}, task.id);
+			$[27] = channel;
+			$[28] = node;
+			$[29] = refreshedAt;
+			$[30] = subscription;
+			$[31] = trigger;
+			$[32] = t13;
+		} else t13 = $[32];
+		t12 = list.map(t13);
+		$[20] = channel;
+		$[21] = list;
+		$[22] = node;
+		$[23] = refreshedAt;
+		$[24] = subscription;
+		$[25] = trigger;
+		$[26] = t12;
+	} else t12 = $[26];
+	let t13;
+	if ($[33] !== t12) {
+		t13 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
+			className: "pl-0",
+			children: t12
 		});
-		$[12] = channel;
-		$[13] = list;
-		$[14] = node;
-		$[15] = refreshedAt;
-		$[16] = subscription;
-		$[17] = t;
-		$[18] = trigger;
-		$[19] = t7;
-	} else t7 = $[19];
-	return t7;
+		$[33] = t12;
+		$[34] = t13;
+	} else t13 = $[34];
+	let t14;
+	if ($[35] !== list.length || $[36] !== t11 || $[37] !== t13) {
+		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(If, {
+			cond: t7,
+			else: t11,
+			children: t13
+		});
+		$[35] = list.length;
+		$[36] = t11;
+		$[37] = t13;
+		$[38] = t14;
+	} else t14 = $[38];
+	return t14;
 }
 function _temp7$4(query_0) {
 	return query_0.isLoading;
