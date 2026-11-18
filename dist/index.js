@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-RJZtaELx.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-2qf4HvGw.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -8,7 +8,6 @@ import { createRouteDispatcher } from "@deepseek-ai/dsh-http-proxy";
 import { getServerContext } from "dsh-h3/utils";
 import { fetch } from "undici";
 import { mkdir, readFile, rename as rename$1, writeFile } from "node:fs/promises";
-import { SessionId } from "@deepseek-ai/dsh-session";
 import { Cron } from "croner";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -2147,6 +2146,18 @@ const supervisor_list$1 = defineTool({
 		});
 	}
 });
+// src/service/archive.ts
+const archive = defineService({ async session(id) {
+	if (!(await setting.load()).autoArchiveWorkers) return false;
+	const ctx = getServerContext(server);
+	try {
+		await ctx.workspaceRegistry.archiveSession(id, { stopActivity: true });
+		return true;
+	} catch (error) {
+		ctx.logger.warn("nexus: archiving session %s failed: %s", id, error instanceof Error ? error.message : String(error));
+		return false;
+	}
+} });
 // src/service/worker.ts
 const operations = /* @__PURE__ */ new Map();
 const eventQueues = /* @__PURE__ */ new Map();
@@ -2171,6 +2182,7 @@ const worker$1 = defineService({
 				if (waiting.paused || waiting.prepareError) continue;
 				if (await blockedByDependency(waiting.id)) continue;
 				if (!(await db.ticketLink.listDependsOn(waiting.id)).length) continue;
+				if ((await db.worker.listByTicket(waiting.id)).some((worker) => worker.status !== "ended")) continue;
 				await db.ticket.update(waiting.id, {
 					status: "queued",
 					updatedAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -2292,15 +2304,19 @@ const worker$1 = defineService({
 				try {
 					const project = await db.project.findById(ticket.projectId);
 					if (project && !project.enabled) continue;
+					if (ticket.prState === "merged") {
+						await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+						await db.ticket.finish(ticket.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
+						await releaseDependents(ticket.id);
+						continue;
+					}
 					if (!project || !worker.worktree || !worker.branch) {
-						await db.worker.end(worker.id, "restarted", (/* @__PURE__ */ new Date()).toISOString());
-						await db.worker.queue(ticket.id, ticket.projectId);
+						await db.worker.requeue(worker.id);
 						continue;
 					}
 					await worktree.verify(project.directory, worker.worktree, worker.branch);
 					if (!await session.resolve(worker.id)) {
-						await db.worker.end(worker.id, "restarted", (/* @__PURE__ */ new Date()).toISOString());
-						await db.worker.queue(ticket.id, ticket.projectId);
+						await db.worker.requeue(worker.id);
 						continue;
 					}
 					const activity = await session.activity(worker.id);
@@ -2391,7 +2407,7 @@ async function finish(current, reason) {
 			updatedAt: now
 		});
 	}
-	if (!reason && current.reportState !== "failed") await archive(current.id);
+	if (!reason && current.reportState !== "failed") await archiveWorker(current.id);
 	const ended = await db.ticket.findById(current.ticketId);
 	if (ended && (ended.status === "done" || ended.status === "cancelled")) await releaseDependents(ended.id);
 }
@@ -2410,6 +2426,7 @@ async function releaseDependents(relatedId) {
 		const ticket = await db.ticket.findById(link.ticketId);
 		if (!ticket || ticket.status !== "waiting" || ticket.paused) continue;
 		if (await blockedByDependency(ticket.id)) continue;
+		if ((await db.worker.listByTicket(ticket.id)).some((worker) => worker.status !== "ended")) continue;
 		await db.ticket.update(ticket.id, {
 			status: "queued",
 			updatedAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -2431,13 +2448,8 @@ async function deferWhileWaiting(current) {
 		updatedAt: now
 	});
 }
-async function archive(id) {
-	if (!(await setting.load()).autoArchiveWorkers) return;
-	try {
-		await getServerContext(server).workspaceRegistry.archiveSession(SessionId(id), { stopActivity: true });
-	} catch (error) {
-		getServerContext(server).logger.warn("nexus: archiving finished worker %s failed: %s", id, error instanceof Error ? error.message : String(error));
-	}
+async function archiveWorker(id) {
+	await archive.session(id);
 }
 // src/ai/manager/index.ts
 const manager = definePreset({
@@ -2458,6 +2470,17 @@ dropped 说明这活不用做了。收工的时候留下 branch 和 worktree，�
 
 **收尾。** PR 合了、CI 绿了、人说行了，就把票推到 done。
 合并和关闭**不会**产生新触发 —— 别等它，自己去看。
+
+## 绝不阻塞
+
+你是常驻编排，一次阻塞就没人处理收件箱。任何形式的等待都不允许：
+
+- 不用 sleep、timeout、Wait、until 循环或轮询延后表态
+- 不用子代理、协作或任何会挂起你的机制
+- 需要「等」的时候，直接结束这一轮：把该做的事做完、该报的报上去，
+  Worker 的结果会以新消息进来，下一条消息唤醒你。
+
+宁可这一轮什么都不做，也不要占着会话等。
 
 ## 分支命名
 
@@ -3245,6 +3268,7 @@ const close_supervisor = defineTool({
 			message: `${args.reason}\n${tickets.filter((ticket) => ticket?.projectId === projectId).map((ticket) => ticket.id).join(", ")}`
 		});
 		await db.supervisor.close(row.id, (/* @__PURE__ */ new Date()).toISOString());
+		if (row.sessionId) await archive.session(row.sessionId);
 		return JSON.stringify({
 			id: row.id,
 			status: "closed",
@@ -3591,6 +3615,9 @@ const orchestrator = definePreset({
 
 **不要越过项目编排直接指挥 Worker。** 你连 Worker 的 id 都不该持有。
 
+**不要阻塞。** 不用 sleep、timeout、Wait、until 循环或轮询延后表态，也不用子代理。
+要等的直接结束这一轮，结果会以新消息进来。
+
 ## 跨项目
 
 两个以上项目互相等的时候才拉 Supervisor。判断标准很硬：
@@ -3781,6 +3808,9 @@ const agents = {
 **不改代码。** 需要改就让项目编排去派 Worker。
 
 **不做产品决定。** 两边要求冲突、都说自己对的时候，往上问。
+
+**不阻塞。** 不用 sleep、timeout、Wait、until 循环或轮询延后表态，也不用子代理。
+需要等的就直接结束这一轮，结果会以新消息进来。
 
 **不管收工。** 收工是插件按事实推导的，不是你的动作：
 
@@ -4415,6 +4445,17 @@ const runtime = defineService({ start() {
 	});
 	return starting;
 } });
+async function closeFinishedSupervisors() {
+	for (const supervisor of await db.supervisor.listActive()) {
+		const tickets = await Promise.all((await db.supervisorTicket.listBySupervisor(supervisor.id)).map((link) => db.ticket.findById(link.ticketId)));
+		if (!tickets.length || tickets.some((ticket) => !ticket || ticket.status !== "done" && ticket.status !== "cancelled")) continue;
+		await db.supervisor.close(supervisor.id, (/* @__PURE__ */ new Date()).toISOString());
+		if (supervisor.sessionId) {
+			await session.stop(supervisor.sessionId).catch(() => void 0);
+			await archive.session(supervisor.sessionId);
+		}
+	}
+}
 async function activate() {
 	const controller = new AbortController();
 	const pending = /* @__PURE__ */ new Set();
@@ -4457,6 +4498,7 @@ async function activate() {
 			await inbox.deliverAnswers();
 			await inbox.deliver();
 			await worker$1.reconcile();
+			await closeFinishedSupervisors();
 		})));
 		unregister.push(scheduler.use({
 			id: "nexus:projects",

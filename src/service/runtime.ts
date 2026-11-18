@@ -1,7 +1,9 @@
 import { github } from '../channel/github/channel'
 import { gitlab } from '../channel/gitlab/channel'
+import { db } from '../database'
 import { scheduler } from '../runtime/scheduler'
 import { defineService } from '../utils/service'
+import { archive } from './archive'
 import { channelAuth } from './channel-auth'
 import { inbox } from './inbox'
 import { project } from './project'
@@ -25,6 +27,19 @@ export const runtime = defineService({
     return starting
   },
 })
+
+async function closeFinishedSupervisors(): Promise<void> {
+  for (const supervisor of await db.supervisor.listActive()) {
+    const tickets = await Promise.all((await db.supervisorTicket.listBySupervisor(supervisor.id)).map(link => db.ticket.findById(link.ticketId)))
+    if (!tickets.length || tickets.some(ticket => !ticket || (ticket.status !== 'done' && ticket.status !== 'cancelled')))
+      continue
+    await db.supervisor.close(supervisor.id, new Date().toISOString())
+    if (supervisor.sessionId) {
+      await session.stop(supervisor.sessionId).catch(() => undefined)
+      await archive.session(supervisor.sessionId)
+    }
+  }
+}
 
 async function activate(): Promise<() => Promise<void>> {
   const controller = new AbortController()
@@ -69,6 +84,7 @@ async function activate(): Promise<() => Promise<void>> {
       await inbox.deliverAnswers()
       await inbox.deliver()
       await worker.reconcile()
+      await closeFinishedSupervisors()
     })))
     unregister.push(scheduler.use({ id: 'nexus:projects', cron: '*/5 * * * * *' }, () => track(async () => {
       await project.sync()

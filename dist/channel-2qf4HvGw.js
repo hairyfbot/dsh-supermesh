@@ -1341,7 +1341,7 @@ var Worker = class Worker extends Model {
 			if (existing) return existing;
 			const previous = await trx.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
 			const now = (/* @__PURE__ */ new Date()).toISOString();
-			if (ticket.status === "waiting" && ticket.endedAt === null && ticket.startedAt !== null && previous?.status === "ended") {
+			if (previous) {
 				await trx.updateTable("worker").set({
 					status: "queued",
 					startedAt: null,
@@ -1370,8 +1370,8 @@ var Worker = class Worker extends Model {
 				endedAt: null,
 				title: ticket.title,
 				endedReason: null,
-				branch: branch ?? previous?.branch ?? `nexus/${ticketId}`,
-				worktree: previous?.worktree ?? null,
+				branch: branch ?? `nexus/${ticketId}`,
+				worktree: null,
 				reportState: null,
 				report: null,
 				reportAt: null,
@@ -1384,6 +1384,18 @@ var Worker = class Worker extends Model {
 			}).where("id", "=", ticketId).execute();
 			return await new Worker(trx).findById(id);
 		});
+	}
+	async requeue(id) {
+		await this.db.updateTable("worker").set({
+			status: "queued",
+			startedAt: null,
+			endedAt: null,
+			endedReason: null,
+			reportState: null,
+			report: null,
+			reportAt: null,
+			backgroundUntil: null
+		}).where("id", "=", id).execute();
 	}
 	async reportProgress(id, reportState, report) {
 		return this.db.transaction().execute(async (trx) => {
@@ -3733,7 +3745,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DqbQWyG0.js");
+			const { shell } = await import("./shell-2woNRreX.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3742,7 +3754,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DqbQWyG0.js");
+			const { shell } = await import("./shell-2woNRreX.js");
 			await shell.refresh();
 			return view;
 		});

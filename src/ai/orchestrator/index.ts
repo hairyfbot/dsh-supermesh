@@ -48,6 +48,9 @@ export const orchestrator = definePreset({
 
 **不要越过项目编排直接指挥 Worker。** 你连 Worker 的 id 都不该持有。
 
+**不要阻塞。** 不用 sleep、timeout、Wait、until 循环或轮询延后表态，也不用子代理。
+要等的直接结束这一轮，结果会以新消息进来。
+
 ## 跨项目
 
 两个以上项目互相等的时候才拉 Supervisor。判断标准很硬：

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { db } from '../../../database'
+import { archive } from '../../../service/archive'
 import { session } from '../../../service/session'
 
 export const supervisor_list = defineTool({
@@ -108,6 +109,8 @@ export const close_supervisor = defineTool({
     const projects = [...new Set(tickets.flatMap(ticket => ticket ? [ticket.projectId] : []))]
     for (const projectId of projects) await db.inbox.enqueue({ id: `supervisor-close:${row.id}:${projectId}`, type: 'project', projectId, supervisorId: row.id, origin: 'main', kind: 'notice', title: row.title, message: `${args.reason}\n${tickets.filter(ticket => ticket?.projectId === projectId).map(ticket => ticket!.id).join(', ')}` })
     await db.supervisor.close(row.id, new Date().toISOString())
+    if (row.sessionId)
+      await archive.session(row.sessionId)
     return JSON.stringify({ id: row.id, status: 'closed', notified: projects })
   },
 })

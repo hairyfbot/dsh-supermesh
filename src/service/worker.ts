@@ -1,13 +1,10 @@
-import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { Selectable } from 'kysely'
 import type { DB } from '../database/types'
 import { randomUUID } from 'node:crypto'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import { getServerContext } from 'dsh-h3/utils'
 import { db } from '../database'
-import { server } from '../server'
 import { defineService } from '../utils/service'
+import { archive } from './archive'
 import { session } from './session'
 import { setting } from './setting'
 import { worktree } from './worktree'
@@ -42,6 +39,8 @@ export const worker = defineService({
           continue
         const links = await db.ticketLink.listDependsOn(waiting.id)
         if (!links.length)
+          continue
+        if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
           continue
         await db.ticket.update(waiting.id, { status: 'queued', updatedAt: new Date().toISOString() })
         await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
@@ -166,15 +165,19 @@ export const worker = defineService({
           const project = await db.project.findById(ticket.projectId)
           if (project && !project.enabled)
             continue
+          if (ticket.prState === 'merged') {
+            await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+            await db.ticket.finish(ticket.id, 'done', new Date().toISOString(), new Date().toISOString())
+            await releaseDependents(ticket.id)
+            continue
+          }
           if (!project || !worker.worktree || !worker.branch) {
-            await db.worker.end(worker.id, 'restarted', new Date().toISOString())
-            await db.worker.queue(ticket.id, ticket.projectId)
+            await db.worker.requeue(worker.id)
             continue
           }
           await worktree.verify(project.directory, worker.worktree, worker.branch)
           if (!(await session.resolve(worker.id))) {
-            await db.worker.end(worker.id, 'restarted', new Date().toISOString())
-            await db.worker.queue(ticket.id, ticket.projectId)
+            await db.worker.requeue(worker.id)
             continue
           }
           const activity = await session.activity(worker.id)
@@ -281,7 +284,7 @@ async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'st
       await db.ticket.update(ticket.id, { status: !reason && current.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
   }
   if (!reason && current.reportState !== 'failed')
-    await archive(current.id)
+    await archiveWorker(current.id)
   const ended = await db.ticket.findById(current.ticketId)
   if (ended && (ended.status === 'done' || ended.status === 'cancelled'))
     await releaseDependents(ended.id)
@@ -307,6 +310,8 @@ async function releaseDependents(relatedId: string): Promise<void> {
       continue
     if (await blockedByDependency(ticket.id))
       continue
+    if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
+      continue
     await db.ticket.update(ticket.id, { status: 'queued', updatedAt: new Date().toISOString() })
     await db.worker.queue(ticket.id, ticket.projectId).catch(() => undefined)
   }
@@ -325,14 +330,6 @@ async function deferWhileWaiting(current: Selectable<DB['worker']>): Promise<voi
   await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
 }
 
-async function archive(id: string): Promise<void> {
-  const settings = await setting.load()
-  if (!settings.autoArchiveWorkers)
-    return
-  try {
-    await getServerContext<Context>(server).workspaceRegistry.archiveSession(SessionId(id), { stopActivity: true })
-  }
-  catch (error) {
-    getServerContext<Context>(server).logger.warn('nexus: archiving finished worker %s failed: %s', id, error instanceof Error ? error.message : String(error))
-  }
+async function archiveWorker(id: string): Promise<void> {
+  await archive.session(id)
 }
