@@ -2150,13 +2150,18 @@ const supervisor_list$1 = defineTool({
 const archive = defineService({ async session(id) {
 	if (!(await setting.load()).autoArchiveWorkers) return false;
 	const ctx = getServerContext(server);
-	try {
+	await session.stop(id).catch(() => void 0);
+	for (let attempt = 0; attempt < 3; attempt++) try {
 		await ctx.workspaceRegistry.archiveSession(id, { stopActivity: true });
 		return true;
 	} catch (error) {
-		ctx.logger.warn("nexus: archiving session %s failed: %s", id, error instanceof Error ? error.message : String(error));
-		return false;
+		if (attempt === 2) {
+			ctx.logger.warn("nexus: archiving session %s failed: %s", id, error instanceof Error ? error.message : String(error));
+			return false;
+		}
+		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
+	return false;
 } });
 // src/service/worker.ts
 const operations = /* @__PURE__ */ new Map();

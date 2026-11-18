@@ -3,6 +3,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { getServerContext } from 'dsh-h3/utils'
 import { server } from '../server'
 import { defineService } from '../utils/service'
+import { session } from './session'
 import { setting } from './setting'
 
 export const archive = defineService({
@@ -11,13 +12,20 @@ export const archive = defineService({
     if (!settings.autoArchiveWorkers)
       return false
     const ctx = getServerContext<Context>(server)
-    try {
-      await ctx.workspaceRegistry.archiveSession(id as SessionId, { stopActivity: true })
-      return true
+    await session.stop(id).catch(() => undefined)
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await ctx.workspaceRegistry.archiveSession(id as SessionId, { stopActivity: true })
+        return true
+      }
+      catch (error) {
+        if (attempt === 2) {
+          ctx.logger.warn('nexus: archiving session %s failed: %s', id, error instanceof Error ? error.message : String(error))
+          return false
+        }
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
     }
-    catch (error) {
-      ctx.logger.warn('nexus: archiving session %s failed: %s', id, error instanceof Error ? error.message : String(error))
-      return false
-    }
+    return false
   },
 })
