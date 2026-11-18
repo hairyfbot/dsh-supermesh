@@ -26,6 +26,56 @@ export const list_ticket = defineTool({
   },
 })
 
+export const create_ticket = defineTool({
+  name: 'create_ticket',
+  description: '在某个项目下开一张票。工单会自动挂到你这个 supervisor 下，受你协调。',
+  parameters: {
+    title: {
+      type: 'string',
+      required: true,
+      description: '一句话说清要做什么，用发起方的语言。不要加需求、验收标准或实现建议。',
+    },
+    projectId: {
+      type: 'string',
+      required: true,
+      description: '这张票归哪个项目。',
+    },
+    threadIds: {
+      type: 'array',
+      items: { type: 'string' },
+      required: true,
+      description: '触发这张票的话题，至少一条。最早那条是「触发来源」。',
+    },
+    description: {
+      type: 'string',
+      description: '需求正文，没有就省略。',
+    },
+  },
+  output: {
+    schema: { type: 'string', description: '新票的 id 和状态。' },
+    render: (_args, value) => [{ type: 'text', text: value }],
+  },
+  execute: async (args, exec) => {
+    const identity = await session.resolve(exec.agent?.session.id ?? '')
+    if (!identity)
+      throw new Error('当前会话没有 Supermesh 身份')
+    if (identity.role !== 'supervisor' || !identity.supervisorId)
+      throw new Error('仅 Supervisor 可调用')
+    if (!args.threadIds.length)
+      throw new Error('建票至少要有一条来源话题')
+    for (const threadId of args.threadIds) {
+      const thread = await db.thread.findById(threadId)
+      if (!thread)
+        throw new Error('来源话题不存在')
+      if (thread.projectId && thread.projectId !== args.projectId)
+        throw new Error('来源话题不属于该项目')
+    }
+    const ticket = await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description)
+    await db.supervisorTicket.link(identity.supervisorId, ticket.id, new Date().toISOString())
+    return JSON.stringify({ id: ticket.id, status: ticket.status })
+  },
+})
+
 export const link_dependency = defineTool({
   name: 'link_dependency',
   description: '记一条跨项目前置依赖。方向是「后来的指向先要做的」。别只记在脑子里 —— 你随时可能被重启。',

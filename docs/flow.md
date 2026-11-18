@@ -300,31 +300,31 @@ stateDiagram-v2
 | --- | --- |
 | 主编排 | `create_supervisor` / `attach` / `detach` / `close` |
 | 项目编排 | `report` / `ask` 带 `supervisorId` |
-| 系统兜底 | 依赖已完成（见下） |
-| 自动关停 | 关联票全 `done` → 直接关，**不叫醒** |
+| 系统兜底 | 监督下的票进终态（见下） |
+| 自动关停 | 关联票全 `done` 且收件箱无 pending → 直接关，**不叫醒** |
 
-### 兜底：依赖完成时自动通知
+### 兜底：监督下的票进终态自动通知
 
 ```mermaid
 sequenceDiagram
     participant P as 项目编排
-    participant DB as TicketLink
+    participant DB as SupervisorTicket
     participant K as 插件
     participant S as Supervisor
 
-    P->>S: link_dependency(T-105, dependsOn=T-200)
-    Note over DB: T-105 depends on T-200
+    P->>S: create_ticket（票自动挂到该 Supervisor）
     P->>DB: Worker report(ready) → 引擎结单
-    DB->>K: relatedId=T-200 的 depends 行
-    K->>K: 查 T-105 属于哪个 Supervisor
-    K->>S: Inbox kind=notice「T-200 完成了」
+    DB->>K: 该票的 supervisor_ticket 行
+    K->>S: Inbox kind=notice「T-105 已完成」
 ```
 
-**为什么需要**：项目编排本来就该在工单进终态时 `report`，但漏报会让整条跨项目链路停摆。
-依赖关系已经在 `TicketLink` 里，顺手兜一下不费事。
+**为什么需要**：跨项目协调里，supervisor 往往靠「这张做完了」才能派下一张。
+漏掉这条通知，整条链路停在原地却不报错 —— 票是 done 的，谁也不知道还有个项目没动。
 
-它**只兜一层**：同项目内的依赖没有 Supervisor，通知静默，由 `project` 自己看 `list_ticket`。
-静默的只是通知，`depends` 的约束照常生效。
+判据是**票归谁**，不要求两票之间有 `depends`：
+`depends` 只表达先后约束，而通知要覆盖「协调中任何一个子任务结束」这个事实。
+
+自动关停同样守着这条：关联票全 `done` 但收件箱还有 pending，就不收工。
 
 ---
 
@@ -345,6 +345,15 @@ sequenceDiagram
 
 PR 和 issue 共用编号，但**话题不同**：issue 是 `github:42`，PR 是 `github:88`。
 GitLab 编号是项目内递增，话题键要带项目：`gitlab:a/x:!42`。
+
+**GitLab 最低支持 11.3.5。** 客户端只用 11.3.5 就存在的端点与参数：
+`projects/:id`、`issues` 与 `merge_requests` 的 `state=all`/`scope=all`/`updated_after`/`order_by`、
+`/notes`、`pipelines?ref=`（8.11 起）。鉴权固定用 `PRIVATE-TOKEN` 头 ——
+11.3.5 不认 `Authorization: Bearer`，部分自建实例会直接 401。
+issue 与 MR 的 `web_url` 随版本变化，三种形态都要能解析：
+11.3.5 是 `/<ns>/<proj>/issues/:iid`（**没有** `/-/`），较新版本是 `/<ns>/<proj>/-/issues/:iid`，
+最新是 `/-/work_items/:iid`。我们对外生成链接统一用 11.3.5 的旧形态 ——
+新版会 301 到 `/-/`，反过来把 `/-/` 写到 11.3.5 上是 404。
 
 ### 8.2 PR 归谁处理
 
@@ -515,7 +524,7 @@ sequenceDiagram
 | 任务需介入 | 存在指向它、`kind=ask`、`status=pending` 的 Inbox |
 | 收件箱未读数 | `type=自己 AND status=pending` 的 count |
 | 已升级的 ask | `escalations > 0` |
-| Supervisor 自动关停 | 关联工单**全部 `done`** → 插件写 `closed` |
+| Supervisor 自动关停 | 关联工单**全部 `done`** 且收件箱无 pending → 插件写 `closed` |
 | Supervisor 待主编排决定 | 关联工单里有 `cancelled` → 只投 notice，不自动关 |
 | 某票是不是某 Supervisor 的 | `SupervisorTicket` 有记录 |
 

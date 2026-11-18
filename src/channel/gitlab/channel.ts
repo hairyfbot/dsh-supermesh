@@ -667,14 +667,20 @@ function parseResource(resource: string, site: string): Resource {
     url = new URL(resource.startsWith('gitlab/') ? `${site}/${resource.slice(7)}` : resource)
   }
   catch { throw new GitLabError('invalid_resource') }
-  const match = /^\/(.+)\/-\/(issues|work_items|merge_requests)\/([1-9]\d*)\/?$/.exec(url.pathname)
+  // 四种实际形态都要认（v11.3.5 的 spec/lib/gitlab/url_builder_spec.rb 断言 issue 与
+  // merge_request 的 web_url 都是 /<full_path>/issues|merge_requests/<iid>，没有 `/-/`；
+  // 新版本起加上了 `/-/`，issue 再演进成 `/-/work_items/<iid>`）：
+  //   /<ns>/<proj>/issues/<iid>            ← 11.3.5
+  //   /<ns>/<proj>/merge_requests/<iid>    ← 11.3.5
+  //   /<ns>/<proj>/-/issues/<iid>
+  //   /<ns>/<proj>/-/work_items/<iid>
+  const match = /^\/(.+?)(?:\/-\/(issues|work_items|merge_requests)|\/(issues|merge_requests))\/([1-9]\d*)\/?$/.exec(url.pathname)
   const repository = match && repositoryPath(match[1]!)
-  const number = Number(match?.[3])
+  const number = Number(match?.[4])
   if (url.origin !== site || url.protocol !== 'https:' || url.username || url.password || url.search || (url.hash && !/^#note_[1-9]\d*$/.test(url.hash)) || !repository || !Number.isSafeInteger(number))
     throw new GitLabError('invalid_resource')
-  // GitLab 新版把 issue 的规范地址改成 `/-/work_items/<iid>`，旧地址仍可用；
-  // 两者都归到 issue，否则采集会以 invalid_resource 整轮失败。
-  return { site, repository, kind: match![2] === 'merge_requests' ? 'pull' : 'issue', number }
+  const kind = (match![2] ?? match![3]) === 'merge_requests' ? 'pull' : 'issue'
+  return { site, repository, kind, number }
 }
 
 function source(target: { site: string, repository: string }): string {
@@ -682,7 +688,10 @@ function source(target: { site: string, repository: string }): string {
 }
 
 function resourceUrl(target: Resource): string {
-  return `${source(target)}/-/${target.kind === 'issue' ? 'issues' : 'merge_requests'}/${target.number}`
+  // 用 11.3.5 的形态生成（/<ns>/<proj>/issues|merge_requests/<iid>，没有 `/-/`）。
+  // 新版 GitLab 会把旧地址 301 到 `/-/...`，所以旧形态对新旧实例都能打开；
+  // 反过来把 `/-/` 写到 11.3.5 上是 404。
+  return `${source(target)}/${target.kind === 'issue' ? 'issues' : 'merge_requests'}/${target.number}`
 }
 
 function apiRoot(target: Resource): string {

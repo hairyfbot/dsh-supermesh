@@ -396,7 +396,33 @@ async function blockedByDependency(ticketId: string): Promise<boolean> {
   return false
 }
 
+/**
+ * 票进终态时通知它所属的 supervisor。
+ * 不要求两票之间有 depends —— 跨项目协调里 supervisor 往往靠「这张做完了」才能派下一张，
+ * 漏掉这条通知，整条链路就停在原地，票却不报错。
+ */
+async function notifySupervisor(ticketId: string): Promise<void> {
+  const ticket = await db.ticket.findById(ticketId)
+  if (!ticket || (ticket.status !== 'done' && ticket.status !== 'cancelled'))
+    return
+  for (const link of await db.supervisorTicket.listByTicket(ticketId)) {
+    const supervisor = await db.supervisor.findById(link.supervisorId)
+    if (!supervisor || supervisor.status !== 'active')
+      continue
+    await db.inbox.enqueue({
+      id: `supervisor:${link.supervisorId}:ticket:${ticketId}:${ticket.status}`,
+      type: 'supervisor',
+      origin: 'system',
+      kind: 'notice',
+      supervisorId: link.supervisorId,
+      message: `${ticketId} ${ticket.status === 'done' ? '已完成' : '已取消'}：${ticket.title}`,
+      title: ticket.title,
+    }).catch(() => undefined)
+  }
+}
+
 async function releaseDependents(relatedId: string): Promise<void> {
+  await notifySupervisor(relatedId)
   for (const link of await db.ticketLink.listDependents(relatedId)) {
     const ticket = await db.ticket.findById(link.ticketId)
     if (!ticket || ticket.status !== 'waiting' || ticket.paused)

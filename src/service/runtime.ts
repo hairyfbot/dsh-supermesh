@@ -33,6 +33,11 @@ async function closeFinishedSupervisors(): Promise<void> {
     const tickets = await Promise.all((await db.supervisorTicket.listBySupervisor(supervisor.id)).map(link => db.ticket.findById(link.ticketId)))
     if (!tickets.length || tickets.some(ticket => !ticket || (ticket.status !== 'done' && ticket.status !== 'cancelled')))
       continue
+    // 手上还有没处理完的消息就先不收：那可能是等待中的协调任务，
+    // 直接关掉会让整条跨项目链路静默停在这里。
+    const pending = await db.inbox.listPending('supervisor', null)
+    if (pending.some(message => message.supervisorId === supervisor.id))
+      continue
     await db.supervisor.close(supervisor.id, new Date().toISOString())
     if (supervisor.sessionId) {
       await session.stop(supervisor.sessionId).catch(() => undefined)

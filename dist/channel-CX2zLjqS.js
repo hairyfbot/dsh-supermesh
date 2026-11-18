@@ -586,6 +586,10 @@ var Inbox = class Inbox extends Model {
 	async listRecent(limit = 100) {
 		return this.db.selectFrom("inbox").selectAll().orderBy("createdAt", "desc").orderBy("id").limit(Math.max(1, Math.min(1e3, limit))).execute();
 	}
+	/** 一条话题上所有已入队的对外消息，用于判断「这次事件是不是已经有人说过了」。 */
+	async listByThread(threadId) {
+		return this.db.selectFrom("inbox").selectAll().where("threadId", "=", threadId).where("type", "=", "user").execute();
+	}
 	async enqueue(value) {
 		if (![
 			"user",
@@ -1351,18 +1355,27 @@ var Worker = class Worker extends Model {
 	async listQueued() {
 		return this.db.selectFrom("worker").selectAll().where("status", "=", "queued").orderBy("createdAt").execute();
 	}
-	async queue(ticketId, projectId, branch) {
+	/**
+	* 把票放进派工队列。`fresh` 为真时新建一个 worker 记录（沿用原分支与 worktree），
+	* 用于旧会话已被归档、无法再激活的情形 —— 那时复用同一个 id 只会一直失败。
+	*/
+	async queue(ticketId, projectId, branch, fresh = false) {
 		if (branch && branch.split("/").at(-1) !== ticketId) throw new Error("分支末段必须是任务号");
 		return this.db.transaction().execute(async (trx) => {
 			const ticket = await trx.selectFrom("ticket").selectAll().where("id", "=", ticketId).where("projectId", "=", projectId).executeTakeFirst();
 			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单不存在、已结束或不属于当前项目");
 			if (ticket.paused) throw new Error("工单已暂停");
 			if (!(await trx.selectFrom("project").selectAll().where("id", "=", projectId).executeTakeFirst())?.enabled) throw new Error("项目未启用");
+			const depends = await trx.selectFrom("ticket_link").select("relatedId").where("ticketId", "=", ticketId).where("kind", "=", "depends").execute();
+			for (const link of depends) {
+				const related = await trx.selectFrom("ticket").select(["id", "status"]).where("id", "=", link.relatedId).executeTakeFirst();
+				if (related && related.status !== "done" && related.status !== "cancelled") throw new Error(`依赖的 ${related.id} 还没完成`);
+			}
 			const existing = await trx.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).where("status", "!=", "ended").executeTakeFirst();
 			if (existing) return existing;
 			const previous = await trx.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
 			const now = (/* @__PURE__ */ new Date()).toISOString();
-			if (previous) {
+			if (previous && !fresh) {
 				await trx.updateTable("worker").set({
 					status: "queued",
 					startedAt: null,
@@ -1391,8 +1404,8 @@ var Worker = class Worker extends Model {
 				endedAt: null,
 				title: ticket.title,
 				endedReason: null,
-				branch: branch ?? `dsh/${ticketId}`,
-				worktree: null,
+				branch: branch ?? previous?.branch ?? `dsh/${ticketId}`,
+				worktree: previous?.worktree ?? null,
 				reportState: null,
 				report: null,
 				reportAt: null,
@@ -1989,7 +2002,7 @@ const session = defineService({
 		if (options.prompt) await session.send(id, options.prompt);
 		return id;
 	}),
-	send: singlet((id, _text, _mode, requestId = "") => `session:send:${id}:${requestId}`, async (id, text, mode = "queue", requestId = randomUUID()) => {
+	send: singlet((id, text, _mode, requestId = "") => `session:send:${id}:${requestId}:${text.length}:${text.slice(0, 64)}`, async (id, text, mode = "queue", requestId = randomUUID()) => {
 		if (!text.trim()) throw new Error("empty_message");
 		if (stopped$3) throw new Error("runtime_stopping");
 		const identity = await session.resolve(id);
@@ -2000,15 +2013,16 @@ const session = defineService({
 		if (identity.workerId && (await db.worker.findById(id))?.status === "ended") throw new Error("worker_ended");
 		const ctx = getServerContext(server);
 		if (mode === "interrupt") await session.cancel(id, true);
-		await ctx.sessionController.prompt({
+		const admitted = await ctx.sessionController.prompt({
 			sessionId: SessionId(id),
 			requestId,
-			mode: identity.role !== "worker" && mode === "queue" ? "queue" : "steer",
+			mode: mode === "interrupt" ? "steer" : "queue",
 			content: [{
 				type: "text",
 				text
 			}]
 		}, controller$2.signal);
+		if (admitted && typeof admitted === "object" && "ok" in admitted && admitted.ok === false) throw new Error(`prompt_rejected: ${String(admitted.error ?? "unknown")}`);
 	}),
 	async cancel(id, keepInbox = false) {
 		(await resolveAgent(id)).cancel({
@@ -2041,7 +2055,7 @@ const session = defineService({
 		await mkdir(DSH_PLUGIN_HOME, { recursive: true });
 		return getServerContext(server).workspaceRegistry.create(DSH_PLUGIN_HOME, "代理工作区");
 	}),
-	activate: singlet((id) => `session:activate:${id}`, (id) => resolveAgent(id)),
+	activate: (id) => resolveAgent(id),
 	async lookup(id) {
 		if (!await session.resolve(id)) return null;
 		return getServerContext(server).agents.get(SessionId(id)) ?? null;
@@ -3792,6 +3806,8 @@ const worker = defineService({
 			}
 			const activity = await session.activity(worker.id).catch(() => null);
 			if (activity && (activity.running || activity.background || activity.queued)) continue;
+			const started = worker.startedAt ? Date.parse(worker.startedAt) : NaN;
+			if (Number.isFinite(started) && Date.now() - started < 12e4) continue;
 			const last = await session.lastActivity(worker.id);
 			if (last && Date.now() - last < 12e4) continue;
 			const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -3818,6 +3834,7 @@ const worker = defineService({
 		for (const waiting of await db.ticket.listFiltered({ status: "waiting" })) {
 			if (waiting.paused || waiting.prepareError) continue;
 			if (waiting.prState === "merged" || waiting.prState === "closed") continue;
+			if (await blockedByDependency(waiting.id)) continue;
 			if ((await db.worker.listByTicket(waiting.id)).some((worker) => worker.status !== "ended")) continue;
 			await db.worker.queue(waiting.id, waiting.projectId).catch(() => void 0);
 		}
@@ -3848,9 +3865,10 @@ const worker = defineService({
 			try {
 				const branch = `dsh/${ticket.id}`;
 				let directory = worker.worktree;
-				if (await session.history(worker.id).then(() => true).catch(() => false)) {
+				if (await session.resolve(worker.id).then(Boolean).catch(() => false)) {
 					if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
 					directory = directory ?? project.directory;
+					await session.activate(worker.id);
 				} else {
 					await session.create("worker", {
 						sessionId: worker.id,
@@ -3895,7 +3913,15 @@ const worker = defineService({
 				await session.send(worker.id, prompt, "queue", `supermesh:worker:${worker.id}`);
 				await db.ticket.setPrepareError(ticket.id, null, now);
 			} catch (error) {
-				await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), (/* @__PURE__ */ new Date()).toISOString());
+				const reason = error instanceof Error ? error.message : String(error);
+				if (reason === "unknown_session" || reason === "session_identity_conflict") {
+					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+					await db.worker.queue(ticket.id, ticket.projectId, worker.branch ?? void 0, true).catch(() => void 0);
+					await db.ticket.setPrepareError(ticket.id, null, (/* @__PURE__ */ new Date()).toISOString());
+					if (stopped) break;
+					continue;
+				}
+				await db.ticket.setPrepareError(ticket.id, reason, (/* @__PURE__ */ new Date()).toISOString());
 				if (stopped) break;
 				if (started) {
 					await session.stop(worker.id);
@@ -4057,8 +4083,8 @@ async function finish(current, reason) {
 			updatedAt: now
 		});
 	}
-	if (!reason && current.reportState !== "failed") await archiveWorker(current.id);
 	const ended = await db.ticket.findById(current.ticketId);
+	if (!reason && current.reportState !== "failed" && ended && (ended.status === "done" || ended.status === "cancelled")) await archiveWorker(current.id);
 	if (ended && (ended.status === "done" || ended.status === "cancelled")) await releaseDependents(ended.id);
 }
 async function blockedByDependency(ticketId) {
@@ -4452,7 +4478,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DSvCxxH9.js");
+			const { shell } = await import("./shell-Bc6E5jJS.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4461,7 +4487,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DSvCxxH9.js");
+			const { shell } = await import("./shell-Bc6E5jJS.js");
 			await shell.refresh();
 			return view;
 		});

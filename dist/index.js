@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-DSzmrSyL.js";
+import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-CX2zLjqS.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -576,6 +576,13 @@ var GitHubChannel = class {
 					});
 				}
 				continue;
+			}
+			if (ticket.status === "review" && !ticket.paused && human) {
+				await db.ticket.update(ticketId, {
+					status: "waiting",
+					updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+				});
+				await db.worker.queue(ticketId, ticket.projectId).catch(() => void 0);
 			}
 			targets.set(ticket.projectId, {
 				projectId: ticket.projectId,
@@ -1160,8 +1167,8 @@ var FetchGitLabRunner = class {
 					dispatcher,
 					method: request.method,
 					headers: {
-						authorization: `Bearer ${token}`,
-						accept: "application/json",
+						"private-token": token,
+						"accept": "application/json",
 						...request.body ? { "content-type": "application/json" } : {},
 						...request.headers
 					},
@@ -1927,14 +1934,14 @@ function parseResource(resource, site) {
 	} catch {
 		throw new GitLabError("invalid_resource");
 	}
-	const match = /^\/(.+)\/-\/(issues|work_items|merge_requests)\/([1-9]\d*)\/?$/.exec(url.pathname);
+	const match = /^\/(.+?)(?:\/-\/(issues|work_items|merge_requests)|\/(issues|merge_requests))\/([1-9]\d*)\/?$/.exec(url.pathname);
 	const repository = match && repositoryPath(match[1]);
-	const number = Number(match?.[3]);
+	const number = Number(match?.[4]);
 	if (url.origin !== site || url.protocol !== "https:" || url.username || url.password || url.search || url.hash && !/^#note_[1-9]\d*$/.test(url.hash) || !repository || !Number.isSafeInteger(number)) throw new GitLabError("invalid_resource");
 	return {
 		site,
 		repository,
-		kind: match[2] === "merge_requests" ? "pull" : "issue",
+		kind: (match[2] ?? match[3]) === "merge_requests" ? "pull" : "issue",
 		number
 	};
 }
@@ -1942,7 +1949,7 @@ function source(target) {
 	return `${target.site}/${target.repository}`;
 }
 function resourceUrl(target) {
-	return `${source(target)}/-/${target.kind === "issue" ? "issues" : "merge_requests"}/${target.number}`;
+	return `${source(target)}/${target.kind === "issue" ? "issues" : "merge_requests"}/${target.number}`;
 }
 function apiRoot(target) {
 	return `projects/${encodeURIComponent(target.repository)}/${target.kind === "issue" ? "issues" : "merge_requests"}/${target.number}`;
@@ -2185,6 +2192,10 @@ const reply_channel = defineTool({
 		if (identity.role === "project" && thread.projectId !== identity.projectId) {
 			if (!(await Promise.all((await db.ticketThread.listByThread(thread.id)).map((link) => db.ticket.findById(link.ticketId)))).some((ticket) => ticket?.projectId === identity.projectId)) throw new Error("触发不属于当前项目");
 		}
+		if ((await db.inbox.listByThread(thread.id)).some((message) => message.triggerId === trigger.id && message.origin !== identity.role)) return JSON.stringify({
+			status: "suppressed",
+			reason: "another_role_already_replied"
+		});
 		const ticketId = identity.ticketId ?? null;
 		const row = await db.inbox.enqueue({
 			id: replyKey(trigger.id, args.text),
@@ -3914,7 +3925,6 @@ const agents = {
 		order: 7,
 		tools: [
 			read_channel,
-			reply_channel,
 			report,
 			ask
 		],

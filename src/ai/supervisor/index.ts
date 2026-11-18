@@ -30,6 +30,8 @@ export const supervisor = definePreset({
     tools.ask,
 
     tools.link_dependency,
+
+    tools.create_ticket,
   ],
   plugins: [
     plugins.agentInstructions,

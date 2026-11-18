@@ -178,7 +178,9 @@ export const session = defineService({
     },
   ),
   send: singlet(
-    (id, _text, _mode, requestId = '') => `session:send:${id}:${requestId}`,
+    // key 必须带上正文摘要：worker 派工传的是固定 requestId，只按 id+requestId 去重会把
+    // 第二轮及以后的所有 prompt 都判成重复投递，Worker 永远只收到第一条。
+    (id, text, _mode, requestId = '') => `session:send:${id}:${requestId}:${text.length}:${text.slice(0, 64)}`,
     async (id: string, text: string, mode: 'queue' | 'interrupt' | 'reply' = 'queue', requestId: string = randomUUID()): Promise<void> => {
       if (!text.trim())
         throw new Error('empty_message')
@@ -194,12 +196,18 @@ export const session = defineService({
       const ctx = getServerContext<Context>(server)
       if (mode === 'interrupt')
         await session.cancel(id, true)
-      await ctx.sessionController.prompt({
+      const admitted = await ctx.sessionController.prompt({
         sessionId: SessionId(id),
         requestId: requestId as SessionRequestId,
-        mode: identity.role !== 'worker' && mode === 'queue' ? 'queue' : 'steer',
+        // worker 复用同一会话时，上一轮已经结束；只有 queue 会开启新回合，
+        // steer 只会试图插进正在进行的回合，对已结束的会话等于丢弃这条 prompt。
+        mode: mode === 'interrupt' ? 'steer' : 'queue',
         content: [{ type: 'text', text }],
       }, controller.signal)
+      // prompt 以 RemoteResult 返回失败，不抛异常；不检查就会静默丢消息，
+      // 派工侧看到的是「成功」，票却永远等不到这一轮。
+      if (admitted && typeof admitted === 'object' && 'ok' in admitted && admitted.ok === false)
+        throw new Error(`prompt_rejected: ${String((admitted as { error?: unknown }).error ?? 'unknown')}`)
     },
   ),
   async cancel(id: string, keepInbox = false): Promise<void> {
@@ -230,7 +238,9 @@ export const session = defineService({
     await mkdir(DSH_PLUGIN_HOME, { recursive: true })
     return getServerContext<Context>(server).workspaceRegistry.create(DSH_PLUGIN_HOME, '代理工作区')
   }),
-  activate: singlet(id => `session:activate:${id}`, (id: string) => resolveAgent(id)),
+  // 不能用 singlet 缓存：worker 每轮结束后会话是 end-seed，复用同一 worker 时必须重新
+  // resolveAgent 才能续上。缓存会把上一轮已结束的 Agent 一直返回，新一轮 prompt 无处可投。
+  activate: (id: string) => resolveAgent(id),
   async lookup(id: string): Promise<Agent | null> {
     if (!(await session.resolve(id)))
       return null

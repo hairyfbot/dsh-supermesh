@@ -37,7 +37,8 @@ export class FetchGitLabRunner implements GitLabRunner {
         response = await fetch(url.href, {
           dispatcher,
           method: request.method,
-          headers: { authorization: `Bearer ${token}`, accept: 'application/json', ...(request.body ? { 'content-type': 'application/json' } : {}), ...request.headers },
+          // GitLab 11.3.5（2018）只接受 PRIVATE-TOKEN；Bearer 在部分自建实例上被拒。
+          headers: { 'private-token': token, 'accept': 'application/json', ...(request.body ? { 'content-type': 'application/json' } : {}), ...request.headers },
           ...(request.body ? { body: JSON.stringify(request.body) } : {}),
           redirect: 'follow',
           signal: request.signal ? AbortSignal.any([request.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000),
