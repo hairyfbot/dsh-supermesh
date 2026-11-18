@@ -8,8 +8,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
 import type { ClientContext } from './types/context'
-import { NexusIcon } from './components/icons'
+import { AgentIcon, GitForkIcon, NexusIcon, UserCheckIcon, UsersRoundIcon } from './components/icons'
 import { PluginContext } from './config/context'
+import { useStore } from './hooks/use-store'
 import { dicts } from './locale'
 import { Panel as NexusPanel } from './panel'
 import { store } from './store'
@@ -17,6 +18,20 @@ import { Notification } from './ui/mailbox/notification'
 import { Panel as MailboxPanel } from './ui/mailbox/panel'
 
 type MailboxNoticeEvent = Extract<SessionEvent, { type: 'user/message' }>
+
+function SessionRoleIcon({ sessionId }: { sessionId: string }) {
+  const sessions = useStore(state => state.data.panel?.sessions)
+  const role = sessions?.find(session => session.sessionId === sessionId)?.role
+  if (role === 'main')
+    return <GitForkIcon />
+  if (role === 'project')
+    return <UserCheckIcon />
+  if (role === 'supervisor')
+    return <UsersRoundIcon />
+  if (role === 'worker')
+    return <AgentIcon />
+  return null
+}
 
 const PANEL_ID = 'dsh-nexus' as MainPanelId
 const NS = 'dshNexus' as const
@@ -91,6 +106,16 @@ export function apply(ctx: ClientContext): void {
         <MailboxPanel sessionId={props.sessionId} />
       </PluginContext.Provider>
     ),
+  ))
+
+  ctx.slots.inject('sidebar.session.row.leading', () => ctx.slots.register(
+    {
+      name: 'sidebar.session.row.leading',
+      id: `${PANEL_ID}:role-icon`,
+      order: 10,
+      locale: NS,
+    },
+    ({ sessionId }) => <SessionRoleIcon sessionId={sessionId} />,
   ))
 
   ctx.slots.inject('sidebar.panellist', () => ctx.slots.register(

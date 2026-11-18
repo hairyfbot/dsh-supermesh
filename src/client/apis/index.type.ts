@@ -2,6 +2,7 @@ export type GetApiNexusPanelResponse = {
   projects: ({ updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string } & { available?: undefined | false | true })[];
   tickets: { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[];
   mainSessionId: null | string;
+  sessions: ({ sessionId: string; role: "project" } | { sessionId: string; role: "supervisor" } | { sessionId: string; role: "worker" } | { sessionId: string; role: "main" })[];
   graph: { nodes: ({ id: string; kind: string; label: null | string; status: "queued" | "running" | "ended"; projectId: string; ticketId: string; sessionId: null | string } | { id: string; kind: string; label: string; status: string; projectId: null | string; ticketId: null | string; sessionId: null | string })[]; edges: { source: string; target: string; kind: string }[]; groups: { id: string; label: string; sessionId: null | string; nodeIds: string[] }[] };
   run: { state: string; reason: null | string };
   inbox: {

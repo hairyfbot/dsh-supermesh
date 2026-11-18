@@ -98,6 +98,38 @@ export function AgentIcon(props: SVGProps<SVGSVGElement>): ReactNode {
   )
 }
 
+export function GitForkIcon(props: SVGProps<SVGSVGElement>): ReactNode {
+  return (
+    <svg width={16} height={16} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <circle cx="12" cy="18" r="3" />
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="18" cy="6" r="3" />
+      <path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9" />
+      <path d="M12 12v3" />
+    </svg>
+  )
+}
+
+export function UserCheckIcon(props: SVGProps<SVGSVGElement>): ReactNode {
+  return (
+    <svg width={16} height={16} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="m16 11 2 2 4-4" />
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+    </svg>
+  )
+}
+
+export function UsersRoundIcon(props: SVGProps<SVGSVGElement>): ReactNode {
+  return (
+    <svg width={16} height={16} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      <path d="M18 21a8 8 0 0 0-16 0" />
+      <circle cx="10" cy="8" r="5" />
+      <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+    </svg>
+  )
+}
+
 export function ArrowLeftIcon(props: SVGProps<SVGSVGElement>): ReactNode {
   return (
     <svg width={24} height={24} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>

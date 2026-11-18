@@ -3383,6 +3383,24 @@ const getPanel = defineHandler(async () => {
 		projects,
 		tickets,
 		mainSessionId,
+		sessions: [
+			...mainSessionId ? [{
+				sessionId: mainSessionId,
+				role: "main"
+			}] : [],
+			...[...projectSessions.values()].flatMap((value) => value.sessionId ? [{
+				sessionId: value.sessionId,
+				role: "project"
+			}] : []),
+			...supervisors.flatMap((supervisor) => supervisor.sessionId ? [{
+				sessionId: supervisor.sessionId,
+				role: "supervisor"
+			}] : []),
+			...currentWorkers.map((worker) => ({
+				sessionId: worker.id,
+				role: "worker"
+			}))
+		],
 		graph: {
 			nodes,
 			edges,
@@ -3745,7 +3763,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-lwMXhAD8.js");
+			const { shell } = await import("./shell-BG8vTbvb.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3754,7 +3772,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-lwMXhAD8.js");
+			const { shell } = await import("./shell-BG8vTbvb.js");
 			await shell.refresh();
 			return view;
 		});

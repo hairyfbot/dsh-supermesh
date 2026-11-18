@@ -84,6 +84,12 @@ export const getPanel = defineHandler(async () => {
     projects,
     tickets,
     mainSessionId,
+    sessions: [
+      ...(mainSessionId ? [{ sessionId: mainSessionId, role: 'main' as const }] : []),
+      ...[...projectSessions.values()].flatMap(value => value.sessionId ? [{ sessionId: value.sessionId, role: 'project' as const }] : []),
+      ...supervisors.flatMap(supervisor => supervisor.sessionId ? [{ sessionId: supervisor.sessionId, role: 'supervisor' as const }] : []),
+      ...currentWorkers.map(worker => ({ sessionId: worker.id, role: 'worker' as const })),
+    ],
     graph: { nodes, edges, groups },
     run,
     inbox: {

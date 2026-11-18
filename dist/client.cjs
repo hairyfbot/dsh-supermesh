@@ -613,6 +613,162 @@ function AgentIcon(props) {
 	} else t6 = $[7];
 	return t6;
 }
+function GitForkIcon(props) {
+	const $ = (0, import_dist.c)(7);
+	let t0;
+	let t1;
+	let t2;
+	let t3;
+	let t4;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+			cx: "12",
+			cy: "18",
+			r: "3"
+		});
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+			cx: "6",
+			cy: "6",
+			r: "3"
+		});
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+			cx: "18",
+			cy: "6",
+			r: "3"
+		});
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9" });
+		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 12v3" });
+		$[0] = t0;
+		$[1] = t1;
+		$[2] = t2;
+		$[3] = t3;
+		$[4] = t4;
+	} else {
+		t0 = $[0];
+		t1 = $[1];
+		t2 = $[2];
+		t3 = $[3];
+		t4 = $[4];
+	}
+	let t5;
+	if ($[5] !== props) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+			width: 16,
+			height: 16,
+			xmlns: "http://www.w3.org/2000/svg",
+			viewBox: "0 0 24 24",
+			fill: "none",
+			stroke: "currentColor",
+			strokeWidth: "2",
+			strokeLinecap: "round",
+			strokeLinejoin: "round",
+			"aria-hidden": "true",
+			...props,
+			children: [
+				t0,
+				t1,
+				t2,
+				t3,
+				t4
+			]
+		});
+		$[5] = props;
+		$[6] = t5;
+	} else t5 = $[6];
+	return t5;
+}
+function UserCheckIcon(props) {
+	const $ = (0, import_dist.c)(5);
+	let t0;
+	let t1;
+	let t2;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m16 11 2 2 4-4" });
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" });
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+			cx: "9",
+			cy: "7",
+			r: "4"
+		});
+		$[0] = t0;
+		$[1] = t1;
+		$[2] = t2;
+	} else {
+		t0 = $[0];
+		t1 = $[1];
+		t2 = $[2];
+	}
+	let t3;
+	if ($[3] !== props) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+			width: 16,
+			height: 16,
+			xmlns: "http://www.w3.org/2000/svg",
+			viewBox: "0 0 24 24",
+			fill: "none",
+			stroke: "currentColor",
+			strokeWidth: "2",
+			strokeLinecap: "round",
+			strokeLinejoin: "round",
+			"aria-hidden": "true",
+			...props,
+			children: [
+				t0,
+				t1,
+				t2
+			]
+		});
+		$[3] = props;
+		$[4] = t3;
+	} else t3 = $[4];
+	return t3;
+}
+function UsersRoundIcon(props) {
+	const $ = (0, import_dist.c)(5);
+	let t0;
+	let t1;
+	let t2;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 21a8 8 0 0 0-16 0" });
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
+			cx: "10",
+			cy: "8",
+			r: "5"
+		});
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" });
+		$[0] = t0;
+		$[1] = t1;
+		$[2] = t2;
+	} else {
+		t0 = $[0];
+		t1 = $[1];
+		t2 = $[2];
+	}
+	let t3;
+	if ($[3] !== props) {
+		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+			width: 16,
+			height: 16,
+			xmlns: "http://www.w3.org/2000/svg",
+			viewBox: "0 0 24 24",
+			fill: "none",
+			stroke: "currentColor",
+			strokeWidth: "2",
+			strokeLinecap: "round",
+			strokeLinejoin: "round",
+			"aria-hidden": "true",
+			...props,
+			children: [
+				t0,
+				t1,
+				t2
+			]
+		});
+		$[3] = props;
+		$[4] = t3;
+	} else t3 = $[4];
+	return t3;
+}
 function ArrowLeftIcon(props) {
 	const $ = (0, import_dist.c)(4);
 	let t0;
@@ -1336,6 +1492,13 @@ const PluginContext = (0, react.createContext)({
 	useStore: {},
 	actions: {}
 });
+// src/client/hooks/use-store.ts
+function useStore(select) {
+	return (0, react.useContext)(PluginContext).useStore(select);
+}
+function useActions() {
+	return (0, react.useContext)(PluginContext).actions;
+}
 // src/client/locale/index.ts
 const dicts = {
 	zh: {
@@ -2292,13 +2455,6 @@ async function getApiNexusSessionsIdMailbox(paths, config) {
 function useDshContext() {
 	return (0, react.useContext)(PluginContext).ctx;
 }
-// src/client/hooks/use-store.ts
-function useStore(select) {
-	return (0, react.useContext)(PluginContext).useStore(select);
-}
-function useActions() {
-	return (0, react.useContext)(PluginContext).actions;
-}
 // src/client/hooks/use-translation.ts
 function useTranslation() {
 	const $ = (0, import_dist.c)(2);
@@ -2439,9 +2595,9 @@ function FeishuDetail() {
 	return t6;
 }
 function _temp2$14(state) {
-	return state.data.panel?.channels.find(_temp$19)?.name;
+	return state.data.panel?.channels.find(_temp$20)?.name;
 }
-function _temp$19(channel) {
+function _temp$20(channel) {
 	return channel.id === "feishu";
 }
 // src/client/pages/channel/detail/components/section.tsx
@@ -3534,7 +3690,7 @@ function ChannelDetail() {
 	const $ = (0, import_dist.c)(21);
 	const { t } = useTranslation();
 	const { go } = useActions();
-	const kind = useStore(_temp$18);
+	const kind = useStore(_temp$19);
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
@@ -3637,7 +3793,7 @@ function ChannelDetail() {
 	} else t10 = $[20];
 	return t10;
 }
-function _temp$18(state) {
+function _temp$19(state) {
 	return state.channel.selected;
 }
 // src/client/pages/channel/components/card.tsx
@@ -3939,7 +4095,7 @@ function Row$1(t0) {
 	const { t } = useTranslation();
 	const { openTicket } = useActions();
 	const ctx = useDshContext();
-	const panel = useStore(_temp$17);
+	const panel = useStore(_temp$18);
 	const refreshedAt = useStore(_temp2$13);
 	let t1;
 	if ($[0] !== panel?.graph.nodes || $[1] !== task.id) {
@@ -4280,7 +4436,7 @@ function _temp3$8(node_0) {
 function _temp2$13(state_0) {
 	return state_0.setting.refreshedAt;
 }
-function _temp$17(state) {
+function _temp$18(state) {
 	return state.data.panel;
 }
 // node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.js
@@ -54623,7 +54779,7 @@ function ActivityChart() {
 	} else t1 = $[1];
 	const id = t1;
 	const now = Date.now();
-	const t2 = useStore(_temp$16);
+	const t2 = useStore(_temp$17);
 	let t3;
 	if ($[2] !== t2) {
 		let t4;
@@ -54730,7 +54886,7 @@ function ActivityChart() {
 	} else t11 = $[16];
 	return t11;
 }
-function _temp$16(state) {
+function _temp$17(state) {
 	return state.data.panel?.topics.triggers ?? [];
 }
 // src/client/pages/overview/components/channel-tile.tsx
@@ -55222,7 +55378,7 @@ function GraphCanvas(t0) {
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { zoomGraph, panGraph, resetGraph, selectAgent, openTicket } = useActions();
-	const { zoom, x, y, selectedId } = useStore(_temp$15);
+	const { zoom, x, y, selectedId } = useStore(_temp$16);
 	const drag = (0, react.useRef)(null);
 	const [fit, setFit] = (0, react.useState)(false);
 	let t1;
@@ -55785,14 +55941,14 @@ function _temp3$7(node_2) {
 function _temp2$12(node_1) {
 	return node_1.x;
 }
-function _temp$15(state) {
+function _temp$16(state) {
 	return state.graph;
 }
 // src/client/pages/overview/components/graph.tsx
 function Graph() {
 	const $ = (0, import_dist.c)(27);
 	const { t } = useTranslation();
-	const { panel, loading, error } = useStore(_temp$14);
+	const { panel, loading, error } = useStore(_temp$15);
 	const graph = panel?.graph;
 	let t0;
 	if ($[0] !== graph) {
@@ -55895,7 +56051,7 @@ function _temp2$11(edge) {
 		kind: edge.kind === "dependency" ? "dependency" : edge.kind === "association" ? "association" : "flow"
 	};
 }
-function _temp$14(state) {
+function _temp$15(state) {
 	return state.data;
 }
 // src/client/pages/overview/components/summary-card.tsx
@@ -56010,7 +56166,7 @@ function TaskChart(t0) {
 	} else t1 = $[2];
 	let t2;
 	if ($[5] !== segments) {
-		t2 = segments.some(_temp$13) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
+		t2 = segments.some(_temp$14) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
 			width: "100%",
 			height: "100%",
 			minWidth: 0,
@@ -56068,7 +56224,7 @@ function TaskChart(t0) {
 function _temp2$10(segment_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment_0.color }, segment_0.name);
 }
-function _temp$13(segment_1) {
+function _temp$14(segment_1) {
 	return segment_1.value > 0;
 }
 // src/client/pages/overview/page.tsx
@@ -56106,7 +56262,7 @@ function Overview() {
 		$[1] = t0;
 	} else t0 = $[1];
 	const [answerState, answer] = useAsyncFn(t0);
-	const view = useStore(_temp$12);
+	const view = useStore(_temp$13);
 	const panel = useStore(_temp2$9);
 	let t1;
 	if ($[2] !== panel?.tickets) {
@@ -56867,7 +57023,7 @@ function _temp3$6(channel) {
 function _temp2$9(state_0) {
 	return state_0.data.panel;
 }
-function _temp$12(state) {
+function _temp$13(state) {
 	return state.overview.view;
 }
 // src/client/store/setting.ts
@@ -57536,7 +57692,7 @@ function Projects() {
 		t2 = $[2];
 	}
 	(0, react.useEffect)(t1, t2);
-	const projects = useStore(_temp$11);
+	const projects = useStore(_temp$12);
 	const gitlabHost = useStore(_temp3$5);
 	const refreshedAt = useStore(_temp4$3);
 	const { receiveProject, receivePanel, clearSettingNotice } = useActions();
@@ -57863,7 +58019,7 @@ function _temp3$5(state_0) {
 function _temp2$8(channel) {
 	return channel.id === "gitlab";
 }
-function _temp$11(state) {
+function _temp$12(state) {
 	return state.data.panel?.projects ?? [];
 }
 // src/client/pages/setting/components/runtime.tsx
@@ -58071,7 +58227,7 @@ function Runtime() {
 function Setting() {
 	const $ = (0, import_dist.c)(91);
 	const { t } = useTranslation();
-	const activeSection = useStore(_temp$10);
+	const activeSection = useStore(_temp$11);
 	const notice = useStore(_temp2$7);
 	const invalid = useStore(_temp3$4);
 	const generalDirty = useStore(_temp4$2);
@@ -58450,7 +58606,7 @@ function _temp3$4(state_1) {
 function _temp2$7(state_0) {
 	return state_0.setting.notice;
 }
-function _temp$10(state) {
+function _temp$11(state) {
 	return state.setting.section;
 }
 // src/client/pages/ticket/detail/components/arrivals.tsx
@@ -58469,7 +58625,7 @@ function Arrivals(t0) {
 				$[5] = triggers;
 				$[6] = t3;
 			} else t3 = $[6];
-			const arrivals = [...triggers.map(_temp$9), ...inbox.filter(t3).map(_temp2$6)].sort(_temp3$3);
+			const arrivals = [...triggers.map(_temp$10), ...inbox.filter(t3).map(_temp2$6)].sort(_temp3$3);
 			let t4;
 			if ($[7] !== t) {
 				t4 = (arrival) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
@@ -58574,7 +58730,7 @@ function _temp2$6(message_0) {
 		answer: message_0.answer
 	};
 }
-function _temp$9(trigger) {
+function _temp$10(trigger) {
 	return {
 		id: `trigger-${trigger.id}`,
 		message: trigger.text,
@@ -58936,7 +59092,7 @@ function TicketDetail() {
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { go, receiveTicket } = useActions();
-	const { ticketId, returnTo } = useStore(_temp$8);
+	const { ticketId, returnTo } = useStore(_temp$9);
 	const stored = useStore(_temp2$5);
 	const panel = useStore(_temp3$2);
 	const detail = stored?.ticket.id === ticketId ? stored : null;
@@ -59357,14 +59513,14 @@ function _temp3$2(state_1) {
 function _temp2$5(state_0) {
 	return state_0.data.ticket;
 }
-function _temp$8(state) {
+function _temp$9(state) {
 	return state.navigation;
 }
 // src/client/pages/ticket/page.tsx
 function Ticket() {
 	const $ = (0, import_dist.c)(10);
 	const { t } = useTranslation();
-	const tickets = useStore(_temp$7);
+	const tickets = useStore(_temp$8);
 	let t0;
 	if ($[0] !== t) {
 		t0 = t("ticketListDescription");
@@ -59415,7 +59571,7 @@ function Ticket() {
 function _temp2$4(task) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row$1, { task }, task.id);
 }
-function _temp$7(state) {
+function _temp$8(state) {
 	return state.data.panel?.tickets ?? [];
 }
 // src/client/pages/trigger/model.ts
@@ -59683,7 +59839,7 @@ function Event$1(t0) {
 				variant: "ghost",
 				"aria-expanded": expanded,
 				"aria-controls": bodyId,
-				onClick: () => setExpanded(_temp$6),
+				onClick: () => setExpanded(_temp$7),
 				children: t(expanded ? "triggerCollapseBody" : "triggerExpandBody")
 			});
 			$[52] = bodyId;
@@ -59914,7 +60070,7 @@ function Event$1(t0) {
 	} else t14 = $[98];
 	return t14;
 }
-function _temp$6(value) {
+function _temp$7(value) {
 	return !value;
 }
 // src/client/pages/trigger/detail/page.tsx
@@ -59922,7 +60078,7 @@ function TriggerDetail() {
 	const $ = (0, import_dist.c)(136);
 	const { t } = useTranslation();
 	const { go, openTicket } = useActions();
-	const id = useStore(_temp$5);
+	const id = useStore(_temp$6);
 	const panel = useStore(_temp2$3);
 	let href;
 	let latest;
@@ -60437,14 +60593,14 @@ function _temp3$1(event) {
 function _temp2$3(state_0) {
 	return state_0.data.panel;
 }
-function _temp$5(state) {
+function _temp$6(state) {
 	return state.trigger.selectedId;
 }
 // src/client/pages/trigger/components/filters.tsx
 function Filters() {
 	const $ = (0, import_dist.c)(48);
 	const { t } = useTranslation();
-	const { filters, openFilter } = useStore(_temp$4);
+	const { filters, openFilter } = useStore(_temp$5);
 	const { setTriggerFilters, resetTriggerFilters, setTriggerFilterMenu } = useActions();
 	let t0;
 	if ($[0] !== filters.channel || $[1] !== filters.kind || $[2] !== filters.mentionedOnly || $[3] !== filters.query || $[4] !== filters.status) {
@@ -60651,7 +60807,7 @@ function Filters() {
 	} else t9 = $[47];
 	return t9;
 }
-function _temp$4(state) {
+function _temp$5(state) {
 	return state.trigger;
 }
 // src/client/pages/trigger/components/row.tsx
@@ -60664,7 +60820,7 @@ function Row(t0) {
 	const Icon = record.channel === "github" ? GitHubIcon : record.channel === "feishu" ? FeishuIcon : GitLabIcon;
 	const status = STATUSES[deliveryStatus({
 		...record,
-		deliveries: topic.events.flatMap(_temp$3)
+		deliveries: topic.events.flatMap(_temp$4)
 	})];
 	let t1;
 	if ($[0] !== record.channel || $[1] !== t) {
@@ -60968,7 +61124,7 @@ function Row(t0) {
 	} else t35 = $[82];
 	return t35;
 }
-function _temp$3(event) {
+function _temp$4(event) {
 	return [...event.deliveries];
 }
 // src/client/pages/trigger/components/summary.tsx
@@ -60976,7 +61132,7 @@ function Summary() {
 	const $ = (0, import_dist.c)(13);
 	const { t } = useTranslation();
 	const { setTriggerFilters } = useActions();
-	const selected = useStore(_temp$2);
+	const selected = useStore(_temp$3);
 	const panel = useStore(_temp2$2);
 	let t0;
 	if ($[0] !== panel || $[1] !== t) {
@@ -61057,14 +61213,14 @@ function Summary() {
 function _temp2$2(state_0) {
 	return state_0.data.panel;
 }
-function _temp$2(state) {
+function _temp$3(state) {
 	return state.trigger.filters.status;
 }
 // src/client/pages/trigger/page.tsx
 function Trigger() {
 	const $ = (0, import_dist.c)(47);
 	const { t } = useTranslation();
-	const filters = useStore(_temp$1);
+	const filters = useStore(_temp$2);
 	const { resetTriggerFilters } = useActions();
 	const panel = useStore(_temp2$1);
 	let t0;
@@ -61255,7 +61411,7 @@ function _temp3(topic) {
 function _temp2$1(state_0) {
 	return state_0.data.panel;
 }
-function _temp$1(state) {
+function _temp$2(state) {
 	return state.trigger.filters;
 }
 // src/client/panel.tsx
@@ -61747,7 +61903,7 @@ function Notification$1(t0) {
 				className: "max-h-60 overflow-auto whitespace-pre-wrap [overflow-wrap:anywhere] [font:var(--dsw-font-xxs-12)]",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					className: "m-0 whitespace-pre-wrap text-[var(--dsw-alias-label-secondary)] [font:inherit] [overflow-wrap:anywhere]",
-					children: node.data.data.content.filter(_temp).map(_temp2).join("\n")
+					children: node.data.data.content.filter(_temp$1).map(_temp2).join("\n")
 				})
 			})]
 		});
@@ -61775,7 +61931,7 @@ function Notification$1(t0) {
 function _temp2(block_0) {
 	return block_0.text;
 }
-function _temp(block) {
+function _temp$1(block) {
 	return block.type === "text";
 }
 // src/client/ui/mailbox/panel.tsx
@@ -61898,6 +62054,47 @@ function Panel({ sessionId }) {
 	});
 }
 // src/client/index.tsx
+function SessionRoleIcon(t0) {
+	const $ = (0, import_dist.c)(4);
+	const { sessionId } = t0;
+	const role = useStore(_temp)?.find((session) => session.sessionId === sessionId)?.role;
+	if (role === "main") {
+		let t1;
+		if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(GitForkIcon, {});
+			$[0] = t1;
+		} else t1 = $[0];
+		return t1;
+	}
+	if (role === "project") {
+		let t1;
+		if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
+			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UserCheckIcon, {});
+			$[1] = t1;
+		} else t1 = $[1];
+		return t1;
+	}
+	if (role === "supervisor") {
+		let t1;
+		if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
+			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UsersRoundIcon, {});
+			$[2] = t1;
+		} else t1 = $[2];
+		return t1;
+	}
+	if (role === "worker") {
+		let t1;
+		if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
+			t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {});
+			$[3] = t1;
+		} else t1 = $[3];
+		return t1;
+	}
+	return null;
+}
+function _temp(state) {
+	return state.data.panel?.sessions;
+}
 const PANEL_ID = "dsh-nexus";
 const NS = "dshNexus";
 const inject = [
@@ -61971,6 +62168,12 @@ function apply(ctx) {
 		},
 		children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Panel, { sessionId: props.sessionId })
 	}, props.sessionId)));
+	ctx.slots.inject("sidebar.session.row.leading", () => ctx.slots.register({
+		name: "sidebar.session.row.leading",
+		id: `${PANEL_ID}:role-icon`,
+		order: 10,
+		locale: NS
+	}, ({ sessionId }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SessionRoleIcon, { sessionId })));
 	ctx.slots.inject("sidebar.panellist", () => ctx.slots.register({
 		name: "sidebar.panellist",
 		id: PANEL_ID,
