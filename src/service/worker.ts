@@ -38,7 +38,7 @@ export const worker = defineService({
       if (ticket.prState === 'merged' || ticket.prState === 'closed') {
         const now = new Date().toISOString()
         await db.worker.end(worker.id, 'stopped', now)
-        await db.ticket.finish(ticket.id, 'done', now, now)
+        await finishTicket(ticket.id, 'done', now, now)
         await releaseDependents(ticket.id)
         continue
       }
@@ -100,7 +100,7 @@ export const worker = defineService({
       if (ticket.prState === 'merged' || ticket.prState === 'closed') {
         const now = new Date().toISOString()
         await db.worker.end(worker.id, 'stopped', now)
-        await db.ticket.finish(ticket.id, 'done', now, now)
+        await finishTicket(ticket.id, 'done', now, now)
         await releaseDependents(ticket.id)
         continue
       }
@@ -183,7 +183,7 @@ export const worker = defineService({
           await db.worker.end(worker.id, 'failed', new Date().toISOString())
           const latest = await db.ticket.findById(ticket.id)
           if (latest && latest.prState === 'merged' && latest.status !== 'done')
-            await db.ticket.finish(latest.id, 'done', new Date().toISOString(), new Date().toISOString())
+            await finishTicket(latest.id, 'done', new Date().toISOString(), new Date().toISOString())
           else if (!latest || (latest.status !== 'done' && latest.status !== 'cancelled'))
             await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
           running--
@@ -233,7 +233,7 @@ export const worker = defineService({
         continue
       if (ticket.prState === 'merged' || ticket.prState === 'closed') {
         const now = new Date().toISOString()
-        await db.ticket.finish(ticket.id, 'done', now, now)
+        await finishTicket(ticket.id, 'done', now, now)
         await releaseDependents(ticket.id)
         continue
       }
@@ -265,7 +265,7 @@ export const worker = defineService({
           continue
         if (ticket.prState === 'merged') {
           await db.worker.end(worker.id, 'stopped', new Date().toISOString())
-          await db.ticket.finish(ticket.id, 'done', new Date().toISOString(), new Date().toISOString())
+          await finishTicket(ticket.id, 'done', new Date().toISOString(), new Date().toISOString())
           await releaseDependents(ticket.id)
           continue
         }
@@ -298,7 +298,7 @@ export const worker = defineService({
         const latest = await db.ticket.findById(ticket.id)
         if (latest && (latest.status === 'done' || latest.status === 'cancelled' || latest.prState === 'merged')) {
           if (latest.prState === 'merged' && latest.status !== 'done')
-            await db.ticket.finish(latest.id, 'done', now, now)
+            await finishTicket(latest.id, 'done', now, now)
           await db.worker.end(worker.id, 'stopped', now)
           continue
         }
@@ -368,9 +368,9 @@ async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'st
   const ticket = await db.ticket.findById(current.ticketId)
   if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled') {
     if (ticket.prState === 'merged' || ticket.prState === 'closed')
-      await db.ticket.finish(ticket.id, 'done', now, now)
+      await finishTicket(ticket.id, 'done', now, now)
     else if (!reason && current.reportState === 'dropped')
-      await db.ticket.finish(ticket.id, 'done', now, now)
+      await finishTicket(ticket.id, 'done', now, now)
     else
       await db.ticket.update(ticket.id, { status: !reason && current.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
   }
@@ -401,6 +401,12 @@ async function blockedByDependency(ticketId: string): Promise<boolean> {
  * 不要求两票之间有 depends —— 跨项目协调里 supervisor 往往靠「这张做完了」才能派下一张，
  * 漏掉这条通知，整条链路就停在原地，票却不报错。
  */
+/** 结单并通知相关方：所有终态路径都必须经过这里，否则 supervisor 收不到「这张做完了」。 */
+async function finishTicket(id: string, status: 'done' | 'cancelled', endedAt: string, updatedAt: string): Promise<void> {
+  await db.ticket.finish(id, status, endedAt, updatedAt)
+  await notifySupervisor(id)
+}
+
 async function notifySupervisor(ticketId: string): Promise<void> {
   const ticket = await db.ticket.findById(ticketId)
   if (!ticket || (ticket.status !== 'done' && ticket.status !== 'cancelled'))
@@ -422,7 +428,6 @@ async function notifySupervisor(ticketId: string): Promise<void> {
 }
 
 async function releaseDependents(relatedId: string): Promise<void> {
-  await notifySupervisor(relatedId)
   for (const link of await db.ticketLink.listDependents(relatedId)) {
     const ticket = await db.ticket.findById(link.ticketId)
     if (!ticket || ticket.status !== 'waiting' || ticket.paused)
@@ -443,7 +448,7 @@ async function deferWhileWaiting(current: Selectable<DB['worker']>): Promise<voi
   const now = new Date().toISOString()
   await db.worker.end(current.id, 'completed', now)
   if (ticket.prState === 'merged') {
-    await db.ticket.finish(ticket.id, 'done', now, now)
+    await finishTicket(ticket.id, 'done', now, now)
     return
   }
   await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })

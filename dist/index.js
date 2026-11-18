@@ -2529,7 +2529,7 @@ const list_ticket$2 = defineTool({
 		}));
 	}
 });
-const link_ticket = defineTool({
+const link_ticket$1 = defineTool({
 	name: "link_ticket",
 	description: "建一张工单到另一张工单的关联。限本项目；跨项目依赖由 Supervisor 的 link_dependency 记。",
 	parameters: {
@@ -2896,7 +2896,7 @@ const manager = definePreset({
 		escalate,
 		supervisor_list$1,
 		list_ticket$2,
-		link_ticket,
+		link_ticket$1,
 		stop_ticket,
 		retry_ticket,
 		create_worker,
@@ -3738,8 +3738,8 @@ const create_ticket = defineTool({
 		});
 	}
 });
-const link_dependency = defineTool({
-	name: "link_dependency",
+const link_dependency_ticket = defineTool({
+	name: "link_dependency_ticket",
 	description: "记一条跨项目前置依赖。方向是「后来的指向先要做的」。别只记在脑子里 —— 你随时可能被重启。",
 	parameters: {
 		ticketId: {
@@ -3767,15 +3767,62 @@ const link_dependency = defineTool({
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
 		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
-		const links = await db.supervisorTicket.listBySupervisor(identity.supervisorId);
-		if (![args.ticketId, args.dependsOn].every((id) => links.some((row) => row.ticketId === id))) throw new Error("依赖双方必须属于当前 Supervisor");
+		const tickets = await Promise.all([args.ticketId, args.dependsOn].map((id) => db.ticket.findById(id)));
+		if (tickets.some((ticket) => !ticket)) throw new Error("工单不存在");
+		await requireScope(identity.supervisorId, tickets.map((ticket) => ticket.projectId));
 		await db.ticket.requireOpen(args.ticketId);
-		if (!await db.ticket.findById(args.dependsOn)) throw new Error("前置工单不存在");
 		if (args.ticketId === args.dependsOn) throw new Error("工单不能依赖自己");
 		await db.ticketLink.link(args.ticketId, args.dependsOn, "depends", (/* @__PURE__ */ new Date()).toISOString());
 		return JSON.stringify({ linked: true });
 	}
 });
+const link_ticket = defineTool({
+	name: "link_ticket",
+	description: "记一条相关性关联：两张票有关，但谁都不等谁。限你协调范围内的项目之间。",
+	parameters: {
+		ticketId: {
+			type: "string",
+			required: true,
+			description: "发起关联的票。"
+		},
+		relatedId: {
+			type: "string",
+			required: true,
+			description: "被指向的那张票。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "关联结果。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
+		if (args.ticketId === args.relatedId) throw new Error("工单不能关联自己");
+		const tickets = await Promise.all([args.ticketId, args.relatedId].map((id) => db.ticket.findById(id)));
+		if (tickets.some((ticket) => !ticket)) throw new Error("工单不存在");
+		await requireScope(identity.supervisorId, tickets.map((ticket) => ticket.projectId));
+		await db.ticketLink.link(args.ticketId, args.relatedId, "relates", (/* @__PURE__ */ new Date()).toISOString());
+		return JSON.stringify({
+			linked: true,
+			kind: "relates"
+		});
+	}
+});
+/** 票所属项目必须落在这个 supervisor 的管辖范围内（即它已关联票涉及的项目）。 */
+async function requireScope(supervisorId, projectIds) {
+	const links = await db.supervisorTicket.listBySupervisor(supervisorId);
+	const tickets = await Promise.all(links.map((link) => db.ticket.findById(link.ticketId)));
+	const scope = new Set(tickets.filter(Boolean).map((ticket) => ticket.projectId));
+	for (const projectId of projectIds) if (!scope.has(projectId)) throw new Error("该项目不在当前 Supervisor 的协调范围内");
+}
 const report$1 = defineTool({
 	name: "report",
 	description: "报给主编排，不等答复。",
@@ -3869,7 +3916,8 @@ const supervisor = definePreset({
 		list_ticket,
 		report$1,
 		ask$1,
-		link_dependency,
+		link_dependency_ticket,
+		link_ticket,
 		create_ticket
 	],
 	plugins: [
