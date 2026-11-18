@@ -115,6 +115,14 @@ export class Worker extends Model<DB, 'worker'> {
       const project = await trx.selectFrom('project').selectAll().where('id', '=', projectId).executeTakeFirst()
       if (!project?.enabled)
         throw new Error('项目未启用')
+      // 依赖约束在排队这一层统一拦：create_worker、派工循环、rescue 都走这里，
+      // 只在派工循环里检查会被其它入口绕过（前置还没做完，后继就开工了）。
+      const depends = await trx.selectFrom('ticket_link').select('relatedId').where('ticketId', '=', ticketId).where('kind', '=', 'depends').execute()
+      for (const link of depends) {
+        const related = await trx.selectFrom('ticket').select(['id', 'status']).where('id', '=', link.relatedId).executeTakeFirst()
+        if (related && related.status !== 'done' && related.status !== 'cancelled')
+          throw new Error(`依赖的 ${related.id} 还没完成`)
+      }
       const existing = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).where('status', '!=', 'ended').executeTakeFirst()
       if (existing)
         return existing

@@ -81,6 +81,10 @@ export const worker = defineService({
         continue
       if (waiting.prState === 'merged' || waiting.prState === 'closed')
         continue
+      // 被依赖的票没到终态时必须留在 waiting：这一步会直接把票改成 queued，
+      // 不挡就会绕过 depends 约束，出现「前置还没做完，后继已经开工」。
+      if (await blockedByDependency(waiting.id))
+        continue
       if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
         continue
       await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
