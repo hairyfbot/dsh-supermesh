@@ -94,7 +94,6 @@ export const orchestrator = definePreset({
     plugins.agentInstructions,
     plugins.compaction,
     plugins.commandGoal,
-    plugins.delegation,
     plugins.skillFilesystem,
     plugins.timeContext,
     plugins.toolBash,

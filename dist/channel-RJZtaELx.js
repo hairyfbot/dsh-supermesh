@@ -1192,6 +1192,9 @@ var TicketLink = class {
 	async listDependsOn(ticketId) {
 		return this.db.selectFrom("ticket_link").selectAll().where("ticketId", "=", ticketId).where("kind", "=", "depends").execute();
 	}
+	async listDependents(relatedId) {
+		return this.db.selectFrom("ticket_link").selectAll().where("relatedId", "=", relatedId).where("kind", "=", "depends").execute();
+	}
 	async link(ticketId, relatedId, kind, createdAt) {
 		await this.db.insertInto("ticket_link").values({
 			ticketId,
@@ -3730,7 +3733,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DzWaxcMz.js");
+			const { shell } = await import("./shell-DqbQWyG0.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3739,7 +3742,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DzWaxcMz.js");
+			const { shell } = await import("./shell-DqbQWyG0.js");
 			await shell.refresh();
 			return view;
 		});

@@ -49,7 +49,7 @@ export function TicketDetail(): ReactNode {
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-3">
                 <span className="text-xs text-[var(--dsw-alias-label-tertiary)]">{task.id}</span>
-                <Tag tone={task.prepareError ? 'danger' : task.status === 'done' ? 'success' : task.status === 'running' ? 'info' : task.status === 'review' ? 'warning' : 'quiet'}>{task.paused ? t('ticketStatusPaused') : labels[task.status]}</Tag>
+                <Tag tone={task.prepareError || task.paused ? 'danger' : task.status === 'done' ? 'success' : task.status === 'running' ? 'info' : task.status === 'review' ? 'warning' : 'quiet'}>{task.paused ? t('ticketStatusPaused') : task.prepareError ? t('overviewStatusIntervention') : labels[task.status]}</Tag>
               </div>
               <h2 className="m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]">{task.title}</h2>
             </div>

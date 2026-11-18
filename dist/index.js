@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-NZ9WCH8Z.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-RJZtaELx.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -2166,6 +2166,17 @@ const worker$1 = defineService({
 	reconcile() {
 		return run("slots", async () => {
 			const settings = await setting.load();
+			for (const waiting of await db.ticket.listFiltered({ status: "waiting" })) {
+				if (stopped) break;
+				if (waiting.paused || waiting.prepareError) continue;
+				if (await blockedByDependency(waiting.id)) continue;
+				if (!(await db.ticketLink.listDependsOn(waiting.id)).length) continue;
+				await db.ticket.update(waiting.id, {
+					status: "queued",
+					updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+				});
+				await db.worker.queue(waiting.id, waiting.projectId).catch(() => void 0);
+			}
 			let running = (await db.worker.listRunning()).length;
 			for (const worker of await db.worker.listQueued()) {
 				if (stopped || running >= settings.maxWorkers) break;
@@ -2175,6 +2186,7 @@ const worker$1 = defineService({
 					continue;
 				}
 				if (ticket.paused) continue;
+				if (await blockedByDependency(ticket.id)) continue;
 				if ((await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) continue;
 				const project = await db.project.findById(ticket.projectId);
 				if (!project) {
@@ -2240,7 +2252,8 @@ const worker$1 = defineService({
 						await session.stop(worker.id);
 						await db.worker.end(worker.id, "failed", (/* @__PURE__ */ new Date()).toISOString());
 						const latest = await db.ticket.findById(ticket.id);
-						if (!latest || latest.status !== "done" && latest.status !== "cancelled") await db.ticket.update(ticket.id, {
+						if (latest && latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
+						else if (!latest || latest.status !== "done" && latest.status !== "cancelled") await db.ticket.update(ticket.id, {
 							status: "waiting",
 							updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 						});
@@ -2279,9 +2292,17 @@ const worker$1 = defineService({
 				try {
 					const project = await db.project.findById(ticket.projectId);
 					if (project && !project.enabled) continue;
-					if (!project || !worker.worktree || !worker.branch) throw new Error("worker_workspace_missing");
+					if (!project || !worker.worktree || !worker.branch) {
+						await db.worker.end(worker.id, "restarted", (/* @__PURE__ */ new Date()).toISOString());
+						await db.worker.queue(ticket.id, ticket.projectId);
+						continue;
+					}
 					await worktree.verify(project.directory, worker.worktree, worker.branch);
-					if (!await session.resolve(worker.id)) throw new Error("worker_session_unavailable");
+					if (!await session.resolve(worker.id)) {
+						await db.worker.end(worker.id, "restarted", (/* @__PURE__ */ new Date()).toISOString());
+						await db.worker.queue(ticket.id, ticket.projectId);
+						continue;
+					}
 					const activity = await session.activity(worker.id);
 					if (activity.background && !worker.backgroundUntil) {
 						const settings = await setting.load();
@@ -2295,7 +2316,8 @@ const worker$1 = defineService({
 					if (stopped) break;
 					const now = (/* @__PURE__ */ new Date()).toISOString();
 					const latest = await db.ticket.findById(ticket.id);
-					if (latest && (latest.status === "done" || latest.status === "cancelled")) {
+					if (latest && (latest.status === "done" || latest.status === "cancelled" || latest.prState === "merged")) {
+						if (latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", now, now);
 						await db.worker.end(worker.id, "stopped", now);
 						continue;
 					}
@@ -2370,12 +2392,40 @@ async function finish(current, reason) {
 		});
 	}
 	if (!reason && current.reportState !== "failed") await archive(current.id);
+	const ended = await db.ticket.findById(current.ticketId);
+	if (ended && (ended.status === "done" || ended.status === "cancelled")) await releaseDependents(ended.id);
+}
+async function blockedByDependency(ticketId) {
+	const links = await db.ticketLink.listDependsOn(ticketId);
+	if (!links.length) return false;
+	for (const link of links) {
+		const related = await db.ticket.findById(link.relatedId);
+		if (!related || related.status === "done" || related.status === "cancelled") continue;
+		return true;
+	}
+	return false;
+}
+async function releaseDependents(relatedId) {
+	for (const link of await db.ticketLink.listDependents(relatedId)) {
+		const ticket = await db.ticket.findById(link.ticketId);
+		if (!ticket || ticket.status !== "waiting" || ticket.paused) continue;
+		if (await blockedByDependency(ticket.id)) continue;
+		await db.ticket.update(ticket.id, {
+			status: "queued",
+			updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+		});
+		await db.worker.queue(ticket.id, ticket.projectId).catch(() => void 0);
+	}
 }
 async function deferWhileWaiting(current) {
 	const ticket = await db.ticket.findById(current.ticketId);
 	if (!ticket || ticket.status === "done" || ticket.status === "cancelled") return;
 	const now = (/* @__PURE__ */ new Date()).toISOString();
 	await db.worker.end(current.id, "completed", now);
+	if (ticket.prState === "merged") {
+		await db.ticket.finish(ticket.id, "done", now, now);
+		return;
+	}
 	await db.ticket.update(ticket.id, {
 		status: "waiting",
 		updatedAt: now
@@ -2843,7 +2893,6 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
 		agentInstructions,
 		compaction,
 		commandGoal,
-		delegation,
 		skillFilesystem,
 		timeContext,
 		toolBash,
@@ -3623,7 +3672,6 @@ const orchestrator = definePreset({
 		agentInstructions,
 		compaction,
 		commandGoal,
-		delegation,
 		skillFilesystem,
 		timeContext,
 		toolBash,
@@ -3839,7 +3887,6 @@ const agents = {
 			agentInstructions,
 			compaction,
 			commandGoal,
-			delegation,
 			skillFilesystem,
 			timeContext,
 			toolBash,

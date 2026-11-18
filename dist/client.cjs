@@ -1574,7 +1574,7 @@ const dicts = {
 		overviewStatusReview: "待审核",
 		overviewStatusRunning: "运行中",
 		overviewStatusWaiting: "等待触发",
-		overviewStatusIntervention: "需介入",
+		overviewStatusIntervention: "异常",
 		overviewSource: "触发来源",
 		overviewDuration: "耗时",
 		overviewSleepDuration: "休眠时间",
@@ -1981,7 +1981,7 @@ const dicts = {
 		overviewStatusReview: "In review",
 		overviewStatusRunning: "Running",
 		overviewStatusWaiting: "Waiting for trigger",
-		overviewStatusIntervention: "Needs attention",
+		overviewStatusIntervention: "Failed",
 		overviewSource: "Source",
 		overviewDuration: "Duration",
 		overviewSleepDuration: "Idle time",
@@ -59140,8 +59140,8 @@ function TicketDetail() {
 							className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
 							children: task.id
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
-							tone: task.prepareError ? "danger" : task.status === "done" ? "success" : task.status === "running" ? "info" : task.status === "review" ? "warning" : "quiet",
-							children: task.paused ? t("ticketStatusPaused") : labels[task.status]
+							tone: task.prepareError || task.paused ? "danger" : task.status === "done" ? "success" : task.status === "running" ? "info" : task.status === "review" ? "warning" : "quiet",
+							children: task.paused ? t("ticketStatusPaused") : task.prepareError ? t("overviewStatusIntervention") : labels[task.status]
 						})]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", {
 						className: "m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]",

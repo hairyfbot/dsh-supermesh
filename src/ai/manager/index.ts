@@ -85,7 +85,6 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
     plugins.agentInstructions,
     plugins.compaction,
     plugins.commandGoal,
-    plugins.delegation,
     plugins.skillFilesystem,
     plugins.timeContext,
     plugins.toolBash,

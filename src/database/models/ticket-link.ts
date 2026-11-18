@@ -37,6 +37,15 @@ export class TicketLink {
       .execute()
   }
 
+  async listDependents(relatedId: string): Promise<Selectable<DB['ticket_link']>[]> {
+    return this.db
+      .selectFrom('ticket_link')
+      .selectAll()
+      .where('relatedId', '=', relatedId)
+      .where('kind', '=', 'depends')
+      .execute()
+  }
+
   async link(ticketId: string, relatedId: string, kind: TicketLinkKind, createdAt: string): Promise<void> {
     await this.db
       .insertInto('ticket_link')
