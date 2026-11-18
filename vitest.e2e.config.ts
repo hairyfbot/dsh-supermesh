@@ -1,6 +1,6 @@
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
-import { closeDsh, getDshErrors, launchDsh, supermeshRequest, openDshPage, openSupermeshMainSession } from './test/__setup__/commands'
+import { closeDsh, getDshErrors, launchDsh, openDshPage, openSupermeshMainSession, supermeshRequest } from './test/__setup__/commands'
 
 export default defineConfig({
   test: {
