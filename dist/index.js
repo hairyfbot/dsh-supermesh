@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-Cs8h8GPx.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-NZ9WCH8Z.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -2344,11 +2344,17 @@ function run(key, action) {
 async function finish(current, reason) {
 	const asks = (await db.inbox.listByTicket(current.ticketId)).filter((message) => message.kind === "ask" && message.workerId === current.id);
 	if (!reason) {
-		if (asks.some((message) => message.status === "pending")) return;
+		if (asks.some((message) => message.status === "pending")) {
+			await deferWhileWaiting(current);
+			return;
+		}
 		const answered = asks.filter((message) => message.answer);
 		if (answered.length) {
 			const receipts = await session.receipts(current.id);
-			if (answered.some((message) => !receipts.some((receipt) => receipt.requestId === `nexus:answer:${message.id}`))) return;
+			if (answered.some((message) => !receipts.some((receipt) => receipt.requestId === `nexus:answer:${message.id}`))) {
+				await deferWhileWaiting(current);
+				return;
+			}
 		}
 	}
 	if (stopped) return;
@@ -2364,6 +2370,16 @@ async function finish(current, reason) {
 		});
 	}
 	if (!reason && current.reportState !== "failed") await archive(current.id);
+}
+async function deferWhileWaiting(current) {
+	const ticket = await db.ticket.findById(current.ticketId);
+	if (!ticket || ticket.status === "done" || ticket.status === "cancelled") return;
+	const now = (/* @__PURE__ */ new Date()).toISOString();
+	await db.worker.end(current.id, "completed", now);
+	await db.ticket.update(ticket.id, {
+		status: "waiting",
+		updatedAt: now
+	});
 }
 async function archive(id) {
 	if (!(await setting.load()).autoArchiveWorkers) return;

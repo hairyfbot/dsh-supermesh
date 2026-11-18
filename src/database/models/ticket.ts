@@ -195,7 +195,7 @@ export class Ticket extends Model<DB, 'ticket'> {
       if (owns)
         await this.setPullRequest(ticketId, thread.url, outcome, row.ciState)
       const ticket = (await this.findById(ticketId))!
-      const closed = await this.followsDone(ticket, owns ? thread : undefined)
+      const closed = await this.followsDone(ticket)
       if (!closed || await this.unfinished(ticketId, at))
         continue
       await this.end(ticket, closed.outcome, closed.at)
@@ -232,9 +232,9 @@ export class Ticket extends Model<DB, 'ticket'> {
       .execute()
   }
 
-  private async followsDone(ticket: Selectable<DB['ticket']>, followed?: Selectable<DB['thread']>): Promise<{ at: string, outcome: 'merged' | 'closed' } | undefined> {
+  private async followsDone(ticket: Selectable<DB['ticket']>): Promise<{ at: string, outcome: 'merged' | 'closed' } | undefined> {
     const threads = await this.pullThreads(ticket.id)
-    const own = ticket.prUrl ? threads.filter(thread => thread.url === ticket.prUrl) : followed && followed.url ? [followed] : []
+    const own = threads.filter(thread => thread.url === ticket.prUrl)
     const counted = own.length ? own : threads
     if (!counted.length)
       return undefined

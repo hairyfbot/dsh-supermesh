@@ -116,7 +116,8 @@ export class Worker extends Model<DB, 'worker'> {
         return existing
       const previous = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt', 'desc').orderBy('id', 'desc').executeTakeFirst()
       const now = new Date().toISOString()
-      if (previous && previous.reportState !== 'failed') {
+      const resumed = ticket.status === 'waiting' && ticket.endedAt === null && ticket.startedAt !== null && previous?.status === 'ended'
+      if (resumed) {
         await trx.updateTable('worker').set({ status: 'queued', startedAt: null, endedAt: null, endedReason: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null, branch: branch ?? previous.branch }).where('id', '=', previous.id).execute()
         await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
         return (await new Worker(trx).findById(previous.id))!

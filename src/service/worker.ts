@@ -230,13 +230,17 @@ function run(key: string, action: () => Promise<void>): Promise<void> {
 async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'stopped'): Promise<void> {
   const asks = (await db.inbox.listByTicket(current.ticketId)).filter(message => message.kind === 'ask' && message.workerId === current.id)
   if (!reason) {
-    if (asks.some(message => message.status === 'pending'))
+    if (asks.some(message => message.status === 'pending')) {
+      await deferWhileWaiting(current)
       return
+    }
     const answered = asks.filter(message => message.answer)
     if (answered.length) {
       const receipts = await session.receipts(current.id)
-      if (answered.some(message => !receipts.some(receipt => receipt.requestId === `nexus:answer:${message.id}`)))
+      if (answered.some(message => !receipts.some(receipt => receipt.requestId === `nexus:answer:${message.id}`))) {
+        await deferWhileWaiting(current)
         return
+      }
     }
   }
   if (stopped)
@@ -253,6 +257,15 @@ async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'st
   }
   if (!reason && current.reportState !== 'failed')
     await archive(current.id)
+}
+
+async function deferWhileWaiting(current: Selectable<DB['worker']>): Promise<void> {
+  const ticket = await db.ticket.findById(current.ticketId)
+  if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+    return
+  const now = new Date().toISOString()
+  await db.worker.end(current.id, 'completed', now)
+  await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
 }
 
 async function archive(id: string): Promise<void> {

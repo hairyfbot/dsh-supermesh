@@ -1097,7 +1097,7 @@ var Ticket = class Ticket extends Model {
 			if (!owns && row.prUrl) continue;
 			if (owns) await this.setPullRequest(ticketId, thread.url, outcome, row.ciState);
 			const ticket = await this.findById(ticketId);
-			const closed = await this.followsDone(ticket, owns ? thread : void 0);
+			const closed = await this.followsDone(ticket);
 			if (!closed || await this.unfinished(ticketId, at)) continue;
 			await this.end(ticket, closed.outcome, closed.at);
 			ended.push(ticketId);
@@ -1142,9 +1142,9 @@ var Ticket = class Ticket extends Model {
 			updatedAt
 		})).execute();
 	}
-	async followsDone(ticket, followed) {
+	async followsDone(ticket) {
 		const threads = await this.pullThreads(ticket.id);
-		const own = ticket.prUrl ? threads.filter((thread) => thread.url === ticket.prUrl) : followed && followed.url ? [followed] : [];
+		const own = threads.filter((thread) => thread.url === ticket.prUrl);
 		const counted = own.length ? own : threads;
 		if (!counted.length) return void 0;
 		const closes = [];
@@ -1338,7 +1338,7 @@ var Worker = class Worker extends Model {
 			if (existing) return existing;
 			const previous = await trx.selectFrom("worker").selectAll().where("ticketId", "=", ticketId).orderBy("createdAt", "desc").orderBy("id", "desc").executeTakeFirst();
 			const now = (/* @__PURE__ */ new Date()).toISOString();
-			if (previous && previous.reportState !== "failed") {
+			if (ticket.status === "waiting" && ticket.endedAt === null && ticket.startedAt !== null && previous?.status === "ended") {
 				await trx.updateTable("worker").set({
 					status: "queued",
 					startedAt: null,
@@ -3730,7 +3730,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CUhb7TlH.js");
+			const { shell } = await import("./shell-DzWaxcMz.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3739,7 +3739,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-CUhb7TlH.js");
+			const { shell } = await import("./shell-DzWaxcMz.js");
 			await shell.refresh();
 			return view;
 		});
