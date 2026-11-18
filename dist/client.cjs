@@ -68313,14 +68313,17 @@ function apply(ctx) {
 		key: PANEL_ID,
 		locale: NS,
 		store
-	}, (props) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PluginContext.Provider, {
-		value: {
-			ctx,
-			t: props.t,
-			useStore: props.useStore,
-			actions: props.actions
-		},
-		children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Panel$1, {})
+	}, (props) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(QueryClientProvider, {
+		client,
+		children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PluginContext.Provider, {
+			value: {
+				ctx,
+				t: props.t,
+				useStore: props.useStore,
+				actions: props.actions
+			},
+			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Panel$1, {})
+		})
 	})));
 	ctx.slots.inject("conversation.chat.node", () => ctx.slots.register({
 		name: "conversation.chat.node",

@@ -81,15 +81,17 @@ export function apply(ctx: ClientContext): void {
       store,
     },
     props => (
-      <PluginContext.Provider value={{
-        ctx,
-        t: props.t,
-        useStore: props.useStore,
-        actions: props.actions,
-      }}
-      >
-        <NexusPanel />
-      </PluginContext.Provider>
+      <QueryClientProvider client={client}>
+        <PluginContext.Provider value={{
+          ctx,
+          t: props.t,
+          useStore: props.useStore,
+          actions: props.actions,
+        }}
+        >
+          <NexusPanel />
+        </PluginContext.Provider>
+      </QueryClientProvider>
     ),
   ))
 

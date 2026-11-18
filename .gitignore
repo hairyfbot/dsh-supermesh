@@ -24,5 +24,6 @@ prisma/database
 .temp
 data.db
 data.worker-*.db*
+data.db-*
 
 %SystemDrive%
