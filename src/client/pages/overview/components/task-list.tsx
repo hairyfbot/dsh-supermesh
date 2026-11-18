@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { If } from 'react-if-lite'
 import { getApiNexusChannel, getApiNexusNode, getApiNexusSubscription, getApiNexusTicket, getApiNexusTrigger } from '../../../apis'
 import { Empty } from '../../../components/empty'
 import { TasksIcon } from '../../../components/icons'
@@ -22,21 +23,31 @@ export function TaskList(): ReactNode {
     return <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]">加载中…</p>
   const list = ticket.data ?? []
   const refreshedAt = ticket.dataUpdatedAt ? new Date(ticket.dataUpdatedAt).toISOString() : null
-  return list.length
-    ? (
-        <ul className="pl-0">
-          {list.map(task => (
-            <Row
-              key={task.id}
-              task={task}
-              nodes={node.data ?? []}
-              channels={channel.data ?? []}
-              triggers={trigger.data ?? []}
-              subscriptions={subscription.data ?? []}
-              refreshedAt={refreshedAt}
-            />
-          ))}
-        </ul>
-      )
-    : <Empty title={t('overviewTasksEmpty')} description={t('overviewTasksEmptyDescription')} icon={<TasksIcon width={28} height={28} />} />
+
+  return (
+    <If
+      cond={list.length}
+      else={(
+        <Empty
+          title={t('overviewTasksEmpty')}
+          description={t('overviewTasksEmptyDescription')}
+          icon={<TasksIcon width={28} height={28} />}
+        />
+      )}
+    >
+      <ul className="pl-0">
+        {list.map(task => (
+          <Row
+            key={task.id}
+            task={task}
+            nodes={node.data ?? []}
+            channels={channel.data ?? []}
+            triggers={trigger.data ?? []}
+            subscriptions={subscription.data ?? []}
+            refreshedAt={refreshedAt}
+          />
+        ))}
+      </ul>
+    </If>
+  )
 }
