@@ -1464,7 +1464,9 @@ var MigrationProvider = class {
 	}
 };
 // src/database/index.ts
-const database = new DatabaseSync("data.db");
+const worker = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID;
+const file = worker ? `data.worker-${worker}.db` : "data.db";
+const database = new DatabaseSync(file);
 const connection = new Kysely({ dialect: new NodeSqliteDialect({ database }) });
 const db = Object.assign(connection, {
 	channel: new Channel(connection),
@@ -3866,7 +3868,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DnwWm2Jt.js");
+			const { shell } = await import("./shell-BalW06P-.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3875,7 +3877,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DnwWm2Jt.js");
+			const { shell } = await import("./shell-BalW06P-.js");
 			await shell.refresh();
 			return view;
 		});

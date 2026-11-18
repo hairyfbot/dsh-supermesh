@@ -62,8 +62,10 @@ export const openNexusMainSession: BrowserCommand<[], { sessionId: string, panel
     session.previewDismissed = true
   }
   await page.getByRole('button', { name: 'Nexus', exact: true }).click()
+  const openMain = page.getByRole('button', { name: /^(?:打开主会话|Open main session)$/u })
+  await openMain.waitFor({ state: 'visible' })
   const created = page.waitForResponse(response => new URL(response.url()).pathname === '/api/nexus/session/main' && response.request().method() === 'PUT')
-  await page.getByRole('button', { name: /^(?:打开主会话|Open main session)$/u }).click()
+  await openMain.click()
   const response = await created
   if (response.status() !== 200)
     throw new Error(`main session creation failed: ${await response.text()}`)
