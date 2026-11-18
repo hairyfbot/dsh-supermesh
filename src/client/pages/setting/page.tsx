@@ -107,10 +107,10 @@ export function Setting(): ReactNode {
   const dirty = { general: generalDirty, projects: false, agents: false, execution: executionDirty, delivery: deliveryDirty }
   let content: ReactNode
   if (setting.error) {
-    content = <p role="alert" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{setting.error.message || '设置加载失败'}</p>
+    content = <p role="alert" className="m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{setting.error.message || '设置加载失败'}</p>
   }
   else if (!draft || !baseline) {
-    content = <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">正在载入设置…</p>
+    content = <p role="status" className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">正在载入设置…</p>
   }
   else {
     content = (
@@ -128,25 +128,25 @@ export function Setting(): ReactNode {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="m-0 text-base font-medium">{t('tabSettings')}</h2>
-          <p className="m-0 mt-1.5 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingDescription')}</p>
+          <p className="m-0 mt-1.5 text-[13px] leading-5 text-(--dsw-alias-label-secondary)">{t('settingDescription')}</p>
         </div>
       </header>
       <div className="grid min-w-0 gap-4 @min-[740px]:grid-cols-[160px_minmax(0,1fr)] @min-[940px]:gap-5">
         <aside className="self-start @min-[740px]:sticky @min-[740px]:top-4">
-          <nav aria-label={t('settingNavigation')} className="flex flex-wrap gap-1 rounded-xl bg-[var(--dsw-alias-card-fill)] p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0">
+          <nav aria-label={t('settingNavigation')} className="flex flex-wrap gap-1 rounded-xl bg-(--dsw-alias-card-fill) p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0">
             {sections.map(section => (
-              <button key={section.value} id={`${id}-${section.value}`} type="button" aria-current={activeSection === section.value ? 'page' : undefined} aria-controls={`${id}-content`} onClick={() => setSettingSection(section.value)} className={`flex cursor-pointer items-center gap-2.5 rounded-lg border-0 px-3 py-2.5 text-left font-[inherit] text-xs outline-none transition-colors focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${activeSection === section.value ? 'bg-[var(--dsw-alias-card-fill)] font-medium text-[var(--dsw-alias-label-primary)]' : 'bg-transparent text-[var(--dsw-alias-label-secondary)] hover:bg-[var(--dsw-alias-card-fill)]'}`}>
+              <button key={section.value} id={`${id}-${section.value}`} type="button" aria-current={activeSection === section.value ? 'page' : undefined} aria-controls={`${id}-content`} onClick={() => setSettingSection(section.value)} className={`flex cursor-pointer items-center gap-2.5 rounded-lg border-0 px-3 py-2.5 text-left font-[inherit] text-xs outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--dsw-alias-state-business-primary) ${activeSection === section.value ? 'bg-(--dsw-alias-card-fill) font-medium text-(--dsw-alias-label-primary)' : 'bg-transparent text-(--dsw-alias-label-secondary) hover:bg-(--dsw-alias-card-fill)'}`}>
                 <section.icon width={16} height={16} />
                 <span>{t(section.label)}</span>
-                {dirty[section.value] && <span className="ml-auto size-1.5 rounded-full bg-[var(--dsw-alias-state-business-primary)]" aria-label={t('settingUnsaved')} />}
+                {dirty[section.value] && <span className="ml-auto size-1.5 rounded-full bg-(--dsw-alias-state-business-primary)" aria-label={t('settingUnsaved')} />}
               </button>
             ))}
           </nav>
         </aside>
         <div id={`${id}-content`} role="region" aria-labelledby={`${id}-${activeSection}`} className="flex min-w-0 flex-col gap-4">
           {content}
-          {invalid ? <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingInvalid')}</p> : notice && !failed && <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t(notices[notice])}</p>}
-          <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">
+          {invalid ? <p role="alert" className="m-0 text-xs text-(--dsw-alias-state-error-primary)">{t('settingInvalid')}</p> : notice && !failed && <p role="status" className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t(notices[notice])}</p>}
+          <p className="m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">
             {t('settingPreview')}
             {(generalDirty || executionDirty || deliveryDirty) && <span className="ml-1">{t('settingUnsaved')}</span>}
           </p>

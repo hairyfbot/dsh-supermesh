@@ -5253,30 +5253,22 @@ function GitForkIcon(props) {
 	} else t5 = $[6];
 	return t5;
 }
-function UserShieldIcon(props) {
-	const $ = (0, import_dist.c)(5);
+function Layers2Icon(props) {
+	const $ = (0, import_dist.c)(4);
 	let t0;
 	let t1;
-	let t2;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 15H6a4 4 0 0 0-4 4v2" });
-		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 17.5c0 2.499-1.75 3.749-3.83 4.474a.5.5 0 0 1-.335-.005c-2.085-.72-3.835-1.97-3.835-4.47V14a.5.5 0 0 1 .5-.499c1 0 2.25-.6 3.12-1.36a.6.6 0 0 1 .76-.001c.875.765 2.12 1.36 3.12 1.36a.5.5 0 0 1 .5.5z" });
-		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-			cx: "9",
-			cy: "7",
-			r: "4"
-		});
+		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M13 13.74a2 2 0 0 1-2 0L2.5 8.87a1 1 0 0 1 0-1.74L11 2.26a2 2 0 0 1 2 0l8.5 4.87a1 1 0 0 1 0 1.74z" });
+		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m20 14.285 1.5.845a1 1 0 0 1 0 1.74L13 21.74a2 2 0 0 1-2 0l-8.5-4.87a1 1 0 0 1 0-1.74l1.5-.845" });
 		$[0] = t0;
 		$[1] = t1;
-		$[2] = t2;
 	} else {
 		t0 = $[0];
 		t1 = $[1];
-		t2 = $[2];
 	}
-	let t3;
-	if ($[3] !== props) {
-		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
+	let t2;
+	if ($[2] !== props) {
+		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
 			width: 16,
 			height: 16,
 			xmlns: "http://www.w3.org/2000/svg",
@@ -5288,16 +5280,12 @@ function UserShieldIcon(props) {
 			strokeLinejoin: "round",
 			"aria-hidden": "true",
 			...props,
-			children: [
-				t0,
-				t1,
-				t2
-			]
+			children: [t0, t1]
 		});
-		$[3] = props;
-		$[4] = t3;
-	} else t3 = $[4];
-	return t3;
+		$[2] = props;
+		$[3] = t2;
+	} else t2 = $[3];
+	return t2;
 }
 function UsersRoundIcon(props) {
 	const $ = (0, import_dist.c)(5);
@@ -7131,7 +7119,7 @@ function useTranslation() {
 function Empty({ title, description, icon, children, compact = false, inline = false, className = "" }) {
 	if (inline) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 		role: "status",
-		className: `m-0 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)] ${className}`,
+		className: `m-0 text-[13px] leading-5 text-(--dsw-alias-label-secondary) ${className}`,
 		children: [
 			icon && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				"aria-hidden": "true",
@@ -7148,7 +7136,7 @@ function Empty({ title, description, icon, children, compact = false, inline = f
 	});
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 		role: "status",
-		className: `${compact ? "flex min-w-0 flex-col gap-1 text-left text-[13px] leading-5" : "flex min-h-36 flex-col items-center justify-center gap-2 px-5 py-8 text-center"} text-[var(--dsw-alias-label-tertiary)] ${className}`,
+		className: `${compact ? "flex min-w-0 flex-col gap-1 text-left text-[13px] leading-5" : "flex min-h-36 flex-col items-center justify-center gap-2 px-5 py-8 text-center"} text-(--dsw-alias-label-tertiary) ${className}`,
 		children: [
 			icon && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				"aria-hidden": "true",
@@ -7156,7 +7144,7 @@ function Empty({ title, description, icon, children, compact = false, inline = f
 				children: icon
 			}),
 			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: `m-0 text-[var(--dsw-alias-label-secondary)] ${compact ? "text-[13px] leading-5" : "text-sm font-medium"}`,
+				className: `m-0 text-(--dsw-alias-label-secondary) ${compact ? "text-[13px] leading-5" : "text-sm font-medium"}`,
 				children: title
 			}),
 			description && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
@@ -7174,7 +7162,7 @@ function DetailHeader({ name, icon, supported = true, actions }) {
 		className: "flex flex-wrap items-center gap-3",
 		children: [
 			/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "flex size-11 items-center justify-center rounded-xl bg-[var(--dsw-alias-card-fill)]",
+				className: "flex size-11 items-center justify-center rounded-xl bg-(--dsw-alias-card-fill)",
 				children: icon
 			}),
 			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -7183,7 +7171,7 @@ function DetailHeader({ name, icon, supported = true, actions }) {
 					className: "m-0 text-base font-medium",
 					children: name
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 text-xs text-[var(--dsw-alias-label-secondary)]",
+					className: "m-0 text-xs text-(--dsw-alias-label-secondary)",
 					children: t("channelSettings")
 				})]
 			}),
@@ -7206,7 +7194,10 @@ function FeishuDetail() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.channel,
-			queryFn: _temp$28
+			queryFn: _temp$28,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[0] = t0;
 	} else t0 = $[0];
@@ -7240,7 +7231,7 @@ function FeishuDetail() {
 	if ($[6] !== error) {
 		t5 = error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 			children: `渠道列表加载失败：${error.message}`
 		});
 		$[6] = error;
@@ -7264,7 +7255,7 @@ function FeishuDetail() {
 			compact: true,
 			title: t6,
 			description: t7,
-			className: "rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-6"
+			className: "rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-6"
 		});
 		$[12] = t6;
 		$[13] = t7;
@@ -7306,7 +7297,7 @@ function Section$1(t0) {
 	let t2;
 	if ($[2] !== description) {
 		t2 = description && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: description
 		});
 		$[2] = description;
@@ -7325,7 +7316,7 @@ function Section$1(t0) {
 	let t4;
 	if ($[7] !== children || $[8] !== t3) {
 		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "flex min-w-0 flex-col gap-4 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-5",
+			className: "flex min-w-0 flex-col gap-4 rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-5",
 			children: [t3, children]
 		});
 		$[7] = children;
@@ -7354,7 +7345,7 @@ function Environment(t0) {
 	let t3;
 	if ($[4] !== t2) {
 		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
-			className: "text-xs text-[var(--dsw-alias-label-secondary)]",
+			className: "text-xs text-(--dsw-alias-label-secondary)",
 			children: t2
 		});
 		$[4] = t2;
@@ -7369,7 +7360,7 @@ function Environment(t0) {
 	let t5;
 	if ($[8] !== t4) {
 		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-			className: "m-0 break-all rounded-lg bg-[var(--dsw-alias-card-fill)] px-3 py-2 font-mono text-xs",
+			className: "m-0 break-all rounded-lg bg-(--dsw-alias-card-fill) px-3 py-2 font-mono text-xs",
 			children: t4
 		});
 		$[8] = t4;
@@ -7394,7 +7385,7 @@ function Environment(t0) {
 	let t8;
 	if ($[15] !== t7) {
 		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t7
 		});
 		$[15] = t7;
@@ -7403,7 +7394,7 @@ function Environment(t0) {
 	let t9;
 	if ($[17] !== description) {
 		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: description
 		});
 		$[17] = description;
@@ -7434,7 +7425,7 @@ function Environment(t0) {
 	let t12;
 	if ($[26] !== t11) {
 		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 px-1 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "m-0 px-1 text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t11
 		});
 		$[26] = t11;
@@ -7458,7 +7449,10 @@ function GithubDetail() {
 	const client = useQueryClient();
 	const channels = useQuery({
 		queryKey: keys.channel,
-		queryFn: () => getApiSupermeshChannel()
+		queryFn: () => getApiSupermeshChannel(),
+		staleTime: 0,
+		gcTime: 0,
+		refetchOnMount: "always"
 	});
 	const channel_0 = channels.data?.find((channel) => channel.id === "github");
 	const id = (0, react.useId)();
@@ -7656,7 +7650,7 @@ function GithubDetail() {
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "outline",
-					className: "border-[var(--dsw-alias-state-error-primary)] text-[var(--dsw-alias-state-error-primary)]",
+					className: "border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)",
 					disabled: busy,
 					onClick: openDelete,
 					children: t("channelDelete")
@@ -7671,11 +7665,11 @@ function GithubDetail() {
 			] })
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-3 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-4 py-3 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t("channelGithubAvailability")
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-xs text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-xs text-(--dsw-alias-label-secondary)",
 			children: t("channelSingleAccount")
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -7723,11 +7717,11 @@ function GithubDetail() {
 							})]
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+							className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 							children: t("channelCommitHelp")
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: "flex flex-col gap-3 border-t border-[var(--dsw-alias-border-l3)] pt-4",
+							className: "flex flex-col gap-3 border-t border-(--dsw-alias-border-l3) pt-4",
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 								className: "max-w-full overflow-x-auto",
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
@@ -7743,10 +7737,10 @@ function GithubDetail() {
 								role: "tabpanel",
 								"aria-labelledby": `${id}-${method}`,
 								tabIndex: 0,
-								className: "flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+								className: "flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
 								children: method === "authorize" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+										className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 										children: t("channelGithubAuthorizeDescription")
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -7784,12 +7778,12 @@ function GithubDetail() {
 										href: verificationUri,
 										target: "_blank",
 										rel: "noopener noreferrer",
-										className: "text-xs text-[var(--dsw-alias-state-business-primary)] underline",
+										className: "text-xs text-(--dsw-alias-state-business-primary) underline",
 										children: t("channelAuthOpenVerification")
 									}),
 									authentication?.output && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
 										"aria-label": t("channelAuthOutput"),
-										className: "m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-[var(--dsw-alias-card-fill)] px-3 py-2 font-mono text-xs leading-5",
+										className: "m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-(--dsw-alias-card-fill) px-3 py-2 font-mono text-xs leading-5",
 										children: authentication.output
 									})
 								] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
@@ -7811,7 +7805,7 @@ function GithubDetail() {
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 										id: `${id}-token-help`,
-										className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+										className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 										children: t("channelTokenDescription")
 									})
 								] })
@@ -7824,7 +7818,7 @@ function GithubDetail() {
 						}),
 						deleteNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 							role: "status",
-							className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+							className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 							children: deleteNotice
 						}),
 						dirty && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -7860,7 +7854,7 @@ function GithubDetail() {
 				children: t("channelCancel")
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "primary",
-				className: "border-[var(--dsw-alias-state-error-primary)] text-[var(--dsw-alias-state-error-primary)]",
+				className: "border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)",
 				disabled: deletion === "deleting",
 				onClick: () => void deleteCredentials(),
 				children: t(deletion === "deleting" ? "channelDeleting" : "channelDeleteConfirm")
@@ -7874,7 +7868,10 @@ function GitlabDetail() {
 	const client = useQueryClient();
 	const channels = useQuery({
 		queryKey: keys.channel,
-		queryFn: () => getApiSupermeshChannel()
+		queryFn: () => getApiSupermeshChannel(),
+		staleTime: 0,
+		gcTime: 0,
+		refetchOnMount: "always"
 	});
 	const channel_0 = channels.data?.find((channel) => channel.id === "gitlab");
 	const [expectedAccount, setExpectedAccount] = (0, react.useState)(channel_0?.expectedAccount ?? "");
@@ -8116,7 +8113,7 @@ function GitlabDetail() {
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 					size: "sm",
 					variant: "outline",
-					className: "[--dsh-button-outline-color:var(--dsw-alias-state-error-primary)] text-[var(--dsw-alias-state-error-primary)]!",
+					className: "[--dsh-button-outline-color:var(--dsw-alias-state-error-primary)] text-(--dsw-alias-state-error-primary)!",
 					disabled: busy,
 					onClick: openDelete,
 					children: t("channelDelete")
@@ -8144,18 +8141,18 @@ function GitlabDetail() {
 				children: t("channelCancel")
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 				variant: "outline",
-				className: "[--dsh-button-outline-color:var(--dsw-alias-state-error-primary)] text-[var(--dsw-alias-state-error-primary)]!",
+				className: "[--dsh-button-outline-color:var(--dsw-alias-state-error-primary)] text-(--dsw-alias-state-error-primary)!",
 				disabled: deleting,
 				onClick: () => void deleteCredential(),
 				children: t(deleting ? "channelDeleting" : "channelDeleteConfirm")
 			})] })
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-3 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-4 py-3 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t("channelGitlabAvailability")
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-xs text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-xs text-(--dsw-alias-label-secondary)",
 			children: t("channelSingleAccount")
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -8190,13 +8187,13 @@ function GitlabDetail() {
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								id: `${id}-host-help`,
-								className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+								className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 								children: t("channelHostHelp")
 							}),
 							hostInvalid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								id: `${id}-host-error`,
 								role: "alert",
-								className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+								className: "m-0 text-xs text-(--dsw-alias-state-error-primary)",
 								children: t("channelHostInvalid")
 							})
 						]
@@ -8226,7 +8223,7 @@ function GitlabDetail() {
 								}),
 								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 									id: `${id}-username-help`,
-									className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+									className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 									children: t("channelLoginNameHelp")
 								})
 							]
@@ -8268,11 +8265,11 @@ function GitlabDetail() {
 							})]
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+							className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 							children: t("channelCommitHelp")
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: "flex flex-col gap-3 border-t border-[var(--dsw-alias-border-l3)] pt-4",
+							className: "flex flex-col gap-3 border-t border-(--dsw-alias-border-l3) pt-4",
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 								className: "max-w-full overflow-x-auto",
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
@@ -8288,10 +8285,10 @@ function GitlabDetail() {
 								role: "tabpanel",
 								"aria-labelledby": `${id}-${method}`,
 								tabIndex: 0,
-								className: "flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+								className: "flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
 								children: method === "authorize" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+										className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 										children: t("channelGitlabAuthorizeDescription")
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -8329,12 +8326,12 @@ function GitlabDetail() {
 										href: verificationUri,
 										target: "_blank",
 										rel: "noopener noreferrer",
-										className: "text-xs text-[var(--dsw-alias-state-business-primary)] underline",
+										className: "text-xs text-(--dsw-alias-state-business-primary) underline",
 										children: t("channelAuthOpenVerification")
 									}),
 									authentication?.output && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
 										"aria-label": t("channelAuthOutput"),
-										className: "m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-[var(--dsw-alias-card-fill)] px-3 py-2 font-mono text-xs leading-5",
+										className: "m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-(--dsw-alias-card-fill) px-3 py-2 font-mono text-xs leading-5",
 										children: authentication.output
 									})
 								] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
@@ -8356,7 +8353,7 @@ function GitlabDetail() {
 									}),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 										id: `${id}-token-help`,
-										className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+										className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 										children: t("channelGitlabTokenDescription")
 									})
 								] })
@@ -8585,11 +8582,11 @@ function Card(t0) {
 			$[31] = t16;
 		} else t16 = $[31];
 		t13 = `${name} · ${t16}`;
-		t14 = "group flex min-h-48 min-w-0 cursor-pointer flex-col gap-4 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-5 text-left font-[inherit] outline-none transition-colors hover:border-[var(--dsw-alias-border-l1)] hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]";
+		t14 = "group flex min-h-48 min-w-0 cursor-pointer flex-col gap-4 rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-5 text-left font-[inherit] outline-none transition-colors hover:border-(--dsw-alias-border-l1) hover:bg-(--dsw-alias-card-fill) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)";
 		let t17;
 		if ($[32] !== Icon) {
 			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "flex size-11 items-center justify-center rounded-xl bg-[var(--dsw-alias-card-fill)]",
+				className: "flex size-11 items-center justify-center rounded-xl bg-(--dsw-alias-card-fill)",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 					width: 27,
 					height: 27
@@ -8620,13 +8617,13 @@ function Card(t0) {
 		t9 = "flex min-w-0 flex-col gap-1.5";
 		if ($[39] !== name) {
 			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "text-sm font-medium text-[var(--dsw-alias-label-primary)]",
+				className: "text-sm font-medium text-(--dsw-alias-label-primary)",
 				children: name
 			});
 			$[39] = name;
 			$[40] = t10;
 		} else t10 = $[40];
-		t7 = "text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
+		t7 = "text-xs leading-5 text-(--dsw-alias-label-secondary)";
 		t8 = t(description[kind]);
 		$[11] = Icon;
 		$[12] = isLoading;
@@ -8680,10 +8677,10 @@ function Card(t0) {
 	if ($[48] !== error || $[49] !== kind || $[50] !== t) {
 		t18 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			role: "alert",
-			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			className: "mt-auto text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 			children: `渠道列表加载失败：${error.message}`
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "mt-auto text-xs text-[var(--dsw-alias-state-business-primary)] underline-offset-4 group-hover:underline",
+			className: "mt-auto text-xs text-(--dsw-alias-state-business-primary) underline-offset-4 group-hover:underline",
 			children: t(kind === "feishu" ? "channelUnsupported" : "channelConfigure")
 		});
 		$[48] = error;
@@ -8746,7 +8743,7 @@ function Channel() {
 	let t3;
 	if ($[6] !== t2) {
 		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-[13px] leading-5 text-(--dsw-alias-label-secondary)",
 			children: t2
 		});
 		$[6] = t2;
@@ -8783,7 +8780,7 @@ function Channel() {
 	let t7;
 	if ($[14] !== t6) {
 		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "m-0 text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t6
 		});
 		$[14] = t6;
@@ -59266,7 +59263,7 @@ function SummaryCard(t0) {
 	let t2;
 	if ($[2] !== meta) {
 		t2 = meta && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "shrink-0 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
+			className: "shrink-0 text-xs font-normal text-(--dsw-alias-label-tertiary)",
 			children: meta
 		});
 		$[2] = meta;
@@ -59300,7 +59297,7 @@ function SummaryCard(t0) {
 			variant: "ghost",
 			"aria-label": actionLabel,
 			onClick: onMore,
-			className: "shrink-0 text-xs! text-[var(--dsw-alias-label-tertiary)]!",
+			className: "shrink-0 text-xs! text-(--dsw-alias-label-tertiary)!",
 			children: t4
 		});
 		$[10] = actionLabel;
@@ -59330,7 +59327,7 @@ function SummaryCard(t0) {
 	let t8;
 	if ($[19] !== background || $[20] !== t6 || $[21] !== t7) {
 		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "relative isolate flex min-w-0 flex-col overflow-hidden @min-[800px]:min-h-[161px] rounded-[20px] border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-2 px-5 shadow-[0_1px_2px_#00000004]",
+			className: "relative isolate flex min-w-0 flex-col overflow-hidden @min-[800px]:min-h-[161px] rounded-[20px] border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-2 px-5 shadow-[0_1px_2px_#00000004]",
 			children: [
 				background,
 				t6,
@@ -59438,11 +59435,11 @@ function ActivityCard(t0) {
 	if ($[21] !== error || $[22] !== isLoading || $[23] !== metrics || $[24] !== t) {
 		t11 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
-			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			className: "mt-auto text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 			children: error instanceof Error ? error.message : "触发记录加载失败"
 		}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
-			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "mt-auto text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 			children: "加载中…"
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 			"aria-label": `${t("overviewReceived")} ${metrics.rate}${t("overviewPerHour")}`,
@@ -59451,11 +59448,11 @@ function ActivityCard(t0) {
 				className: "text-[32px] leading-10 font-semibold tracking-tight",
 				children: metrics.rate
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "text-sm text-[var(--dsw-alias-label-secondary)]",
+				className: "text-sm text-(--dsw-alias-label-secondary)",
 				children: t("overviewPerHour")
 			})]
 		}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dl", {
-			className: "mt-auto flex flex-col gap-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "mt-auto flex flex-col gap-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "flex gap-2",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", { children: t("overviewTotalMessages") }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
@@ -59558,7 +59555,7 @@ function AskCard() {
 				t6 = null;
 				break bb0;
 			}
-			t2 = "flex flex-col rounded-2xl border border-[var(--dsw-alias-border-l3)] p-5";
+			t2 = "flex flex-col rounded-2xl border border-(--dsw-alias-border-l3) p-5";
 			t3 = "待答问题";
 			if ($[14] === Symbol.for("react.memo_cache_sentinel")) {
 				t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", {
@@ -59570,7 +59567,7 @@ function AskCard() {
 			let t8;
 			if ($[15] !== answer || $[16] !== submit) {
 				t8 = (message_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-					className: "mt-3 flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3",
+					className: "mt-3 flex flex-col gap-2 border-t border-(--dsw-alias-border-l3) pt-3",
 					onSubmit: (event) => {
 						event.preventDefault();
 						const form = event.currentTarget;
@@ -59682,7 +59679,7 @@ function ChannelTile(t0) {
 		$[0] = t1;
 	} else t1 = $[0];
 	const Icon = t1[channel.kind];
-	const t2 = `relative flex min-w-0 flex-col items-center justify-center gap-3 rounded-xl py-3.5 ${channel.connected ? "bg-[var(--dsw-alias-card-fill)]" : "text-[var(--dsw-alias-label-tertiary)]"}`;
+	const t2 = `relative flex min-w-0 flex-col items-center justify-center gap-3 rounded-xl py-3.5 ${channel.connected ? "bg-(--dsw-alias-card-fill)" : "text-(--dsw-alias-label-tertiary)"}`;
 	const t3 = channel.connected ? "" : "opacity-50";
 	let t4;
 	if ($[1] !== Icon || $[2] !== t3) {
@@ -59799,11 +59796,11 @@ function ChannelCard(t0) {
 		t6 = onMore;
 		t7 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
-			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			className: "mt-auto text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 			children: error instanceof Error ? error.message : "渠道列表加载失败"
 		}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
-			className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "mt-auto text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 			children: "加载中…"
 		}) : items.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "mt-auto grid min-h-[83px] grid-cols-3 gap-2.5",
@@ -59846,7 +59843,7 @@ function ChannelCard(t0) {
 	let t9;
 	if ($[20] !== t8) {
 		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mt-auto pt-3 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "mt-auto pt-3 text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t8
 		});
 		$[20] = t8;
@@ -59954,7 +59951,7 @@ function TaskChart(t0) {
 	let t3;
 	if ($[7] !== t1 || $[8] !== t2) {
 		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("figure", {
-			className: "pointer-events-none size-[100px] shrink-0 [&_*]:outline-none",
+			className: "pointer-events-none size-25 shrink-0 [&_*]:outline-none",
 			role: "img",
 			"aria-label": t1,
 			children: t2
@@ -60063,11 +60060,11 @@ function TaskCard(t0) {
 			onMore,
 			children: error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "alert",
-				className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+				className: "mt-auto text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 				children: error instanceof Error ? error.message : "任务列表加载失败"
 			}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "status",
-				className: "mt-auto text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+				className: "mt-auto text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 				children: "加载中…"
 			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "flex min-h-0 flex-1 items-center justify-between gap-3",
@@ -60079,11 +60076,11 @@ function TaskCard(t0) {
 							className: "text-[32px] leading-10 font-semibold tracking-tight",
 							children: added
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-[var(--dsw-alias-label-secondary)]",
+							className: "text-xs text-(--dsw-alias-label-secondary)",
 							children: t("overviewAdded")
 						})]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dl", {
-						className: "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						className: "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 						children: segments.map((segment_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: "col-span-2 grid grid-cols-subgrid items-center whitespace-nowrap",
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dt", {
@@ -60392,18 +60389,18 @@ function GraphNodeCard(t0) {
 		} else t12 = $[24];
 		t7 = `${t11}${node.subtitle ? ` ${node.subtitle}` : ""}${t12}${status ? ` ${t(status.label)}` : ""}`;
 		t8 = onSelect;
-		t9 = `flex h-full w-full items-center gap-3 rounded-xl border bg-[var(--dsw-alias-bg-layer-1)] px-3 text-left font-[inherit] shadow-sm outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${node.waiting ? "border-dashed" : ""} ${selected ? "border-[var(--dsw-alias-state-business-primary)]" : "border-[var(--dsw-alias-border-l2)] hover:border-[var(--dsw-alias-border-l1)]"}`;
+		t9 = `flex h-full w-full items-center gap-3 rounded-xl border bg-(--dsw-alias-bg-layer-1) px-3 text-left font-[inherit] shadow-sm outline-none transition-colors focus-visible:outline-2 focus-visible:-outline-offset-3 focus-visible:outline-(--dsw-alias-state-business-primary) ${node.waiting ? "border-dashed" : ""} ${selected ? "border-(--dsw-alias-state-business-primary)" : "border-(--dsw-alias-border-l2) hover:border-(--dsw-alias-border-l1)"}`;
 		if ($[25] !== Icon) {
 			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 				width: 18,
 				height: 18,
-				className: "shrink-0 text-[var(--dsw-alias-label-secondary)]"
+				className: "shrink-0 text-(--dsw-alias-label-secondary)"
 			});
 			$[25] = Icon;
 			$[26] = t10;
 		} else t10 = $[26];
 		t4 = "min-w-0 flex-1";
-		t1 = "flex items-center gap-1.5 text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]";
+		t1 = "flex items-center gap-1.5 text-[13px] leading-5 font-medium text-(--dsw-alias-label-primary)";
 		let t13;
 		if ($[27] !== node.label || $[28] !== t) {
 			t13 = t(node.label);
@@ -60469,7 +60466,7 @@ function GraphNodeCard(t0) {
 	let t12;
 	if ($[36] !== node.status || $[37] !== node.subtitle || $[38] !== node.waiting || $[39] !== t) {
 		t12 = (node.subtitle || node.waiting || node.status === "not_created") && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "block truncate text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "block truncate text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: node.waiting ? t("graphWaiting") : node.subtitle ?? t("graphNotCreated")
 		});
 		$[36] = node.status;
@@ -60582,7 +60579,7 @@ function GraphCanvas(t0) {
 			t17 = "relative";
 			t16 = "overflow-x-auto";
 			t4 = `${left} ${top} ${width} ${height}`;
-			t5 = "block h-[380px] w-full min-w-[1040px] touch-none select-none bg-[var(--dsw-alias-bg-layer-2)]/40 outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dsw-alias-state-business-primary)]";
+			t5 = "block h-95 w-full min-w-260 touch-none select-none bg-(--dsw-alias-bg-layer-2)/40 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)";
 			if ($[52] !== t) {
 				t6 = t("graphTitle");
 				$[52] = t;
@@ -60863,7 +60860,7 @@ function GraphCanvas(t0) {
 		let t29;
 		if ($[110] !== t28) {
 			t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "min-w-10 text-center text-xs tabular-nums text-[var(--dsw-alias-label-secondary)]",
+				className: "min-w-10 text-center text-xs tabular-nums text-(--dsw-alias-label-secondary)",
 				children: t28
 			});
 			$[110] = t28;
@@ -60944,7 +60941,7 @@ function GraphCanvas(t0) {
 		let t39;
 		if ($[129] !== t26 || $[130] !== t29 || $[131] !== t34 || $[132] !== t38) {
 			t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "absolute right-3 bottom-3 flex items-center gap-1 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-1 shadow-sm",
+				className: "absolute right-3 bottom-3 flex items-center gap-1 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-1 shadow-sm",
 				children: [
 					t26,
 					t29,
@@ -61008,7 +61005,7 @@ function GraphCanvas(t0) {
 		let t45;
 		if ($[145] !== t42 || $[146] !== t44) {
 			t45 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+				className: "flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-(--dsw-alias-border-l3) px-5 py-3 text-[11px] text-(--dsw-alias-label-tertiary)",
 				children: [t42, t44]
 			});
 			$[145] = t42;
@@ -61019,7 +61016,7 @@ function GraphCanvas(t0) {
 			t40,
 			t45,
 			selected && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center gap-3 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-xs",
+				className: "flex flex-wrap items-center gap-3 border-t border-(--dsw-alias-border-l3) px-5 py-3 text-xs",
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {
 						width: 16,
@@ -61027,7 +61024,7 @@ function GraphCanvas(t0) {
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [t(selected.label), selected.subtitle ? ` · ${selected.subtitle}` : ""] }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "text-[var(--dsw-alias-label-tertiary)]",
+						className: "text-(--dsw-alias-label-tertiary)",
 						children: t(selected.status === "not_created" ? "graphNotCreated" : selected.status === "queued" ? "graphQueued" : selected.status === "running" ? "graphRunning" : selected.status === "background" ? "graphBackground" : selected.status === "done" ? "graphDone" : selected.status === "cancelled" ? "graphCancelled" : selected.status === "waiting" ? "overviewStatusWaiting" : selected.status === "review" ? "overviewStatusReview" : selected.status === "paused" || selected.status === "error" ? "overviewStatusIntervention" : "graphIdle")
 					}),
 					selected.sessionId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -61167,7 +61164,7 @@ function Graph() {
 	let t9;
 	if ($[17] !== t8) {
 		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mb-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "mb-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t8
 		});
 		$[17] = t8;
@@ -61176,7 +61173,7 @@ function Graph() {
 	let t10;
 	if ($[19] !== t7 || $[20] !== t9) {
 		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-			className: "border-b border-[var(--dsw-alias-border-l3)] px-5 py-2",
+			className: "border-b border-(--dsw-alias-border-l3) px-5 py-2",
 			children: [t7, t9]
 		});
 		$[19] = t7;
@@ -61186,7 +61183,7 @@ function Graph() {
 	let t11;
 	if ($[22] !== error || $[23] !== groups || $[24] !== isLoading || $[25] !== laid || $[26] !== list || $[27] !== t) {
 		t11 = error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-			className: "min-h-[380px]",
+			className: "min-h-95",
 			title: t("graphUnavailable"),
 			description: error instanceof Error ? error.message : t("graphUnavailableDescription"),
 			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {
@@ -61198,7 +61195,7 @@ function Graph() {
 			edges: list,
 			groups: groups ?? []
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
-			className: "min-h-[380px]",
+			className: "min-h-95",
 			title: t(isLoading ? "graphLoading" : "graphEmpty"),
 			description: isLoading ? void 0 : t("graphEmptyDescription"),
 			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AgentIcon, {
@@ -61217,7 +61214,7 @@ function Graph() {
 	let t12;
 	if ($[29] !== t10 || $[30] !== t11) {
 		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "mt-4 overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+			className: "mt-4 overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)",
 			children: [t10, t11]
 		});
 		$[29] = t10;
@@ -61440,11 +61437,11 @@ function Row$1(t0) {
 			$[49] = t14;
 		} else t14 = $[49];
 		duration = t14;
-		t10 = "flex flex-col gap-3 border-b border-[var(--dsw-alias-border-l3)] py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5";
+		t10 = "flex flex-col gap-3 border-b border-(--dsw-alias-border-l3) py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5";
 		t8 = "flex min-w-0 items-start gap-3";
 		if ($[50] === Symbol.for("react.memo_cache_sentinel")) {
 			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "mt-0.5 text-[var(--dsw-alias-label-tertiary)]",
+				className: "mt-0.5 text-(--dsw-alias-label-tertiary)",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
 					width: 17,
 					height: 17
@@ -61456,7 +61453,7 @@ function Row$1(t0) {
 		let t15;
 		if ($[51] !== task.id) {
 			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "mr-2 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
+				className: "mr-2 text-xs font-normal text-(--dsw-alias-label-tertiary)",
 				children: task.id
 			});
 			$[51] = task.id;
@@ -61471,7 +61468,7 @@ function Row$1(t0) {
 			$[54] = task.title;
 			$[55] = t7;
 		} else t7 = $[55];
-		t5 = "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]";
+		t5 = "mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)";
 		T0 = _deepseek_ai_dsh_client_ui_primitives.Tag;
 		t3 = intervention ? "danger" : status[task.status].tone;
 		t4 = t(task.paused ? "ticketStatusPaused" : task.prepareError ? "overviewStatusIntervention" : status[task.status].label);
@@ -61746,7 +61743,7 @@ function TaskList() {
 		if ($[5] !== t5) {
 			t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "alert",
-				className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+				className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 				children: t5
 			});
 			$[5] = t5;
@@ -61759,7 +61756,7 @@ function TaskList() {
 		if ($[7] === Symbol.for("react.memo_cache_sentinel")) {
 			t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "status",
-				className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]",
+				className: "m-0 text-xs leading-5 text-(--dsw-alias-label-tertiary)",
 				children: "加载中…"
 			});
 			$[7] = t5;
@@ -62004,7 +62001,7 @@ function TaskViewCard() {
 			role: "tabpanel",
 			"aria-labelledby": t17,
 			tabIndex: 0,
-			className: "rounded-2xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+			className: "rounded-2xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
 			children: t18
 		});
 		$[31] = t16;
@@ -62242,19 +62239,19 @@ function Agents() {
 	const failedMessage = models.error?.message ?? catalog.error?.message;
 	if ((models.isLoading || catalog.isLoading) && !failedMessage) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 		role: "status",
-		className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+		className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 		children: t("settingAgentsLoading")
 	});
 	if (!models.data || !catalog.data) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 		role: "alert",
-		className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+		className: "m-0 text-xs text-(--dsw-alias-state-error-primary)",
 		children: t("settingAgentsCatalogError", { error: failedMessage ?? "" })
 	});
 	const catalogue_0 = catalog.data;
 	const current = models.data;
 	const fallback = catalogue_0.default;
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+		className: "overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)",
 		"aria-labelledby": "supermesh-agents",
 		children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 			className: "px-4 py-3",
@@ -62265,28 +62262,28 @@ function Agents() {
 					children: t("settingAgents")
 				}),
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					className: "m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 					children: t("settingAgentsHelp")
 				}),
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+					className: "m-0 mt-1.5 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 					children: fallback ? t("settingAgentsDefault", { model: `${fallback.provider} / ${fallback.model}${fallback.reasoningEffort ? ` · ${fallback.reasoningEffort}` : ""}` }) : t("settingAgentsDefaultUnavailable")
 				}),
 				catalogue_0.groups.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					role: "status",
-					className: "m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+					className: "m-0 mt-1.5 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 					children: t("settingAgentsEmpty")
 				}),
 				catalog.error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					role: "alert",
-					className: "m-0 mt-1.5 text-xs text-[var(--dsw-alias-state-error-primary)]",
+					className: "m-0 mt-1.5 text-xs text-(--dsw-alias-state-error-primary)",
 					children: t("settingAgentsCatalogError", { error: catalog.error.message })
 				})
 			]
 		}), roles.map(({ role: role_6, label }) => {
 			const entry_5 = current[role_6];
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				className: "flex flex-wrap items-center justify-between gap-3 border-t border-(--dsw-alias-border-l3) px-4 py-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "min-w-0",
 					children: [
@@ -62295,12 +62292,12 @@ function Agents() {
 							children: t(label)
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-							className: "m-0 mt-1 font-mono text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+							className: "m-0 mt-1 font-mono text-[11px] text-(--dsw-alias-label-tertiary)",
 							children: role_6
 						}),
 						failed === role_6 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 							role: "alert",
-							className: "m-0 mt-1 text-xs text-[var(--dsw-alias-state-error-primary)]",
+							className: "m-0 mt-1 text-xs text-(--dsw-alias-state-error-primary)",
 							children: t("settingAgentsFailed")
 						})
 					]
@@ -62320,7 +62317,7 @@ function Agents() {
 							className: "max-w-56 truncate",
 							children: pending === role_6 ? t("channelSaving") : triggerLabel(role_6)
 						}), entry_5?.reasoningEffort && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "ml-1.5 text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+							className: "ml-1.5 text-[11px] text-(--dsw-alias-label-tertiary)",
 							children: effortName(role_6)
 						})]
 					}),
@@ -62449,7 +62446,7 @@ function General(t0) {
 	let t9;
 	if ($[23] !== t8) {
 		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t8
 		});
 		$[23] = t8;
@@ -62523,7 +62520,7 @@ function General(t0) {
 	if ($[44] !== t19 || $[45] !== t20) {
 		t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			id: t19,
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t20
 		});
 		$[44] = t19;
@@ -62534,7 +62531,7 @@ function General(t0) {
 	if ($[47] !== t || $[48] !== valid) {
 		t22 = !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
-			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+			className: "m-0 text-xs text-(--dsw-alias-state-error-primary)",
 			children: t("settingAdministratorsInvalid")
 		});
 		$[47] = t;
@@ -62545,7 +62542,7 @@ function General(t0) {
 	if ($[50] !== failed || $[51] !== t) {
 		t23 = failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
-			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+			className: "m-0 text-xs text-(--dsw-alias-state-error-primary)",
 			children: t("settingGeneralSaveFailed")
 		});
 		$[50] = failed;
@@ -62555,7 +62552,7 @@ function General(t0) {
 	let t24;
 	if ($[53] !== t13 || $[54] !== t18 || $[55] !== t21 || $[56] !== t22 || $[57] !== t23) {
 		t24 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+			className: "flex flex-col gap-2 border-t border-(--dsw-alias-border-l3) px-4 py-3",
 			children: [
 				t13,
 				t18,
@@ -62595,7 +62592,7 @@ function General(t0) {
 	let t28;
 	if ($[65] !== t27) {
 		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t27
 		});
 		$[65] = t27;
@@ -62641,7 +62638,7 @@ function General(t0) {
 	let t34;
 	if ($[79] !== t29 || $[80] !== t33) {
 		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+			className: "flex items-start justify-between gap-5 border-t border-(--dsw-alias-border-l3) px-4 py-3",
 			children: [t29, t33]
 		});
 		$[79] = t29;
@@ -62695,7 +62692,7 @@ function General(t0) {
 	let t42;
 	if ($[94] !== t37 || $[95] !== t41) {
 		t42 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
-			className: "flex flex-wrap items-center justify-end gap-2 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
+			className: "flex flex-wrap items-center justify-end gap-2 border-t border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-4 py-2.5",
 			children: [t37, t41]
 		});
 		$[94] = t37;
@@ -62705,7 +62702,7 @@ function General(t0) {
 	let t43;
 	if ($[97] !== t10 || $[98] !== t24 || $[99] !== t3 || $[100] !== t34 || $[101] !== t4 || $[102] !== t42) {
 		t43 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
-			className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+			className: "overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)",
 			"aria-labelledby": t3,
 			onSubmit: t4,
 			children: [
@@ -62833,7 +62830,7 @@ function AddRepository() {
 		}),
 		notice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 			role: "status",
-			className: "text-xs text-[var(--dsw-alias-label-secondary)]",
+			className: "text-xs text-(--dsw-alias-label-secondary)",
 			children: notice
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
@@ -62880,7 +62877,7 @@ function AddRepository() {
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								id: `${id}-remote-help`,
-								className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+								className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 								children: t("settingRepositoryRemoteHelp")
 							})
 						]
@@ -62906,14 +62903,14 @@ function AddRepository() {
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								id: `${id}-name-help`,
-								className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+								className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 								children: t("settingRepositoryNameHelp")
 							})
 						]
 					}),
 					error && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						role: "alert",
-						className: "m-0 break-words text-xs text-[var(--dsw-alias-state-error-primary)]",
+						className: "m-0 break-words text-xs text-(--dsw-alias-state-error-primary)",
 						children: error
 					})
 				]
@@ -62993,7 +62990,7 @@ function Projects({ onNotice }) {
 	const enabled_0 = candidates.filter((project_3) => Boolean(project_3.enabled)).length;
 	const loadError = projects.error ?? channels.error;
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+		className: "overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)",
 		"aria-labelledby": id,
 		children: [
 			/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
@@ -63014,7 +63011,7 @@ function Projects({ onNotice }) {
 							})
 						})]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-						className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						className: "m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 						children: t("settingProjectsDescription")
 					})]
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -63040,7 +63037,7 @@ function Projects({ onNotice }) {
 				}), refreshedAt && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
 					dateTime: refreshedAt,
 					title: refreshedAt,
-					className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+					className: "text-[11px] text-(--dsw-alias-label-tertiary)",
 					children: [
 						t("settingLastSynced"),
 						" ",
@@ -63055,14 +63052,14 @@ function Projects({ onNotice }) {
 			}),
 			projects.isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "status",
-				className: "px-5 pb-4 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				className: "px-5 pb-4 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 				children: "正在载入项目列表…"
 			}) : visible.length ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 				className: "m-0 list-none p-0",
 				children: visible.map((project_4) => {
 					const pathId = `${id}-path-${project_4.id}`;
 					return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-						className: "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4",
+						className: "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-(--dsw-alias-border-l3) px-5 py-4",
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: "flex min-w-0 flex-1 basis-48 items-start gap-2",
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
@@ -63074,16 +63071,16 @@ function Projects({ onNotice }) {
 									"aria-label": t("settingSelectProject", { name: project_4.name }),
 									"aria-describedby": pathId,
 									onChange: (event_0) => void toggle(project_4.id, event_0.currentTarget.checked),
-									className: "size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]"
+									className: "size-3 cursor-pointer accent-(--dsw-alias-state-business-primary)"
 								})
 							}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: "min-w-0 pt-0.5",
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-									className: "truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]",
+									className: "truncate text-[13px] leading-5 font-medium text-(--dsw-alias-label-primary)",
 									children: project_4.name
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 									id: pathId,
-									className: "m-0 mt-1 truncate font-mono text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+									className: "m-0 mt-1 truncate font-mono text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 									title: project_4.repository.webUrl,
 									children: `${project_4.repository.platform}:${project_4.repository.owner}/${project_4.repository.name}`
 								})]
@@ -63094,7 +63091,7 @@ function Projects({ onNotice }) {
 								href: project_4.repository.webUrl,
 								target: "_blank",
 								rel: "noopener noreferrer",
-								className: "inline-flex h-7 items-center rounded-lg border border-[var(--dsw-alias-border-l3)] px-3 text-xs text-[var(--dsw-alias-label-primary)] no-underline hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+								className: "inline-flex h-7 items-center rounded-lg border border-(--dsw-alias-border-l3) px-3 text-xs text-(--dsw-alias-label-primary) no-underline hover:bg-(--dsw-alias-card-fill) focus-visible:outline-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
 								children: t("settingOpenRepository")
 							})
 						})]
@@ -63102,7 +63099,7 @@ function Projects({ onNotice }) {
 				})
 			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 				compact: true,
-				className: "items-center !gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 !text-center [&>p:first-of-type]:text-xs [&>p:first-of-type]:leading-4 [&>p:first-of-type]:font-medium [&>p:first-of-type]:text-[var(--dsw-alias-label-primary)] [&>p:nth-of-type(2)]:text-[var(--dsw-alias-label-secondary)]",
+				className: "items-center !gap-2 border-t border-(--dsw-alias-border-l3) px-4 py-7 !text-center [&>p:first-of-type]:text-xs [&>p:first-of-type]:leading-4 [&>p:first-of-type]:font-medium [&>p:first-of-type]:text-(--dsw-alias-label-primary) [&>p:nth-of-type(2)]:text-(--dsw-alias-label-secondary)",
 				title: t(normalized ? "settingNoMatchingProjects" : "settingNoProjects"),
 				description: t(normalized ? "settingNoMatchingProjectsHelp" : "settingNoProjectsHelp"),
 				children: normalized && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
@@ -63196,7 +63193,7 @@ function Runtime(t0) {
 				unit: "settingSecondsUnit"
 			}
 		];
-		t4 = "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]";
+		t4 = "overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)";
 		if ($[27] !== dirty || $[28] !== onSave || $[29] !== pending || $[30] !== section || $[31] !== valid || $[32] !== value) {
 			t5 = (event) => {
 				event.preventDefault();
@@ -63242,7 +63239,7 @@ function Runtime(t0) {
 		let t15;
 		if ($[43] !== t14) {
 			t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				className: "m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 				children: t14
 			});
 			$[43] = t14;
@@ -63264,7 +63261,7 @@ function Runtime(t0) {
 			const invalid = !Number.isInteger(current) || current < limits.min || current > limits.max;
 			const id = `${prefix}-${field_0.key}`;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+				className: "flex flex-wrap items-start justify-between gap-x-5 gap-y-3 border-t border-(--dsw-alias-border-l3) px-4 py-3",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "min-w-0 flex-1 basis-52",
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
@@ -63273,7 +63270,7 @@ function Runtime(t0) {
 						children: t(field_0.label)
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						id: `${id}-help`,
-						className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-(--dsw-alias-label-secondary)",
 						children: t(field_0.help)
 					})]
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
@@ -63294,12 +63291,12 @@ function Runtime(t0) {
 							onChange: (event_0) => onChange({ [field_0.key]: event_0.currentTarget.value === "" ? NaN : Number(event_0.currentTarget.value) }),
 							className: "w-24 !text-xs"
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
+							className: "text-xs text-(--dsw-alias-label-tertiary)",
 							children: t(field_0.unit)
 						})]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						id: `${id}-range`,
-						className: `mt-1.5 block text-[11px] ${invalid && !disabled ? "text-[var(--dsw-alias-state-error-primary)]" : "text-[var(--dsw-alias-label-tertiary)]"}`,
+						className: `mt-1.5 block text-[11px] ${invalid && !disabled ? "text-(--dsw-alias-state-error-primary)" : "text-(--dsw-alias-label-tertiary)"}`,
 						children: t("settingRange", {
 							min: limits.min,
 							max: limits.max
@@ -63332,14 +63329,14 @@ function Runtime(t0) {
 	let t9;
 	if ($[48] !== onChange || $[49] !== pending || $[50] !== section || $[51] !== t || $[52] !== value.autoMerge) {
 		t9 = section === "execution" && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3",
+			className: "flex items-start justify-between gap-5 border-t border-(--dsw-alias-border-l3) px-4 py-3",
 			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "min-w-0",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h4", {
 					className: "m-0 text-xs font-medium",
 					children: t("settingAutoMerge")
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					className: "m-0 mt-1.5 max-w-lg text-xs leading-5 text-(--dsw-alias-label-secondary)",
 					children: t("settingAutoMergeHelp")
 				})]
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Switch, {
@@ -63376,7 +63373,7 @@ function Runtime(t0) {
 	let t12;
 	if ($[59] !== t11) {
 		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t11
 		});
 		$[59] = t11;
@@ -63386,7 +63383,7 @@ function Runtime(t0) {
 	if ($[61] !== dirty || $[62] !== t || $[63] !== valid) {
 		t13 = dirty && !valid && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
-			className: "m-0 mt-1 text-[11px] leading-5 text-[var(--dsw-alias-state-error-primary)]",
+			className: "m-0 mt-1 text-[11px] leading-5 text-(--dsw-alias-state-error-primary)",
 			children: t("settingInvalid")
 		});
 		$[61] = dirty;
@@ -63459,7 +63456,7 @@ function Runtime(t0) {
 	let t22;
 	if ($[82] !== t14 || $[83] !== t21) {
 		t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("footer", {
-			className: "flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5",
+			className: "flex flex-wrap items-center justify-between gap-3 border-t border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-4 py-2.5",
 			children: [t14, t21]
 		});
 		$[82] = t14;
@@ -63748,7 +63745,7 @@ function Setting() {
 				if ($[81] !== t30) {
 					t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						role: "alert",
-						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+						className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 						children: t30
 					});
 					$[81] = t30;
@@ -63760,7 +63757,7 @@ function Setting() {
 				if ($[83] === Symbol.for("react.memo_cache_sentinel")) {
 					t30 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						role: "status",
-						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 						children: "正在载入设置…"
 					});
 					$[83] = t30;
@@ -63943,7 +63940,7 @@ function Setting() {
 			let t33;
 			if ($[135] !== t32) {
 				t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 mt-1.5 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
+					className: "m-0 mt-1.5 text-[13px] leading-5 text-(--dsw-alias-label-secondary)",
 					children: t32
 				});
 				$[135] = t32;
@@ -63965,14 +63962,14 @@ function Setting() {
 				$[140] = t;
 				$[141] = t26;
 			} else t26 = $[141];
-			t27 = "flex flex-wrap gap-1 rounded-xl bg-[var(--dsw-alias-card-fill)] p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0";
+			t27 = "flex flex-wrap gap-1 rounded-xl bg-(--dsw-alias-card-fill) p-1 @min-[740px]:flex-col @min-[740px]:bg-transparent @min-[740px]:p-0";
 			t28 = sections.map((section_1) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				id: `${id}-${section_1.value}`,
 				type: "button",
 				"aria-current": activeSection === section_1.value ? "page" : void 0,
 				"aria-controls": `${id}-content`,
 				onClick: () => setSettingSection(section_1.value),
-				className: `flex cursor-pointer items-center gap-2.5 rounded-lg border-0 px-3 py-2.5 text-left font-[inherit] text-xs outline-none transition-colors focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${activeSection === section_1.value ? "bg-[var(--dsw-alias-card-fill)] font-medium text-[var(--dsw-alias-label-primary)]" : "bg-transparent text-[var(--dsw-alias-label-secondary)] hover:bg-[var(--dsw-alias-card-fill)]"}`,
+				className: `flex cursor-pointer items-center gap-2.5 rounded-lg border-0 px-3 py-2.5 text-left font-[inherit] text-xs outline-none transition-colors focus-visible:outline-2 focus-visible:outline-(--dsw-alias-state-business-primary) ${activeSection === section_1.value ? "bg-(--dsw-alias-card-fill) font-medium text-(--dsw-alias-label-primary)" : "bg-transparent text-(--dsw-alias-label-secondary) hover:bg-(--dsw-alias-card-fill)"}`,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(section_1.icon, {
 						width: 16,
@@ -63980,7 +63977,7 @@ function Setting() {
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t(section_1.label) }),
 					dirty[section_1.value] && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "ml-auto size-1.5 rounded-full bg-[var(--dsw-alias-state-business-primary)]",
+						className: "ml-auto size-1.5 rounded-full bg-(--dsw-alias-state-business-primary)",
 						"aria-label": t("settingUnsaved")
 					})
 				]
@@ -64048,11 +64045,11 @@ function Setting() {
 		t19 = content;
 		t20 = invalid ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
-			className: "m-0 text-xs text-[var(--dsw-alias-state-error-primary)]",
+			className: "m-0 text-xs text-(--dsw-alias-state-error-primary)",
 			children: t("settingInvalid")
 		}) : notice && !failed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "status",
-			className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t(notices[notice])
 		});
 		$[29] = activeSection;
@@ -64117,7 +64114,7 @@ function Setting() {
 	let t28;
 	if ($[156] !== t26 || $[157] !== t27) {
 		t28 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: [t26, t27]
 		});
 		$[156] = t26;
@@ -64209,7 +64206,7 @@ function Arrivals(t0) {
 							className: "mt-[7px] shrink-0"
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: "min-w-0 flex-1 whitespace-pre-wrap text-[var(--dsw-alias-label-secondary)] [overflow-wrap:anywhere]",
+							className: "min-w-0 flex-1 whitespace-pre-wrap text-(--dsw-alias-label-secondary) [overflow-wrap:anywhere]",
 							children: [arrival.message, arrival.answer && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: "block",
 								children: arrival.answer
@@ -64217,7 +64214,7 @@ function Arrivals(t0) {
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("time", {
 							dateTime: arrival.at,
-							className: "shrink-0 whitespace-nowrap text-xs text-[var(--dsw-alias-label-tertiary)] tabular-nums",
+							className: "shrink-0 whitespace-nowrap text-xs text-(--dsw-alias-label-tertiary) tabular-nums",
 							children: t("ticketArrivedAgo", { count: Math.max(0, Math.floor((Date.now() - new Date(arrival.at).getTime()) / 36e5)) })
 						})
 					]
@@ -64253,11 +64250,11 @@ function Arrivals(t0) {
 				}), arrivals.length > 2 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 					className: "group",
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("summary", {
-						className: "flex cursor-pointer list-none items-center gap-3 rounded-md py-1 text-xs text-[var(--dsw-alias-label-secondary)] hover:text-[var(--dsw-alias-label-primary)] focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)] [&::-webkit-details-marker]:hidden",
+						className: "flex cursor-pointer list-none items-center gap-3 rounded-md py-1 text-xs text-(--dsw-alias-label-secondary) hover:text-(--dsw-alias-label-primary) focus-visible:outline-2 focus-visible:outline-(--dsw-alias-state-business-primary) [&::-webkit-details-marker]:hidden",
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								"aria-hidden": "true",
-								className: "h-px flex-1 bg-[var(--dsw-alias-border-l3)]"
+								className: "h-px flex-1 bg-(--dsw-alias-border-l3)"
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: "group-open:hidden",
@@ -64269,7 +64266,7 @@ function Arrivals(t0) {
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								"aria-hidden": "true",
-								className: "h-px flex-1 bg-[var(--dsw-alias-border-l3)]"
+								className: "h-px flex-1 bg-(--dsw-alias-border-l3)"
 							})
 						]
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
@@ -64317,7 +64314,7 @@ function Section(t0) {
 	let t1;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "h-3 w-0.5 shrink-0 rounded-full bg-[var(--dsw-alias-state-business-primary)] mt-px",
+			className: "h-3 w-0.5 shrink-0 rounded-full bg-(--dsw-alias-state-business-primary) mt-px",
 			"aria-hidden": "true"
 		});
 		$[0] = t1;
@@ -64339,7 +64336,7 @@ function Section(t0) {
 	let t3;
 	if ($[4] !== children || $[5] !== t2) {
 		t3 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "flex min-w-0 flex-col gap-3 rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] px-4 py-4",
+			className: "flex min-w-0 flex-col gap-3 rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) px-4 py-4",
 			children: [t2, children]
 		});
 		$[4] = children;
@@ -64363,7 +64360,7 @@ function Issues(t0) {
 	let t2;
 	if ($[2] !== issues.length) {
 		t2 = issues.length > 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
+			className: "text-xs font-normal text-(--dsw-alias-label-tertiary)",
 			children: issues.length
 		});
 		$[2] = issues.length;
@@ -64375,18 +64372,18 @@ function Issues(t0) {
 			className: "m-0 flex list-none flex-col gap-2.5 p-0",
 			children: issues.map((issue) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
-				className: "group/issue flex w-full cursor-pointer items-start gap-2 rounded-md border-0 bg-transparent p-0 text-left text-[13px] leading-5 font-[inherit] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+				className: "group/issue flex w-full cursor-pointer items-start gap-2 rounded-md border-0 bg-transparent p-0 text-left text-[13px] leading-5 font-[inherit] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
 				onClick: () => openThread(issue.id),
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					"aria-hidden": "true",
 					title: "Issue 状态未提供",
-					className: "mt-0.5 shrink-0 text-[var(--dsw-alias-label-tertiary)]",
+					className: "mt-0.5 shrink-0 text-(--dsw-alias-label-tertiary)",
 					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(IssueOpenIcon, {
 						width: 14,
 						height: 14
 					})
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: "min-w-0 text-[var(--dsw-alias-label-secondary)] [overflow-wrap:anywhere]",
+					className: "min-w-0 text-(--dsw-alias-label-secondary) [overflow-wrap:anywhere]",
 					children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: "underline-offset-4 group-hover/issue:underline group-focus-visible/issue:underline",
 						children: issue.title
@@ -64423,7 +64420,7 @@ function Metric(t0) {
 	let t1;
 	if ($[0] !== icon) {
 		t1 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "absolute top-1/2 left-3 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg bg-[var(--dsw-alias-card-fill)] text-[var(--dsw-alias-label-secondary)]",
+			className: "absolute top-1/2 left-3 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg bg-(--dsw-alias-card-fill) text-(--dsw-alias-label-secondary)",
 			"aria-hidden": "true",
 			children: icon
 		});
@@ -64433,7 +64430,7 @@ function Metric(t0) {
 	let t2;
 	if ($[2] !== label || $[3] !== t1) {
 		t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dt", {
-			className: "text-xs leading-4 text-[var(--dsw-alias-label-secondary)]",
+			className: "text-xs leading-4 text-(--dsw-alias-label-secondary)",
 			children: [t1, label]
 		});
 		$[2] = label;
@@ -64452,7 +64449,7 @@ function Metric(t0) {
 	let t4;
 	if ($[7] !== t2 || $[8] !== t3) {
 		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: "relative flex min-h-15 min-w-0 flex-col justify-center gap-1.5 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] py-3 pr-3 pl-14",
+			className: "relative flex min-h-15 min-w-0 flex-col justify-center gap-1.5 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) py-3 pr-3 pl-14",
 			children: [t2, t3]
 		});
 		$[7] = t2;
@@ -64528,7 +64525,7 @@ function PrStatus(t0) {
 			rel: "noreferrer",
 			"aria-label": t4,
 			title: description,
-			className: "inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-2.5 text-xs leading-4 font-medium text-[var(--dsw-alias-label-primary)] no-underline outline-none transition-colors hover:bg-[var(--dsw-alias-interactive-bg-hover)] active:bg-[var(--dsw-alias-interactive-bg-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+			className: "inline-flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-2.5 text-xs leading-4 font-medium text-(--dsw-alias-label-primary) no-underline outline-none transition-colors hover:bg-(--dsw-alias-interactive-bg-hover) active:bg-(--dsw-alias-interactive-bg-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
 			children: [
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Icon, {
 					width: 12,
@@ -64537,7 +64534,7 @@ function PrStatus(t0) {
 				}),
 				t6,
 				label && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: "text-[11px] font-normal text-[var(--dsw-alias-label-secondary)]",
+					className: "text-[11px] font-normal text-(--dsw-alias-label-secondary)",
 					children: t(label)
 				})
 			]
@@ -64626,7 +64623,7 @@ function Relations(t0) {
 		if ($[20] !== t9) {
 			t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 				role: "alert",
-				className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+				className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 				children: t9
 			});
 			$[20] = t9;
@@ -64649,7 +64646,7 @@ function Relations(t0) {
 						className: "max-w-full !h-auto !justify-start !whitespace-normal text-left",
 						onClick: () => openTicket(id),
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-[var(--dsw-alias-label-secondary)]",
+							className: "text-xs text-(--dsw-alias-label-secondary)",
 							children: id
 						}), task_0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: "[overflow-wrap:anywhere]",
@@ -64709,7 +64706,10 @@ function TicketDetail() {
 		t3 = {
 			queryKey: t0,
 			queryFn: t1,
-			enabled: t2
+			enabled: t2,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[4] = t0;
 		$[5] = t1;
@@ -64721,7 +64721,10 @@ function TicketDetail() {
 	if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
 		t4 = {
 			queryKey: keys.channel,
-			queryFn: _temp2$5
+			queryFn: getApiSupermeshChannel,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[8] = t4;
 	} else t4 = $[8];
@@ -64730,8 +64733,11 @@ function TicketDetail() {
 	if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
 		t5 = {
 			queryKey: keys.group,
-			queryFn: _temp3$3,
-			refetchInterval: 15e3
+			queryFn: getApiSupermeshGroup,
+			refetchInterval: 15e3,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[9] = t5;
 	} else t5 = $[9];
@@ -64741,7 +64747,7 @@ function TicketDetail() {
 	const unavailable = stored !== void 0 && !detail;
 	let t6;
 	if ($[10] !== detail?.executions) {
-		t6 = detail?.executions.toSorted(_temp4$3).at(-1);
+		t6 = detail?.executions.toSorted(_temp2$5).at(-1);
 		$[10] = detail?.executions;
 		$[11] = t6;
 	} else t6 = $[11];
@@ -64763,7 +64769,7 @@ function TicketDetail() {
 	const seconds = t8;
 	let t9;
 	if ($[17] !== detail?.inbox) {
-		t9 = new Set(detail?.inbox.map(_temp5$3).filter(_temp6$3));
+		t9 = new Set(detail?.inbox.map(_temp3$3).filter(_temp4$3));
 		$[17] = detail?.inbox;
 		$[18] = t9;
 	} else t9 = $[18];
@@ -64925,7 +64931,7 @@ function TicketDetail() {
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: "mb-2 flex flex-wrap items-center gap-3",
 						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
+							className: "text-xs text-(--dsw-alias-label-tertiary)",
 							children: task.id
 						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
 							tone: task.prepareError || task.paused ? "danger" : task.status === "done" ? "success" : task.status === "running" ? "info" : task.status === "review" ? "warning" : "quiet",
@@ -64985,7 +64991,7 @@ function TicketDetail() {
 							height: 17
 						}),
 						children: [channel_0?.name ?? task.channelId, channel_0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-							className: "inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-normal text-[var(--dsw-alias-label-secondary)]",
+							className: "inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-normal text-(--dsw-alias-label-secondary)",
 							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, {
 								state: channel_0.status === "online" ? "done" : "idle",
 								size: 6
@@ -65030,11 +65036,11 @@ function TicketDetail() {
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					className: "flex min-w-0 flex-col gap-4",
 					children: [
-						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Issues, { issues: detail.topics.filter(_temp7$3) }),
+						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Issues, { issues: detail.topics.filter(_temp5$3) }),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
 							title: t("ticketDependencies"),
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
-								links: detail.dependencies.filter(_temp8$2),
+								links: detail.dependencies.filter(_temp6$3),
 								ticketId: task.id,
 								empty: t("ticketDependenciesEmpty"),
 								clear: true
@@ -65043,7 +65049,7 @@ function TicketDetail() {
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Section, {
 							title: t("ticketRelatedTasks"),
 							children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Relations, {
-								links: detail.dependencies.filter(_temp9),
+								links: detail.dependencies.filter(_temp7$3),
 								ticketId: task.id,
 								empty: t("ticketRelatedTasksEmpty")
 							})
@@ -65118,29 +65124,23 @@ function TicketDetail() {
 	} else t28 = $[81];
 	return t28;
 }
-function _temp9(link_0) {
+function _temp7$3(link_0) {
 	return link_0.kind === "relates";
 }
-function _temp8$2(link) {
+function _temp6$3(link) {
 	return link.kind === "depends";
 }
-function _temp7$3(topic) {
+function _temp5$3(topic) {
 	return topic.kind === "issue";
 }
-function _temp6$3(id) {
+function _temp4$3(id) {
 	return Boolean(id);
 }
-function _temp5$3(message) {
+function _temp3$3(message) {
 	return message.supervisorId;
 }
-function _temp4$3(a, b) {
+function _temp2$5(a, b) {
 	return a.createdAt.localeCompare(b.createdAt);
-}
-function _temp3$3() {
-	return getApiSupermeshGroup();
-}
-function _temp2$5() {
-	return getApiSupermeshChannel();
 }
 function _temp$10(state) {
 	return state.navigation;
@@ -65239,7 +65239,7 @@ function Ticket() {
 		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 			className: "mb-1 flex flex-wrap items-center justify-between gap-3",
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "text-[13px] text-[var(--dsw-alias-label-secondary)] my-1",
+				className: "text-[13px] text-(--dsw-alias-label-secondary) my-1",
 				children: t8
 			})
 		});
@@ -65525,15 +65525,15 @@ function Event$1(t0) {
 			worker: "triggerWorkerAgent",
 			user: "triggerUser"
 		};
-		t10 = "relative min-w-0 border-l border-[var(--dsw-alias-border-l3)] pb-6 pl-5 last:pb-0";
+		t10 = "relative min-w-0 border-l border-(--dsw-alias-border-l3) pb-6 pl-5 last:pb-0";
 		if ($[33] === Symbol.for("react.memo_cache_sentinel")) {
 			t11 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "absolute top-1.5 -left-[3.5px] size-1.5 rounded-full bg-[var(--dsw-alias-state-business-primary)]",
+				className: "absolute top-1.5 --left-[3.5px] size-1.5 rounded-full bg-(--dsw-alias-state-business-primary)",
 				"aria-hidden": "true"
 			});
 			$[33] = t11;
 		} else t11 = $[33];
-		t5 = "min-w-0 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4";
+		t5 = "min-w-0 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-4";
 		let t12;
 		if ($[34] !== event.actor) {
 			t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
@@ -65573,7 +65573,7 @@ function Event$1(t0) {
 		let t17;
 		if ($[44] !== event.human || $[45] !== t) {
 			t17 = !event.human && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-				className: "text-[var(--dsw-alias-label-tertiary)]",
+				className: "text-(--dsw-alias-label-tertiary)",
 				children: t("triggerAutomated")
 			});
 			$[44] = event.human;
@@ -65620,7 +65620,7 @@ function Event$1(t0) {
 				target: "_blank",
 				rel: "noopener noreferrer",
 				title: t("triggerSampleLink"),
-				className: "text-[11px] text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline",
+				className: "text-[11px] text-(--dsw-alias-state-business-primary) underline-offset-4 hover:underline focus-visible:underline",
 				children: [
 					t(event.kind === "comment" ? "triggerOpenComment" : "triggerOpenEvent"),
 					" ",
@@ -65651,7 +65651,7 @@ function Event$1(t0) {
 			t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("time", {
 				dateTime: t21,
 				title: t22,
-				className: "text-[11px] text-[var(--dsw-alias-label-tertiary)] tabular-nums",
+				className: "text-[11px] text-(--dsw-alias-label-tertiary) tabular-nums",
 				children: [
 					t23,
 					" ",
@@ -65693,7 +65693,7 @@ function Event$1(t0) {
 			t7 = event.text && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				id: bodyId,
 				hidden: !expanded,
-				className: "my-3 min-w-0 text-[13px] leading-6 text-[var(--dsw-alias-label-primary)] [overflow-wrap:anywhere]",
+				className: "my-3 min-w-0 text-[13px] leading-6 text-(--dsw-alias-label-primary) [overflow-wrap:anywhere]",
 				children: expanded && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.MarkdownText, {
 					text: event.text,
 					labels
@@ -65713,7 +65713,7 @@ function Event$1(t0) {
 		} else t27 = $[82];
 		if ($[83] !== t27) {
 			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-				className: "mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--dsw-alias-border-l3)] pt-3 text-xs text-[var(--dsw-alias-label-secondary)]",
+				className: "mt-3 flex flex-wrap items-center gap-2 border-t border-(--dsw-alias-border-l3) pt-3 text-xs text-(--dsw-alias-label-secondary)",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t27 })
 			});
 			$[83] = t27;
@@ -65729,7 +65729,7 @@ function Event$1(t0) {
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t(targets[delivery.target]) }),
 							delivery.project && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-								className: "break-all text-[var(--dsw-alias-label-tertiary)]",
+								className: "break-all text-(--dsw-alias-label-tertiary)",
 								children: delivery.project
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tag, {
@@ -65739,11 +65739,11 @@ function Event$1(t0) {
 						]
 					}),
 					delivery.status === "pending" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "block text-[11px] text-[var(--dsw-alias-label-secondary)]",
+						className: "block text-[11px] text-(--dsw-alias-label-secondary)",
 						children: t(delivery.read ? "triggerReadPending" : "triggerQueued")
 					}),
 					delivery.error && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-						className: "m-0 mt-1 text-[11px] text-[var(--dsw-alias-state-error-primary)]",
+						className: "m-0 mt-1 text-[11px] text-(--dsw-alias-state-error-primary)",
 						children: [
 							delivery.error,
 							" ",
@@ -65755,7 +65755,7 @@ function Event$1(t0) {
 				]
 			}, `${delivery.target}-${delivery.project ?? index}`))
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mb-0 mt-2 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "mb-0 mt-2 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: t(event.skipped === "ignored" ? "triggerSkipIgnored" : event.skipped === "not-mentioned" ? "triggerSkipMention" : "triggerNoDelivery")
 		});
 		$[13] = bodyId;
@@ -65790,7 +65790,7 @@ function Event$1(t0) {
 	let t12;
 	if ($[85] !== event.ref || $[86] !== t) {
 		t12 = event.ref && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-			className: "mb-0 mt-3 break-all text-[11px] text-[var(--dsw-alias-label-secondary)]",
+			className: "mb-0 mt-3 break-all text-[11px] text-(--dsw-alias-label-secondary)",
 			children: [
 				t("triggerRef"),
 				":",
@@ -65848,7 +65848,10 @@ function TriggerDetail() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.project,
-			queryFn: _temp2$3
+			queryFn: _temp2$3,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[0] = t0;
 	} else t0 = $[0];
@@ -65858,7 +65861,10 @@ function TriggerDetail() {
 		t1 = {
 			queryKey: keys.trigger,
 			queryFn: _temp3$1,
-			refetchInterval: 3e4
+			refetchInterval: 3e4,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[1] = t1;
 	} else t1 = $[1];
@@ -65867,7 +65873,10 @@ function TriggerDetail() {
 	if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
 		t2 = {
 			queryKey: keys.thread,
-			queryFn: _temp4$1
+			queryFn: _temp4$1,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[2] = t2;
 	} else t2 = $[2];
@@ -65876,7 +65885,10 @@ function TriggerDetail() {
 	if ($[3] === Symbol.for("react.memo_cache_sentinel")) {
 		t3 = {
 			queryKey: keys.subscription,
-			queryFn: _temp5$1
+			queryFn: _temp5$1,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[3] = t3;
 	} else t3 = $[3];
@@ -65885,7 +65897,10 @@ function TriggerDetail() {
 	if ($[4] === Symbol.for("react.memo_cache_sentinel")) {
 		t4 = {
 			queryKey: keys.delivery,
-			queryFn: _temp6$1
+			queryFn: _temp6$1,
+			staleTime: 0,
+			gcTime: 0,
+			refetchOnMount: "always"
 		};
 		$[4] = t4;
 	} else t4 = $[4];
@@ -65967,7 +65982,7 @@ function TriggerDetail() {
 				if ($[40] !== t21) {
 					t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						role: "alert",
-						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]",
+						className: "m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)",
 						children: t21
 					});
 					$[40] = t21;
@@ -65997,7 +66012,7 @@ function TriggerDetail() {
 				if ($[47] === Symbol.for("react.memo_cache_sentinel")) {
 					t21 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 						role: "status",
-						className: "m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+						className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 						children: "正在载入话题详情…"
 					});
 					$[47] = t21;
@@ -66031,7 +66046,7 @@ function TriggerDetail() {
 				if ($[54] !== t21) {
 					t22 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 						compact: true,
-						className: "rounded-xl border border-[var(--dsw-alias-border-l3)] p-5 [&>p]:text-sm [&>p]:text-[var(--dsw-alias-label-primary)]",
+						className: "rounded-xl border border-(--dsw-alias-border-l3) p-5 [&>p]:text-sm [&>p]:text-(--dsw-alias-label-primary)",
 						title: t21
 					});
 					$[54] = t21;
@@ -66077,7 +66092,7 @@ function TriggerDetail() {
 				target: "_blank",
 				rel: "noopener noreferrer",
 				title: t("triggerSampleLink"),
-				className: "text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline",
+				className: "text-(--dsw-alias-state-business-primary) underline-offset-4 hover:underline focus-visible:underline",
 				children: [
 					latest.thread.ref,
 					" ",
@@ -66121,7 +66136,7 @@ function TriggerDetail() {
 			let t29;
 			if ($[75] !== t21 || $[76] !== t22 || $[77] !== t25 || $[78] !== t28) {
 				t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "mb-2 flex flex-wrap items-center gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]",
+					className: "mb-2 flex flex-wrap items-center gap-2 text-xs text-(--dsw-alias-label-tertiary)",
 					children: [
 						t21,
 						t22,
@@ -66166,7 +66181,7 @@ function TriggerDetail() {
 			t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: "mb-4 flex items-center justify-between gap-2",
 				children: [t31, /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-					className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
+					className: "text-xs text-(--dsw-alias-label-tertiary)",
 					children: [
 						t32,
 						" ",
@@ -66263,7 +66278,7 @@ function TriggerDetail() {
 	let t20;
 	if ($[99] !== t19) {
 		t20 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
-			className: "text-[var(--dsw-alias-label-tertiary)]",
+			className: "text-(--dsw-alias-label-tertiary)",
 			children: t19
 		});
 		$[99] = t19;
@@ -66301,7 +66316,7 @@ function TriggerDetail() {
 	let t25;
 	if ($[111] !== t24) {
 		t25 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dt", {
-			className: "text-[var(--dsw-alias-label-tertiary)]",
+			className: "text-(--dsw-alias-label-tertiary)",
 			children: t24
 		});
 		$[111] = t24;
@@ -66336,7 +66351,7 @@ function TriggerDetail() {
 	let t29;
 	if ($[121] !== t18 || $[122] !== t28) {
 		t29 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4",
+			className: "rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-4",
 			children: [t18, t28]
 		});
 		$[121] = t18;
@@ -66367,7 +66382,7 @@ function TriggerDetail() {
 			children: ticket
 		}, ticket)) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			compact: true,
-			className: "[&>p]:text-xs [&>p]:text-[var(--dsw-alias-label-tertiary)]",
+			className: "[&>p]:text-xs [&>p]:text-(--dsw-alias-label-tertiary)",
 			title: t("triggerNoTask")
 		});
 		$[128] = openTicket;
@@ -66387,7 +66402,7 @@ function TriggerDetail() {
 	let t34;
 	if ($[134] !== t31 || $[135] !== t33) {
 		t34 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4",
+			className: "rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-4",
 			children: [t31, t33]
 		});
 		$[134] = t31;
@@ -66403,7 +66418,7 @@ function TriggerDetail() {
 	let t36;
 	if ($[139] !== t35) {
 		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t35
 		});
 		$[139] = t35;
@@ -66412,7 +66427,7 @@ function TriggerDetail() {
 	let t37;
 	if ($[141] !== href || $[142] !== t) {
 		t37 = href && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t("triggerSampleLink")
 		});
 		$[141] = href;
@@ -66660,7 +66675,7 @@ function Filters() {
 			type: "checkbox",
 			checked: filters.mentionedOnly,
 			onChange: t5,
-			className: "accent-[var(--dsw-alias-state-business-primary)]"
+			className: "accent-(--dsw-alias-state-business-primary)"
 		});
 		$[34] = filters.mentionedOnly;
 		$[35] = t5;
@@ -66675,7 +66690,7 @@ function Filters() {
 	let t8;
 	if ($[39] !== t6 || $[40] !== t7) {
 		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-			className: "flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-[var(--dsw-alias-label-secondary)]",
+			className: "flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-(--dsw-alias-label-secondary)",
 			children: [t6, t7]
 		});
 		$[39] = t6;
@@ -66751,7 +66766,7 @@ function Row(t0) {
 	let t6;
 	if ($[10] !== channel || $[11] !== t5) {
 		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--dsw-alias-card-fill)]",
+			className: "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-(--dsw-alias-card-fill)",
 			title: channel,
 			children: t5
 		});
@@ -66762,7 +66777,7 @@ function Row(t0) {
 	let t7;
 	if ($[13] !== record.thread.title) {
 		t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "min-w-0 font-medium text-[var(--dsw-alias-label-primary)] underline-offset-4 group-hover/topic:underline",
+			className: "min-w-0 font-medium text-(--dsw-alias-label-primary) underline-offset-4 group-hover/topic:underline",
 			children: record.thread.title
 		});
 		$[13] = record.thread.title;
@@ -66771,7 +66786,7 @@ function Row(t0) {
 	let t8;
 	if ($[15] !== record.thread.ref) {
 		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-xs text-[var(--dsw-alias-label-tertiary)]",
+			className: "text-xs text-(--dsw-alias-label-tertiary)",
 			children: record.thread.ref
 		});
 		$[15] = record.thread.ref;
@@ -66824,7 +66839,7 @@ function Row(t0) {
 	let t14;
 	if ($[30] !== record.text) {
 		t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "mt-1 block truncate text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "mt-1 block truncate text-xs leading-5 text-(--dsw-alias-label-secondary)",
 			children: record.text
 		});
 		$[30] = record.text;
@@ -66893,7 +66908,7 @@ function Row(t0) {
 	let t23;
 	if ($[48] !== t15 || $[49] !== t17 || $[50] !== t18 || $[51] !== t21 || $[52] !== t22) {
 		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-			className: "mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-[var(--dsw-alias-label-tertiary)]",
+			className: "mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-(--dsw-alias-label-tertiary)",
 			children: [
 				t15,
 				t16,
@@ -66957,7 +66972,7 @@ function Row(t0) {
 		t31 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("time", {
 			dateTime: t28,
 			title: t29,
-			className: "text-[11px] text-[var(--dsw-alias-label-tertiary)] tabular-nums",
+			className: "text-[11px] text-(--dsw-alias-label-tertiary) tabular-nums",
 			children: t30
 		});
 		$[66] = record.at;
@@ -66973,7 +66988,7 @@ function Row(t0) {
 	let t33;
 	if ($[71] !== t32) {
 		t33 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "text-[11px] text-[var(--dsw-alias-label-tertiary)]",
+			className: "text-[11px] text-(--dsw-alias-label-tertiary)",
 			children: t32
 		});
 		$[71] = t32;
@@ -66997,12 +67012,12 @@ function Row(t0) {
 	let t35;
 	if ($[77] !== t2 || $[78] !== t24 || $[79] !== t34 || $[80] !== t4 || $[81] !== t6) {
 		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("li", {
-			className: "border-t border-[var(--dsw-alias-border-l3)] first:border-t-0",
+			className: "border-t border-(--dsw-alias-border-l3) first:border-t-0",
 			children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
 				onClick: t2,
 				"aria-label": t4,
-				className: "group/topic flex w-full cursor-pointer items-start gap-3 rounded-xl border-0 bg-transparent p-4 text-left font-[inherit] outline-none transition-colors hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dsw-alias-state-business-primary)]",
+				className: "group/topic flex w-full cursor-pointer items-start gap-3 rounded-xl border-0 bg-transparent p-4 text-left font-[inherit] outline-none transition-colors hover:bg-(--dsw-alias-card-fill) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
 				children: [
 					t6,
 					t24,
@@ -67089,9 +67104,9 @@ function Summary(t0) {
 			type: "button",
 			"aria-pressed": selected === card.value,
 			onClick: () => setTriggerFilters({ status: card.value }),
-			className: `flex min-w-0 cursor-pointer flex-col gap-2 rounded-2xl border bg-[var(--dsw-alias-bg-layer-1)] px-4 py-3.5 text-left outline-none transition-colors hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)] ${selected === card.value ? "border-[var(--dsw-alias-state-business-primary)]" : "border-[var(--dsw-alias-border-l3)]"}`,
+			className: `flex min-w-0 cursor-pointer flex-col gap-2 rounded-2xl border bg-(--dsw-alias-bg-layer-1) px-4 py-3.5 text-left outline-none transition-colors hover:bg-(--dsw-alias-card-fill) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary) ${selected === card.value ? "border-(--dsw-alias-state-business-primary)" : "border-(--dsw-alias-border-l3)"}`,
 			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-				className: "flex items-center gap-2 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				className: "flex items-center gap-2 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: "size-1.5 rounded-full",
 					style: { background: card.color }
@@ -67099,7 +67114,7 @@ function Summary(t0) {
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 				className: "text-[26px] leading-8 font-semibold tracking-tight tabular-nums",
 				children: [card.count, /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-					className: "ml-2 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]",
+					className: "ml-2 text-xs font-normal text-(--dsw-alias-label-tertiary)",
 					children: t("triggerTopicsUnit")
 				})]
 			})]
@@ -67206,7 +67221,7 @@ function Trigger() {
 			if ($[33] !== t14) {
 				t15 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					role: "alert",
-					className: "m-0 px-4 py-6 text-xs text-[var(--dsw-alias-state-error-primary)]",
+					className: "m-0 px-4 py-6 text-xs text-(--dsw-alias-state-error-primary)",
 					children: t14
 				});
 				$[33] = t14;
@@ -67218,7 +67233,7 @@ function Trigger() {
 			if ($[35] === Symbol.for("react.memo_cache_sentinel")) {
 				t14 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 					role: "status",
-					className: "m-0 px-4 py-6 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+					className: "m-0 px-4 py-6 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 					children: "正在载入触发记录…"
 				});
 				$[35] = t14;
@@ -67313,7 +67328,7 @@ function Trigger() {
 		let t17;
 		if ($[58] !== t16) {
 			t17 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "m-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]",
+				className: "m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 				children: t16
 			});
 			$[58] = t16;
@@ -67334,7 +67349,7 @@ function Trigger() {
 			t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Filters, {});
 			$[63] = t9;
 		} else t9 = $[63];
-		t7 = "flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]";
+		t7 = "flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)";
 		t5 = "status";
 		t6 = t("triggerResultCount", {
 			count: records.length,
@@ -67403,7 +67418,7 @@ function Trigger() {
 	let t16;
 	if ($[70] !== content) {
 		t16 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-			className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
+			className: "overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)",
 			children: content
 		});
 		$[70] = content;
@@ -67418,7 +67433,7 @@ function Trigger() {
 	let t18;
 	if ($[74] !== t17) {
 		t18 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]",
+			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t17
 		});
 		$[74] = t17;
@@ -67596,7 +67611,7 @@ function Panel$1() {
 	let t10;
 	if ($[19] !== t9) {
 		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "mt-1 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
+			className: "mt-1 text-[13px] leading-5 text-(--dsw-alias-label-secondary)",
 			children: t9
 		});
 		$[19] = t9;
@@ -67708,7 +67723,7 @@ function Panel$1() {
 	let t23;
 	if ($[51] !== t20 || $[52] !== t22) {
 		t23 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
-			className: "flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-5 pt-7",
+			className: "flex w-full min-w-0 max-w-270 flex-none flex-col gap-5 pt-7",
 			children: [t20, t22]
 		});
 		$[51] = t20;
@@ -67817,7 +67832,7 @@ function Panel$1() {
 			id: t24,
 			role: "tabpanel",
 			"aria-labelledby": t25,
-			className: "mt-6 flex w-full min-w-0 max-w-[1080px] flex-none flex-col gap-6",
+			className: "mt-6 flex w-full min-w-0 max-w-270 flex-none flex-col gap-6",
 			children: [t26, t36]
 		});
 		$[68] = t24;
@@ -67829,7 +67844,7 @@ function Panel$1() {
 	let t38;
 	if ($[73] !== t23 || $[74] !== t37) {
 		t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
-			className: "box-border flex h-full min-h-0 w-full min-w-0 max-w-full flex-col items-center overflow-y-auto px-[clamp(20px,4vw,48px)] text-[13px] leading-5 text-[var(--dsw-alias-label-primary)] [&_*]:box-border",
+			className: "box-border flex h-full min-h-0 w-full min-w-0 max-w-full flex-col items-center overflow-y-auto px-[clamp(20px,4vw,48px)] text-[13px] leading-5 text-(--dsw-alias-label-primary) [&_*]:box-border",
 			style: t6,
 			children: [t23, t37]
 		});
@@ -68009,9 +68024,9 @@ function Notification$1(t0) {
 	let t9;
 	if ($[0] !== bodyId || $[1] !== node.data.time || $[2] !== open || $[3] !== t) {
 		const date = new Date(node.data.time);
-		t11 = "min-w-0 rounded-[var(--dsw-radius-xl)] border-[0.5px] border-solid border-[var(--dsw-alias-border-l1)] bg-[var(--dsw-alias-turn-trigger-bg,var(--dsw-alias-markdown-code-block))] transition-colors duration-100 ease-[ease] hover:bg-[var(--dsw-alias-turn-trigger-bg-hover,var(--dsw-alias-interactive-bg-hover))] motion-reduce:transition-none";
+		t11 = "min-w-0 rounded-(--dsw-radius-xl) border-[0.5px] border-solid border-(--dsw-alias-border-l1) bg-[var(--dsw-alias-turn-trigger-bg,var(--dsw-alias-markdown-code-block))] transition-colors duration-100 ease-[ease] hover:bg-[var(--dsw-alias-turn-trigger-bg-hover,var(--dsw-alias-interactive-bg-hover))] motion-reduce:transition-none";
 		t12 = true;
-		t4 = "flex w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-4 py-3 text-left text-[var(--dsw-alias-label-tertiary)] [font:inherit] transition-colors duration-100 ease-[ease] hover:text-[var(--dsw-alias-label-secondary)] motion-reduce:transition-none";
+		t4 = "flex w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-4 py-3 text-left text-(--dsw-alias-label-tertiary) [font:inherit] transition-colors duration-100 ease-[ease] hover:text-(--dsw-alias-label-secondary) motion-reduce:transition-none";
 		t5 = "button";
 		t6 = open;
 		t7 = bodyId;
@@ -68132,12 +68147,12 @@ function Notification$1(t0) {
 			id: bodyId,
 			className: "pb-3 pl-10 pr-4",
 			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				className: "my-2 text-[var(--dsw-alias-label-secondary)] [font:var(--dsw-font-xxs-12)]",
+				className: "my-2 text-(--dsw-alias-label-secondary) [font:var(--dsw-font-xxs-12)]",
 				children: t("mailboxNotificationDescription")
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: "max-h-60 overflow-auto whitespace-pre-wrap [overflow-wrap:anywhere] [font:var(--dsw-font-xxs-12)]",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-					className: "m-0 whitespace-pre-wrap text-[var(--dsw-alias-label-secondary)] [font:inherit] [overflow-wrap:anywhere]",
+					className: "m-0 whitespace-pre-wrap text-(--dsw-alias-label-secondary) [font:inherit] [overflow-wrap:anywhere]",
 					children: node.data.data.content.filter(_temp$1).map(_temp2).join("\n")
 				})
 			})]
@@ -68213,7 +68228,7 @@ function Panel({ sessionId }) {
 	]);
 	if (error_0 || mailbox?.sessionId !== sessionId || mailbox.pendingCount === 0 || mailbox.messages.length === 0) return null;
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("section", {
-		className: "box-border flex-none overflow-hidden mx-auto w-[calc(100%_-_var(--dsh-composer-side-clearance)_-_var(--dsh-composer-side-clearance)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset))] max-w-[calc(var(--dsh-composer-card-max-width)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset))] border-0 rounded-[var(--dsw-radius-lg)] bg-[var(--dsw-specific-menu)] [backdrop-filter:var(--dsw-menu-backdrop-filter)] shadow-[var(--dsw-elevation-panel)] [--dsw-elevation-stroke-color:var(--dsw-alias-border-l1)] [--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2)] [--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2)]",
+		className: "box-border flex-none overflow-hidden mx-auto w-[calc(100%_-_var(--dsh-composer-side-clearance)_-_var(--dsh-composer-side-clearance)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset))] max-w-[calc(var(--dsh-composer-card-max-width)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset)_-_var(--dsh-composer-dock-inset))] border-0 rounded-(--dsw-radius-lg) bg-(--dsw-specific-menu) [backdrop-filter:var(--dsw-menu-backdrop-filter)] shadow-(--dsw-elevation-panel) [--dsw-elevation-stroke-color:var(--dsw-alias-border-l1)] [--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2)] [--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2)]",
 		"aria-label": t("mailboxTitle"),
 		children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 			className: "flex flex-col gap-2 px-3 py-1.5",
@@ -68225,7 +68240,7 @@ function Panel({ sessionId }) {
 				onClick: () => setCollapsed((value) => !value),
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "grid shrink-0 place-items-center text-[var(--dsw-alias-label-tertiary)]",
+						className: "grid shrink-0 place-items-center text-(--dsw-alias-label-tertiary)",
 						"aria-hidden": true,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
 							width: "16",
@@ -68244,15 +68259,15 @@ function Panel({ sessionId }) {
 						})
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "shrink-0 text-[13px] leading-6 font-medium text-[var(--dsw-alias-label-primary)]",
+						className: "shrink-0 text-[13px] leading-6 font-medium text-(--dsw-alias-label-primary)",
 						children: t("mailboxTitle")
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "flex-[1_1_auto] min-w-0 overflow-hidden text-[13px] leading-5 font-normal text-[var(--dsw-alias-label-tertiary)] truncate",
+						className: "flex-[1_1_auto] min-w-0 overflow-hidden text-[13px] leading-5 font-normal text-(--dsw-alias-label-tertiary) truncate",
 						children: t("mailboxPending", { count: mailbox.pendingCount })
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-						className: "grid shrink-0 place-items-center text-[var(--dsw-alias-label-tertiary)]",
+						className: "grid shrink-0 place-items-center text-(--dsw-alias-label-tertiary)",
 						"aria-hidden": true,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
 							width: "16",
@@ -68267,16 +68282,16 @@ function Panel({ sessionId }) {
 				]
 			}), !collapsed && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("ul", {
 				id: listId,
-				className: "flex flex-col gap-2 m-0 p-0 list-none max-h-[180px] overflow-y-auto",
+				className: "flex flex-col gap-2 m-0 p-0 list-none max-h-45 overflow-y-auto",
 				children: mailbox.messages.map((message) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
-					className: "flex items-center gap-2.5 min-w-0 text-[13px] leading-5 text-[var(--dsw-alias-label-secondary)]",
+					className: "flex items-center gap-2.5 min-w-0 text-[13px] leading-5 text-(--dsw-alias-label-secondary)",
 					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: "grid shrink-0 place-items-center size-4",
 						role: "img",
 						"aria-label": t(message.status === "stalled" ? "mailboxStalled" : "mailboxPendingStatus"),
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							"aria-hidden": "true",
-							className: "relative inline-block flex-none size-2.5 text-[var(--dsw-alias-state-success-primary)] after:content-[''] after:absolute after:inset-[20%] after:rounded-full after:[corner-shape:round] after:bg-current"
+							className: "relative inline-block flex-none size-2.5 text-(--dsw-alias-state-success-primary) after:content-[''] after:absolute after:inset-[20%] after:rounded-full after:[corner-shape:round] after:bg-current"
 						})
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: "min-w-0 overflow-hidden truncate",
@@ -68313,7 +68328,7 @@ function SessionRoleIcon(t0) {
 	if (role === "project") {
 		let t2;
 		if ($[2] === Symbol.for("react.memo_cache_sentinel")) {
-			t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(UserShieldIcon, {});
+			t2 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Layers2Icon, {});
 			$[2] = t2;
 		} else t2 = $[2];
 		return t2;

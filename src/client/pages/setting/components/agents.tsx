@@ -99,33 +99,33 @@ export function Agents(): ReactNode {
   const failedMessage = models.error?.message ?? catalog.error?.message
   const loading = models.isLoading || catalog.isLoading
   if (loading && !failedMessage)
-    return <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAgentsLoading')}</p>
+    return <p role="status" className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingAgentsLoading')}</p>
   if (!models.data || !catalog.data)
-    return <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAgentsCatalogError', { error: failedMessage ?? '' })}</p>
+    return <p role="alert" className="m-0 text-xs text-(--dsw-alias-state-error-primary)">{t('settingAgentsCatalogError', { error: failedMessage ?? '' })}</p>
   const catalogue = catalog.data
   const current = models.data
   const fallback = catalogue.default
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]" aria-labelledby="supermesh-agents">
+    <section className="overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)" aria-labelledby="supermesh-agents">
       <header className="px-4 py-3">
         <h3 id="supermesh-agents" className="m-0 text-sm font-medium">{t('settingAgents')}</h3>
-        <p className="m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAgentsHelp')}</p>
-        <p className="m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">
+        <p className="m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingAgentsHelp')}</p>
+        <p className="m-0 mt-1.5 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">
           {fallback
             ? t('settingAgentsDefault', { model: `${fallback.provider} / ${fallback.model}${fallback.reasoningEffort ? ` · ${fallback.reasoningEffort}` : ''}` })
             : t('settingAgentsDefaultUnavailable')}
         </p>
-        {catalogue.groups.length === 0 && <p role="status" className="m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('settingAgentsEmpty')}</p>}
-        {catalog.error && <p role="alert" className="m-0 mt-1.5 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAgentsCatalogError', { error: catalog.error.message })}</p>}
+        {catalogue.groups.length === 0 && <p role="status" className="m-0 mt-1.5 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">{t('settingAgentsEmpty')}</p>}
+        {catalog.error && <p role="alert" className="m-0 mt-1.5 text-xs text-(--dsw-alias-state-error-primary)">{t('settingAgentsCatalogError', { error: catalog.error.message })}</p>}
       </header>
       {roles.map(({ role, label }) => {
         const entry = current[role]
         return (
-          <div key={role} className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3">
+          <div key={role} className="flex flex-wrap items-center justify-between gap-3 border-t border-(--dsw-alias-border-l3) px-4 py-3">
             <div className="min-w-0">
               <h4 className="m-0 text-xs font-medium">{t(label)}</h4>
-              <p className="m-0 mt-1 font-mono text-[11px] text-[var(--dsw-alias-label-tertiary)]">{role}</p>
-              {failed === role && <p role="alert" className="m-0 mt-1 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAgentsFailed')}</p>}
+              <p className="m-0 mt-1 font-mono text-[11px] text-(--dsw-alias-label-tertiary)">{role}</p>
+              {failed === role && <p role="alert" className="m-0 mt-1 text-xs text-(--dsw-alias-state-error-primary)">{t('settingAgentsFailed')}</p>}
             </div>
             <Menu
               open={open === role}
@@ -142,7 +142,7 @@ export function Agents(): ReactNode {
                   onClick={() => setOpen(open === role ? null : role)}
                 >
                   <span className="max-w-56 truncate">{pending === role ? t('channelSaving') : triggerLabel(role)}</span>
-                  {entry?.reasoningEffort && <span className="ml-1.5 text-[11px] text-[var(--dsw-alias-label-tertiary)]">{effortName(role)}</span>}
+                  {entry?.reasoningEffort && <span className="ml-1.5 text-[11px] text-(--dsw-alias-label-tertiary)">{effortName(role)}</span>}
                 </Button>
               )}
               items={items(role, catalogue)}

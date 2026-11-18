@@ -14,7 +14,7 @@ export function Relations({ links, ticketId, empty, clear }: { clear?: boolean, 
   const { data: tickets, error } = useQuery({ queryKey: keys.ticket, queryFn: () => getApiSupermeshTicket() })
   const labels = { waiting: t('overviewStatusWaiting'), queued: t('ticketStatusQueued'), running: t('overviewStatusRunning'), review: t('overviewStatusReview'), done: t('overviewCompleted'), cancelled: t('ticketStatusCancelled') }
   if (error)
-    return <p role="alert" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{error instanceof Error ? error.message : '任务列表加载失败'}</p>
+    return <p role="alert" className="m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{error instanceof Error ? error.message : '任务列表加载失败'}</p>
   return links.length
     ? (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -24,7 +24,7 @@ export function Relations({ links, ticketId, empty, clear }: { clear?: boolean, 
             return (
               <li key={link.ticketId + link.relatedId + link.kind} className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <Button variant="ghost" size="sm" className="max-w-full !h-auto !justify-start !whitespace-normal text-left" onClick={() => openTicket(id)}>
-                  <span className="text-xs text-[var(--dsw-alias-label-secondary)]">{id}</span>
+                  <span className="text-xs text-(--dsw-alias-label-secondary)">{id}</span>
                   {task && <span className="[overflow-wrap:anywhere]">{task.title}</span>}
                 </Button>
                 {task && <Tag tone={task.prepareError ? 'danger' : task.status === 'done' ? 'success' : task.status === 'review' ? 'warning' : task.status === 'running' ? 'info' : 'quiet'}>{task.paused ? t('ticketStatusPaused') : labels[task.status]}</Tag>}

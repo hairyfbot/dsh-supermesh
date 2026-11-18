@@ -14,11 +14,43 @@ export function TriggerDetail(): ReactNode {
   const { t } = useTranslation()
   const { go, openTicket } = useActions()
   const id = useStore(state => state.trigger.selectedId)
-  const project = useQuery({ queryKey: keys.project, queryFn: () => getApiSupermeshProject() })
-  const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiSupermeshTrigger(), refetchInterval: 30_000 })
-  const thread = useQuery({ queryKey: keys.thread, queryFn: () => getApiSupermeshThread() })
-  const subscription = useQuery({ queryKey: keys.subscription, queryFn: () => getApiSupermeshSubscription() })
-  const delivery = useQuery({ queryKey: keys.delivery, queryFn: () => getApiSupermeshDelivery() })
+  const project = useQuery({
+    queryKey: keys.project,
+    queryFn: () => getApiSupermeshProject(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+  const trigger = useQuery({
+    queryKey: keys.trigger,
+    queryFn: () => getApiSupermeshTrigger(),
+    refetchInterval: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+  const thread = useQuery({
+    queryKey: keys.thread,
+    queryFn: () => getApiSupermeshThread(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+  const subscription = useQuery({
+    queryKey: keys.subscription,
+    queryFn: () => getApiSupermeshSubscription(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+  const delivery = useQuery({
+    queryKey: keys.delivery,
+    queryFn: () => getApiSupermeshDelivery(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+
   const error = project.error ?? trigger.error ?? thread.error ?? subscription.error ?? delivery.error
   const loading = project.isLoading || trigger.isLoading || thread.isLoading || subscription.isLoading || delivery.isLoading
   const topic = groupTopics(recordsOf({ project: project.data, trigger: trigger.data, thread: thread.data, subscription: subscription.data, delivery: delivery.data })).find(topic => topic.latest.thread.id === id)
@@ -27,7 +59,7 @@ export function TriggerDetail(): ReactNode {
     return (
       <section className="flex flex-col gap-5 pb-10">
         <div>{back}</div>
-        <p role="alert" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{error.message || '话题详情加载失败，请重试。'}</p>
+        <p role="alert" className="m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{error.message || '话题详情加载失败，请重试。'}</p>
       </section>
     )
   }
@@ -35,7 +67,7 @@ export function TriggerDetail(): ReactNode {
     return (
       <section className="flex flex-col gap-5 pb-10">
         <div>{back}</div>
-        <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">正在载入话题详情…</p>
+        <p role="status" className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">正在载入话题详情…</p>
       </section>
     )
   }
@@ -43,7 +75,7 @@ export function TriggerDetail(): ReactNode {
     return (
       <section className="flex flex-col gap-5 pb-10">
         <div>{back}</div>
-        <Empty compact className="rounded-xl border border-[var(--dsw-alias-border-l3)] p-5 [&>p]:text-sm [&>p]:text-[var(--dsw-alias-label-primary)]" title={t('triggerTopicNotFound')} />
+        <Empty compact className="rounded-xl border border-(--dsw-alias-border-l3) p-5 [&>p]:text-sm [&>p]:text-(--dsw-alias-label-primary)" title={t('triggerTopicNotFound')} />
       </section>
     )
   }
@@ -55,11 +87,11 @@ export function TriggerDetail(): ReactNode {
     <section className="@container flex min-w-0 flex-col gap-5 pb-10" aria-label={t('triggerTopicDetail')}>
       <div>{back}</div>
       <header>
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]">
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-(--dsw-alias-label-tertiary)">
           <span>{channel}</span>
           {href
             ? (
-                <a href={href} target="_blank" rel="noopener noreferrer" title={t('triggerSampleLink')} className="text-[var(--dsw-alias-state-business-primary)] underline-offset-4 hover:underline focus-visible:underline">
+                <a href={href} target="_blank" rel="noopener noreferrer" title={t('triggerSampleLink')} className="text-(--dsw-alias-state-business-primary) underline-offset-4 hover:underline focus-visible:underline">
                   {latest.thread.ref}
                   {' '}
                   ↗
@@ -75,7 +107,7 @@ export function TriggerDetail(): ReactNode {
         <div className="min-w-0">
           <div className="mb-4 flex items-center justify-between gap-2">
             <h3 className="m-0 text-sm font-medium">{t('triggerTimeline')}</h3>
-            <span className="text-xs text-[var(--dsw-alias-label-tertiary)]">
+            <span className="text-xs text-(--dsw-alias-label-tertiary)">
               {t('triggerEventCount', { count: events.length })}
               {' '}
               ·
@@ -86,25 +118,25 @@ export function TriggerDetail(): ReactNode {
           <ol className="m-0 list-none p-0 pl-1.5">{events.map(event => <Event key={event.id} event={event} />)}</ol>
         </div>
         <aside className="flex min-w-0 flex-col gap-4 self-start @min-[780px]:sticky @min-[780px]:top-4">
-          <section className="rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4">
+          <section className="rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-4">
             <h3 className="m-0 text-sm font-medium">{t('triggerThread')}</h3>
             <dl className="m-0 mt-3 flex flex-col gap-3 text-xs">
               <div>
-                <dt className="text-[var(--dsw-alias-label-tertiary)]">{t('ticketProject')}</dt>
+                <dt className="text-(--dsw-alias-label-tertiary)">{t('ticketProject')}</dt>
                 <dd className="m-0 mt-1 break-all leading-5">{latest.thread.project ?? t('triggerNoProject')}</dd>
               </div>
               <div>
-                <dt className="text-[var(--dsw-alias-label-tertiary)]">{t('triggerThreadId')}</dt>
+                <dt className="text-(--dsw-alias-label-tertiary)">{t('triggerThreadId')}</dt>
                 <dd className="m-0 mt-1 break-all font-mono text-[11px] leading-5">{latest.thread.id}</dd>
               </div>
             </dl>
           </section>
-          <section className="rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-4">
+          <section className="rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-4">
             <h3 className="m-0 text-sm font-medium">{t('triggerLinkedTasks')}</h3>
-            <div className="mt-3 flex flex-wrap gap-2">{tickets.length ? tickets.map(ticket => <Button key={ticket} size="sm" variant="outline" onClick={() => openTicket(ticket)}>{ticket}</Button>) : <Empty compact className="[&>p]:text-xs [&>p]:text-[var(--dsw-alias-label-tertiary)]" title={t('triggerNoTask')} />}</div>
+            <div className="mt-3 flex flex-wrap gap-2">{tickets.length ? tickets.map(ticket => <Button key={ticket} size="sm" variant="outline" onClick={() => openTicket(ticket)}>{ticket}</Button>) : <Empty compact className="[&>p]:text-xs [&>p]:text-(--dsw-alias-label-tertiary)" title={t('triggerNoTask')} />}</div>
           </section>
-          <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerExternalText')}</p>
-          {href && <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerSampleLink')}</p>}
+          <p className="m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">{t('triggerExternalText')}</p>
+          {href && <p className="m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">{t('triggerSampleLink')}</p>}
         </aside>
       </div>
     </section>

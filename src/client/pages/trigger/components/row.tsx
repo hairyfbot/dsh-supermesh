@@ -14,18 +14,18 @@ export function Row({ topic }: { topic: Topic }): ReactNode {
   const status = STATUSES[deliveryStatus({ ...record, deliveries: topic.events.flatMap(event => [...event.deliveries]) })]
   const channel = record.channel === 'feishu' ? t('triggerFeishu') : record.channel === 'github' ? 'GitHub' : 'GitLab'
   return (
-    <li className="border-t border-[var(--dsw-alias-border-l3)] first:border-t-0">
-      <button type="button" onClick={() => openThread(record.thread.id)} aria-label={`${t('triggerOpenTopic')} ${record.thread.title}`} className="group/topic flex w-full cursor-pointer items-start gap-3 rounded-xl border-0 bg-transparent p-4 text-left font-[inherit] outline-none transition-colors hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dsw-alias-state-business-primary)]">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--dsw-alias-card-fill)]" title={channel}><Icon width={18} height={18} /></span>
+    <li className="border-t border-(--dsw-alias-border-l3) first:border-t-0">
+      <button type="button" onClick={() => openThread(record.thread.id)} aria-label={`${t('triggerOpenTopic')} ${record.thread.title}`} className="group/topic flex w-full cursor-pointer items-start gap-3 rounded-xl border-0 bg-transparent p-4 text-left font-[inherit] outline-none transition-colors hover:bg-(--dsw-alias-card-fill) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-(--dsw-alias-card-fill)" title={channel}><Icon width={18} height={18} /></span>
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-5">
-            <span className="min-w-0 font-medium text-[var(--dsw-alias-label-primary)] underline-offset-4 group-hover/topic:underline">{record.thread.title}</span>
-            <span className="text-xs text-[var(--dsw-alias-label-tertiary)]">{record.thread.ref}</span>
+            <span className="min-w-0 font-medium text-(--dsw-alias-label-primary) underline-offset-4 group-hover/topic:underline">{record.thread.title}</span>
+            <span className="text-xs text-(--dsw-alias-label-tertiary)">{record.thread.ref}</span>
             <Tag tone="neutral">{t(KINDS[record.kind])}</Tag>
             {record.mentioned && <Tag tone="info">{t('triggerMentioned')}</Tag>}
           </span>
-          <span className="mt-1 block truncate text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{record.text}</span>
-          <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-[var(--dsw-alias-label-tertiary)]">
+          <span className="mt-1 block truncate text-xs leading-5 text-(--dsw-alias-label-secondary)">{record.text}</span>
+          <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-4 text-(--dsw-alias-label-tertiary)">
             <span>{channel}</span>
             <span aria-hidden="true">·</span>
             <span>{record.actor}</span>
@@ -42,8 +42,8 @@ export function Row({ topic }: { topic: Topic }): ReactNode {
         </span>
         <span className="flex shrink-0 flex-col items-end gap-2">
           <Tag tone={status.tone}>{t(status.label)}</Tag>
-          <time dateTime={record.at} title={record.at} className="text-[11px] text-[var(--dsw-alias-label-tertiary)] tabular-nums">{record.at.slice(11, 16)}</time>
-          <span className="text-[11px] text-[var(--dsw-alias-label-tertiary)]">{t('triggerOpenTopic')}</span>
+          <time dateTime={record.at} title={record.at} className="text-[11px] text-(--dsw-alias-label-tertiary) tabular-nums">{record.at.slice(11, 16)}</time>
+          <span className="text-[11px] text-(--dsw-alias-label-tertiary)">{t('triggerOpenTopic')}</span>
         </span>
       </button>
     </li>

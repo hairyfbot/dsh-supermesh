@@ -18,9 +18,9 @@ export function TaskList(): ReactNode {
   const queries = [ticket, node, channel, trigger, subscription]
   const failure = queries.find(query => query.error)?.error
   if (failure)
-    return <p role="alert" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{failure instanceof Error ? failure.message : '任务列表加载失败'}</p>
+    return <p role="alert" className="m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{failure instanceof Error ? failure.message : '任务列表加载失败'}</p>
   if (queries.some(query => query.isLoading))
-    return <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]">加载中…</p>
+    return <p role="status" className="m-0 text-xs leading-5 text-(--dsw-alias-label-tertiary)">加载中…</p>
   const list = ticket.data ?? []
   const refreshedAt = ticket.dataUpdatedAt ? new Date(ticket.dataUpdatedAt).toISOString() : null
 

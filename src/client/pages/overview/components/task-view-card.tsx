@@ -24,7 +24,7 @@ export function TaskViewCard(): ReactNode {
         <SegmentedTabs size="sm" value={view} onChange={setOverviewView} items={tabs} label={t('overviewTaskViews')} />
         <StatusTag />
       </div>
-      <div id={`${id}-${view}-panel`} role="tabpanel" aria-labelledby={`${id}-${view}`} tabIndex={0} className="rounded-2xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]">
+      <div id={`${id}-${view}-panel`} role="tabpanel" aria-labelledby={`${id}-${view}`} tabIndex={0} className="rounded-2xl outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)">
         {view === 'recent' ? <TaskList /> : <Graph />}
       </div>
     </section>

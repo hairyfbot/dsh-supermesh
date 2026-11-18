@@ -68,14 +68,14 @@ export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null
   const enabled = candidates.filter(project => Boolean(project.enabled)).length
   const loadError = projects.error ?? channels.error
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]" aria-labelledby={id}>
+    <section className="overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)" aria-labelledby={id}>
       <header className="flex flex-wrap items-start justify-between gap-3 p-5 pb-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 id={id} className="m-0 text-sm font-medium">{t('settingProjects')}</h3>
             <Tag tone="quiet">{t('settingEnabledCount', { enabled, total: candidates.length })}</Tag>
           </div>
-          <p className="m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingProjectsDescription')}</p>
+          <p className="m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingProjectsDescription')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <AddRepository />
@@ -85,7 +85,7 @@ export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-4">
         <Input type="search" aria-label={t('settingSearchProjects')} placeholder={t('settingSearchProjects')} value={query} onChange={event => setQuery(event.currentTarget.value)} className="min-w-40 flex-1 !text-xs @min-[620px]:max-w-xs" />
         {refreshedAt && (
-          <time dateTime={refreshedAt} title={refreshedAt} className="text-[11px] text-[var(--dsw-alias-label-tertiary)]">
+          <time dateTime={refreshedAt} title={refreshedAt} className="text-[11px] text-(--dsw-alias-label-tertiary)">
             {t('settingLastSynced')}
             {' '}
             {new Date(refreshedAt).toLocaleTimeString()}
@@ -94,25 +94,25 @@ export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null
       </div>
       {(error || loadError) && <p role="alert" className="px-5">{error || loadError?.message}</p>}
       {projects.isLoading
-        ? <p role="status" className="px-5 pb-4 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">正在载入项目列表…</p>
+        ? <p role="status" className="px-5 pb-4 text-xs leading-5 text-(--dsw-alias-label-secondary)">正在载入项目列表…</p>
         : visible.length
           ? (
               <ul className="m-0 list-none p-0">
                 {visible.map((project) => {
                   const pathId = `${id}-path-${project.id}`
                   return (
-                    <li key={project.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-4">
+                    <li key={project.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-(--dsw-alias-border-l3) px-5 py-4">
                       <div className="flex min-w-0 flex-1 basis-48 items-start gap-2">
                         <label className="flex size-6 shrink-0 cursor-pointer items-center justify-center">
-                          <input type="checkbox" disabled={saving || refreshing || (!project.remoteUrl && !project.enabled)} checked={Boolean(project.enabled)} aria-label={t('settingSelectProject', { name: project.name })} aria-describedby={pathId} onChange={event => void toggle(project.id, event.currentTarget.checked)} className="size-3 cursor-pointer accent-[var(--dsw-alias-state-business-primary)]" />
+                          <input type="checkbox" disabled={saving || refreshing || (!project.remoteUrl && !project.enabled)} checked={Boolean(project.enabled)} aria-label={t('settingSelectProject', { name: project.name })} aria-describedby={pathId} onChange={event => void toggle(project.id, event.currentTarget.checked)} className="size-3 cursor-pointer accent-(--dsw-alias-state-business-primary)" />
                         </label>
                         <div className="min-w-0 pt-0.5">
-                          <div className="truncate text-[13px] leading-5 font-medium text-[var(--dsw-alias-label-primary)]">{project.name}</div>
-                          <p id={pathId} className="m-0 mt-1 truncate font-mono text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]" title={project.repository!.webUrl}>{`${project.repository!.platform}:${project.repository!.owner}/${project.repository!.name}`}</p>
+                          <div className="truncate text-[13px] leading-5 font-medium text-(--dsw-alias-label-primary)">{project.name}</div>
+                          <p id={pathId} className="m-0 mt-1 truncate font-mono text-[11px] leading-5 text-(--dsw-alias-label-tertiary)" title={project.repository!.webUrl}>{`${project.repository!.platform}:${project.repository!.owner}/${project.repository!.name}`}</p>
                         </div>
                       </div>
                       <div className="ml-auto flex shrink-0 items-center gap-2">
-                        <a href={project.repository!.webUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 items-center rounded-lg border border-[var(--dsw-alias-border-l3)] px-3 text-xs text-[var(--dsw-alias-label-primary)] no-underline hover:bg-[var(--dsw-alias-card-fill)] focus-visible:outline-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]">{t('settingOpenRepository')}</a>
+                        <a href={project.repository!.webUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-7 items-center rounded-lg border border-(--dsw-alias-border-l3) px-3 text-xs text-(--dsw-alias-label-primary) no-underline hover:bg-(--dsw-alias-card-fill) focus-visible:outline-2 focus-visible:outline-(--dsw-alias-state-business-primary)">{t('settingOpenRepository')}</a>
                       </div>
                     </li>
                   )
@@ -120,7 +120,7 @@ export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null
               </ul>
             )
           : (
-              <Empty compact className="items-center !gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-7 !text-center [&>p:first-of-type]:text-xs [&>p:first-of-type]:leading-4 [&>p:first-of-type]:font-medium [&>p:first-of-type]:text-[var(--dsw-alias-label-primary)] [&>p:nth-of-type(2)]:text-[var(--dsw-alias-label-secondary)]" title={t(normalized ? 'settingNoMatchingProjects' : 'settingNoProjects')} description={t(normalized ? 'settingNoMatchingProjectsHelp' : 'settingNoProjectsHelp')}>
+              <Empty compact className="items-center !gap-2 border-t border-(--dsw-alias-border-l3) px-4 py-7 !text-center [&>p:first-of-type]:text-xs [&>p:first-of-type]:leading-4 [&>p:first-of-type]:font-medium [&>p:first-of-type]:text-(--dsw-alias-label-primary) [&>p:nth-of-type(2)]:text-(--dsw-alias-label-secondary)" title={t(normalized ? 'settingNoMatchingProjects' : 'settingNoProjects')} description={t(normalized ? 'settingNoMatchingProjectsHelp' : 'settingNoProjectsHelp')}>
                 {normalized && <Button size="sm" variant="ghost" onClick={() => setQuery('')}>{t('settingClearSearch')}</Button>}
               </Empty>
             )}

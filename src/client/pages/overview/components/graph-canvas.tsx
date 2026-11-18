@@ -38,7 +38,7 @@ export function GraphCanvas({ nodes, edges, groups }: { nodes: readonly GraphNod
         <div className="overflow-x-auto">
           <svg
             viewBox={`${left} ${top} ${width} ${height}`}
-            className="block h-[380px] w-full min-w-[1040px] touch-none select-none bg-[var(--dsw-alias-bg-layer-2)]/40 outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--dsw-alias-state-business-primary)]"
+            className="block h-95 w-full min-w-260 touch-none select-none bg-(--dsw-alias-bg-layer-2)/40 outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)"
             aria-label={t('graphTitle')}
             role="group"
             tabIndex={0}
@@ -111,9 +111,9 @@ export function GraphCanvas({ nodes, edges, groups }: { nodes: readonly GraphNod
             {nodes.map(node => <foreignObject key={node.id} x={node.x} y={node.y} width={AGENT_GRAPH.nodeWidth} height={AGENT_GRAPH.nodeHeight}><GraphNodeCard node={node} selected={selectedId === node.id} onSelect={() => selectAgent(node.id)} /></foreignObject>)}
           </svg>
         </div>
-        <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)] p-1 shadow-sm">
+        <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-1 shadow-sm">
           <Button size="sm" variant="ghost" aria-label={t('graphZoomOut')} disabled={zoom <= AGENT_GRAPH.zoomMin} onClick={() => zoomGraph(-0.2)} icon={<ZoomOutIcon width={16} height={16} />} />
-          <span className="min-w-10 text-center text-xs tabular-nums text-[var(--dsw-alias-label-secondary)]">{`${Math.round(zoom * 100)}%`}</span>
+          <span className="min-w-10 text-center text-xs tabular-nums text-(--dsw-alias-label-secondary)">{`${Math.round(zoom * 100)}%`}</span>
           <Button size="sm" variant="ghost" aria-label={t('graphZoomIn')} disabled={zoom >= AGENT_GRAPH.zoomMax} onClick={() => zoomGraph(0.2)} icon={<ZoomInIcon width={16} height={16} />} />
           <Button
             size="sm"
@@ -127,7 +127,7 @@ export function GraphCanvas({ nodes, edges, groups }: { nodes: readonly GraphNod
           />
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-[11px] text-[var(--dsw-alias-label-tertiary)]">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-(--dsw-alias-border-l3) px-5 py-3 text-[11px] text-(--dsw-alias-label-tertiary)">
         <span>{t('graphHint')}</span>
         <span className="ml-auto flex gap-3">
           {(['flow', 'association', 'dependency'] as const).map(kind => (
@@ -139,13 +139,13 @@ export function GraphCanvas({ nodes, edges, groups }: { nodes: readonly GraphNod
         </span>
       </div>
       {selected && (
-        <div className="flex flex-wrap items-center gap-3 border-t border-[var(--dsw-alias-border-l3)] px-5 py-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 border-t border-(--dsw-alias-border-l3) px-5 py-3 text-xs">
           <AgentIcon width={16} height={16} />
           <span>
             {t(selected.label)}
             {selected.subtitle ? ` · ${selected.subtitle}` : ''}
           </span>
-          <span className="text-[var(--dsw-alias-label-tertiary)]">{t(selected.status === 'not_created' ? 'graphNotCreated' : selected.status === 'queued' ? 'graphQueued' : selected.status === 'running' ? 'graphRunning' : selected.status === 'background' ? 'graphBackground' : selected.status === 'done' ? 'graphDone' : selected.status === 'cancelled' ? 'graphCancelled' : selected.status === 'waiting' ? 'overviewStatusWaiting' : selected.status === 'review' ? 'overviewStatusReview' : selected.status === 'paused' || selected.status === 'error' ? 'overviewStatusIntervention' : 'graphIdle')}</span>
+          <span className="text-(--dsw-alias-label-tertiary)">{t(selected.status === 'not_created' ? 'graphNotCreated' : selected.status === 'queued' ? 'graphQueued' : selected.status === 'running' ? 'graphRunning' : selected.status === 'background' ? 'graphBackground' : selected.status === 'done' ? 'graphDone' : selected.status === 'cancelled' ? 'graphCancelled' : selected.status === 'waiting' ? 'overviewStatusWaiting' : selected.status === 'review' ? 'overviewStatusReview' : selected.status === 'paused' || selected.status === 'error' ? 'overviewStatusIntervention' : 'graphIdle')}</span>
           {selected.sessionId && <Button size="sm" variant="outline" onClick={() => ctx.uiWorkspace.openSession(selected.sessionId as SessionId)}>{t('overviewOpenSession')}</Button>}
           {selected.taskId && (
             <Button

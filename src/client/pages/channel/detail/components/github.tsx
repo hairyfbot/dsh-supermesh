@@ -14,7 +14,13 @@ import { Section } from './section'
 export function GithubDetail(): ReactNode {
   const { t } = useTranslation()
   const client = useQueryClient()
-  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
+  const channels = useQuery({
+    queryKey: keys.channel,
+    queryFn: () => getApiSupermeshChannel(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
   const channel = channels.data?.find(channel => channel.id === 'github')
   const id = useId()
   const savingRequest = useRef(false)
@@ -220,13 +226,13 @@ export function GithubDetail(): ReactNode {
         actions={hasCredential && (
           <>
             <Tag>{t('channelConfigured')}</Tag>
-            <Button size="sm" variant="outline" className="border-[var(--dsw-alias-state-error-primary)] text-[var(--dsw-alias-state-error-primary)]" disabled={busy} onClick={openDelete}>{t('channelDelete')}</Button>
+            <Button size="sm" variant="outline" className="border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)" disabled={busy} onClick={openDelete}>{t('channelDelete')}</Button>
             <Button size="sm" variant="primary" disabled={busy} onClick={() => void save(true)}>{t(channel?.enabled ? 'channelDisable' : 'channelEnable')}</Button>
           </>
         )}
       />
-      <p className="m-0 rounded-xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-3 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelGithubAvailability')}</p>
-      <p className="m-0 text-xs text-[var(--dsw-alias-label-secondary)]">{t('channelSingleAccount')}</p>
+      <p className="m-0 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-4 py-3 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelGithubAvailability')}</p>
+      <p className="m-0 text-xs text-(--dsw-alias-label-secondary)">{t('channelSingleAccount')}</p>
       <div className="grid min-w-0 items-start gap-4 @min-[780px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
           <Section title={t('channelAccount')} description={t('channelAccountDescription')}>
@@ -240,14 +246,14 @@ export function GithubDetail(): ReactNode {
                 <Input id={`${id}-commit-email`} type="email" placeholder="bot@example.com" value={emailValue} onChange={event => setCommitEmail(event.target.value)} disabled={busy} maxLength={254} autoComplete="off" spellCheck={false} />
               </div>
             </div>
-            <p className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelCommitHelp')}</p>
-            <div className="flex flex-col gap-3 border-t border-[var(--dsw-alias-border-l3)] pt-4">
+            <p className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelCommitHelp')}</p>
+            <div className="flex flex-col gap-3 border-t border-(--dsw-alias-border-l3) pt-4">
               <div className="max-w-full overflow-x-auto"><SegmentedTabs value={method} onChange={setMethod} items={tabs} label={t('channelLoginMethod')} size="sm" className="w-fit" /></div>
-              <div key={method} id={`${id}-${method}-panel`} role="tabpanel" aria-labelledby={`${id}-${method}`} tabIndex={0} className="flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--dsw-alias-state-business-primary)]">
+              <div key={method} id={`${id}-${method}-panel`} role="tabpanel" aria-labelledby={`${id}-${method}`} tabIndex={0} className="flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)">
                 {method === 'authorize'
                   ? (
                       <>
-                        <p className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelGithubAuthorizeDescription')}</p>
+                        <p className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelGithubAuthorizeDescription')}</p>
                         <div className="flex flex-wrap items-center gap-2">
                           <Button size="sm" variant="primary" disabled={busy} onClick={() => void authorize()}>{t('channelAuthorizeAction', { name: 'GitHub' })}</Button>
                           {authNotice && <p role="status" className="m-0 text-xs leading-5">{authNotice}</p>}
@@ -260,21 +266,21 @@ export function GithubDetail(): ReactNode {
                             {copyNotice && <span role="status">{copyNotice}</span>}
                           </div>
                         )}
-                        {verificationUri && <a href={verificationUri} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--dsw-alias-state-business-primary)] underline">{t('channelAuthOpenVerification')}</a>}
-                        {authentication?.output && <pre aria-label={t('channelAuthOutput')} className="m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-[var(--dsw-alias-card-fill)] px-3 py-2 font-mono text-xs leading-5">{authentication.output}</pre>}
+                        {verificationUri && <a href={verificationUri} target="_blank" rel="noopener noreferrer" className="text-xs text-(--dsw-alias-state-business-primary) underline">{t('channelAuthOpenVerification')}</a>}
+                        {authentication?.output && <pre aria-label={t('channelAuthOutput')} className="m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-(--dsw-alias-card-fill) px-3 py-2 font-mono text-xs leading-5">{authentication.output}</pre>}
                       </>
                     )
                   : (
                       <>
                         <label htmlFor={`${id}-token-value`} className="text-xs font-medium">{t('channelTokenLabel')}</label>
                         <Input id={`${id}-token-value`} className="w-full min-w-0" type="password" value={token} onChange={event => setToken(event.target.value)} disabled={busy} autoComplete="new-password" placeholder={t('channelTokenPlaceholder')} aria-describedby={`${id}-token-help`} />
-                        <p id={`${id}-token-help`} className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelTokenDescription')}</p>
+                        <p id={`${id}-token-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelTokenDescription')}</p>
                       </>
                     )}
               </div>
             </div>
             {notice && <p role="status" className="m-0 text-xs leading-5">{notice}</p>}
-            {deleteNotice && <p role="status" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{deleteNotice}</p>}
+            {deleteNotice && <p role="status" className="m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{deleteNotice}</p>}
             {dirty && (
               <div className="flex flex-wrap justify-end gap-2">
                 <Button size="sm" variant="outline" disabled={busy} onClick={cancel}>{t('channelCancel')}</Button>
@@ -294,7 +300,7 @@ export function GithubDetail(): ReactNode {
         footer={(
           <>
             <Button variant="outline" disabled={deletion === 'deleting'} onClick={closeDelete}>{t('channelCancel')}</Button>
-            <Button variant="primary" className="border-[var(--dsw-alias-state-error-primary)] text-[var(--dsw-alias-state-error-primary)]" disabled={deletion === 'deleting'} onClick={() => void deleteCredentials()}>{t(deletion === 'deleting' ? 'channelDeleting' : 'channelDeleteConfirm')}</Button>
+            <Button variant="primary" className="border-(--dsw-alias-state-error-primary) text-(--dsw-alias-state-error-primary)" disabled={deletion === 'deleting'} onClick={() => void deleteCredentials()}>{t(deletion === 'deleting' ? 'channelDeleting' : 'channelDeleteConfirm')}</Button>
           </>
         )}
       />

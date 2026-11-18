@@ -17,16 +17,16 @@ export function Graph(): ReactNode {
   const laid = nodes ? layoutGraph({ nodes, edges: edges ?? [], groups: groups ?? [] }) : []
   const list: AgentGraphEdge[] = (edges ?? []).map(edge => ({ ...edge, kind: edge.kind === 'dependency' ? 'dependency' : edge.kind === 'association' ? 'association' : 'flow' }))
   return (
-    <section className="mt-4 overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]">
-      <header className="border-b border-[var(--dsw-alias-border-l3)] px-5 py-2">
+    <section className="mt-4 overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)">
+      <header className="border-b border-(--dsw-alias-border-l3) px-5 py-2">
         <h2 className="mb-0 mt-1 text-[13px] font-medium">{t('graphTitle')}</h2>
-        <p className="mb-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('graphDescription')}</p>
+        <p className="mb-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-tertiary)">{t('graphDescription')}</p>
       </header>
       {error
-        ? <Empty className="min-h-[380px]" title={t('graphUnavailable')} description={error instanceof Error ? error.message : t('graphUnavailableDescription')} icon={<AgentIcon width={28} height={28} />} />
+        ? <Empty className="min-h-95" title={t('graphUnavailable')} description={error instanceof Error ? error.message : t('graphUnavailableDescription')} icon={<AgentIcon width={28} height={28} />} />
         : laid.length
           ? <GraphCanvas nodes={laid} edges={list} groups={groups ?? []} />
-          : <Empty className="min-h-[380px]" title={t(isLoading ? 'graphLoading' : 'graphEmpty')} description={isLoading ? undefined : t('graphEmptyDescription')} icon={<AgentIcon width={28} height={28} />} />}
+          : <Empty className="min-h-95" title={t(isLoading ? 'graphLoading' : 'graphEmpty')} description={isLoading ? undefined : t('graphEmptyDescription')} icon={<AgentIcon width={28} height={28} />} />}
     </section>
   )
 }

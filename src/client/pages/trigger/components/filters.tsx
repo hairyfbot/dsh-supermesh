@@ -38,8 +38,8 @@ export function Filters(): ReactNode {
           )}
         />
       ))}
-      <label className="flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-[var(--dsw-alias-label-secondary)]">
-        <input type="checkbox" checked={filters.mentionedOnly} onChange={event => setTriggerFilters({ mentionedOnly: event.currentTarget.checked })} className="accent-[var(--dsw-alias-state-business-primary)]" />
+      <label className="flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-(--dsw-alias-label-secondary)">
+        <input type="checkbox" checked={filters.mentionedOnly} onChange={event => setTriggerFilters({ mentionedOnly: event.currentTarget.checked })} className="accent-(--dsw-alias-state-business-primary)" />
         {t('triggerMentionedOnly')}
       </label>
     </div>

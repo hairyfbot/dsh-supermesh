@@ -21,7 +21,7 @@ export function Ticket(): ReactNode {
   return (
     <section className="@container pb-10">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-[var(--dsw-alias-label-secondary)] my-1">{t('ticketListDescription')}</p>
+        <p className="text-[13px] text-(--dsw-alias-label-secondary) my-1">{t('ticketListDescription')}</p>
       </div>
       {failure && <p role="alert">{failure instanceof Error ? failure.message : '任务列表加载失败'}</p>}
       {queries.some(query => query.isLoading) && <p role="status">加载中…</p>}

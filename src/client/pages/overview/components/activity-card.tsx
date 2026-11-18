@@ -23,16 +23,16 @@ export function ActivityCard({ onMore }: { onMore: () => void }): ReactNode {
       background={error ? undefined : <ActivityChart triggers={triggers ?? []} />}
     >
       {error
-        ? <p role="alert" className="mt-auto text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{error instanceof Error ? error.message : '触发记录加载失败'}</p>
+        ? <p role="alert" className="mt-auto text-xs leading-5 text-(--dsw-alias-state-error-primary)">{error instanceof Error ? error.message : '触发记录加载失败'}</p>
         : isLoading
-          ? <p role="status" className="mt-auto text-xs leading-5 text-[var(--dsw-alias-label-tertiary)]">加载中…</p>
+          ? <p role="status" className="mt-auto text-xs leading-5 text-(--dsw-alias-label-tertiary)">加载中…</p>
           : (
               <>
                 <p aria-label={`${t('overviewReceived')} ${metrics.rate}${t('overviewPerHour')}`} className="flex items-baseline gap-1.5 tabular-nums">
                   <span className="text-[32px] leading-10 font-semibold tracking-tight">{metrics.rate}</span>
-                  <span className="text-sm text-[var(--dsw-alias-label-secondary)]">{t('overviewPerHour')}</span>
+                  <span className="text-sm text-(--dsw-alias-label-secondary)">{t('overviewPerHour')}</span>
                 </p>
-                <dl className="mt-auto flex flex-col gap-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">
+                <dl className="mt-auto flex flex-col gap-1 text-xs leading-5 text-(--dsw-alias-label-secondary)">
                   <div className="flex gap-2">
                     <dt>{t('overviewTotalMessages')}</dt>
                     <dd className="tabular-nums">{`${metrics.received} ${t('overviewItems')}`}</dd>

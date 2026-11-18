@@ -23,7 +23,7 @@ export function General({ value, baseline, pending, failed, onChange, onDiscard,
   const dirty = administratorSignature(value.administrators) !== administratorSignature(baseline.administrators) || value.autoArchiveWorkers !== baseline.autoArchiveWorkers
   return (
     <form
-      className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]"
+      className="overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)"
       aria-labelledby={`${id}-title`}
       onSubmit={(event) => {
         event.preventDefault()
@@ -33,9 +33,9 @@ export function General({ value, baseline, pending, failed, onChange, onDiscard,
     >
       <header className="px-4 py-3">
         <h3 id={`${id}-title`} className="m-0 text-sm font-medium">{t('settingGeneral')}</h3>
-        <p className="m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingGeneralDescription')}</p>
+        <p className="m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingGeneralDescription')}</p>
       </header>
-      <div className="flex flex-col gap-2 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3">
+      <div className="flex flex-col gap-2 border-t border-(--dsw-alias-border-l3) px-4 py-3">
         <label htmlFor={`${id}-administrators`} className="text-xs font-medium">{t('settingAdministrators')}</label>
         <Input
           id={`${id}-administrators`}
@@ -47,18 +47,18 @@ export function General({ value, baseline, pending, failed, onChange, onDiscard,
           aria-invalid={!valid}
           aria-describedby={`${id}-help`}
         />
-        <p id={`${id}-help`} className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAdministratorsHelp')}</p>
-        {!valid && <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingAdministratorsInvalid')}</p>}
-        {failed && <p role="alert" className="m-0 text-xs text-[var(--dsw-alias-state-error-primary)]">{t('settingGeneralSaveFailed')}</p>}
+        <p id={`${id}-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingAdministratorsHelp')}</p>
+        {!valid && <p role="alert" className="m-0 text-xs text-(--dsw-alias-state-error-primary)">{t('settingAdministratorsInvalid')}</p>}
+        {failed && <p role="alert" className="m-0 text-xs text-(--dsw-alias-state-error-primary)">{t('settingGeneralSaveFailed')}</p>}
       </div>
-      <div className="flex items-start justify-between gap-5 border-t border-[var(--dsw-alias-border-l3)] px-4 py-3">
+      <div className="flex items-start justify-between gap-5 border-t border-(--dsw-alias-border-l3) px-4 py-3">
         <div className="min-w-0">
           <h4 className="m-0 text-xs font-medium">{t('settingAutoArchiveWorkers')}</h4>
-          <p className="m-0 mt-1.5 max-w-lg text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAutoArchiveWorkersHelp')}</p>
+          <p className="m-0 mt-1.5 max-w-lg text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingAutoArchiveWorkersHelp')}</p>
         </div>
         <Switch disabled={pending} checked={value.autoArchiveWorkers} label={t('settingAutoArchiveWorkers')} onChange={autoArchiveWorkers => onChange({ autoArchiveWorkers })} />
       </div>
-      <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-card-fill)] px-4 py-2.5">
+      <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-4 py-2.5">
         <Button type="button" size="sm" variant="ghost" disabled={pending || !dirty} onClick={onDiscard}>{t('settingDiscard')}</Button>
         <Button type="submit" size="sm" variant="primary" disabled={pending || !dirty || !valid}>{t(pending ? 'channelSaving' : 'settingSave')}</Button>
       </footer>

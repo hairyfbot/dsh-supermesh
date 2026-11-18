@@ -7,7 +7,7 @@ import { useTranslation } from '../../../hooks/use-translation'
 export function TaskChart({ segments }: { segments: OverviewTaskSegment[] }): ReactNode {
   const { t } = useTranslation()
   return (
-    <figure className="pointer-events-none size-[100px] shrink-0 [&_*]:outline-none" role="img" aria-label={segments.map(segment => `${t(segment.name)} ${segment.value}`).join(' · ')}>
+    <figure className="pointer-events-none size-25 shrink-0 [&_*]:outline-none" role="img" aria-label={segments.map(segment => `${t(segment.name)} ${segment.value}`).join(' · ')}>
       {segments.some(segment => segment.value > 0)
         ? (
             <ResponsiveContainer width="100%" height="100%" minWidth={0}>

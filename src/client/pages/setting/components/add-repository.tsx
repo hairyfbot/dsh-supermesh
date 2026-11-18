@@ -70,7 +70,7 @@ export function AddRepository(): ReactNode {
       >
         {t('settingAddRepository')}
       </Button>
-      {notice && <span role="status" className="text-xs text-[var(--dsw-alias-label-secondary)]">{notice}</span>}
+      {notice && <span role="status" className="text-xs text-(--dsw-alias-label-secondary)">{notice}</span>}
       <Modal
         open={open}
         onClose={close}
@@ -101,7 +101,7 @@ export function AddRepository(): ReactNode {
               aria-invalid={Boolean(remote.trim()) && !repository}
               aria-describedby={`${id}-remote-help`}
             />
-            <p id={`${id}-remote-help`} className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingRepositoryRemoteHelp')}</p>
+            <p id={`${id}-remote-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingRepositoryRemoteHelp')}</p>
           </div>
           <div className="flex flex-col gap-2">
             <label htmlFor={`${id}-name`} className="text-xs font-medium">{t('settingWorkspaceName')}</label>
@@ -116,9 +116,9 @@ export function AddRepository(): ReactNode {
               maxLength={120}
               aria-describedby={`${id}-name-help`}
             />
-            <p id={`${id}-name-help`} className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingRepositoryNameHelp')}</p>
+            <p id={`${id}-name-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingRepositoryNameHelp')}</p>
           </div>
-          {error && <p role="alert" className="m-0 break-words text-xs text-[var(--dsw-alias-state-error-primary)]">{error}</p>}
+          {error && <p role="alert" className="m-0 break-words text-xs text-(--dsw-alias-state-error-primary)">{error}</p>}
         </div>
       </Modal>
     </>

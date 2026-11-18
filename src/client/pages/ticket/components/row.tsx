@@ -42,15 +42,15 @@ export function Row({ task, nodes, channels, triggers, subscriptions, refreshedA
   const seconds = start && end ? Math.max(0, Math.floor((Date.parse(end) - Date.parse(start)) / 1000)) : Number.NaN
   const duration = Number.isFinite(seconds) ? `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ` : ''}${seconds >= 60 ? `${Math.floor(seconds / 60) % 60}m ` : ''}${seconds % 60}s` : null
   return (
-    <li className="flex flex-col gap-3 border-b border-[var(--dsw-alias-border-l3)] py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5">
+    <li className="flex flex-col gap-3 border-b border-(--dsw-alias-border-l3) py-5 last:border-b-0 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:justify-between @min-[640px]:gap-5">
       <div className="flex min-w-0 items-start gap-3">
-        <span className="mt-0.5 text-[var(--dsw-alias-label-tertiary)]"><TasksIcon width={17} height={17} /></span>
+        <span className="mt-0.5 text-(--dsw-alias-label-tertiary)"><TasksIcon width={17} height={17} /></span>
         <div className="min-w-0">
           <h3 className="text-[13px] leading-5 font-medium [overflow-wrap:anywhere] m-0">
-            <span className="mr-2 text-xs font-normal text-[var(--dsw-alias-label-tertiary)]">{task.id}</span>
+            <span className="mr-2 text-xs font-normal text-(--dsw-alias-label-tertiary)">{task.id}</span>
             {task.title}
           </h3>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)">
             <Tag tone={intervention ? 'danger' : status[task.status].tone}>{t(task.paused ? 'ticketStatusPaused' : task.prepareError ? 'overviewStatusIntervention' : status[task.status].label)}</Tag>
             {intervention
               ? <span>{task.prepareError ?? t('ticketStatusPaused')}</span>

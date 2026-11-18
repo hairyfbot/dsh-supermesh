@@ -21,9 +21,31 @@ export function TicketDetail(): ReactNode {
   const ctx = useDshContext()
   const { go } = useActions()
   const { ticketId, returnTo } = useStore(state => state.navigation)
-  const { data: stored, isLoading, error } = useQuery({ queryKey: keys.ticketDetail(ticketId ?? ''), queryFn: () => getApiSupermeshTicketId({ id: ticketId ?? '' }), enabled: Boolean(ticketId) })
-  const { data: channelList } = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
-  const { data: groupList } = useQuery({ queryKey: keys.group, queryFn: () => getApiSupermeshGroup(), refetchInterval: 15_000 })
+  const { data: stored, isLoading, error } = useQuery({
+    queryKey: keys.ticketDetail(ticketId ?? ''),
+    queryFn: () => getApiSupermeshTicketId({ id: ticketId ?? '' }),
+    enabled: Boolean(ticketId),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+  const { data: channelList } = useQuery({
+    queryKey: keys.channel,
+    queryFn: getApiSupermeshChannel,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+
+  const { data: groupList } = useQuery({
+    queryKey: keys.group,
+    queryFn: getApiSupermeshGroup,
+    refetchInterval: 15_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  })
+
   const detail = stored?.ticket?.id === ticketId ? stored : null
   const task = detail?.ticket
   const unavailable = stored !== undefined && !detail
@@ -43,7 +65,7 @@ export function TicketDetail(): ReactNode {
           <header className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-3">
-                <span className="text-xs text-[var(--dsw-alias-label-tertiary)]">{task.id}</span>
+                <span className="text-xs text-(--dsw-alias-label-tertiary)">{task.id}</span>
                 <Tag tone={task.prepareError || task.paused ? 'danger' : task.status === 'done' ? 'success' : task.status === 'running' ? 'info' : task.status === 'review' ? 'warning' : 'quiet'}>{task.paused ? t('ticketStatusPaused') : task.prepareError ? t('overviewStatusIntervention') : labels[task.status]}</Tag>
               </div>
               <h2 className="m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]">{task.title}</h2>
@@ -71,7 +93,7 @@ export function TicketDetail(): ReactNode {
             <Metric label={t('ticketChannel')} icon={<ChannelsIcon width={17} height={17} />}>
               {channel?.name ?? task.channelId}
               {channel && (
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-normal text-[var(--dsw-alias-label-secondary)]">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-normal text-(--dsw-alias-label-secondary)">
                   <StateDot state={channel.status === 'online' ? 'done' : 'idle'} size={6} />
                   {t(channel.status === 'online' ? 'ticketChannelConnected' : 'overviewDisconnected')}
                 </span>

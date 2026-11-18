@@ -27,10 +27,10 @@ export function Trigger(): ReactNode {
   const loading = project.isLoading || trigger.isLoading || thread.isLoading || subscription.isLoading || delivery.isLoading
   let content: ReactNode
   if (error) {
-    content = <p role="alert" className="m-0 px-4 py-6 text-xs text-[var(--dsw-alias-state-error-primary)]">{error.message || '触发记录加载失败，请重试。'}</p>
+    content = <p role="alert" className="m-0 px-4 py-6 text-xs text-(--dsw-alias-state-error-primary)">{error.message || '触发记录加载失败，请重试。'}</p>
   }
   else if (loading) {
-    content = <p role="status" className="m-0 px-4 py-6 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">正在载入触发记录…</p>
+    content = <p role="status" className="m-0 px-4 py-6 text-xs leading-5 text-(--dsw-alias-label-secondary)">正在载入触发记录…</p>
   }
   else if (records.length) {
     content = <ul className="m-0 list-none p-0">{records.map(topic => <Row key={topic.latest.thread.id} topic={topic} />)}</ul>
@@ -47,19 +47,19 @@ export function Trigger(): ReactNode {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="m-0 text-base leading-6 font-medium">{t('triggerTitle')}</h2>
-          <p className="m-0 mt-1 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('triggerDescription')}</p>
+          <p className="m-0 mt-1 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('triggerDescription')}</p>
         </div>
       </header>
       <Summary topics={topics} />
       <div className="flex flex-col gap-3">
         <Filters />
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--dsw-alias-label-tertiary)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-(--dsw-alias-label-tertiary)">
           <span role="status">{t('triggerResultCount', { count: records.length, total: topics.length })}</span>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]">
+        <div className="overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)">
           {content}
         </div>
-        <p className="m-0 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">{t('triggerPreviewNotice')}</p>
+        <p className="m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)">{t('triggerPreviewNotice')}</p>
       </div>
     </section>
   )
