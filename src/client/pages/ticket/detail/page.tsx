@@ -2,9 +2,9 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
 import { Button, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusChannel, getApiNexusGroup, getApiNexusTicketId } from '../../../apis'
+import { getApiSupermeshChannel, getApiSupermeshGroup, getApiSupermeshTicketId } from '../../../apis'
 import { Empty } from '../../../components/empty'
-import { ActivityIcon, ArrowLeftIcon, ChannelsIcon, GitBranchIcon, GitHubIcon, NexusIcon } from '../../../components/icons'
+import { ActivityIcon, ArrowLeftIcon, ChannelsIcon, GitBranchIcon, GitHubIcon, SupermeshIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
 import { useDshContext } from '../../../hooks/use-dsh-context'
 import { useActions, useStore } from '../../../hooks/use-store'
@@ -21,9 +21,9 @@ export function TicketDetail(): ReactNode {
   const ctx = useDshContext()
   const { go } = useActions()
   const { ticketId, returnTo } = useStore(state => state.navigation)
-  const { data: stored, isLoading, error } = useQuery({ queryKey: keys.ticketDetail(ticketId ?? ''), queryFn: () => getApiNexusTicketId({ id: ticketId ?? '' }), enabled: Boolean(ticketId) })
-  const { data: channelList } = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
-  const { data: groupList } = useQuery({ queryKey: keys.group, queryFn: () => getApiNexusGroup(), refetchInterval: 15_000 })
+  const { data: stored, isLoading, error } = useQuery({ queryKey: keys.ticketDetail(ticketId ?? ''), queryFn: () => getApiSupermeshTicketId({ id: ticketId ?? '' }), enabled: Boolean(ticketId) })
+  const { data: channelList } = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
+  const { data: groupList } = useQuery({ queryKey: keys.group, queryFn: () => getApiSupermeshGroup(), refetchInterval: 15_000 })
   const detail = stored?.ticket?.id === ticketId ? stored : null
   const task = detail?.ticket
   const unavailable = stored !== undefined && !detail
@@ -37,7 +37,7 @@ export function TicketDetail(): ReactNode {
       <div><Button variant="ghost" size="sm" icon={<ArrowLeftIcon width={16} height={16} />} onClick={() => go(returnTo)}>{t('ticketBack')}</Button></div>
       {isLoading && <p role="status">加载中…</p>}
       {(error || unavailable) && <p role="alert">{error instanceof Error ? error.message : '任务不存在或无法读取'}</p>}
-      {!task && !isLoading && !error && !unavailable && <Empty title={t('ticketNotFound')} description={t('ticketNotFoundDescription')} icon={<NexusIcon width={28} height={28} />} />}
+      {!task && !isLoading && !error && !unavailable && <Empty title={t('ticketNotFound')} description={t('ticketNotFoundDescription')} icon={<SupermeshIcon width={28} height={28} />} />}
       {task && detail && (
         <>
           <header className="flex flex-wrap items-start justify-between gap-x-5 gap-y-3">
@@ -58,7 +58,7 @@ export function TicketDetail(): ReactNode {
           </header>
           {task.prepareError && <p role="alert">{task.prepareError}</p>}
           <dl className="m-0 grid min-w-0 gap-3 @min-[460px]:grid-cols-2 @min-[820px]:grid-cols-4">
-            <Metric label={t('ticketProject')} icon={<NexusIcon width={17} height={17} />}>
+            <Metric label={t('ticketProject')} icon={<SupermeshIcon width={17} height={17} />}>
               {detail.project
                 ? (
                     <span className="inline-flex min-w-0 items-center gap-1.5" title={detail.project.directory}>

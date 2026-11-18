@@ -1,6 +1,6 @@
 import type { InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '../../../database/types'
-import type { GetApiNexusDeliveryResponse, GetApiNexusProjectResponse, GetApiNexusSubscriptionResponse, GetApiNexusThreadResponse, GetApiNexusTriggerResponse } from '../../apis/index.type'
-import type { DshNexusKey } from '../../locale'
+import type { GetApiSupermeshDeliveryResponse, GetApiSupermeshProjectResponse, GetApiSupermeshSubscriptionResponse, GetApiSupermeshThreadResponse, GetApiSupermeshTriggerResponse } from '../../apis/index.type'
+import type { DshSupermeshKey } from '../../locale'
 import type { OverviewChannelKind } from '../../types'
 
 export interface EventRecord {
@@ -35,7 +35,7 @@ export const KINDS = {
   close: 'triggerKindClose',
   ci: 'triggerKindCi',
   push: 'triggerKindPush',
-} as const satisfies Record<TriggerKind, DshNexusKey>
+} as const satisfies Record<TriggerKind, DshSupermeshKey>
 
 export const STATUSES = {
   'pending': { label: 'triggerPending', tone: 'info' },
@@ -96,11 +96,11 @@ export const TRIAGE = { pending: 'triggerTriagePending', claimed: 'triggerTriage
 export const THREAD_KINDS = { issue: 'triggerTopicIssue', pull: 'triggerTopicPull', chat: 'triggerTopicChat', ci: 'triggerTopicCi' } as const
 
 export interface RecordSource {
-  project: GetApiNexusProjectResponse | null | undefined
-  trigger: GetApiNexusTriggerResponse | null | undefined
-  thread: GetApiNexusThreadResponse | null | undefined
-  subscription: GetApiNexusSubscriptionResponse | null | undefined
-  delivery: GetApiNexusDeliveryResponse | null | undefined
+  project: GetApiSupermeshProjectResponse | null | undefined
+  trigger: GetApiSupermeshTriggerResponse | null | undefined
+  thread: GetApiSupermeshThreadResponse | null | undefined
+  subscription: GetApiSupermeshSubscriptionResponse | null | undefined
+  delivery: GetApiSupermeshDeliveryResponse | null | undefined
 }
 
 export function recordsOf(source: RecordSource): EventRecord[] {

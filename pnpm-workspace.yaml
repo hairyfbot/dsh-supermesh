@@ -18,7 +18,7 @@ overrides:
   '@types/react-dom': 19.3.0
 allowBuilds:
   '@prisma/engines': true
-  dsh-nexus: true
+  dsh-supermesh: true
   esbuild: true
   playwright: true
   prisma: true

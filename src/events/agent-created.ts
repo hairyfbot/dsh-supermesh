@@ -12,7 +12,7 @@ export async function handleAgentCreated(ctx: Context, agent: Agent): Promise<un
     ctx.effect(() => agent.ctx.effect(() => {
       const disposers = definition.tools.map(tool => agent.ctx.tools.register(tool))
       return () => disposers.forEach(dispose => dispose())
-    }, 'nexus:tools'), 'nexus:agent-tools')
+    }, 'supermesh:tools'), 'supermesh:agent-tools')
   }
   const role = await session.attach(agent)
   if (!role)
@@ -22,6 +22,6 @@ export async function handleAgentCreated(ctx: Context, agent: Agent): Promise<un
   ctx.effect(() => agent.ctx.on('agent/status', ({ status }) => {
     if (status === 'idle')
       void inbox.notify(agent).catch(error => ctx.logger.error(error))
-  }), 'nexus:mailbox-notice')
+  }), 'supermesh:mailbox-notice')
   await inbox.notify(agent, true)
 }

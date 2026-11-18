@@ -14,7 +14,7 @@ export const create_worker = defineTool({
     },
     branch: {
       type: 'string',
-      description: '分支名，省略则用 nexus/<任务号>。末段必须是任务号，PR 归哪张票就靠这个字符串比对。',
+      description: '分支名，省略则用 dsh/<任务号>。末段必须是任务号，PR 归哪张票就靠这个字符串比对。',
     },
   },
   output: {
@@ -72,13 +72,13 @@ export const send = defineTool({
     if (ticket.status === 'done' || ticket.status === 'cancelled')
       throw new Error('工单已结束')
     if (!(await session.lookup(worker.id)))
-      throw new Error('Worker 未在运行时加载、已归档或不属于 Nexus；不能直接发送')
+      throw new Error('Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送')
     if (args.mode === 'reply') {
       const asks = (await db.inbox.listByTicket(ticket.id)).filter(row => row.workerId === worker.id && row.kind === 'ask' && row.status === 'pending')
       if (asks.length !== 1 || !db.inbox.owns(asks[0]!, { type: 'project', projectId: identity.projectId }))
         throw new Error('reply 必须唯一对应当前项目编排待答的 ask')
       await db.inbox.answerScoped(asks[0]!.id, args.text, { type: 'project', projectId: identity.projectId }, new Date().toISOString())
-      await session.send(worker.id, `[Answer ${asks[0]!.id}] ${args.text}`, 'reply', `nexus:answer:${asks[0]!.id}`)
+      await session.send(worker.id, `[Answer ${asks[0]!.id}] ${args.text}`, 'reply', `supermesh:answer:${asks[0]!.id}`)
     }
     else {
       await session.send(worker.id, args.text, args.mode)

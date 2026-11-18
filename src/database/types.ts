@@ -129,8 +129,8 @@ export type Channel = {
      * 'github' | 'gitlab' | 'feishu' | 'qq' | 'wechat'
      * 故意保持 String：这是身份而非状态，新增渠道只要插一行，不该逼一次迁移。
      *
-     * **它同时决定用哪份 skill**：`nexus-channel-<id>`，
-     * 例如 `github` → `assets/skills/nexus-channel-github/SKILL.md`。
+     * **它同时决定用哪份 skill**：`supermesh-channel-<id>`，
+     * 例如 `github` → `assets/skills/supermesh-channel-github/SKILL.md`。
      * 一个渠道一份 skill，不搞别名。
      */
     id: string;
@@ -296,7 +296,7 @@ export type Project = {
      */
     remoteUrl: string | null;
     /**
-     * 是否纳入 Nexus 编排范围；工作区同步不得覆盖人工选择。
+     * 是否纳入 Supermesh 编排范围；工作区同步不得覆盖人工选择。
      */
     enabled: Generated<number>;
     /**
@@ -470,7 +470,7 @@ export type Trigger = {
     at: string;
     /**
      * 来源侧的引用，各渠道含义不同，统一放在这一列：
-     * PR 的 `open` / `merge` / `close`：head 分支名，例如 `nexus/T-105`
+     * PR 的 `open` / `merge` / `close`：head 分支名，例如 `dsh/T-105`
      * CI 的 `ci`：被检查的 commit sha
      * 推送的 `push`：分支名
      * 其余为空

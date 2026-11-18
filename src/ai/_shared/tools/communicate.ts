@@ -24,7 +24,7 @@ export const answer = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role === 'worker')
       throw new Error('Worker 没有收件箱')
     const scope = identity.role === 'project' && identity.projectId ? { type: 'project' as const, projectId: identity.projectId } : identity.role === 'supervisor' && identity.supervisorId ? { type: 'supervisor' as const, supervisorId: identity.supervisorId } : identity.role === 'main' ? { type: 'main' as const } : null
@@ -33,13 +33,13 @@ export const answer = defineTool({
     const question = await db.inbox.findById(args.askId)
     if (question?.origin === 'worker') {
       if (!question.workerId || !(await session.lookup(question.workerId)))
-        throw new Error('Worker 未在运行时加载、已归档或不属于 Nexus；不能直接回答')
+        throw new Error('Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接回答')
       if ((await db.worker.findById(question.workerId))?.status === 'ended')
         throw new Error('Worker 已结束')
     }
     const row = await db.inbox.answerScoped(args.askId, args.text, scope, new Date().toISOString())
     if (row.origin === 'worker' && row.workerId)
-      await session.send(row.workerId, `[Answer ${row.id}] ${args.text}`, 'reply', `nexus:answer:${row.id}`)
+      await session.send(row.workerId, `[Answer ${row.id}] ${args.text}`, 'reply', `supermesh:answer:${row.id}`)
     return JSON.stringify({ id: args.askId, status: 'done', delivery: row.origin === 'worker' ? 'direct' : 'queued' })
   },
 })

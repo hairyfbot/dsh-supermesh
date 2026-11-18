@@ -1,5 +1,5 @@
 ---
-name: nexus-channel-feishu
+name: supermesh-channel-feishu
 description: 用 bot 身份读飞书的消息、话题串、嵌套转发、附件和文档时用这个。
 ---
 

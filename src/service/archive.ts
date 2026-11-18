@@ -20,7 +20,7 @@ export const archive = defineService({
       }
       catch (error) {
         if (attempt === 2) {
-          ctx.logger.warn('nexus: archiving session %s failed: %s', id, error instanceof Error ? error.message : String(error))
+          ctx.logger.warn('supermesh: archiving session %s failed: %s', id, error instanceof Error ? error.message : String(error))
           return false
         }
         await new Promise(resolve => setTimeout(resolve, 500))

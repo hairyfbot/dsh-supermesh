@@ -63,7 +63,7 @@ PR 已合并时不改写，在报告记录尚未记名的人；不得用空提�
 
 ## 渠道
 
-读原文用 read_channel，路径写法见对应的 \`nexus-channel-<id>\` skill。
+读原文用 read_channel，路径写法见对应的 \`supermesh-channel-<id>\` skill。
 要说话用 reply_channel，锚点是触发 id，不用猜发到哪。
 
 **先回复再干活。** 人需要知道我们接下了。但只对真人请求回复 ——

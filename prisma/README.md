@@ -1,4 +1,4 @@
-# Nexus 数据模型
+# Supermesh 数据模型
 
 SQLite + Prisma。这份映射参考官方的 dsh-superagent（`prisma_ref_to_prototype/schema.prisma`）重写，
 只保留我们自己真正需要的东西。

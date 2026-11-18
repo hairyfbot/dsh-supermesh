@@ -29,7 +29,7 @@ export const read_channel = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     const offset = args.offset ?? 0
     const limit = args.limit ?? 50
     if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 100)
@@ -130,7 +130,7 @@ export const reply_channel = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     const trigger = await db.trigger.findById(args.triggerId)
     if (!trigger)
       throw new Error('触发不存在')

@@ -2,8 +2,8 @@ import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 
 export const dicts = {
   zh: {
-    panel: 'Nexus',
-    title: 'Nexus',
+    panel: 'Supermesh',
+    title: 'Supermesh',
     desc: '多渠道协作与任务编排',
     openMainSession: '打开主会话',
     mailboxTitle: '邮箱',
@@ -133,7 +133,7 @@ export const dicts = {
     channelUninstalled: '渠道插件未安装或已停用',
     channelDetailsUnavailable: '渠道详情不可用，请安装并启用对应插件。',
     channelEmpty: '尚未安装渠道插件',
-    channelEmptyDescription: '安装 GitHub、GitLab 或其他 Nexus 渠道插件后，在这里配置连接。',
+    channelEmptyDescription: '安装 GitHub、GitLab 或其他 Supermesh 渠道插件后，在这里配置连接。',
     channelFeishuUnavailable: '飞书渠道尚未开放配置，请先使用 GitHub 或 GitLab。',
     channelPreview: '配置预览',
     channelUnavailable: '登录与保存服务尚未接入。此页面不会保存配置或接收真实 Token，也不会改变系统 CLI 的登录状态。',
@@ -160,7 +160,7 @@ export const dicts = {
     channelTokenDescription: 'Token 经服务端验证，实际账号与凭据保存到宿主服务；验证失败不会标记为已登录。',
     channelTokenDisabled: '验证接口未接入，暂不接受真实 Token。',
     channelSave: '验证并保存',
-    channelGithubAvailability: '支持 GitHub CLI 授权登录及 Token 验证，使用 Nexus 独立凭据，不改变系统 CLI 的登录状态。',
+    channelGithubAvailability: '支持 GitHub CLI 授权登录及 Token 验证，使用 Supermesh 独立凭据，不改变系统 CLI 的登录状态。',
     channelGitlabAvailability: '支持 GitLab 官方站与自建站，通过 Token 验证实际账号并接收项目事件。',
     channelCredentialManaged: '宿主凭据服务',
     channelCredentialSaved: '已保存，Token 不会回显',
@@ -398,19 +398,19 @@ export const dicts = {
     triggerThreadConsole: '控制台登录回调异常',
     triggerThreadCi: '默认分支检查结果变化',
     triggerThreadChatter: '日常讨论与进度同步',
-    triggerTextLogin: '@nexus 登录测试仍有偶发失败，请结合并发请求检查认证模块的 Token 校验。',
-    triggerTextApi: '@nexus 请校对 API 响应规范，重点确认错误码与分页字段是否一致。',
-    triggerTextReview: '@nexus 重新安装入口已经补齐，请再检查一次远程安装失败后的恢复流程。',
-    triggerTextDelivery: '@nexus 控制台登录回调偶发跳转失败，麻烦排查。',
+    triggerTextLogin: '@supermesh 登录测试仍有偶发失败，请结合并发请求检查认证模块的 Token 校验。',
+    triggerTextApi: '@supermesh 请校对 API 响应规范，重点确认错误码与分页字段是否一致。',
+    triggerTextReview: '@supermesh 重新安装入口已经补齐，请再检查一次远程安装失败后的恢复流程。',
+    triggerTextDelivery: '@supermesh 控制台登录回调偶发跳转失败，麻烦排查。',
     triggerTextCi: 'main 分支新提交 7e4b2c1 的检查结果发生变化：test 失败，lint 通过。',
     triggerTextUnmentioned: '补充复现信息：连续运行登录用例时，大约每十次会出现一次 401。',
     triggerTextIgnored: '收到，今天先按当前计划推进，其他细节下次讨论。',
-    triggerTextOpen: '@nexus 已创建 PR #81，补充远端一键安装的重新安装入口。',
+    triggerTextOpen: '@supermesh 已创建 PR #81，补充远端一键安装的重新安装入口。',
     triggerErrorSession: '编排会话暂时不可用',
   },
   en: {
-    panel: 'Nexus',
-    title: 'Nexus',
+    panel: 'Supermesh',
+    title: 'Supermesh',
     desc: 'Multi-channel collaboration and task orchestration',
     openMainSession: 'Open main session',
     mailboxTitle: 'Mailbox',
@@ -540,7 +540,7 @@ export const dicts = {
     channelUninstalled: 'Channel plugin is not installed or is disabled',
     channelDetailsUnavailable: 'Channel details are unavailable. Install and enable its plugin.',
     channelEmpty: 'No channel plugins installed',
-    channelEmptyDescription: 'Install a GitHub, GitLab, or another Nexus channel plugin to configure its connection here.',
+    channelEmptyDescription: 'Install a GitHub, GitLab, or another Supermesh channel plugin to configure its connection here.',
     channelFeishuUnavailable: 'Feishu configuration is not available yet. Use GitHub or GitLab for now.',
     channelPreview: 'Configuration preview',
     channelUnavailable: 'Sign-in and saving are not connected yet. This page does not save configuration, accept real tokens, or change your system CLI login.',
@@ -567,7 +567,7 @@ export const dicts = {
     channelTokenDescription: 'The server verifies tokens and saves the actual identity and host credentials. Failed verification never marks an account as signed in.',
     channelTokenDisabled: 'Token verification is not connected. Do not enter a real token.',
     channelSave: 'Verify and save',
-    channelGithubAvailability: 'Sign in using GitHub CLI or verify a token. Nexus credentials are isolated from system CLI sign-in.',
+    channelGithubAvailability: 'Sign in using GitHub CLI or verify a token. Supermesh credentials are isolated from system CLI sign-in.',
     channelGitlabAvailability: 'Use GitLab.com or a self-hosted instance, verify the actual account with a token, and receive project events.',
     channelCredentialManaged: 'Host credential service',
     channelCredentialSaved: 'Saved; tokens are never returned',
@@ -805,22 +805,22 @@ export const dicts = {
     triggerThreadConsole: 'Console login callback intermittently fails',
     triggerThreadCi: 'Default branch check results changed',
     triggerThreadChatter: 'Daily discussion and progress updates',
-    triggerTextLogin: '@nexus Login tests still fail intermittently. Check Token validation under concurrent requests.',
-    triggerTextApi: '@nexus Review API response conventions, especially error codes and pagination fields.',
-    triggerTextReview: '@nexus The reinstall entry is ready. Please check recovery after remote installation fails.',
-    triggerTextDelivery: '@nexus The console login callback sometimes fails to redirect. Please investigate.',
+    triggerTextLogin: '@supermesh Login tests still fail intermittently. Check Token validation under concurrent requests.',
+    triggerTextApi: '@supermesh Review API response conventions, especially error codes and pagination fields.',
+    triggerTextReview: '@supermesh The reinstall entry is ready. Please check recovery after remote installation fails.',
+    triggerTextDelivery: '@supermesh The console login callback sometimes fails to redirect. Please investigate.',
     triggerTextCi: 'Checks changed for commit 7e4b2c1 on main: test failed, lint passed.',
     triggerTextUnmentioned: 'More reproduction details: running login tests repeatedly returns a 401 about once every ten runs.',
     triggerTextIgnored: 'Understood. Follow the current plan today and discuss other details next time.',
-    triggerTextOpen: '@nexus PR #81 adds the reinstall entry for one-click remote installation.',
+    triggerTextOpen: '@supermesh PR #81 adds the reinstall entry for one-click remote installation.',
     triggerErrorSession: 'Orchestrator session is temporarily unavailable',
   },
 } as const
 
-export type DshNexusKey = keyof typeof dicts.zh
+export type DshSupermeshKey = keyof typeof dicts.zh
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
-  interface LocaleNamespaceMap { dshNexus: DshNexusKey }
+  interface LocaleNamespaceMap { dshSupermesh: DshSupermeshKey }
 }
 
-export type T = Translate<DshNexusKey>
+export type T = Translate<DshSupermeshKey>

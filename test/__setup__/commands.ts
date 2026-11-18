@@ -30,16 +30,16 @@ export const openDshPage: BrowserCommand<[], { url: string }> = async (context) 
   session.page = page
   session.errors = logs(page).errors
   await page.goto(session.scaffold.baseUrl, { waitUntil: 'load' })
-  await page.getByRole('button', { name: 'Nexus', exact: true }).waitFor({ timeout: 90_000 })
+  await page.getByRole('button', { name: 'Supermesh', exact: true }).waitFor({ timeout: 90_000 })
   return { url: page.url() }
 }
 
-export const nexusRequest: BrowserCommand<[string, string, unknown?], { status: number, body: unknown }> = async (context, path, method, body) => {
+export const supermeshRequest: BrowserCommand<[string, string, unknown?], { status: number, body: unknown }> = async (context, path, method, body) => {
   const page = sessions.get(context.sessionId)?.page
   if (!page)
     throw new Error('DSH page must be opened first')
-  if (!path.startsWith('/api/nexus/'))
-    throw new Error('E2E only permits Nexus endpoints')
+  if (!path.startsWith('/api/supermesh/'))
+    throw new Error('E2E only permits Supermesh endpoints')
   return page.evaluate(async ({ path, method, body }) => {
     const response = await fetch(path, {
       method,
@@ -50,7 +50,7 @@ export const nexusRequest: BrowserCommand<[string, string, unknown?], { status: 
   }, { path, method, body })
 }
 
-export const openNexusMainSession: BrowserCommand<[], { sessionId: string, panelSessionId: unknown, errors: string[] }> = async (context) => {
+export const openSupermeshMainSession: BrowserCommand<[], { sessionId: string, panelSessionId: unknown, errors: string[] }> = async (context) => {
   const session = sessions.get(context.sessionId)
   const page = session?.page
   if (!session || !page)
@@ -61,17 +61,17 @@ export const openNexusMainSession: BrowserCommand<[], { sessionId: string, panel
     await preview.waitFor({ state: 'hidden' })
     session.previewDismissed = true
   }
-  await page.getByRole('button', { name: 'Nexus', exact: true }).click()
+  await page.getByRole('button', { name: 'Supermesh', exact: true }).click()
   const openMain = page.getByRole('button', { name: /^(?:打开主会话|Open main session)$/u })
   await openMain.waitFor({ state: 'visible' })
-  const created = page.waitForResponse(response => new URL(response.url()).pathname === '/api/nexus/session/main' && response.request().method() === 'PUT')
+  const created = page.waitForResponse(response => new URL(response.url()).pathname === '/api/supermesh/session/main' && response.request().method() === 'PUT')
   await openMain.click()
   const response = await created
   if (response.status() !== 200)
     throw new Error(`main session creation failed: ${await response.text()}`)
   const result = await response.json() as { sessionId: string }
   const panel = await page.evaluate(async () => {
-    const response = await fetch('/api/nexus/session/role')
+    const response = await fetch('/api/supermesh/session/role')
     if (!response.ok)
       throw new Error('session role lookup failed')
     const value = await response.json() as { sessions: { sessionId: string, role: string }[] }

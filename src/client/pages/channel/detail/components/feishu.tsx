@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusChannel } from '../../../../apis'
+import { getApiSupermeshChannel } from '../../../../apis'
 import { Empty } from '../../../../components/empty'
 import { FeishuIcon } from '../../../../components/icons'
 import { keys } from '../../../../config/query-keys'
@@ -9,7 +9,7 @@ import { DetailHeader } from './header'
 
 export function FeishuDetail(): ReactNode {
   const { t } = useTranslation()
-  const { data: channels, error } = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const { data: channels, error } = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const name = channels?.find(channel => channel.id === 'feishu')?.name
   return (
     <>

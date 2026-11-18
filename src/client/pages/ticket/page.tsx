@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusChannel, getApiNexusNode, getApiNexusSubscription, getApiNexusTicket, getApiNexusTrigger } from '../../apis'
+import { getApiSupermeshChannel, getApiSupermeshNode, getApiSupermeshSubscription, getApiSupermeshTicket, getApiSupermeshTrigger } from '../../apis'
 import { Empty } from '../../components/empty'
 import { TasksIcon } from '../../components/icons'
 import { keys } from '../../config/query-keys'
@@ -9,11 +9,11 @@ import { Row } from './components/row'
 
 export function Ticket(): ReactNode {
   const { t } = useTranslation()
-  const ticket = useQuery({ queryKey: keys.ticket, queryFn: () => getApiNexusTicket() })
-  const node = useQuery({ queryKey: keys.node, queryFn: () => getApiNexusNode(), refetchInterval: 15_000 })
-  const channel = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
-  const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiNexusTrigger(), refetchInterval: 30_000 })
-  const subscription = useQuery({ queryKey: keys.subscription, queryFn: () => getApiNexusSubscription() })
+  const ticket = useQuery({ queryKey: keys.ticket, queryFn: () => getApiSupermeshTicket() })
+  const node = useQuery({ queryKey: keys.node, queryFn: () => getApiSupermeshNode(), refetchInterval: 15_000 })
+  const channel = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
+  const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiSupermeshTrigger(), refetchInterval: 30_000 })
+  const subscription = useQuery({ queryKey: keys.subscription, queryFn: () => getApiSupermeshSubscription() })
   const queries = [ticket, node, channel, trigger, subscription]
   const failure = queries.find(query => query.error)?.error
   const tickets = ticket.data ?? []

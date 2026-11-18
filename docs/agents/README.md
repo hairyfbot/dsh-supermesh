@@ -1,4 +1,4 @@
-# Nexus 代理
+# Supermesh 代理
 
 ```
 主编排 main      全局唯一，只定「归谁、做不做」
@@ -9,10 +9,10 @@
 
 | 文件 | 收件箱 | 改代码 | cwd |
 | --- | --- | :-: | --- |
-| [main.md](main.md) | `type=main` | ❌ 只写笔记 | `~/.nexus/notes/main/` |
-| [project.md](project.md) | `type=project` | ❌ 只写笔记 | `~/.nexus/notes/project/<id>/` |
+| [main.md](main.md) | `type=main` | ❌ 只写笔记 | `~/.supermesh/notes/main/` |
+| [project.md](project.md) | `type=project` | ❌ 只写笔记 | `~/.supermesh/notes/project/<id>/` |
 | [worker.md](worker.md) | **无** | ✅ | 任务 worktree |
-| [supervisor.md](supervisor.md) | `type=supervisor` | ❌ 只写笔记 | `~/.nexus/notes/supervisor/` |
+| [supervisor.md](supervisor.md) | `type=supervisor` | ❌ 只写笔记 | `~/.supermesh/notes/supervisor/` |
 
 cwd 是**笔记区**，不是仓库。仓库在 `Project.directory`，用绝对路径读。
 `write` 因此天然被关在笔记里 —— 想写代码得用绝对路径，而那要走沙箱。
@@ -99,7 +99,7 @@ main       → user（ask_user）
 
 ## 渠道
 
-工具只有一对，具体路径和写法由 `assets/skills/nexus-channel-<id>/SKILL.md` 教。
+工具只有一对，具体路径和写法由 `assets/skills/supermesh-channel-<id>/SKILL.md` 教。
 
 **`read_channel(resource, offset?, limit?)`** 靠路径前缀分发，不按渠道造工具：
 
@@ -116,7 +116,7 @@ main       → user（ask_user）
 
 ## skill
 
-渠道说明是 `assets/skills/nexus-channel-<id>/SKILL.md`，三段式：frontmatter `name` +
+渠道说明是 `assets/skills/supermesh-channel-<id>/SKILL.md`，三段式：frontmatter `name` +
 `description` + 正文。**所有角色都能读，不按角色分配** —— catalog 只暴露 `description`，
 模型按当前任务自己决定 load 哪份。见 [prisma/README.md](../../prisma/README.md#渠道提示词)。
 

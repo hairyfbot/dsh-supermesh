@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import type { PatchApiNexusSettingBody } from '../../../apis/index.type'
-import type { DshNexusKey } from '../../../locale'
+import type { PatchApiSupermeshSettingBody } from '../../../apis/index.type'
+import type { DshSupermeshKey } from '../../../locale'
 import type { RuntimeSettings } from '../../../store/setting'
 import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId } from 'react'
@@ -15,14 +15,14 @@ export function Runtime({ section, value, baseline, pending, failed, onChange, o
   failed: boolean
   onChange: (patch: Partial<RuntimeSettings>) => void
   onDiscard: () => void
-  onSave: (patch: PatchApiNexusSettingBody) => Promise<void>
+  onSave: (patch: PatchApiSupermeshSettingBody) => Promise<void>
 }): ReactNode {
   const { t } = useTranslation()
   const prefix = useId()
   const dirty = GROUPS[section].some(key => value[key] !== baseline[key])
   const candidate = { ...baseline, ...Object.fromEntries(GROUPS[section].map(key => [key, value[key]])), administrators: value.administrators, autoArchiveWorkers: value.autoArchiveWorkers }
   const valid = validSettings(candidate)
-  const fields: { key: keyof typeof LIMITS, label: DshNexusKey, help: DshNexusKey, unit: DshNexusKey }[] = [
+  const fields: { key: keyof typeof LIMITS, label: DshSupermeshKey, help: DshSupermeshKey, unit: DshSupermeshKey }[] = [
     { key: 'maxWorkers', label: 'settingMaxWorkers', help: 'settingMaxWorkersHelp', unit: 'settingWorkersUnit' },
     { key: 'backgroundLimitMinutes', label: 'settingBackgroundLimit', help: 'settingBackgroundLimitHelp', unit: 'settingMinutesUnit' },
     { key: 'autoMergeMaxLines', label: 'settingAutoMergeLines', help: 'settingAutoMergeLinesHelp', unit: 'settingLinesUnit' },

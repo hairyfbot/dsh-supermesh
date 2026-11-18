@@ -3,7 +3,7 @@ import { Button, Input, Modal, SegmentedTabs, Tag } from '@deepseek-ai/dsh-clien
 import { useAsync, useTimeoutPoll } from '@reause/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
-import { deleteApiNexusChannelIdCredential, getApiNexusChannel, getApiNexusChannelIdAuthenticationAuthenticationId, postApiNexusChannelIdAuthentication, putApiNexusChannelIdConfiguration } from '../../../../apis'
+import { deleteApiSupermeshChannelIdCredential, getApiSupermeshChannel, getApiSupermeshChannelIdAuthenticationAuthenticationId, postApiSupermeshChannelIdAuthentication, putApiSupermeshChannelIdConfiguration } from '../../../../apis'
 import { GitHubIcon } from '../../../../components/icons'
 import { keys } from '../../../../config/query-keys'
 import { useTranslation } from '../../../../hooks/use-translation'
@@ -14,7 +14,7 @@ import { Section } from './section'
 export function GithubDetail(): ReactNode {
   const { t } = useTranslation()
   const client = useQueryClient()
-  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const channel = channels.data?.find(channel => channel.id === 'github')
   const id = useId()
   const savingRequest = useRef(false)
@@ -33,7 +33,7 @@ export function GithubDetail(): ReactNode {
   const dirty = token.length > 0 || identityDirty
   const canSave = (hasCredential || Boolean(token.trim())) && (identityDirty || Boolean(token.trim()))
   const [method, setMethod] = useState<'authorize' | 'token'>('authorize')
-  const [authentication, setAuthentication] = useState<Awaited<ReturnType<typeof postApiNexusChannelIdAuthentication>> | null>(null)
+  const [authentication, setAuthentication] = useState<Awaited<ReturnType<typeof postApiSupermeshChannelIdAuthentication>> | null>(null)
   const [authenticating, setAuthenticating] = useState(false)
   const [authNotice, setAuthNotice] = useState('')
   const [copyNotice, setCopyNotice] = useState('')
@@ -65,13 +65,13 @@ export function GithubDetail(): ReactNode {
     if (!authId.current || lifetime.current.signal.aborted)
       return
     try {
-      await applyAuthentication(await getApiNexusChannelIdAuthenticationAuthenticationId({ id: 'github', authenticationId: authId.current }, { signal: lifetime.current.signal }))
+      await applyAuthentication(await getApiSupermeshChannelIdAuthenticationAuthenticationId({ id: 'github', authenticationId: authId.current }, { signal: lifetime.current.signal }))
     }
     catch {
       failAuthentication()
     }
   }, 1000, { immediate: false })
-  async function applyAuthentication(value: Awaited<ReturnType<typeof postApiNexusChannelIdAuthentication>>): Promise<void> {
+  async function applyAuthentication(value: Awaited<ReturnType<typeof postApiSupermeshChannelIdAuthentication>>): Promise<void> {
     if (lifetime.current.signal.aborted)
       return
     if (!value || typeof value.id !== 'string' || !value.id || value.channelId !== 'github' || typeof value.output !== 'string' || !['pending', 'succeeded', 'failed'].includes(value.status) || (authId.current && authId.current !== value.id) || (value.userCode !== undefined && typeof value.userCode !== 'string') || (value.verificationUri !== undefined && typeof value.verificationUri !== 'string'))
@@ -107,7 +107,7 @@ export function GithubDetail(): ReactNode {
     setCopyNotice('')
     setAuthNotice(t('channelAuthStarting'))
     try {
-      const value = await postApiNexusChannelIdAuthentication({ id: 'github' }, {}, { signal: lifetime.current.signal })
+      const value = await postApiSupermeshChannelIdAuthentication({ id: 'github' }, {}, { signal: lifetime.current.signal })
       await applyAuthentication(value)
       if (!lifetime.current.signal.aborted && value.status === 'pending')
         resume()
@@ -150,7 +150,7 @@ export function GithubDetail(): ReactNode {
     setSaving(true)
     setNotice('')
     try {
-      const result = await putApiNexusChannelIdConfiguration({ id: 'github' }, toggle
+      const result = await putApiSupermeshChannelIdConfiguration({ id: 'github' }, toggle
         ? { enabled: !channel.enabled }
         : { commitName: nameValue.trim(), commitEmail: emailValue.trim(), ...(token.trim() ? { token: token.trim(), enabled: hasCredential ? channel.enabled : true } : {}) })
       if (!('channel' in result))
@@ -186,7 +186,7 @@ export function GithubDetail(): ReactNode {
     deletingRequest.current = true
     setDeletion('deleting')
     try {
-      const result = await deleteApiNexusChannelIdCredential({ id: 'github' }, { signal: lifetime.current.signal })
+      const result = await deleteApiSupermeshChannelIdCredential({ id: 'github' }, { signal: lifetime.current.signal })
       if (lifetime.current.signal.aborted)
         return
       if (!('channel' in result))
@@ -233,7 +233,7 @@ export function GithubDetail(): ReactNode {
             <div className="grid gap-3 @min-[540px]:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${id}-commit-name`} className="text-xs font-medium">{t('channelCommitName')}</label>
-                <Input id={`${id}-commit-name`} placeholder="Nexus Bot" value={nameValue} onChange={event => setCommitName(event.target.value)} disabled={busy} maxLength={200} autoComplete="off" />
+                <Input id={`${id}-commit-name`} placeholder="Supermesh Bot" value={nameValue} onChange={event => setCommitName(event.target.value)} disabled={busy} maxLength={200} autoComplete="off" />
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${id}-commit-email`} className="text-xs font-medium">{t('channelCommitEmail')}</label>

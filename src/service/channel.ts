@@ -80,7 +80,7 @@ function credentials() {
 }
 
 function ref(kind: 'github' | 'gitlab') {
-  return credentialRef(kind === 'github' ? 'NEXUS_GITHUB_TOKEN' : 'NEXUS_GITLAB_TOKEN')
+  return credentialRef(kind === 'github' ? 'SUPERMESH_GITHUB_TOKEN' : 'SUPERMESH_GITLAB_TOKEN')
 }
 
 function readMetadata(raw: string | undefined, kind: ChannelKind): { commitName: string, commitEmail: string, expectedAccount?: string } {

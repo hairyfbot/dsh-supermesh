@@ -9,13 +9,13 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
 
 import type { ClientContext } from './types/context'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { getApiNexusSessionRole } from './apis'
+import { getApiSupermeshSessionRole } from './apis'
 import { client } from './client'
-import { AgentIcon, GitForkIcon, NexusIcon, UserShieldIcon, UsersRoundIcon } from './components/icons'
+import { AgentIcon, GitForkIcon, SupermeshIcon, UserShieldIcon, UsersRoundIcon } from './components/icons'
 import { PluginContext } from './config/context'
 import { keys } from './config/query-keys'
 import { dicts } from './locale'
-import { Panel as NexusPanel } from './panel'
+import { Panel as SupermeshPanel } from './panel'
 import { store } from './store'
 import { Notification } from './ui/mailbox/notification'
 import { Panel as MailboxPanel } from './ui/mailbox/panel'
@@ -23,7 +23,7 @@ import { Panel as MailboxPanel } from './ui/mailbox/panel'
 type MailboxNoticeEvent = Extract<SessionEvent, { type: 'user/message' }>
 
 function SessionRoleIcon({ sessionId }: { sessionId: string }) {
-  const { data } = useQuery({ queryKey: keys.sessionRole, queryFn: () => getApiNexusSessionRole() })
+  const { data } = useQuery({ queryKey: keys.sessionRole, queryFn: () => getApiSupermeshSessionRole() })
   const role = data?.sessions.find(session => session.sessionId === sessionId)?.role
   if (role === 'main')
     return <GitForkIcon />
@@ -36,8 +36,8 @@ function SessionRoleIcon({ sessionId }: { sessionId: string }) {
   return null
 }
 
-const PANEL_ID = 'dsh-nexus' as MainPanelId
-const NS = 'dshNexus' as const
+const PANEL_ID = 'dsh-supermesh' as MainPanelId
+const NS = 'dshSupermesh' as const
 
 export const inject = ['slots', 'locale', 'sessions', 'layout', 'uiWorkspace', 'uiConversation']
 
@@ -48,9 +48,9 @@ export function apply(ctx: ClientContext): void {
   )
 
   const definition: ConversationNodeDefinition<MailboxNoticeEvent> = {
-    kind: 'nexus-mailbox-notification',
+    kind: 'supermesh-mailbox-notification',
     target: 'chat',
-    match: event => event.type === 'user/message' && event.data.source.kind === 'nexus-mailbox' && event.data.source.form === 'notice'
+    match: event => event.type === 'user/message' && event.data.source.kind === 'supermesh-mailbox' && event.data.source.form === 'notice'
       ? { id: String(event.data.id), role: 'start', exclusive: true }
       : null,
     start: (_, match) => match.event as MailboxNoticeEvent,
@@ -58,7 +58,7 @@ export function apply(ctx: ClientContext): void {
     buildViewNode: context => context.state && context.start
       ? {
           key: context.key,
-          kind: 'nexus-mailbox-notification',
+          kind: 'supermesh-mailbox-notification',
           id: context.id,
           target: 'chat',
           anchorSeq: context.state.seq,
@@ -69,7 +69,7 @@ export function apply(ctx: ClientContext): void {
         }
       : null,
   }
-  ctx.effect(() => ctx.uiConversation.events.register(definition), 'nexus:mailbox-notification')
+  ctx.effect(() => ctx.uiConversation.events.register(definition), 'supermesh:mailbox-notification')
 
   const t = ctx.locale.bind(NS)
 
@@ -89,14 +89,14 @@ export function apply(ctx: ClientContext): void {
           actions: props.actions,
         }}
         >
-          <NexusPanel />
+          <SupermeshPanel />
         </PluginContext.Provider>
       </QueryClientProvider>
     ),
   ))
 
   ctx.slots.inject('conversation.chat.node', () => ctx.slots.register(
-    { name: 'conversation.chat.node', key: 'nexus-mailbox-notification', locale: NS },
+    { name: 'conversation.chat.node', key: 'supermesh-mailbox-notification', locale: NS },
     props => (
       <PluginContext.Provider value={{ ctx, t: props.t }}>
         <Notification node={props.node} />
@@ -105,7 +105,7 @@ export function apply(ctx: ClientContext): void {
   ))
 
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
-    { name: 'conversation.input.dock', id: 'nexus-mailbox', order: 1, locale: NS },
+    { name: 'conversation.input.dock', id: 'supermesh-mailbox', order: 1, locale: NS },
     props => (
       <PluginContext.Provider key={props.sessionId} value={{ ctx, t: props.t }}>
         <MailboxPanel sessionId={props.sessionId} />
@@ -137,6 +137,6 @@ export function apply(ctx: ClientContext): void {
       label: () => t('panel'),
       locale: NS,
     },
-    ({ size }) => <NexusIcon width={size} height={size} />,
+    ({ size }) => <SupermeshIcon width={size} height={size} />,
   ))
 }

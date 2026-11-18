@@ -1,21 +1,21 @@
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactNode } from 'react'
-import type { GetApiNexusAgentModelCatalogResponse, GetApiNexusAgentModelResponse, PatchApiNexusAgentModelBody } from '../../../apis/index.type'
-import type { DshNexusKey } from '../../../locale'
+import type { GetApiSupermeshAgentModelCatalogResponse, GetApiSupermeshAgentModelResponse, PatchApiSupermeshAgentModelBody } from '../../../apis/index.type'
+import type { DshSupermeshKey } from '../../../locale'
 import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getApiNexusAgentModel, getApiNexusAgentModelCatalog, patchApiNexusAgentModel } from '../../../apis'
+import { getApiSupermeshAgentModel, getApiSupermeshAgentModelCatalog, patchApiSupermeshAgentModel } from '../../../apis'
 import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
 
-type Role = PatchApiNexusAgentModelBody['role']
-type Catalog = GetApiNexusAgentModelCatalogResponse
-type Models = GetApiNexusAgentModelResponse
+type Role = PatchApiSupermeshAgentModelBody['role']
+type Catalog = GetApiSupermeshAgentModelCatalogResponse
+type Models = GetApiSupermeshAgentModelResponse
 type ModelEntry = NonNullable<Models[Role]>
 type CatalogModel = Catalog['groups'][number]['models'][number]
 
-const roles: readonly { role: Role, label: DshNexusKey }[] = [
+const roles: readonly { role: Role, label: DshSupermeshKey }[] = [
   { role: 'main', label: 'settingAgentsMain' },
   { role: 'manager', label: 'settingAgentsManager' },
   { role: 'project', label: 'settingAgentsProject' },
@@ -28,10 +28,10 @@ const INHERIT = 'inherit'
 export function Agents(): ReactNode {
   const { t } = useTranslation()
   const client = useQueryClient()
-  const models = useQuery({ queryKey: keys.agentModel, queryFn: () => getApiNexusAgentModel() })
-  const catalog = useQuery({ queryKey: keys.agentModelCatalog, queryFn: () => getApiNexusAgentModelCatalog() })
+  const models = useQuery({ queryKey: keys.agentModel, queryFn: () => getApiSupermeshAgentModel() })
+  const catalog = useQuery({ queryKey: keys.agentModelCatalog, queryFn: () => getApiSupermeshAgentModelCatalog() })
   const saveAgentModel = useMutation({
-    mutationFn: (input: PatchApiNexusAgentModelBody) => patchApiNexusAgentModel(input),
+    mutationFn: (input: PatchApiSupermeshAgentModelBody) => patchApiSupermeshAgentModel(input),
     onSettled: () => client.invalidateQueries({ queryKey: keys.agentModel }),
   })
   const [open, setOpen] = useState<Role | null>(null)
@@ -106,9 +106,9 @@ export function Agents(): ReactNode {
   const current = models.data
   const fallback = catalogue.default
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]" aria-labelledby="nexus-agents">
+    <section className="overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]" aria-labelledby="supermesh-agents">
       <header className="px-4 py-3">
-        <h3 id="nexus-agents" className="m-0 text-sm font-medium">{t('settingAgents')}</h3>
+        <h3 id="supermesh-agents" className="m-0 text-sm font-medium">{t('settingAgents')}</h3>
         <p className="m-0 mt-1.5 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('settingAgentsHelp')}</p>
         <p className="m-0 mt-1.5 text-[11px] leading-5 text-[var(--dsw-alias-label-tertiary)]">
           {fallback
@@ -176,7 +176,7 @@ export function Agents(): ReactNode {
   )
 }
 
-function effortChoices(reasoning: CatalogModel['reasoning'], t: (key: DshNexusKey, params?: Record<string, unknown>) => string): MenuEntry[] {
+function effortChoices(reasoning: CatalogModel['reasoning'], t: (key: DshSupermeshKey, params?: Record<string, unknown>) => string): MenuEntry[] {
   if (!reasoning)
     return []
   return [

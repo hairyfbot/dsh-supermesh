@@ -36,9 +36,9 @@ model ChannelAccount {
 真凭证（token / cookie）落在**该渠道专属的配置目录**：
 
 ```
-~/.nexus/credentials/github/        ← 渠道 github
-~/.nexus/credentials/gitlab/
-~/.nexus/credentials/feishu/
+~/.supermesh/credentials/github/        ← 渠道 github
+~/.supermesh/credentials/gitlab/
+~/.supermesh/credentials/feishu/
 ```
 
 目录名就是 `Channel.id`，所以一渠道一账号天然成立。
@@ -52,7 +52,7 @@ model ChannelAccount {
   → 弹出 GitHub 授权页
   → 用户点 Authorize
   → 回调拿到 token
-  → 写进 ~/.nexus/credentials/github/
+  → 写进 ~/.supermesh/credentials/github/
   → ChannelAccount.status = online
 ```
 
@@ -76,22 +76,22 @@ model ChannelAccount {
 插件启动时给每个渠道生成一个 shim 目录：
 
 ```
-~/.nexus/shims/github/bin/gh          ← sh
-~/.nexus/shims/gitlab/bin/glab
+~/.supermesh/shims/github/bin/gh          ← sh
+~/.supermesh/shims/gitlab/bin/glab
 ```
 
 内容：
 
 ```sh
 #!/bin/sh
-GH_CONFIG_DIR="$HOME/.nexus/credentials/github" exec gh "$@"
+GH_CONFIG_DIR="$HOME/.supermesh/credentials/github" exec gh "$@"
 ```
 
 GitLab 用 `glab`，变量名是 `GLAB_CONFIG_DIR`：
 
 ```sh
 #!/bin/sh
-GLAB_CONFIG_DIR="$HOME/.nexus/credentials/gitlab" exec glab "$@"
+GLAB_CONFIG_DIR="$HOME/.supermesh/credentials/gitlab" exec glab "$@"
 ```
 
 ### 5.2 注入
@@ -99,7 +99,7 @@ GLAB_CONFIG_DIR="$HOME/.nexus/credentials/gitlab" exec glab "$@"
 Worker 会话 spawn 时，PATH 前面插入**它所属渠道**的那个 shim 目录：
 
 ```
-PATH = ~/.nexus/shims/<channel>/bin : 原 PATH
+PATH = ~/.supermesh/shims/<channel>/bin : 原 PATH
 ```
 
 同一个 Worker 只用得上一个渠道的账号，所以 PATH 里插一个就够。
@@ -110,7 +110,7 @@ PATH = ~/.nexus/shims/<channel>/bin : 原 PATH
 
 ```
 GH_TOKEN / GITHUB_TOKEN / GITLAB_TOKEN = undefined
-GIT_CONFIG_GLOBAL = ~/.nexus/credentials/<channel>/gitconfig
+GIT_CONFIG_GLOBAL = ~/.supermesh/credentials/<channel>/gitconfig
 GIT_TERMINAL_PROMPT = 0        ← 没有凭证时必须失败，不能弹交互
 ```
 
@@ -129,7 +129,7 @@ Channel(id='gitlab', host='https://gitlab.corp.com')     → 自建
 
 ```sh
 #!/bin/sh
-GLAB_CONFIG_DIR="$HOME/.nexus/credentials/gitlab" \
+GLAB_CONFIG_DIR="$HOME/.supermesh/credentials/gitlab" \
 GLAB_HOST="<Channel.host 或 gitlab.com>" exec glab "$@"
 ```
 
@@ -152,22 +152,22 @@ GLAB_HOST="<Channel.host 或 gitlab.com>" exec glab "$@"
 
 | 需要什么 | 怎么拿 | 不用的旧方案 |
 | --- | --- | --- |
-| 仓库地址 | `read_channel('thread/<key>')` 返回里带 | ~~`$DSH_NEXUS_GITHUB_REPOSITORY`~~ |
+| 仓库地址 | `read_channel('thread/<key>')` 返回里带 | ~~`$DSH_SUPERMESH_GITHUB_REPOSITORY`~~ |
 | PR 号、issue 号 | 触发本身就在派工消息里 | — |
 | 提交用哪个邮箱 | 渠道账号记录里的 `commitEmail` | ~~环境变量~~ |
 
 唯一的例外是 git 提交身份，那个必须通过 gitconfig 给，走 shim 目录里的
 `gitconfig` 文件，不通过环境变量。
 
-> 所以渠道 skill 里那句 `$DSH_NEXUS_GITHUB_REPOSITORY` 要改成
+> 所以渠道 skill 里那句 `$DSH_SUPERMESH_GITHUB_REPOSITORY` 要改成
 > 「从 `read_channel` 的返回里取 `repository`」。
 
 ## 九、渠道 skill 要跟着改
 
-`assets/skills/nexus-channel-github/SKILL.md` 里现在写：
+`assets/skills/supermesh-channel-github/SKILL.md` 里现在写：
 
 ```
-其中 <OWNER>/<REPO> 取自执行环境的 $DSH_NEXUS_GITHUB_REPOSITORY
+其中 <OWNER>/<REPO> 取自执行环境的 $DSH_SUPERMESH_GITHUB_REPOSITORY
 ```
 
 改成：

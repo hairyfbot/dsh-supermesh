@@ -1,10 +1,10 @@
 import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { ReactNode } from 'react'
-import type { GetApiNexusTriggerResponse } from '../../../apis/index.type'
+import type { GetApiSupermeshTriggerResponse } from '../../../apis/index.type'
 import { useId } from 'react'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
 
-export function ActivityChart({ triggers: source }: { triggers: GetApiNexusTriggerResponse }): ReactNode {
+export function ActivityChart({ triggers: source }: { triggers: GetApiSupermeshTriggerResponse }): ReactNode {
   const id = useId().replaceAll(':', '')
   const now = Date.now()
   const triggers = source.filter(trigger => Date.parse(trigger.at) >= now - 86400000 && Date.parse(trigger.at) <= now)

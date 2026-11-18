@@ -122,7 +122,7 @@ export class Worker extends Model<DB, 'worker'> {
         return (await new Worker(trx).findById(previous.id))!
       }
       const id = randomUUID()
-      await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? `nexus/${ticketId}`, worktree: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
+      await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? `dsh/${ticketId}`, worktree: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
       await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
       return (await new Worker(trx).findById(id))!
     })

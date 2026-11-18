@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import type { GraphNode } from '../../../types'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { AgentIcon, ChannelsIcon, NexusIcon, TasksIcon } from '../../../components/icons'
+import { AgentIcon, ChannelsIcon, SupermeshIcon, TasksIcon } from '../../../components/icons'
 import { useTranslation } from '../../../hooks/use-translation'
 
 export function GraphNodeCard({ node, selected, onSelect }: { node: GraphNode, selected: boolean, onSelect: () => void }): ReactNode {
   const { t } = useTranslation()
-  const Icon = node.kind === 'channel' ? ChannelsIcon : node.kind === 'task' ? TasksIcon : node.kind === 'session' ? AgentIcon : NexusIcon
+  const Icon = node.kind === 'channel' ? ChannelsIcon : node.kind === 'task' ? TasksIcon : node.kind === 'session' ? AgentIcon : SupermeshIcon
   const statuses = { review: { label: 'overviewStatusReview', tone: 'warning' }, running: { label: 'overviewStatusRunning', tone: 'info' }, waiting: { label: 'overviewStatusWaiting', tone: 'quiet' }, queued: { label: 'graphQueued', tone: 'quiet' }, paused: { label: 'overviewStatusIntervention', tone: 'danger' }, error: { label: 'overviewStatusIntervention', tone: 'danger' }, done: { label: 'graphDone', tone: 'success' }, cancelled: { label: 'graphCancelled', tone: 'quiet' } } as const
   const status = node.kind === 'task' && node.status in statuses ? statuses[node.status as keyof typeof statuses] : undefined
   return (

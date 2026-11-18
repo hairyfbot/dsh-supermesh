@@ -2,14 +2,14 @@ import type { ReactNode } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getApiNexusPending, postApiNexusAskIdAnswer } from '../../../apis'
+import { getApiSupermeshPending, postApiSupermeshAskIdAnswer } from '../../../apis'
 import { keys } from '../../../config/query-keys'
 
 export function AskCard(): ReactNode {
   const client = useQueryClient()
-  const { data: pending, error: pendingError } = useQuery({ queryKey: keys.pending, queryFn: () => getApiNexusPending(), refetchInterval: 15_000 })
+  const { data: pending, error: pendingError } = useQuery({ queryKey: keys.pending, queryFn: () => getApiSupermeshPending(), refetchInterval: 15_000 })
   const answer = useMutation({
-    mutationFn: (input: { id: string, answer: string }) => postApiNexusAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer }),
+    mutationFn: (input: { id: string, answer: string }) => postApiSupermeshAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer }),
     onSettled: () => client.invalidateQueries({ queryKey: keys.pending }),
   })
   const [failure, setFailure] = useState<string | null>(null)

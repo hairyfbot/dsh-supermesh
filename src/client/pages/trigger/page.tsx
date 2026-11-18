@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusDelivery, getApiNexusProject, getApiNexusSubscription, getApiNexusThread, getApiNexusTrigger } from '../../apis'
+import { getApiSupermeshDelivery, getApiSupermeshProject, getApiSupermeshSubscription, getApiSupermeshThread, getApiSupermeshTrigger } from '../../apis'
 import { Empty } from '../../components/empty'
 import { ActivityIcon } from '../../components/icons'
 import { keys } from '../../config/query-keys'
@@ -16,11 +16,11 @@ export function Trigger(): ReactNode {
   const { t } = useTranslation()
   const filters = useStore(state => state.trigger.filters)
   const { resetTriggerFilters } = useActions()
-  const project = useQuery({ queryKey: keys.project, queryFn: () => getApiNexusProject() })
-  const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiNexusTrigger(), refetchInterval: 30_000 })
-  const thread = useQuery({ queryKey: keys.thread, queryFn: () => getApiNexusThread() })
-  const subscription = useQuery({ queryKey: keys.subscription, queryFn: () => getApiNexusSubscription() })
-  const delivery = useQuery({ queryKey: keys.delivery, queryFn: () => getApiNexusDelivery() })
+  const project = useQuery({ queryKey: keys.project, queryFn: () => getApiSupermeshProject() })
+  const trigger = useQuery({ queryKey: keys.trigger, queryFn: () => getApiSupermeshTrigger(), refetchInterval: 30_000 })
+  const thread = useQuery({ queryKey: keys.thread, queryFn: () => getApiSupermeshThread() })
+  const subscription = useQuery({ queryKey: keys.subscription, queryFn: () => getApiSupermeshSubscription() })
+  const delivery = useQuery({ queryKey: keys.delivery, queryFn: () => getApiSupermeshDelivery() })
   const topics = groupTopics(recordsOf({ project: project.data, trigger: trigger.data, thread: thread.data, subscription: subscription.data, delivery: delivery.data }))
   const records = filterTopics(topics, filters)
   const error = project.error ?? trigger.error ?? thread.error ?? subscription.error ?? delivery.error

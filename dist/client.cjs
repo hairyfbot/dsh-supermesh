@@ -1,4 +1,4 @@
-window.__ModuleLoader__.load({id:"dsh-nexus",factory:(require)=>{var module={exports:{}};var exports=module.exports;
+window.__ModuleLoader__.load({id:"dsh-supermesh",factory:(require)=>{var module={exports:{}};var exports=module.exports;
 Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 // \0rolldown/runtime.js
 var __create$1 = Object.create;
@@ -4673,19 +4673,19 @@ function useMutation(options, queryClient) {
 // src/client/apis/index.ts
 var import_dist = require_dist();
 /** @method get */
-async function getApiNexusProject(config) {
-	return (await fetch("/api/nexus/project", { ...config })).json();
+async function getApiSupermeshProject(config) {
+	return (await fetch("/api/supermesh/project", { ...config })).json();
 }
 /** @method post */
-async function postApiNexusProject(config) {
-	return (await fetch("/api/nexus/project", {
+async function postApiSupermeshProject(config) {
+	return (await fetch("/api/supermesh/project", {
 		method: "POST",
 		...config
 	})).json();
 }
 /** @method patch */
-async function patchApiNexusProjectId(paths, body, config) {
-	return (await fetch(`/api/nexus/project/${paths.id}`, {
+async function patchApiSupermeshProjectId(paths, body, config) {
+	return (await fetch(`/api/supermesh/project/${paths.id}`, {
 		headers: { "Content-Type": "application/json" },
 		method: "PATCH",
 		body: JSON.stringify(body),
@@ -4693,8 +4693,8 @@ async function patchApiNexusProjectId(paths, body, config) {
 	})).json();
 }
 /** @method post */
-async function postApiNexusRepository(body, config) {
-	return (await fetch("/api/nexus/repository", {
+async function postApiSupermeshRepository(body, config) {
+	return (await fetch("/api/supermesh/repository", {
 		headers: { "Content-Type": "application/json" },
 		method: "POST",
 		body: JSON.stringify(body),
@@ -4702,16 +4702,16 @@ async function postApiNexusRepository(body, config) {
 	})).json();
 }
 /** @method get */
-async function getApiNexusTicket(config) {
-	return (await fetch("/api/nexus/ticket", { ...config })).json();
+async function getApiSupermeshTicket(config) {
+	return (await fetch("/api/supermesh/ticket", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusTicketId(paths, config) {
-	return (await fetch(`/api/nexus/ticket/${paths.id}`, { ...config })).json();
+async function getApiSupermeshTicketId(paths, config) {
+	return (await fetch(`/api/supermesh/ticket/${paths.id}`, { ...config })).json();
 }
 /** @method post */
-async function postApiNexusAskIdAnswer(paths, body, config) {
-	return (await fetch(`/api/nexus/ask/${paths.id}/answer`, {
+async function postApiSupermeshAskIdAnswer(paths, body, config) {
+	return (await fetch(`/api/supermesh/ask/${paths.id}/answer`, {
 		headers: { "Content-Type": "application/json" },
 		method: "POST",
 		body: JSON.stringify(body),
@@ -4719,48 +4719,48 @@ async function postApiNexusAskIdAnswer(paths, body, config) {
 	})).json();
 }
 /** @method get */
-async function getApiNexusNode(config) {
-	return (await fetch("/api/nexus/node", { ...config })).json();
+async function getApiSupermeshNode(config) {
+	return (await fetch("/api/supermesh/node", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusEdge(config) {
-	return (await fetch("/api/nexus/edge", { ...config })).json();
+async function getApiSupermeshEdge(config) {
+	return (await fetch("/api/supermesh/edge", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusGroup(config) {
-	return (await fetch("/api/nexus/group", { ...config })).json();
+async function getApiSupermeshGroup(config) {
+	return (await fetch("/api/supermesh/group", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusStatus(config) {
-	return (await fetch("/api/nexus/status", { ...config })).json();
+async function getApiSupermeshStatus(config) {
+	return (await fetch("/api/supermesh/status", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusPending(config) {
-	return (await fetch("/api/nexus/pending", { ...config })).json();
+async function getApiSupermeshPending(config) {
+	return (await fetch("/api/supermesh/pending", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusDelivery(config) {
-	return (await fetch("/api/nexus/delivery", { ...config })).json();
+async function getApiSupermeshDelivery(config) {
+	return (await fetch("/api/supermesh/delivery", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusThread(config) {
-	return (await fetch("/api/nexus/thread", { ...config })).json();
+async function getApiSupermeshThread(config) {
+	return (await fetch("/api/supermesh/thread", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusTrigger(config) {
-	return (await fetch("/api/nexus/trigger", { ...config })).json();
+async function getApiSupermeshTrigger(config) {
+	return (await fetch("/api/supermesh/trigger", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusSubscription(config) {
-	return (await fetch("/api/nexus/subscription", { ...config })).json();
+async function getApiSupermeshSubscription(config) {
+	return (await fetch("/api/supermesh/subscription", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusChannel(config) {
-	return (await fetch("/api/nexus/channel", { ...config })).json();
+async function getApiSupermeshChannel(config) {
+	return (await fetch("/api/supermesh/channel", { ...config })).json();
 }
 /** @method put */
-async function putApiNexusChannelIdConfiguration(paths, body, config) {
-	return (await fetch(`/api/nexus/channel/${paths.id}/configuration`, {
+async function putApiSupermeshChannelIdConfiguration(paths, body, config) {
+	return (await fetch(`/api/supermesh/channel/${paths.id}/configuration`, {
 		headers: { "Content-Type": "application/json" },
 		method: "PUT",
 		body: JSON.stringify(body),
@@ -4768,15 +4768,15 @@ async function putApiNexusChannelIdConfiguration(paths, body, config) {
 	})).json();
 }
 /** @method delete */
-async function deleteApiNexusChannelIdCredential(paths, config) {
-	return (await fetch(`/api/nexus/channel/${paths.id}/credential`, {
+async function deleteApiSupermeshChannelIdCredential(paths, config) {
+	return (await fetch(`/api/supermesh/channel/${paths.id}/credential`, {
 		method: "DELETE",
 		...config
 	})).json();
 }
 /** @method post */
-async function postApiNexusChannelIdAuthentication(paths, body, config) {
-	return (await fetch(`/api/nexus/channel/${paths.id}/authentication`, {
+async function postApiSupermeshChannelIdAuthentication(paths, body, config) {
+	return (await fetch(`/api/supermesh/channel/${paths.id}/authentication`, {
 		headers: { "Content-Type": "application/json" },
 		method: "POST",
 		body: JSON.stringify(body),
@@ -4784,16 +4784,16 @@ async function postApiNexusChannelIdAuthentication(paths, body, config) {
 	})).json();
 }
 /** @method get */
-async function getApiNexusChannelIdAuthenticationAuthenticationId(paths, config) {
-	return (await fetch(`/api/nexus/channel/${paths.id}/authentication/${paths.authenticationId}`, { ...config })).json();
+async function getApiSupermeshChannelIdAuthenticationAuthenticationId(paths, config) {
+	return (await fetch(`/api/supermesh/channel/${paths.id}/authentication/${paths.authenticationId}`, { ...config })).json();
 }
 /** @method get */
-async function getApiNexusSetting(config) {
-	return (await fetch("/api/nexus/setting", { ...config })).json();
+async function getApiSupermeshSetting(config) {
+	return (await fetch("/api/supermesh/setting", { ...config })).json();
 }
 /** @method patch */
-async function patchApiNexusSetting(body, config) {
-	return (await fetch("/api/nexus/setting", {
+async function patchApiSupermeshSetting(body, config) {
+	return (await fetch("/api/supermesh/setting", {
 		headers: { "Content-Type": "application/json" },
 		method: "PATCH",
 		body: JSON.stringify(body),
@@ -4801,12 +4801,12 @@ async function patchApiNexusSetting(body, config) {
 	})).json();
 }
 /** @method get */
-async function getApiNexusAgentModel(config) {
-	return (await fetch("/api/nexus/agent/model", { ...config })).json();
+async function getApiSupermeshAgentModel(config) {
+	return (await fetch("/api/supermesh/agent/model", { ...config })).json();
 }
 /** @method patch */
-async function patchApiNexusAgentModel(body, config) {
-	return (await fetch("/api/nexus/agent/model", {
+async function patchApiSupermeshAgentModel(body, config) {
+	return (await fetch("/api/supermesh/agent/model", {
 		headers: { "Content-Type": "application/json" },
 		method: "PATCH",
 		body: JSON.stringify(body),
@@ -4814,23 +4814,23 @@ async function patchApiNexusAgentModel(body, config) {
 	})).json();
 }
 /** @method get */
-async function getApiNexusAgentModelCatalog(config) {
-	return (await fetch("/api/nexus/agent/model/catalog", { ...config })).json();
+async function getApiSupermeshAgentModelCatalog(config) {
+	return (await fetch("/api/supermesh/agent/model/catalog", { ...config })).json();
 }
 /** @method put */
-async function putApiNexusSessionMain(config) {
-	return (await fetch("/api/nexus/session/main", {
+async function putApiSupermeshSessionMain(config) {
+	return (await fetch("/api/supermesh/session/main", {
 		method: "PUT",
 		...config
 	})).json();
 }
 /** @method get */
-async function getApiNexusSessionRole(config) {
-	return (await fetch("/api/nexus/session/role", { ...config })).json();
+async function getApiSupermeshSessionRole(config) {
+	return (await fetch("/api/supermesh/session/role", { ...config })).json();
 }
 /** @method get */
-async function getApiNexusSessionIdMailbox(paths, config) {
-	return (await fetch(`/api/nexus/session/${paths.id}/mailbox`, { ...config })).json();
+async function getApiSupermeshSessionIdMailbox(paths, config) {
+	return (await fetch(`/api/supermesh/session/${paths.id}/mailbox`, { ...config })).json();
 }
 // src/client/client.ts
 const client = new QueryClient({ defaultOptions: { queries: {
@@ -5696,7 +5696,7 @@ function GitBranchIcon(props) {
 	} else t3 = $[4];
 	return t3;
 }
-function NexusIcon(props) {
+function SupermeshIcon(props) {
 	const $ = (0, import_dist.c)(5);
 	let t0;
 	let t1;
@@ -6245,8 +6245,8 @@ const keys = {
 // src/client/locale/index.ts
 const dicts = {
 	zh: {
-		panel: "Nexus",
-		title: "Nexus",
+		panel: "Supermesh",
+		title: "Supermesh",
 		desc: "多渠道协作与任务编排",
 		openMainSession: "打开主会话",
 		mailboxTitle: "邮箱",
@@ -6376,7 +6376,7 @@ const dicts = {
 		channelUninstalled: "渠道插件未安装或已停用",
 		channelDetailsUnavailable: "渠道详情不可用，请安装并启用对应插件。",
 		channelEmpty: "尚未安装渠道插件",
-		channelEmptyDescription: "安装 GitHub、GitLab 或其他 Nexus 渠道插件后，在这里配置连接。",
+		channelEmptyDescription: "安装 GitHub、GitLab 或其他 Supermesh 渠道插件后，在这里配置连接。",
 		channelFeishuUnavailable: "飞书渠道尚未开放配置，请先使用 GitHub 或 GitLab。",
 		channelPreview: "配置预览",
 		channelUnavailable: "登录与保存服务尚未接入。此页面不会保存配置或接收真实 Token，也不会改变系统 CLI 的登录状态。",
@@ -6403,7 +6403,7 @@ const dicts = {
 		channelTokenDescription: "Token 经服务端验证，实际账号与凭据保存到宿主服务；验证失败不会标记为已登录。",
 		channelTokenDisabled: "验证接口未接入，暂不接受真实 Token。",
 		channelSave: "验证并保存",
-		channelGithubAvailability: "支持 GitHub CLI 授权登录及 Token 验证，使用 Nexus 独立凭据，不改变系统 CLI 的登录状态。",
+		channelGithubAvailability: "支持 GitHub CLI 授权登录及 Token 验证，使用 Supermesh 独立凭据，不改变系统 CLI 的登录状态。",
 		channelGitlabAvailability: "支持 GitLab 官方站与自建站，通过 Token 验证实际账号并接收项目事件。",
 		channelCredentialManaged: "宿主凭据服务",
 		channelCredentialSaved: "已保存，Token 不会回显",
@@ -6641,19 +6641,19 @@ const dicts = {
 		triggerThreadConsole: "控制台登录回调异常",
 		triggerThreadCi: "默认分支检查结果变化",
 		triggerThreadChatter: "日常讨论与进度同步",
-		triggerTextLogin: "@nexus 登录测试仍有偶发失败，请结合并发请求检查认证模块的 Token 校验。",
-		triggerTextApi: "@nexus 请校对 API 响应规范，重点确认错误码与分页字段是否一致。",
-		triggerTextReview: "@nexus 重新安装入口已经补齐，请再检查一次远程安装失败后的恢复流程。",
-		triggerTextDelivery: "@nexus 控制台登录回调偶发跳转失败，麻烦排查。",
+		triggerTextLogin: "@supermesh 登录测试仍有偶发失败，请结合并发请求检查认证模块的 Token 校验。",
+		triggerTextApi: "@supermesh 请校对 API 响应规范，重点确认错误码与分页字段是否一致。",
+		triggerTextReview: "@supermesh 重新安装入口已经补齐，请再检查一次远程安装失败后的恢复流程。",
+		triggerTextDelivery: "@supermesh 控制台登录回调偶发跳转失败，麻烦排查。",
 		triggerTextCi: "main 分支新提交 7e4b2c1 的检查结果发生变化：test 失败，lint 通过。",
 		triggerTextUnmentioned: "补充复现信息：连续运行登录用例时，大约每十次会出现一次 401。",
 		triggerTextIgnored: "收到，今天先按当前计划推进，其他细节下次讨论。",
-		triggerTextOpen: "@nexus 已创建 PR #81，补充远端一键安装的重新安装入口。",
+		triggerTextOpen: "@supermesh 已创建 PR #81，补充远端一键安装的重新安装入口。",
 		triggerErrorSession: "编排会话暂时不可用"
 	},
 	en: {
-		panel: "Nexus",
-		title: "Nexus",
+		panel: "Supermesh",
+		title: "Supermesh",
 		desc: "Multi-channel collaboration and task orchestration",
 		openMainSession: "Open main session",
 		mailboxTitle: "Mailbox",
@@ -6783,7 +6783,7 @@ const dicts = {
 		channelUninstalled: "Channel plugin is not installed or is disabled",
 		channelDetailsUnavailable: "Channel details are unavailable. Install and enable its plugin.",
 		channelEmpty: "No channel plugins installed",
-		channelEmptyDescription: "Install a GitHub, GitLab, or another Nexus channel plugin to configure its connection here.",
+		channelEmptyDescription: "Install a GitHub, GitLab, or another Supermesh channel plugin to configure its connection here.",
 		channelFeishuUnavailable: "Feishu configuration is not available yet. Use GitHub or GitLab for now.",
 		channelPreview: "Configuration preview",
 		channelUnavailable: "Sign-in and saving are not connected yet. This page does not save configuration, accept real tokens, or change your system CLI login.",
@@ -6810,7 +6810,7 @@ const dicts = {
 		channelTokenDescription: "The server verifies tokens and saves the actual identity and host credentials. Failed verification never marks an account as signed in.",
 		channelTokenDisabled: "Token verification is not connected. Do not enter a real token.",
 		channelSave: "Verify and save",
-		channelGithubAvailability: "Sign in using GitHub CLI or verify a token. Nexus credentials are isolated from system CLI sign-in.",
+		channelGithubAvailability: "Sign in using GitHub CLI or verify a token. Supermesh credentials are isolated from system CLI sign-in.",
 		channelGitlabAvailability: "Use GitLab.com or a self-hosted instance, verify the actual account with a token, and receive project events.",
 		channelCredentialManaged: "Host credential service",
 		channelCredentialSaved: "Saved; tokens are never returned",
@@ -7048,14 +7048,14 @@ const dicts = {
 		triggerThreadConsole: "Console login callback intermittently fails",
 		triggerThreadCi: "Default branch check results changed",
 		triggerThreadChatter: "Daily discussion and progress updates",
-		triggerTextLogin: "@nexus Login tests still fail intermittently. Check Token validation under concurrent requests.",
-		triggerTextApi: "@nexus Review API response conventions, especially error codes and pagination fields.",
-		triggerTextReview: "@nexus The reinstall entry is ready. Please check recovery after remote installation fails.",
-		triggerTextDelivery: "@nexus The console login callback sometimes fails to redirect. Please investigate.",
+		triggerTextLogin: "@supermesh Login tests still fail intermittently. Check Token validation under concurrent requests.",
+		triggerTextApi: "@supermesh Review API response conventions, especially error codes and pagination fields.",
+		triggerTextReview: "@supermesh The reinstall entry is ready. Please check recovery after remote installation fails.",
+		triggerTextDelivery: "@supermesh The console login callback sometimes fails to redirect. Please investigate.",
 		triggerTextCi: "Checks changed for commit 7e4b2c1 on main: test failed, lint passed.",
 		triggerTextUnmentioned: "More reproduction details: running login tests repeatedly returns a 401 about once every ten runs.",
 		triggerTextIgnored: "Understood. Follow the current plan today and discuss other details next time.",
-		triggerTextOpen: "@nexus PR #81 adds the reinstall entry for one-click remote installation.",
+		triggerTextOpen: "@supermesh PR #81 adds the reinstall entry for one-click remote installation.",
 		triggerErrorSession: "Orchestrator session is temporarily unavailable"
 	}
 };
@@ -7288,7 +7288,7 @@ function _temp2$16(channel) {
 	return channel.id === "feishu";
 }
 function _temp$28() {
-	return getApiNexusChannel();
+	return getApiSupermeshChannel();
 }
 // src/client/pages/channel/detail/components/section.tsx
 function Section$1(t0) {
@@ -7458,7 +7458,7 @@ function GithubDetail() {
 	const client = useQueryClient();
 	const channels = useQuery({
 		queryKey: keys.channel,
-		queryFn: () => getApiNexusChannel()
+		queryFn: () => getApiSupermeshChannel()
 	});
 	const channel_0 = channels.data?.find((channel) => channel.id === "github");
 	const id = (0, react.useId)();
@@ -7504,7 +7504,7 @@ function GithubDetail() {
 	const { pause, resume } = useTimeoutPoll(async () => {
 		if (!authId.current || lifetime.current.signal.aborted) return;
 		try {
-			await applyAuthentication(await getApiNexusChannelIdAuthenticationAuthenticationId({
+			await applyAuthentication(await getApiSupermeshChannelIdAuthenticationAuthenticationId({
 				id: "github",
 				authenticationId: authId.current
 			}, { signal: lifetime.current.signal }));
@@ -7547,7 +7547,7 @@ function GithubDetail() {
 		setCopyNotice("");
 		setAuthNotice(t("channelAuthStarting"));
 		try {
-			const value_0 = await postApiNexusChannelIdAuthentication({ id: "github" }, {}, { signal: lifetime.current.signal });
+			const value_0 = await postApiSupermeshChannelIdAuthentication({ id: "github" }, {}, { signal: lifetime.current.signal });
 			await applyAuthentication(value_0);
 			if (!lifetime.current.signal.aborted && value_0.status === "pending") resume();
 		} catch {
@@ -7582,7 +7582,7 @@ function GithubDetail() {
 		setSaving(true);
 		setNotice("");
 		try {
-			if (!("channel" in await putApiNexusChannelIdConfiguration({ id: "github" }, toggle ? { enabled: !channel_0.enabled } : {
+			if (!("channel" in await putApiSupermeshChannelIdConfiguration({ id: "github" }, toggle ? { enabled: !channel_0.enabled } : {
 				commitName: nameValue.trim(),
 				commitEmail: emailValue.trim(),
 				...token.trim() ? {
@@ -7615,7 +7615,7 @@ function GithubDetail() {
 		deletingRequest.current = true;
 		setDeletion("deleting");
 		try {
-			const result_0 = await deleteApiNexusChannelIdCredential({ id: "github" }, { signal: lifetime.current.signal });
+			const result_0 = await deleteApiSupermeshChannelIdCredential({ id: "github" }, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
 			if (!("channel" in result_0)) throw new Error("channel_delete_failed");
 			await reload();
@@ -7696,7 +7696,7 @@ function GithubDetail() {
 									children: t("channelCommitName")
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 									id: `${id}-commit-name`,
-									placeholder: "Nexus Bot",
+									placeholder: "Supermesh Bot",
 									value: nameValue,
 									onChange: (event) => setCommitName(event.target.value),
 									disabled: busy,
@@ -7874,7 +7874,7 @@ function GitlabDetail() {
 	const client = useQueryClient();
 	const channels = useQuery({
 		queryKey: keys.channel,
-		queryFn: () => getApiNexusChannel()
+		queryFn: () => getApiSupermeshChannel()
 	});
 	const channel_0 = channels.data?.find((channel) => channel.id === "gitlab");
 	const [expectedAccount, setExpectedAccount] = (0, react.useState)(channel_0?.expectedAccount ?? "");
@@ -7912,7 +7912,7 @@ function GitlabDetail() {
 		} catch {}
 	}, void 0);
 	async function reload(signal) {
-		const value = await getApiNexusChannel(signal ? { signal } : void 0);
+		const value = await getApiSupermeshChannel(signal ? { signal } : void 0);
 		if (signal?.aborted) return null;
 		if (!Array.isArray(value)) throw new Error("channel_reload_failed");
 		client.setQueryData(keys.channel, value);
@@ -7926,7 +7926,7 @@ function GitlabDetail() {
 	const { pause, resume } = useTimeoutPoll(async () => {
 		if (!authId.current || lifetime.current.signal.aborted) return;
 		try {
-			await applyAuthentication(await getApiNexusChannelIdAuthenticationAuthenticationId({
+			await applyAuthentication(await getApiSupermeshChannelIdAuthenticationAuthenticationId({
 				id: "gitlab",
 				authenticationId: authId.current
 			}, { signal: lifetime.current.signal }));
@@ -7970,7 +7970,7 @@ function GitlabDetail() {
 		setCopyNotice("");
 		setAuthNotice(t("channelAuthStarting"));
 		try {
-			const value_1 = await postApiNexusChannelIdAuthentication({ id: "gitlab" }, { host: host.trim() }, { signal: lifetime.current.signal });
+			const value_1 = await postApiSupermeshChannelIdAuthentication({ id: "gitlab" }, { host: host.trim() }, { signal: lifetime.current.signal });
 			await applyAuthentication(value_1);
 			if (!lifetime.current.signal.aborted && value_1.status === "pending") resume();
 		} catch {
@@ -7996,7 +7996,7 @@ function GitlabDetail() {
 		setSaving(true);
 		setNotice("");
 		try {
-			const result = await putApiNexusChannelIdConfiguration({ id: "gitlab" }, {
+			const result = await putApiSupermeshChannelIdConfiguration({ id: "gitlab" }, {
 				host: host.trim(),
 				...expectedAccount.trim() !== (channel_0?.expectedAccount ?? "").trim() ? { expectedAccount: expectedAccount.trim() } : {},
 				...token.trim() && !channel_0?.hasCredential ? { enabled: true } : {},
@@ -8035,7 +8035,7 @@ function GitlabDetail() {
 		setSaving(true);
 		setNotice("");
 		try {
-			const result_0 = await putApiNexusChannelIdConfiguration({ id: "gitlab" }, { enabled: !channel_0.enabled }, { signal: lifetime.current.signal });
+			const result_0 = await putApiSupermeshChannelIdConfiguration({ id: "gitlab" }, { enabled: !channel_0.enabled }, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
 			if (!("channel" in result_0)) throw new Error("channel_save_failed");
 			await reload(lifetime.current.signal);
@@ -8062,7 +8062,7 @@ function GitlabDetail() {
 		setDeleting(true);
 		setNotice("");
 		try {
-			const result_1 = await deleteApiNexusChannelIdCredential({ id: "gitlab" }, { signal: lifetime.current.signal });
+			const result_1 = await deleteApiSupermeshChannelIdCredential({ id: "gitlab" }, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
 			if (!("channel" in result_1)) throw new Error("channel_delete_failed");
 			const saved_2 = await reloadSaved(lifetime.current.signal);
@@ -8219,7 +8219,7 @@ function GitlabDetail() {
 									onChange: (event_0) => setExpectedAccount(event_0.target.value),
 									disabled: busy,
 									maxLength: 100,
-									placeholder: "nexus-bot",
+									placeholder: "supermesh-bot",
 									autoComplete: "off",
 									spellCheck: false,
 									"aria-describedby": `${id}-username-help`
@@ -8241,7 +8241,7 @@ function GitlabDetail() {
 									children: t("channelCommitName")
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 									id: `${id}-commit-name`,
-									placeholder: "Nexus Bot",
+									placeholder: "Supermesh Bot",
 									value: commitName,
 									onChange: (event_1) => setCommitName(event_1.target.value),
 									disabled: busy,
@@ -8716,7 +8716,7 @@ function Card(t0) {
 	return t19;
 }
 function _temp$26() {
-	return getApiNexusChannel();
+	return getApiSupermeshChannel();
 }
 // src/client/pages/channel/page.tsx
 function Channel() {
@@ -59501,7 +59501,7 @@ function _temp2$15(trigger_0) {
 	return !trigger_0.mentioned;
 }
 function _temp$25() {
-	return getApiNexusTrigger();
+	return getApiSupermeshTrigger();
 }
 // src/client/pages/overview/components/ask-card.tsx
 function AskCard() {
@@ -59662,10 +59662,10 @@ function _temp3$10(message) {
 	return message.kind === "ask";
 }
 function _temp2$14(input) {
-	return postApiNexusAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer });
+	return postApiSupermeshAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer });
 }
 function _temp$24() {
-	return getApiNexusPending();
+	return getApiSupermeshPending();
 }
 // src/client/pages/overview/components/channel-tile.tsx
 function ChannelTile(t0) {
@@ -59888,7 +59888,7 @@ function _temp2$13(channel) {
 	};
 }
 function _temp$23() {
-	return getApiNexusChannel();
+	return getApiSupermeshChannel();
 }
 // src/client/pages/overview/components/task-chart.tsx
 function TaskChart(t0) {
@@ -60112,7 +60112,7 @@ function TaskCard(t0) {
 	return t4;
 }
 function _temp$21() {
-	return getApiNexusTicket();
+	return getApiSupermeshTicket();
 }
 // src/client/config/constants.ts
 const AGENT_GRAPH = {
@@ -60327,7 +60327,7 @@ function GraphNodeCard(t0) {
 	const $ = (0, import_dist.c)(53);
 	const { node, selected, onSelect } = t0;
 	const { t } = useTranslation();
-	const Icon = node.kind === "channel" ? ChannelsIcon : node.kind === "task" ? TasksIcon : node.kind === "session" ? AgentIcon : NexusIcon;
+	const Icon = node.kind === "channel" ? ChannelsIcon : node.kind === "task" ? TasksIcon : node.kind === "session" ? AgentIcon : SupermeshIcon;
 	let t1;
 	let t10;
 	let t2;
@@ -61233,13 +61233,13 @@ function _temp4$5(edge) {
 	};
 }
 function _temp3$7() {
-	return getApiNexusGroup();
+	return getApiSupermeshGroup();
 }
 function _temp2$10() {
-	return getApiNexusEdge();
+	return getApiSupermeshEdge();
 }
 function _temp$19() {
-	return getApiNexusNode();
+	return getApiSupermeshNode();
 }
 // src/client/pages/overview/components/status-tag.tsx
 function StatusTag() {
@@ -61318,7 +61318,7 @@ function StatusTag() {
 	return t6;
 }
 function _temp$18() {
-	return getApiNexusStatus();
+	return getApiSupermeshStatus();
 }
 // src/client/pages/ticket/components/row.tsx
 function Row$1(t0) {
@@ -61870,19 +61870,19 @@ function _temp6$4(query) {
 	return query.error;
 }
 function _temp5$4() {
-	return getApiNexusSubscription();
+	return getApiSupermeshSubscription();
 }
 function _temp4$4() {
-	return getApiNexusTrigger();
+	return getApiSupermeshTrigger();
 }
 function _temp3$6() {
-	return getApiNexusChannel();
+	return getApiSupermeshChannel();
 }
 function _temp2$8() {
-	return getApiNexusNode();
+	return getApiSupermeshNode();
 }
 function _temp$16() {
-	return getApiNexusTicket();
+	return getApiSupermeshTicket();
 }
 // src/client/pages/overview/components/task-view-card.tsx
 function TaskViewCard() {
@@ -62161,14 +62161,14 @@ function Agents() {
 	const client = useQueryClient();
 	const models = useQuery({
 		queryKey: keys.agentModel,
-		queryFn: () => getApiNexusAgentModel()
+		queryFn: () => getApiSupermeshAgentModel()
 	});
 	const catalog = useQuery({
 		queryKey: keys.agentModelCatalog,
-		queryFn: () => getApiNexusAgentModelCatalog()
+		queryFn: () => getApiSupermeshAgentModelCatalog()
 	});
 	const saveAgentModel = useMutation({
-		mutationFn: (input) => patchApiNexusAgentModel(input),
+		mutationFn: (input) => patchApiSupermeshAgentModel(input),
 		onSettled: () => client.invalidateQueries({ queryKey: keys.agentModel })
 	});
 	const [open, setOpen] = (0, react.useState)(null);
@@ -62255,12 +62255,12 @@ function Agents() {
 	const fallback = catalogue_0.default;
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 		className: "overflow-hidden rounded-2xl border border-[var(--dsw-alias-border-l3)] bg-[var(--dsw-alias-bg-layer-1)]",
-		"aria-labelledby": "nexus-agents",
+		"aria-labelledby": "supermesh-agents",
 		children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 			className: "px-4 py-3",
 			children: [
 				/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
-					id: "nexus-agents",
+					id: "supermesh-agents",
 					className: "m-0 text-sm font-medium",
 					children: t("settingAgents")
 				}),
@@ -62777,10 +62777,10 @@ function AddRepository() {
 	const client = useQueryClient();
 	const channels = useQuery({
 		queryKey: keys.channel,
-		queryFn: () => getApiNexusChannel()
+		queryFn: () => getApiSupermeshChannel()
 	});
 	const addRepository = useMutation({
-		mutationFn: (input) => postApiNexusRepository(input),
+		mutationFn: (input) => postApiSupermeshRepository(input),
 		onSettled: () => client.invalidateQueries({ queryKey: keys.project })
 	});
 	const gitlabHost = channels.data?.find((channel) => channel.id === "gitlab")?.host ?? "https://gitlab.com";
@@ -62927,18 +62927,18 @@ function Projects({ onNotice }) {
 	const client = useQueryClient();
 	const projects = useQuery({
 		queryKey: keys.project,
-		queryFn: () => getApiNexusProject()
+		queryFn: () => getApiSupermeshProject()
 	});
 	const channels = useQuery({
 		queryKey: keys.channel,
-		queryFn: () => getApiNexusChannel()
+		queryFn: () => getApiSupermeshChannel()
 	});
 	const toggleProject = useMutation({
-		mutationFn: (input) => patchApiNexusProjectId({ id: encodeURIComponent(input.id) }, { enabled: input.enabled }),
+		mutationFn: (input) => patchApiSupermeshProjectId({ id: encodeURIComponent(input.id) }, { enabled: input.enabled }),
 		onSettled: () => client.invalidateQueries({ queryKey: keys.project })
 	});
 	const refreshProject = useMutation({
-		mutationFn: () => postApiNexusProject(),
+		mutationFn: () => postApiSupermeshProject(),
 		onSettled: () => client.invalidateQueries({ queryKey: keys.project })
 	});
 	const gitlabHost = channels.data?.find((channel) => channel.id === "gitlab")?.host ?? "https://gitlab.com";
@@ -64173,10 +64173,10 @@ function Setting() {
 	return t31;
 }
 function _temp3$5(input) {
-	return patchApiNexusSetting(input);
+	return patchApiSupermeshSetting(input);
 }
 function _temp2$7() {
-	return getApiNexusSetting();
+	return getApiSupermeshSetting();
 }
 function _temp$13(state) {
 	return state.setting.section;
@@ -64682,7 +64682,7 @@ function Relations(t0) {
 	return t9;
 }
 function _temp$11() {
-	return getApiNexusTicket();
+	return getApiSupermeshTicket();
 }
 // src/client/pages/ticket/detail/page.tsx
 function TicketDetail() {
@@ -64699,7 +64699,7 @@ function TicketDetail() {
 	} else t0 = $[1];
 	let t1;
 	if ($[2] !== ticketId) {
-		t1 = () => getApiNexusTicketId({ id: ticketId ?? "" });
+		t1 = () => getApiSupermeshTicketId({ id: ticketId ?? "" });
 		$[2] = ticketId;
 		$[3] = t1;
 	} else t1 = $[3];
@@ -64903,7 +64903,7 @@ function TicketDetail() {
 		t26 = !task && !isLoading && !error && !unavailable && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Empty, {
 			title: t("ticketNotFound"),
 			description: t("ticketNotFoundDescription"),
-			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NexusIcon, {
+			icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SupermeshIcon, {
 				width: 28,
 				height: 28
 			})
@@ -64957,7 +64957,7 @@ function TicketDetail() {
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Metric, {
 						label: t("ticketProject"),
-						icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NexusIcon, {
+						icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SupermeshIcon, {
 							width: 17,
 							height: 17
 						}),
@@ -65137,10 +65137,10 @@ function _temp4$3(a, b) {
 	return a.createdAt.localeCompare(b.createdAt);
 }
 function _temp3$3() {
-	return getApiNexusGroup();
+	return getApiSupermeshGroup();
 }
 function _temp2$5() {
-	return getApiNexusChannel();
+	return getApiSupermeshChannel();
 }
 function _temp$10(state) {
 	return state.navigation;
@@ -65324,19 +65324,19 @@ function _temp6$2(query) {
 	return query.error;
 }
 function _temp5$2() {
-	return getApiNexusSubscription();
+	return getApiSupermeshSubscription();
 }
 function _temp4$2() {
-	return getApiNexusTrigger();
+	return getApiSupermeshTrigger();
 }
 function _temp3$2() {
-	return getApiNexusChannel();
+	return getApiSupermeshChannel();
 }
 function _temp2$4() {
-	return getApiNexusNode();
+	return getApiSupermeshNode();
 }
 function _temp$9() {
-	return getApiNexusTicket();
+	return getApiSupermeshTicket();
 }
 // src/client/pages/trigger/model.ts
 const KINDS = {
@@ -66474,19 +66474,19 @@ function _temp7$1(event) {
 	return [...event.tickets];
 }
 function _temp6$1() {
-	return getApiNexusDelivery();
+	return getApiSupermeshDelivery();
 }
 function _temp5$1() {
-	return getApiNexusSubscription();
+	return getApiSupermeshSubscription();
 }
 function _temp4$1() {
-	return getApiNexusThread();
+	return getApiSupermeshThread();
 }
 function _temp3$1() {
-	return getApiNexusTrigger();
+	return getApiSupermeshTrigger();
 }
 function _temp2$3() {
-	return getApiNexusProject();
+	return getApiSupermeshProject();
 }
 function _temp$7(state) {
 	return state.trigger.selectedId;
@@ -67466,19 +67466,19 @@ function _temp7(topic) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Row, { topic }, topic.latest.thread.id);
 }
 function _temp6() {
-	return getApiNexusDelivery();
+	return getApiSupermeshDelivery();
 }
 function _temp5() {
-	return getApiNexusSubscription();
+	return getApiSupermeshSubscription();
 }
 function _temp4() {
-	return getApiNexusThread();
+	return getApiSupermeshThread();
 }
 function _temp3() {
-	return getApiNexusTrigger();
+	return getApiSupermeshTrigger();
 }
 function _temp2$2() {
-	return getApiNexusProject();
+	return getApiSupermeshProject();
 }
 function _temp$3(state) {
 	return state.trigger.filters;
@@ -67517,7 +67517,7 @@ function Panel$1() {
 	if ($[0] !== ctx.layout || $[1] !== ctx.uiWorkspace) {
 		t0 = async () => {
 			const navigation = ctx.layout.beginNavigation();
-			const result = await putApiNexusSessionMain();
+			const result = await putApiSupermeshSessionMain();
 			if (!result || typeof result.sessionId !== "string" || !result.sessionId.trim()) throw new Error(result && "message" in result && typeof result.message === "string" ? result.message : "打开主会话失败");
 			if (!navigation.aborted) ctx.uiWorkspace.openSession(result.sessionId);
 		};
@@ -68177,7 +68177,7 @@ function Panel({ sessionId }) {
 	const listId = (0, react.useId)();
 	const { state: mailbox, execute, error: error_0 } = useAsyncState(async (signal) => {
 		try {
-			const { mailbox: result } = await getApiNexusSessionIdMailbox({ id: sessionId }, { signal });
+			const { mailbox: result } = await getApiSupermeshSessionIdMailbox({ id: sessionId }, { signal });
 			return !signal.aborted && result?.sessionId === sessionId && Array.isArray(result.messages) ? result : null;
 		} catch (error) {
 			if (signal.aborted) return null;
@@ -68188,7 +68188,7 @@ function Panel({ sessionId }) {
 		resetOnExecute: false
 	});
 	(0, react.useEffect)(() => {
-		const reference = ctx.sessions.retain(sessionId, { source: "nexusMailbox" });
+		const reference = ctx.sessions.retain(sessionId, { source: "supermeshMailbox" });
 		const events = reference.binding.eventSource;
 		let request;
 		const refresh = () => {
@@ -68337,10 +68337,10 @@ function SessionRoleIcon(t0) {
 	return null;
 }
 function _temp() {
-	return getApiNexusSessionRole();
+	return getApiSupermeshSessionRole();
 }
-const PANEL_ID = "dsh-nexus";
-const NS = "dshNexus";
+const PANEL_ID = "dsh-supermesh";
+const NS = "dshSupermesh";
 const inject = [
 	"slots",
 	"locale",
@@ -68352,9 +68352,9 @@ const inject = [
 function apply(ctx) {
 	ctx.effect(() => ctx.locale.register(NS, dicts), `${NS}: dictionaries`);
 	const definition = {
-		kind: "nexus-mailbox-notification",
+		kind: "supermesh-mailbox-notification",
 		target: "chat",
-		match: (event) => event.type === "user/message" && event.data.source.kind === "nexus-mailbox" && event.data.source.form === "notice" ? {
+		match: (event) => event.type === "user/message" && event.data.source.kind === "supermesh-mailbox" && event.data.source.form === "notice" ? {
 			id: String(event.data.id),
 			role: "start",
 			exclusive: true
@@ -68363,7 +68363,7 @@ function apply(ctx) {
 		update: (context) => context.state,
 		buildViewNode: (context) => context.state && context.start ? {
 			key: context.key,
-			kind: "nexus-mailbox-notification",
+			kind: "supermesh-mailbox-notification",
 			id: context.id,
 			target: "chat",
 			anchorSeq: context.state.seq,
@@ -68373,7 +68373,7 @@ function apply(ctx) {
 			data: context.state
 		} : null
 	};
-	ctx.effect(() => ctx.uiConversation.events.register(definition), "nexus:mailbox-notification");
+	ctx.effect(() => ctx.uiConversation.events.register(definition), "supermesh:mailbox-notification");
 	const t = ctx.locale.bind(NS);
 	ctx.slots.inject("main", () => ctx.slots.register({
 		name: "main",
@@ -68394,7 +68394,7 @@ function apply(ctx) {
 	})));
 	ctx.slots.inject("conversation.chat.node", () => ctx.slots.register({
 		name: "conversation.chat.node",
-		key: "nexus-mailbox-notification",
+		key: "supermesh-mailbox-notification",
 		locale: NS
 	}, (props) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PluginContext.Provider, {
 		value: {
@@ -68405,7 +68405,7 @@ function apply(ctx) {
 	})));
 	ctx.slots.inject("conversation.input.dock", () => ctx.slots.register({
 		name: "conversation.input.dock",
-		id: "nexus-mailbox",
+		id: "supermesh-mailbox",
 		order: 1,
 		locale: NS
 	}, (props) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(PluginContext.Provider, {
@@ -68436,7 +68436,7 @@ function apply(ctx) {
 		order: 10,
 		label: () => t("panel"),
 		locale: NS
-	}, ({ size }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(NexusIcon, {
+	}, ({ size }) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SupermeshIcon, {
 		width: size,
 		height: size
 	})));

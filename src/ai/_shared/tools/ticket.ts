@@ -23,7 +23,7 @@ export const dispatch_ticket = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main' && identity.role !== 'supervisor')
       throw new Error('仅主编排或 Supervisor 可派票')
     const ticket = await db.ticket.requireOpen(args.ticketId)
@@ -55,7 +55,7 @@ export const note_ticket = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main' && identity.role !== 'supervisor')
       throw new Error('仅主编排或 Supervisor 可通知项目')
     const ticket = await db.ticket.findById(args.ticketId)

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { AgentGraphEdge } from '../../../types'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusEdge, getApiNexusGroup, getApiNexusNode } from '../../../apis'
+import { getApiSupermeshEdge, getApiSupermeshGroup, getApiSupermeshNode } from '../../../apis'
 import { Empty } from '../../../components/empty'
 import { AgentIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
@@ -11,9 +11,9 @@ import { layoutGraph } from './graph-layout'
 
 export function Graph(): ReactNode {
   const { t } = useTranslation()
-  const { data: nodes, isLoading, error } = useQuery({ queryKey: keys.node, queryFn: () => getApiNexusNode(), refetchInterval: 15_000 })
-  const { data: edges } = useQuery({ queryKey: keys.edge, queryFn: () => getApiNexusEdge(), refetchInterval: 15_000 })
-  const { data: groups } = useQuery({ queryKey: keys.group, queryFn: () => getApiNexusGroup(), refetchInterval: 15_000 })
+  const { data: nodes, isLoading, error } = useQuery({ queryKey: keys.node, queryFn: () => getApiSupermeshNode(), refetchInterval: 15_000 })
+  const { data: edges } = useQuery({ queryKey: keys.edge, queryFn: () => getApiSupermeshEdge(), refetchInterval: 15_000 })
+  const { data: groups } = useQuery({ queryKey: keys.group, queryFn: () => getApiSupermeshGroup(), refetchInterval: 15_000 })
   const laid = nodes ? layoutGraph({ nodes, edges: edges ?? [], groups: groups ?? [] }) : []
   const list: AgentGraphEdge[] = (edges ?? []).map(edge => ({ ...edge, kind: edge.kind === 'dependency' ? 'dependency' : edge.kind === 'association' ? 'association' : 'flow' }))
   return (

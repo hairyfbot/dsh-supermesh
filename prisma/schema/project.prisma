@@ -9,7 +9,7 @@ model Project {
   directory             String
   /// Git remote 地址；可空以兼容历史，自动发现候选须配置 remote。
   remoteUrl             String?
-  /// 是否纳入 Nexus 编排范围；工作区同步不得覆盖人工选择。
+  /// 是否纳入 Supermesh 编排范围；工作区同步不得覆盖人工选择。
   enabled               Boolean @default(true)
   /// 最近一次项目编排会话。
   orchestratorSessionId String?

@@ -5,13 +5,13 @@ declare module 'vitest/browser' {
   interface BrowserCommands {
     launchDsh: () => Promise<{ baseUrl: string }>
     openDshPage: () => Promise<{ url: string }>
-    nexusRequest: (path: string, method: string, body?: unknown) => Promise<{ status: number, body: unknown }>
+    supermeshRequest: (path: string, method: string, body?: unknown) => Promise<{ status: number, body: unknown }>
     getDshErrors: () => Promise<string[]>
     closeDsh: () => Promise<void>
   }
 }
 
-describe('nexus in the official DSH shell', () => {
+describe('supermesh in the official DSH shell', () => {
   let openedUrl = ''
   beforeAll(async () => {
     await commands.launchDsh()
@@ -20,7 +20,7 @@ describe('nexus in the official DSH shell', () => {
     openedUrl = (await commands.openDshPage()).url
   })
   afterEach(async () => {
-    const restored = await commands.nexusRequest('/api/nexus/setting', 'PATCH', { maxWorkers: 10 })
+    const restored = await commands.supermeshRequest('/api/supermesh/setting', 'PATCH', { maxWorkers: 10 })
     expect(restored.status).toBe(200)
     expect(restored.body).toMatchObject({ maxWorkers: 10 })
   })
@@ -28,16 +28,16 @@ describe('nexus in the official DSH shell', () => {
     await commands.closeDsh()
   })
 
-  it('loads the Nexus client and its authenticated resource routes in Chromium', async () => {
+  it('loads the Supermesh client and its authenticated resource routes in Chromium', async () => {
     expect(new URL(openedUrl).pathname).toBe('/')
     const [project, ticket, node, edge, group, status, setting] = await Promise.all([
-      commands.nexusRequest('/api/nexus/project', 'GET'),
-      commands.nexusRequest('/api/nexus/ticket', 'GET'),
-      commands.nexusRequest('/api/nexus/node', 'GET'),
-      commands.nexusRequest('/api/nexus/edge', 'GET'),
-      commands.nexusRequest('/api/nexus/group', 'GET'),
-      commands.nexusRequest('/api/nexus/status', 'GET'),
-      commands.nexusRequest('/api/nexus/setting', 'GET'),
+      commands.supermeshRequest('/api/supermesh/project', 'GET'),
+      commands.supermeshRequest('/api/supermesh/ticket', 'GET'),
+      commands.supermeshRequest('/api/supermesh/node', 'GET'),
+      commands.supermeshRequest('/api/supermesh/edge', 'GET'),
+      commands.supermeshRequest('/api/supermesh/group', 'GET'),
+      commands.supermeshRequest('/api/supermesh/status', 'GET'),
+      commands.supermeshRequest('/api/supermesh/setting', 'GET'),
     ])
     expect(project.status).toBe(200)
     expect(project.body).toEqual([])
@@ -57,13 +57,13 @@ describe('nexus in the official DSH shell', () => {
   })
 
   it('persists a safe settings change through real services and rejects invalid input without changing it', async () => {
-    const saved = await commands.nexusRequest('/api/nexus/setting', 'PATCH', { maxWorkers: 3 })
+    const saved = await commands.supermeshRequest('/api/supermesh/setting', 'PATCH', { maxWorkers: 3 })
     expect(saved.status).toBe(200)
     expect(saved.body).toMatchObject({ maxWorkers: 3, autoMerge: false })
-    const invalid = await commands.nexusRequest('/api/nexus/setting', 'PATCH', { maxWorkers: 0 })
+    const invalid = await commands.supermeshRequest('/api/supermesh/setting', 'PATCH', { maxWorkers: 0 })
     expect(invalid.status).toBe(400)
     expect(invalid.body).toMatchObject({ message: 'invalid_config' })
-    const setting = await commands.nexusRequest('/api/nexus/setting', 'GET')
+    const setting = await commands.supermeshRequest('/api/supermesh/setting', 'GET')
     expect(setting.status).toBe(200)
     expect(setting.body).toMatchObject({ maxWorkers: 3, autoMerge: false })
   })

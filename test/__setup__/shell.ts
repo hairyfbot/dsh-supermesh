@@ -51,13 +51,13 @@ export async function launchShell(): Promise<ShellScaffold> {
   })
   let child: ReturnType<typeof x>['process']
   try {
-    await run(['--profile', 'nexus-e2e', '--from-default-profile', 'web', '--dump-config'])
-    await run(['plugin', '--profile', 'nexus-e2e', 'add', '--ignore-scripts', `link:${REPO_ROOT.replace(/\\/gu, '/')}`])
+    await run(['--profile', 'supermesh-e2e', '--from-default-profile', 'web', '--dump-config'])
+    await run(['plugin', '--profile', 'supermesh-e2e', 'add', '--ignore-scripts', `link:${REPO_ROOT.replace(/\\/gu, '/')}`])
     const patch = join(home, 'test.cordis.patch.yml')
     await writeFile(patch, '- id: ui-settings-models\n  config:\n    credentialOnboarding: false\n')
     const port = await freePort()
     const baseUrl = `http://127.0.0.1:${port}`
-    const result = x(node, [cli, '--profile', 'nexus-e2e', '--patch', patch, '--port', String(port), '--no-open'], {
+    const result = x(node, [cli, '--profile', 'supermesh-e2e', '--patch', patch, '--port', String(port), '--no-open'], {
       nodeOptions: { cwd: home, env, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true },
     })
     child = result.process

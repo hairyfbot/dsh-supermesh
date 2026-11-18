@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react'
-import type { PostApiNexusRepositoryBody } from '../../../apis/index.type'
+import type { PostApiSupermeshRepositoryBody } from '../../../apis/index.type'
 import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
 import { parseRepositoryRemote } from '../../../../utils/repository'
-import { getApiNexusChannel, postApiNexusRepository } from '../../../apis'
+import { getApiSupermeshChannel, postApiSupermeshRepository } from '../../../apis'
 import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
 
 export function AddRepository(): ReactNode {
   const { t } = useTranslation()
   const client = useQueryClient()
-  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const addRepository = useMutation({
-    mutationFn: (input: PostApiNexusRepositoryBody) => postApiNexusRepository(input),
+    mutationFn: (input: PostApiSupermeshRepositoryBody) => postApiSupermeshRepository(input),
     onSettled: () => client.invalidateQueries({ queryKey: keys.project }),
   })
   const gitlabHost = channels.data?.find(channel => channel.id === 'gitlab')?.host ?? 'https://gitlab.com'

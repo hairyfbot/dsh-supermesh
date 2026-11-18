@@ -20,7 +20,7 @@ Downloaded on 2026-11-14 from the immutable revisions below. All components live
 | ZoomOutIcon | [zoom-out.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/zoom-out.svg) | ISC / MIT |
 | FitViewIcon | [scan.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/scan.svg) | ISC / MIT |
 | GitBranchIcon | [git-branch.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/git-branch.svg) | ISC / MIT |
-| NexusIcon | [workflow.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/workflow.svg) | ISC / MIT |
+| SupermeshIcon | [workflow.svg](https://raw.githubusercontent.com/lucide-icons/lucide/55782beff3a0133df79c417eb68f96e8f19e2404/icons/workflow.svg) | ISC / MIT |
 
 Task detail glyphs downloaded on 2026-11-14 from [Primer Octicons](https://github.com/primer/octicons) (MIT), retaining the upstream SVG geometry:
 

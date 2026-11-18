@@ -1,4 +1,4 @@
-# DSH Nexus
+# DSH Supermesh
 
 > TODO: 该项目正在开发中，请谨慎使用。
 
@@ -14,7 +14,7 @@ DSH 多代理任务编排：把 GitHub / GitLab 的 issue、PR 与评论变成�
 
 部分设计参考官方 [Superagent 原型](https://github.com/deepseek-ai/dsh-superagent-prototype)的领域模型（话题、触发、任务、执行会话、收件箱），并按多仓库长期编排重做了分层与状态归属。
 
-| 维度 | 官方原型 | Nexus |
+| 维度 | 官方原型 | Supermesh |
 | --- | --- | --- |
 | 编排层级 | 主 Session → 执行器 | 主编排 → 项目编排 → 执行会话，跨项目另起协调者 |
 | 适用范围 | 单个 GitHub 仓库 | 多工作区，每项目一个编排，可记录跨项目依赖 |
@@ -28,16 +28,16 @@ DSH 多代理任务编排：把 GitHub / GitLab 的 issue、PR 与评论变成�
 ## 📦 安装
 
 ```sh
-dsh plugin --profile <name> add github:omdsh-dev/dsh-nexus
+dsh plugin --profile <name> add github:omdsh-dev/dsh-supermesh
 ```
 
-需要 DSH `0.2.2-rc.2`。本地开发用 `pnpm run dev:dsh`，默认 `nexus-dev` profile 与 `3091` 端口。
+需要 DSH `0.2.2-rc.2`。本地开发用 `pnpm run dev:dsh`，默认 `supermesh-dev` profile 与 `3091` 端口。
 
 ## ✨ 特性
 
 - 🧭 **四层代理**：主编排定归属、项目编排管执行、临时协调者处理跨项目、执行会话改代码。
 - 🔁 **任务闭环**：事件 → 话题 → 分诊开票 → Worker；`ready` 转 review，PR 与 CI 状态回写到票。
-- 🌿 **一票一树**：分支 `nexus/<任务号>`，worktree 在仓库同级 `.nexus-worktrees/`，PR 靠分支名回挂。
+- 🌿 **一票一树**：分支 `dsh/<任务号>`，worktree 在仓库同级 `.supermesh-worktrees/`，PR 靠分支名回挂。
 - 📥 **收件箱**：代理与人类共用投递规则，`ask` 只挂起当前工作线，失败指数退避并单独记受阻。
 - 🔗 **多渠道**：GitHub、GitLab 每 30 秒轮询事件与 CI，按仓库归属投递。
 - 🖥️ **面板**：概览、任务、触发、渠道、设置五个分区，可一键进入主编排。
@@ -45,11 +45,11 @@ dsh plugin --profile <name> add github:omdsh-dev/dsh-nexus
 
 ## 🚀 快速开始
 
-1. 打开 **Nexus → 设置 → 通用设置**，填写全渠道共用的管理员登录名白名单。只有名单中的人类账号可以发起新任务，空名单不接受首次派工。
+1. 打开 **Supermesh → 设置 → 通用设置**，填写全渠道共用的管理员登录名白名单。只有名单中的人类账号可以发起新任务，空名单不接受首次派工。
 2. 在 **项目范围** 勾选要参与的 Git 工作区，或通过「新增仓库」输入 GitHub / GitLab remote 克隆并创建工作区；默认名称为 `[平台]/[仓库名称]`。「打开仓库」进入远程网页。
 3. 在渠道页配置 GitHub / GitLab 机器人账号、Token 和提交身份，然后用管理员账号在 issue 或 PR 中 @ 机器人开始分诊。新话题先由主编排判断归属，已订阅的话题和分支 CI 通知按已有归属投递。
 
-主编排、项目编排与临时协调者统一归入固定的「代理工作区」（`$DSH_HOME/.nexus`），不跟随当前选中的代码工作区，因此无需再次选择工作区。项目仓库仍独立保留，只有 Worker 在专属 worktree 内改代码；旧会话历史不自动迁移。首次观察从渠道启用与项目接入的较晚时刻开始，已有采集游标不重置，也不会因补管理员名单而自动重放历史评论。
+主编排、项目编排与临时协调者统一归入固定的「代理工作区」（`$DSH_HOME/.supermesh`），不跟随当前选中的代码工作区，因此无需再次选择工作区。项目仓库仍独立保留，只有 Worker 在专属 worktree 内改代码；旧会话历史不自动迁移。首次观察从渠道启用与项目接入的较晚时刻开始，已有采集游标不重置，也不会因补管理员名单而自动重放历史评论。
 
 ## 📚 文档
 
@@ -83,13 +83,13 @@ pnpm run test:e2e
 
 <!-- Badges -->
 
-[npm-version-src]: https://img.shields.io/npm/v/dsh-nexus?style=flat&colorA=080f12&colorB=1fa669
-[npm-version-href]: https://npmx.dev/package/dsh-nexus
-[npm-downloads-src]: https://img.shields.io/npm/dm/dsh-nexus?style=flat&colorA=080f12&colorB=1fa669
-[npm-downloads-href]: https://npmx.dev/package/dsh-nexus
-[bundle-src]: https://img.shields.io/bundlephobia/minzip/dsh-nexus?style=flat&colorA=080f12&colorB=1fa669&label=minzip
-[bundle-href]: https://bundlephobia.com/result?p=dsh-nexus
-[license-src]: https://img.shields.io/github/license/omdsh-dev/dsh-nexus.svg?style=flat&colorA=080f12&colorB=1fa669
-[license-href]: https://github.com/omdsh-dev/dsh-nexus/blob/main/LICENSE
+[npm-version-src]: https://img.shields.io/npm/v/dsh-supermesh?style=flat&colorA=080f12&colorB=1fa669
+[npm-version-href]: https://npmx.dev/package/dsh-supermesh
+[npm-downloads-src]: https://img.shields.io/npm/dm/dsh-supermesh?style=flat&colorA=080f12&colorB=1fa669
+[npm-downloads-href]: https://npmx.dev/package/dsh-supermesh
+[bundle-src]: https://img.shields.io/bundlephobia/minzip/dsh-supermesh?style=flat&colorA=080f12&colorB=1fa669&label=minzip
+[bundle-href]: https://bundlephobia.com/result?p=dsh-supermesh
+[license-src]: https://img.shields.io/github/license/omdsh-dev/dsh-supermesh.svg?style=flat&colorA=080f12&colorB=1fa669
+[license-href]: https://github.com/omdsh-dev/dsh-supermesh/blob/main/LICENSE
 [jsdocs-src]: https://img.shields.io/badge/jsdocs-reference-080f12?style=flat&colorA=080f12&colorB=1fa669
-[jsdocs-href]: https://www.jsdocs.io/package/dsh-nexus
+[jsdocs-href]: https://www.jsdocs.io/package/dsh-supermesh

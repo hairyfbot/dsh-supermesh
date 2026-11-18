@@ -13,7 +13,7 @@ export const list_ticket = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'supervisor' || !identity.supervisorId)
       throw new Error('仅 Supervisor 可调用')
     const links = await db.supervisorTicket.listBySupervisor(identity.supervisorId)
@@ -48,7 +48,7 @@ export const link_dependency = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'supervisor' || !identity.supervisorId)
       throw new Error('仅 Supervisor 可调用')
     const links = await db.supervisorTicket.listBySupervisor(identity.supervisorId)
@@ -87,7 +87,7 @@ export const report = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'supervisor' || !identity.supervisorId)
       throw new Error('仅 Supervisor 可调用')
     return JSON.stringify(await db.inbox.enqueue({ type: 'main', supervisorId: identity.supervisorId, origin: 'supervisor', kind: 'notice', title: args.state, message: args.summary }))
@@ -111,7 +111,7 @@ export const ask = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'supervisor' || !identity.supervisorId)
       throw new Error('仅 Supervisor 可调用')
     return JSON.stringify(await db.inbox.enqueueAsk({ type: 'main', supervisorId: identity.supervisorId, origin: 'supervisor', kind: 'ask', message: args.question }))

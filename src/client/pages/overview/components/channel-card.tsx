@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusChannel } from '../../../apis'
+import { getApiSupermeshChannel } from '../../../apis'
 import { Empty } from '../../../components/empty'
 import { ChannelsIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
@@ -10,7 +10,7 @@ import { SummaryCard } from './summary-card'
 
 export function ChannelCard({ onMore }: { onMore: () => void }): ReactNode {
   const { t } = useTranslation()
-  const { data: channels, isLoading, error } = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const { data: channels, isLoading, error } = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const items = (channels ?? []).map(channel => ({ kind: channel.kind, name: channel.name, connected: channel.status === 'online' }))
   return (
     <SummaryCard title={t('overviewChannels')} meta={`${items.filter(channel => channel.connected).length}/${items.length}`} icon={<ChannelsIcon width={18} height={18} className="shrink-0" />} actionLabel={t('overviewMoreChannels')} onMore={onMore}>

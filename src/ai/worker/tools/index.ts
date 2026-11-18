@@ -25,7 +25,7 @@ export const report = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'worker' || !identity.workerId || !identity.ticketId)
       throw new Error('仅 Worker 可调用')
     const worker = await db.worker.findById(identity.workerId)
@@ -52,7 +52,7 @@ export const ask = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'worker' || !identity.workerId || !identity.ticketId)
       throw new Error('仅 Worker 可调用')
     const ticket = await db.ticket.requireOpen(identity.ticketId)

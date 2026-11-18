@@ -1,17 +1,17 @@
 import type { ReactNode } from 'react'
-import type { GetApiNexusTicketidResponse } from '../../../../apis/index.type'
+import type { GetApiSupermeshTicketidResponse } from '../../../../apis/index.type'
 import { Button, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusTicket } from '../../../../apis'
+import { getApiSupermeshTicket } from '../../../../apis'
 import { Empty } from '../../../../components/empty'
 import { keys } from '../../../../config/query-keys'
 import { useActions } from '../../../../hooks/use-store'
 import { useTranslation } from '../../../../hooks/use-translation'
 
-export function Relations({ links, ticketId, empty, clear }: { clear?: boolean, links: GetApiNexusTicketidResponse['dependencies'], ticketId: string, empty: string }): ReactNode {
+export function Relations({ links, ticketId, empty, clear }: { clear?: boolean, links: GetApiSupermeshTicketidResponse['dependencies'], ticketId: string, empty: string }): ReactNode {
   const { openTicket } = useActions()
   const { t } = useTranslation()
-  const { data: tickets, error } = useQuery({ queryKey: keys.ticket, queryFn: () => getApiNexusTicket() })
+  const { data: tickets, error } = useQuery({ queryKey: keys.ticket, queryFn: () => getApiSupermeshTicket() })
   const labels = { waiting: t('overviewStatusWaiting'), queued: t('ticketStatusQueued'), running: t('overviewStatusRunning'), review: t('overviewStatusReview'), done: t('overviewCompleted'), cancelled: t('ticketStatusCancelled') }
   if (error)
     return <p role="alert" className="m-0 text-xs leading-5 text-[var(--dsw-alias-state-error-primary)]">{error instanceof Error ? error.message : '任务列表加载失败'}</p>

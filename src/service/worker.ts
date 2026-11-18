@@ -69,7 +69,7 @@ export const worker = defineService({
           continue
         let started = false
         try {
-          const branch = `nexus/${ticket.id}`
+          const branch = `dsh/${ticket.id}`
           let directory = worker.worktree
           const existing = await session.history(worker.id).then(() => true).catch(() => false)
           if (existing) {
@@ -105,7 +105,7 @@ export const worker = defineService({
           await db.ticket.start(ticket.id, now, now)
           running++
           started = true
-          await session.send(worker.id, prompt, 'queue', `nexus:worker:${worker.id}`)
+          await session.send(worker.id, prompt, 'queue', `supermesh:worker:${worker.id}`)
           await db.ticket.setPrepareError(ticket.id, null, now)
         }
         catch (error) {
@@ -191,7 +191,7 @@ export const worker = defineService({
           await db.worker.setRecoveryNote(worker.id, note)
           const asks = await db.inbox.listByTicket(ticket.id)
           if (!asks.some(message => message.kind === 'ask' && message.status === 'pending' && message.workerId === worker.id))
-            await session.send(worker.id, note, 'queue', `nexus:recovery:${randomUUID()}`)
+            await session.send(worker.id, note, 'queue', `supermesh:recovery:${randomUUID()}`)
         }
         catch (error) {
           if (stopped)
@@ -265,7 +265,7 @@ async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'st
     const answered = asks.filter(message => message.answer)
     if (answered.length) {
       const receipts = await session.receipts(current.id)
-      if (answered.some(message => !receipts.some(receipt => receipt.requestId === `nexus:answer:${message.id}`))) {
+      if (answered.some(message => !receipts.some(receipt => receipt.requestId === `supermesh:answer:${message.id}`))) {
         await deferWhileWaiting(current)
         return
       }

@@ -243,7 +243,7 @@ export class Inbox extends Model<DB, 'inbox'> {
   async enqueueAnswer(row: Selectable<DB['inbox']>): Promise<void> {
     if (!row.answer || !row.answeredBy || row.answeredBy === 'user' || (row.origin !== 'main' && row.origin !== 'project' && row.origin !== 'supervisor'))
       return
-    await this.enqueue({ id: `nexus:answer:${row.id}`, type: row.origin, origin: row.answeredBy, kind: 'notice', title: row.title, message: row.answer, projectId: row.projectId, supervisorId: row.supervisorId, ticketId: row.ticketId, workerId: row.workerId, threadId: row.threadId, triggerId: row.triggerId })
+    await this.enqueue({ id: `supermesh:answer:${row.id}`, type: row.origin, origin: row.answeredBy, kind: 'notice', title: row.title, message: row.answer, projectId: row.projectId, supervisorId: row.supervisorId, ticketId: row.ticketId, workerId: row.workerId, threadId: row.threadId, triggerId: row.triggerId })
   }
 
   async listAnswered(): Promise<Selectable<DB['inbox']>[]> {

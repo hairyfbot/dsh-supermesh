@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusTicket } from '../../../apis'
+import { getApiSupermeshTicket } from '../../../apis'
 import { TasksIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
@@ -15,7 +15,7 @@ const SEGMENTS = [
 
 export function TaskCard({ onMore }: { onMore: () => void }): ReactNode {
   const { t } = useTranslation()
-  const { data: tickets, isLoading, error } = useQuery({ queryKey: keys.ticket, queryFn: () => getApiNexusTicket() })
+  const { data: tickets, isLoading, error } = useQuery({ queryKey: keys.ticket, queryFn: () => getApiSupermeshTicket() })
   const list = tickets ?? []
   const now = Date.now()
   const added = list.filter(ticket => Date.parse(ticket.createdAt) >= now - 86400000).length

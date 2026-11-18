@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const fixture = fileURLToPath(new URL('./fixtures/nexus-runtime.mjs', import.meta.url))
+const fixture = fileURLToPath(new URL('./fixtures/supermesh-runtime.mjs', import.meta.url))
 
 async function runCase(name: string): Promise<string> {
   const cli = process.env.DSH_E2E_CLI
@@ -16,7 +16,7 @@ async function runCase(name: string): Promise<string> {
     throw new Error('Real official runtime requires DSH_NODE_EXECUTABLE/DSH_INSTALL_DIR or DSH_E2E_CLI; no mock or local dependency fallback is permitted')
   const temporaryRoot = resolve(root, '.temp')
   await mkdir(temporaryRoot, { recursive: true })
-  const directory = await mkdtemp(join(temporaryRoot, 'nexus-runtime-'))
+  const directory = await mkdtemp(join(temporaryRoot, 'supermesh-runtime-'))
   if (!resolve(directory).startsWith(`${temporaryRoot}\\`) && !resolve(directory).startsWith(`${temporaryRoot}/`))
     throw new Error(`Refusing cleanup outside owned .temp directory: ${directory}`)
   try {
@@ -25,7 +25,7 @@ async function runCase(name: string): Promise<string> {
         cwd: directory,
         env: {
           ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !/KEY|PASSWORD|SECRET|TOKEN/i.test(key) && !key.toUpperCase().startsWith('GIT_') && key.toUpperCase() !== 'PATH')),
-          PATH: [process.env.NEXUS_TEST_GLAB_DIR, ...(process.env.PATH ?? '').split(delimiter).filter(path => !/[\\/]\.nexus[\\/]cli[\\/]bin[\\/]?$/i.test(path) && !/[\\/]worker-bin[\\/]?$/i.test(path))].filter(Boolean).join(delimiter),
+          PATH: [process.env.SUPERMESH_TEST_GLAB_DIR, ...(process.env.PATH ?? '').split(delimiter).filter(path => !/[\\/]\.supermesh[\\/]cli[\\/]bin[\\/]?$/i.test(path) && !/[\\/]worker-bin[\\/]?$/i.test(path))].filter(Boolean).join(delimiter),
           ELECTRON_RUN_AS_NODE: '1',
           DSH_INSTALL_DIR: installation,
           DSH_HOME: join(directory, 'home'),
@@ -42,7 +42,7 @@ async function runCase(name: string): Promise<string> {
           GLAB_TOKEN: '',
           GIT_CONFIG_GLOBAL: join(directory, 'home', 'ambient-gitconfig'),
           GIT_CONFIG_NOSYSTEM: '1',
-          NEXUS_TEST_CWD: directory,
+          SUPERMESH_TEST_CWD: directory,
         },
         windowsHide: true,
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -69,7 +69,7 @@ async function runCase(name: string): Promise<string> {
   }
 }
 
-describe('nexus services composed with the installed official runtime', () => {
+describe('supermesh services composed with the installed official runtime', () => {
   it.each([
     ['shell', 'native CLI shims use isolated bot credentials and git identities, reject other hosts and restore the process environment'],
     ['projectSync', 'official workspace changes discover and disable repositories while preserving history and explicit choices'],
@@ -80,8 +80,8 @@ describe('nexus services composed with the installed official runtime', () => {
     ['channelIsolation', 'a stalled channel mail does not block internal mail for the same recipient'],
   ])('%s: %s', async (name) => {
     const output = await runCase(name)
-    expect(output).toContain(`NEXUS_RUNTIME_PASS ${name} DSH=`)
-    if (name === 'shell' && process.env.NEXUS_TEST_GLAB_DIR)
-      expect(output).toContain('NEXUS_GLAB_REAL_PASS')
+    expect(output).toContain(`SUPERMESH_RUNTIME_PASS ${name} DSH=`)
+    if (name === 'shell' && process.env.SUPERMESH_TEST_GLAB_DIR)
+      expect(output).toContain('SUPERMESH_GLAB_REAL_PASS')
   }, 35000)
 })

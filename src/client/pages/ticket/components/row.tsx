@@ -1,6 +1,6 @@
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
-import type { GetApiNexusChannelResponse, GetApiNexusNodeResponse, GetApiNexusSubscriptionResponse, GetApiNexusTicketidResponse, GetApiNexusTriggerResponse } from '../../../apis/index.type'
+import type { GetApiSupermeshChannelResponse, GetApiSupermeshNodeResponse, GetApiSupermeshSubscriptionResponse, GetApiSupermeshTicketidResponse, GetApiSupermeshTriggerResponse } from '../../../apis/index.type'
 import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { TasksIcon } from '../../../components/icons'
 import { useDshContext } from '../../../hooks/use-dsh-context'
@@ -8,11 +8,11 @@ import { useActions } from '../../../hooks/use-store'
 import { useTranslation } from '../../../hooks/use-translation'
 
 export function Row({ task, nodes, channels, triggers, subscriptions, refreshedAt }: {
-  task: GetApiNexusTicketidResponse['ticket']
-  nodes: GetApiNexusNodeResponse
-  channels: GetApiNexusChannelResponse
-  triggers: GetApiNexusTriggerResponse
-  subscriptions: GetApiNexusSubscriptionResponse
+  task: GetApiSupermeshTicketidResponse['ticket']
+  nodes: GetApiSupermeshNodeResponse
+  channels: GetApiSupermeshChannelResponse
+  triggers: GetApiSupermeshTriggerResponse
+  subscriptions: GetApiSupermeshSubscriptionResponse
   refreshedAt: string | null
 }): ReactNode {
   const { t } = useTranslation()

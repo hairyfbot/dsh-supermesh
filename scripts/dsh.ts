@@ -17,7 +17,7 @@
  *   pnpm run dev:dsh --no-build # 复用已有构建，不再启动 watcher
  *
  * 环境变量：
- *   DSH_DEV_PROFILE   profile 名，默认 nexus-dev
+ *   DSH_DEV_PROFILE   profile 名，默认 supermesh-dev
  *   DSH_DEV_PORT      端口，默认 3091
  *   DSH_DEV_CLI       官方 lib/bin.js，设置后绕过 Desktop 全局 shim
  *   DSH_DEV_NODE      执行官方 CLI 的运行时，默认 process.execPath
@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url'
 import { x } from 'tinyexec'
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const PROFILE = process.env.DSH_DEV_PROFILE ?? 'nexus-dev'
+const PROFILE = process.env.DSH_DEV_PROFILE ?? 'supermesh-dev'
 const PORT = process.env.DSH_DEV_PORT ?? '3091'
 const OPEN_BROWSER = !process.argv.includes('--no-open')
 const BUILD = !process.argv.includes('--no-build')

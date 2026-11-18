@@ -1,10 +1,10 @@
 import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
-import type { GetApiNexusEdgeResponse, GetApiNexusGroupResponse, GetApiNexusNodeResponse } from '../../../apis/index.type'
+import type { GetApiSupermeshEdgeResponse, GetApiSupermeshGroupResponse, GetApiSupermeshNodeResponse } from '../../../apis/index.type'
 import type { AgentGraphNode, GraphNode } from '../../../types'
 import { AGENT_GRAPH } from '../../../config/constants'
 
-export type GraphGroup = GetApiNexusGroupResponse[number]
-export interface GraphInput { nodes: GetApiNexusNodeResponse, edges: GetApiNexusEdgeResponse, groups: GetApiNexusGroupResponse }
+export type GraphGroup = GetApiSupermeshGroupResponse[number]
+export interface GraphInput { nodes: GetApiSupermeshNodeResponse, edges: GetApiSupermeshEdgeResponse, groups: GetApiSupermeshGroupResponse }
 
 export function layoutGraph({ nodes, groups }: GraphInput): GraphNode[] {
   const positions = new Map<string, { x: number, y: number }>()

@@ -1,12 +1,12 @@
-export type GetApiNexusProjectResponse = { session: { sessionId: null | string; status: "queued" | "running" | "idle" | "background" | "not_created" }; updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string; available?: undefined | false | true }[];
-export type PostApiNexusProjectResponse = { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string }[];
-export type PatchApiNexusProjectidResponse = { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string };
-export type PutApiNexusProjectidSessionResponse = { sessionId: string };
-export type PostApiNexusProjectidOpeningResponse = { opened: true };
-export type PostApiNexusRepositoryResponse = { project: { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string }; workspaceId: string };
-export type GetApiNexusTicketResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[];
-export type GetApiNexusTicketCurrentResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[];
-export type GetApiNexusTicketidResponse = {
+export type GetApiSupermeshProjectResponse = { session: { sessionId: null | string; status: "queued" | "running" | "idle" | "background" | "not_created" }; updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string; available?: undefined | false | true }[];
+export type PostApiSupermeshProjectResponse = { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string }[];
+export type PatchApiSupermeshProjectidResponse = { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string };
+export type PutApiSupermeshProjectidSessionResponse = { sessionId: string };
+export type PostApiSupermeshProjectidOpeningResponse = { opened: true };
+export type PostApiSupermeshRepositoryResponse = { project: { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string }; workspaceId: string };
+export type GetApiSupermeshTicketResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[];
+export type GetApiSupermeshTicketCurrentResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string }[];
+export type GetApiSupermeshTicketidResponse = {
   ticket: { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string };
   project: null | { updatedAt: string; name: string; id: string; enabled: number; createdAt: string; workspaceId: string; directory: string; remoteUrl: null | string; orchestratorSessionId: null | string };
   executions: { status: "queued" | "running" | "ended"; id: string; createdAt: string; title: null | string; ticketId: string; startedAt: null | string; endedAt: null | string; endedReason: null | "completed" | "stopped" | "failed" | "restarted"; branch: null | string; worktree: null | string; reportState: null | "failed" | "progress" | "ready" | "dropped"; report: null | string; reportAt: null | string; backgroundUntil: null | string; recoveryNote: null | string }[];
@@ -16,8 +16,8 @@ export type GetApiNexusTicketidResponse = {
   triggers: { at: string; url: null | string; text: string; id: string; channelId: string; kind: "push" | "ci" | "comment" | "open" | "close"; ref: null | string; threadId: string; actorName: null | string; human: number; mentioned: number }[];
   inbox: { status: "pending" | "done" | "stalled"; message: string; id: string; createdAt: string; kind: "trigger" | "ticket" | "ask" | "notice"; seq: number; type: "main" | "project" | "supervisor" | "user"; projectId: null | string; supervisorId: null | string; origin: "main" | "project" | "worker" | "supervisor" | "channel" | "system"; title: null | string; doneAt: null | string; deliveryAttempts: number; deliveryError: null | string; nextRetryAt: null | string; readAt: null | string; escalations: number; lastEscalatedAt: null | string; answer: null | string; answeredBy: null | "main" | "project" | "worker" | "supervisor" | "user"; answeredAt: null | string; triggerId: null | string; threadId: null | string; ticketId: null | string; workerId: null | string }[];
 };
-export type PatchApiNexusTicketidResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string };
-export type PostApiNexusAskidAnswerResponse = {
+export type PatchApiSupermeshTicketidResponse = { updatedAt: string; description: null | string; status: "done" | "waiting" | "queued" | "running" | "review" | "cancelled"; id: string; createdAt: string; channelId: string; projectId: string; title: string; startedAt: null | string; endedAt: null | string; prUrl: null | string; prState: null | "closed" | "open" | "merged"; ciState: null | "pending" | "running" | "passing" | "failing"; paused: number; prepareError: null | string };
+export type PostApiSupermeshAskidAnswerResponse = {
   status: "pending" | "done" | "stalled";
   message: string;
   id: string;
@@ -44,14 +44,14 @@ export type PostApiNexusAskidAnswerResponse = {
   ticketId: null | string;
   workerId: null | string;
 };
-export type GetApiNexusWorkerResponse = { status: "queued" | "running" | "ended"; id: string; createdAt: string; title: null | string; ticketId: string; startedAt: null | string; endedAt: null | string; endedReason: null | "completed" | "stopped" | "failed" | "restarted"; branch: null | string; worktree: null | string; reportState: null | "failed" | "progress" | "ready" | "dropped"; report: null | string; reportAt: null | string; backgroundUntil: null | string; recoveryNote: null | string }[];
-export type GetApiNexusSupervisorResponse = { status: "active" | "closed"; id: string; createdAt: string; title: string; sessionId: null | string; reason: string; closedAt: null | string }[];
-export type GetApiNexusScopeResponse = { createdAt: string; supervisorId: string; ticketId: string }[];
-export type GetApiNexusNodeResponse = ({ id: string; kind: string; label: null | string; status: "queued" | "running" | "ended"; projectId: string; ticketId: string; sessionId: null | string } | { id: string; kind: string; label: string; status: string; projectId: null | string; ticketId: null | string; sessionId: null | string })[];
-export type GetApiNexusEdgeResponse = { source: string; target: string; kind: string }[];
-export type GetApiNexusGroupResponse = { id: string; label: string; sessionId: null | string; nodeIds: string[] }[];
-export type GetApiNexusStatusResponse = { state: string; reason: null | string };
-export type GetApiNexusMessageResponse = {
+export type GetApiSupermeshWorkerResponse = { status: "queued" | "running" | "ended"; id: string; createdAt: string; title: null | string; ticketId: string; startedAt: null | string; endedAt: null | string; endedReason: null | "completed" | "stopped" | "failed" | "restarted"; branch: null | string; worktree: null | string; reportState: null | "failed" | "progress" | "ready" | "dropped"; report: null | string; reportAt: null | string; backgroundUntil: null | string; recoveryNote: null | string }[];
+export type GetApiSupermeshSupervisorResponse = { status: "active" | "closed"; id: string; createdAt: string; title: string; sessionId: null | string; reason: string; closedAt: null | string }[];
+export type GetApiSupermeshScopeResponse = { createdAt: string; supervisorId: string; ticketId: string }[];
+export type GetApiSupermeshNodeResponse = ({ id: string; kind: string; label: null | string; status: "queued" | "running" | "ended"; projectId: string; ticketId: string; sessionId: null | string } | { id: string; kind: string; label: string; status: string; projectId: null | string; ticketId: null | string; sessionId: null | string })[];
+export type GetApiSupermeshEdgeResponse = { source: string; target: string; kind: string }[];
+export type GetApiSupermeshGroupResponse = { id: string; label: string; sessionId: null | string; nodeIds: string[] }[];
+export type GetApiSupermeshStatusResponse = { state: string; reason: null | string };
+export type GetApiSupermeshMessageResponse = {
   status: "pending" | "done" | "stalled";
   message: string;
   id: string;
@@ -78,7 +78,7 @@ export type GetApiNexusMessageResponse = {
   ticketId: null | string;
   workerId: null | string;
 }[];
-export type GetApiNexusPendingResponse = {
+export type GetApiSupermeshPendingResponse = {
   status: "pending" | "done" | "stalled";
   message: string;
   id: string;
@@ -105,7 +105,7 @@ export type GetApiNexusPendingResponse = {
   ticketId: null | string;
   workerId: null | string;
 }[];
-export type GetApiNexusDeliveryResponse = {
+export type GetApiSupermeshDeliveryResponse = {
   status: "pending" | "done" | "stalled";
   message: string;
   id: string;
@@ -132,23 +132,23 @@ export type GetApiNexusDeliveryResponse = {
   ticketId: null | string;
   workerId: null | string;
 }[];
-export type GetApiNexusThreadResponse = { updatedAt: string; url: null | string; id: string; createdAt: string; channelId: string; kind: "issue" | "pull" | "chat" | "ci"; projectId: null | string; title: string; refId: string; triage: "pending" | "claimed" | "ignored"; triagedAt: null | string }[];
-export type GetApiNexusTriggerResponse = { at: string; url: null | string; text: string; id: string; channelId: string; kind: "push" | "ci" | "comment" | "open" | "close"; ref: null | string; threadId: string; actorName: null | string; human: number; mentioned: number }[];
-export type GetApiNexusSubscriptionResponse = { createdAt: string; threadId: string; ticketId: string }[];
-export type GetApiNexusChannelResponse = { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] }[];
-export type PutApiNexusChannelidConfigurationResponse = { channel: { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] } };
-export type DeleteApiNexusChannelidCredentialResponse = { channel: { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] } };
-export type PostApiNexusChannelidAuthenticationResponse = { id: string; channelId: string; status: "pending" | "failed" | "succeeded"; output: string; verificationUri?: undefined | string; userCode?: undefined | string; error?: undefined | string; account?: undefined | { login: string } };
-export type GetApiNexusChannelidAuthenticationauthenticationIdResponse = { id: string; channelId: string; status: "pending" | "failed" | "succeeded"; output: string; verificationUri?: undefined | string; userCode?: undefined | string; error?: undefined | string; account?: undefined | { login: string } };
-export type GetApiNexusSettingResponse = { models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } }; administrators: string[]; maxWorkers: number; backgroundLimitMinutes: number; autoMerge: false | true; autoMergeMaxLines: number; autoArchiveWorkers: false | true; deliveryMaxAttempts: number; deliveryRetryCeilingSeconds: number; updatedAt: string };
-export type PatchApiNexusSettingResponse = { models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } }; administrators: string[]; maxWorkers: number; backgroundLimitMinutes: number; autoMerge: false | true; autoMergeMaxLines: number; autoArchiveWorkers: false | true; deliveryMaxAttempts: number; deliveryRetryCeilingSeconds: number; updatedAt: string };
-export type GetApiNexusAgentModelResponse = { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
-export type PatchApiNexusAgentModelResponse = { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
-export type GetApiNexusAgentModelCatalogResponse = { default: { provider: string; model: string; reasoningEffort?: undefined | string }; routableProviders: string[]; groups: { id: string; name: string; models: { id: string; name: string; description?: undefined | string; reasoning?: undefined | { efforts: { id: string; name: string; description?: undefined | string }[]; defaultEffort?: undefined | string }; badge?: undefined | { text: string | { en: string; [key: string]: string }; tone: "neutral" | "info" | "success" | "warning" } }[] }[]; failures: { id: string; name: string; message: string }[] };
-export type PutApiNexusSessionMainResponse = { sessionId: string };
-export type GetApiNexusSessionRoleResponse = { sessions: ({ sessionId: string; role: "project" } | { sessionId: string; role: "supervisor" } | { sessionId: string; role: "worker" } | { sessionId: string; role: "main" })[] };
-export type GetApiNexusSessionidContextResponse = { text: string; next_offset: null | number; sessionId: string; role: "main" | "project" | "worker" | "supervisor"; pendingCount: number };
-export type GetApiNexusSessionidMailboxResponse = {
+export type GetApiSupermeshThreadResponse = { updatedAt: string; url: null | string; id: string; createdAt: string; channelId: string; kind: "issue" | "pull" | "chat" | "ci"; projectId: null | string; title: string; refId: string; triage: "pending" | "claimed" | "ignored"; triagedAt: null | string }[];
+export type GetApiSupermeshTriggerResponse = { at: string; url: null | string; text: string; id: string; channelId: string; kind: "push" | "ci" | "comment" | "open" | "close"; ref: null | string; threadId: string; actorName: null | string; human: number; mentioned: number }[];
+export type GetApiSupermeshSubscriptionResponse = { createdAt: string; threadId: string; ticketId: string }[];
+export type GetApiSupermeshChannelResponse = { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] }[];
+export type PutApiSupermeshChannelidConfigurationResponse = { channel: { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] } };
+export type DeleteApiSupermeshChannelidCredentialResponse = { channel: { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; expectedAccount?: undefined | string; commitName: string; commitEmail: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] } };
+export type PostApiSupermeshChannelidAuthenticationResponse = { id: string; channelId: string; status: "pending" | "failed" | "succeeded"; output: string; verificationUri?: undefined | string; userCode?: undefined | string; error?: undefined | string; account?: undefined | { login: string } };
+export type GetApiSupermeshChannelidAuthenticationauthenticationIdResponse = { id: string; channelId: string; status: "pending" | "failed" | "succeeded"; output: string; verificationUri?: undefined | string; userCode?: undefined | string; error?: undefined | string; account?: undefined | { login: string } };
+export type GetApiSupermeshSettingResponse = { models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } }; administrators: string[]; maxWorkers: number; backgroundLimitMinutes: number; autoMerge: false | true; autoMergeMaxLines: number; autoArchiveWorkers: false | true; deliveryMaxAttempts: number; deliveryRetryCeilingSeconds: number; updatedAt: string };
+export type PatchApiSupermeshSettingResponse = { models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } }; administrators: string[]; maxWorkers: number; backgroundLimitMinutes: number; autoMerge: false | true; autoMergeMaxLines: number; autoArchiveWorkers: false | true; deliveryMaxAttempts: number; deliveryRetryCeilingSeconds: number; updatedAt: string };
+export type GetApiSupermeshAgentModelResponse = { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
+export type PatchApiSupermeshAgentModelResponse = { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
+export type GetApiSupermeshAgentModelCatalogResponse = { default: { provider: string; model: string; reasoningEffort?: undefined | string }; routableProviders: string[]; groups: { id: string; name: string; models: { id: string; name: string; description?: undefined | string; reasoning?: undefined | { efforts: { id: string; name: string; description?: undefined | string }[]; defaultEffort?: undefined | string }; badge?: undefined | { text: string | { en: string; [key: string]: string }; tone: "neutral" | "info" | "success" | "warning" } }[] }[]; failures: { id: string; name: string; message: string }[] };
+export type PutApiSupermeshSessionMainResponse = { sessionId: string };
+export type GetApiSupermeshSessionRoleResponse = { sessions: ({ sessionId: string; role: "project" } | { sessionId: string; role: "supervisor" } | { sessionId: string; role: "worker" } | { sessionId: string; role: "main" })[] };
+export type GetApiSupermeshSessionidContextResponse = { text: string; next_offset: null | number; sessionId: string; role: "main" | "project" | "worker" | "supervisor"; pendingCount: number };
+export type GetApiSupermeshSessionidMailboxResponse = {
   mailbox: null | {
     sessionId: string;
     role: "main" | "project" | "supervisor";
@@ -157,23 +157,23 @@ export type GetApiNexusSessionidMailboxResponse = {
     messages: { status: "pending" | "done" | "stalled"; message: string; id: string; createdAt: string; kind: "trigger" | "ticket" | "ask" | "notice"; seq: number; type: "main" | "project" | "supervisor" | "user"; projectId: null | string; supervisorId: null | string; origin: "main" | "project" | "worker" | "supervisor" | "channel" | "system"; title: null | string; doneAt: null | string; deliveryAttempts: number; deliveryError: null | string; nextRetryAt: null | string; readAt: null | string; escalations: number; lastEscalatedAt: null | string; answer: null | string; answeredBy: null | "main" | "project" | "worker" | "supervisor" | "user"; answeredAt: null | string; triggerId: null | string; threadId: null | string; ticketId: null | string; workerId: null | string }[];
   };
 };
-export type PatchApiNexusSessionidMailboxmessageIdResponse = { completed: number };
+export type PatchApiSupermeshSessionidMailboxmessageIdResponse = { completed: number };
 
-export interface PatchApiNexusProjectidBody {
+export interface PatchApiSupermeshProjectidBody {
   enabled: false | true;
 }
-export interface PostApiNexusRepositoryBody {
+export interface PostApiSupermeshRepositoryBody {
   remoteUrl: string;
   name?: undefined | string;
 }
-export interface PatchApiNexusTicketidBody {
+export interface PatchApiSupermeshTicketidBody {
   paused: false | true;
   reason: string;
 }
-export interface PostApiNexusAskidAnswerBody {
+export interface PostApiSupermeshAskidAnswerBody {
   answer: string;
 }
-export interface PutApiNexusChannelidConfigurationBody {
+export interface PutApiSupermeshChannelidConfigurationBody {
   host?: undefined | string;
   expectedAccount?: undefined | string;
   enabled?: undefined | false | true;
@@ -181,10 +181,10 @@ export interface PutApiNexusChannelidConfigurationBody {
   commitEmail?: undefined | string;
   token?: undefined | string;
 }
-export interface PostApiNexusChannelidAuthenticationBody {
+export interface PostApiSupermeshChannelidAuthenticationBody {
   host?: undefined | string;
 }
-export interface PatchApiNexusSettingBody {
+export interface PatchApiSupermeshSettingBody {
   models?: undefined | { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
   administrators?: undefined | string[];
   maxWorkers?: undefined | number;
@@ -195,53 +195,53 @@ export interface PatchApiNexusSettingBody {
   deliveryMaxAttempts?: undefined | number;
   deliveryRetryCeilingSeconds?: undefined | number;
 }
-export interface PatchApiNexusAgentModelBody {
+export interface PatchApiSupermeshAgentModelBody {
   role: "main" | "manager" | "project" | "worker" | "supervisor";
   provider: string;
   model: string;
   reasoningEffort?: undefined | string;
 }
-export interface PatchApiNexusSessionidMailboxmessageIdBody {
+export interface PatchApiSupermeshSessionidMailboxmessageIdBody {
   status: "done";
 }
-export interface PatchApiNexusProjectidPath {
+export interface PatchApiSupermeshProjectidPath {
   id: string;
 }
-export interface PutApiNexusProjectidSessionPath {
+export interface PutApiSupermeshProjectidSessionPath {
   id: string;
 }
-export interface PostApiNexusProjectidOpeningPath {
+export interface PostApiSupermeshProjectidOpeningPath {
   id: string;
 }
-export interface GetApiNexusTicketidPath {
+export interface GetApiSupermeshTicketidPath {
   id: string;
 }
-export interface PatchApiNexusTicketidPath {
+export interface PatchApiSupermeshTicketidPath {
   id: string;
 }
-export interface PostApiNexusAskidAnswerPath {
+export interface PostApiSupermeshAskidAnswerPath {
   id: string;
 }
-export interface PutApiNexusChannelidConfigurationPath {
+export interface PutApiSupermeshChannelidConfigurationPath {
   id: string;
 }
-export interface DeleteApiNexusChannelidCredentialPath {
+export interface DeleteApiSupermeshChannelidCredentialPath {
   id: string;
 }
-export interface PostApiNexusChannelidAuthenticationPath {
+export interface PostApiSupermeshChannelidAuthenticationPath {
   id: string;
 }
-export interface GetApiNexusChannelidAuthenticationauthenticationIdPath {
+export interface GetApiSupermeshChannelidAuthenticationauthenticationIdPath {
   id: string;
   authenticationId: string;
 }
-export interface GetApiNexusSessionidContextPath {
+export interface GetApiSupermeshSessionidContextPath {
   id: string;
 }
-export interface GetApiNexusSessionidMailboxPath {
+export interface GetApiSupermeshSessionidMailboxPath {
   id: string;
 }
-export interface PatchApiNexusSessionidMailboxmessageIdPath {
+export interface PatchApiSupermeshSessionidMailboxmessageIdPath {
   id: string;
   messageId: string;
 }

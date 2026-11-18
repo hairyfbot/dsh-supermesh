@@ -4,7 +4,7 @@ import { storage } from '../../storage'
 
 export default defineHandler(async () => {
   const [mainSessionId, projects, supervisors, workers] = await Promise.all([
-    storage.getItem<string>('mainSessionId'),
+    storage.getItem<string>('orchestrator.id'),
     db.project.listAll(),
     db.supervisor.listByStatus('active'),
     db.worker.listRecent(),

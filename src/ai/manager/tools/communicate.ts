@@ -33,7 +33,7 @@ export const report = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'project' || !identity.projectId)
       throw new Error('仅项目编排可调用')
     if (args.ticketId) {
@@ -72,7 +72,7 @@ export const ask = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'project' || !identity.projectId)
       throw new Error('仅项目编排可调用')
     if (args.ticketId)
@@ -100,7 +100,7 @@ export const escalate = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'project' || !identity.projectId)
       throw new Error('仅项目编排可调用')
     return JSON.stringify(await db.inbox.escalateScoped(args.askId, { type: 'project', projectId: identity.projectId }, new Date().toISOString()))

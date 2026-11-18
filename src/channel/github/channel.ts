@@ -545,7 +545,7 @@ export class GitHubChannel {
       const { thread, target } = await this.destination(row)
       const project = (await this.projectForRepository(target.repository))!
       const environment = await this.verifyEnvironment(project.id, signal)
-      const marker = `<!-- nexus:${row.id} -->`
+      const marker = `<!-- supermesh:${row.id} -->`
       const receipt = await this.state<Receipt>(target.repository, `comment:${row.id}`)
       if (receipt) {
         if (receipt.providerId !== environment.providerId || receipt.marker !== marker)

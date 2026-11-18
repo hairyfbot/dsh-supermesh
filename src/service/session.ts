@@ -48,7 +48,7 @@ export const session = defineService({
     }
     await bindWorkspace(agent.session.id, agent.session.header.cwd)
     if (role === 'main')
-      await storage.setItem('mainSessionId', agent.session.id)
+      await storage.setItem('orchestrator.id', agent.session.id)
     return role
   },
   start(): () => Promise<void> {
@@ -99,10 +99,10 @@ export const session = defineService({
       return preset === presets.project ? { role: 'project', projectId: project.id } : null
     if (supervisor)
       return preset === presets.supervisor && supervisor.status === 'active' ? { role: 'supervisor', supervisorId: supervisor.id } : null
-    return preset === presets.main && await storage.getItem<string>('mainSessionId') === id ? { role: 'main' } : null
+    return preset === presets.main && await storage.getItem<string>('orchestrator.id') === id ? { role: 'main' } : null
   },
   async findMain(): Promise<string | null> {
-    const id = await storage.getItem<string>('mainSessionId')
+    const id = await storage.getItem<string>('orchestrator.id')
     return id && (await session.resolve(id))?.role === 'main' ? id : null
   },
   async create(role: Role, options: { sessionId?: string, projectId?: string, supervisorId?: string, ticketId?: string, directory?: string, title?: string, prompt?: string }): Promise<string> {
@@ -157,7 +157,7 @@ export const session = defineService({
       if (id !== requestedId)
         throw new Error('session_identity_conflict')
       if (role === 'main')
-        await storage.setItem('mainSessionId', id)
+        await storage.setItem('orchestrator.id', id)
       if (project && role === 'project')
         await db.project.setOrchestrator(project.id, id, new Date().toISOString())
       if (supervisor && role === 'supervisor')
@@ -198,7 +198,7 @@ export const session = defineService({
   },
   async cancel(id: string, keepInbox = false): Promise<void> {
     const agent = await resolveAgent(id)
-    agent.cancel({ kind: 'hook', reason: 'nexus_cancel' }, { keepInbox })
+    agent.cancel({ kind: 'hook', reason: 'supermesh_cancel' }, { keepInbox })
   },
   async rename(id: string, title: string): Promise<void> {
     if (!(await session.resolve(id)))
@@ -264,7 +264,7 @@ export const session = defineService({
     await ctx.parallel('workspace/session-stop', { sessionId: SessionId(id) })
     const result = await ctx.sessionController.resolveAgent(SessionId(id))
     if ('agent' in result) {
-      result.agent.cancel({ kind: 'hook', reason: 'nexus_stop' }, { keepInbox: true })
+      result.agent.cancel({ kind: 'hook', reason: 'supermesh_stop' }, { keepInbox: true })
       await result.agent.whenIdle()
     }
     if ((await session.activity(id)).background)

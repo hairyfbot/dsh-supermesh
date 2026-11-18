@@ -21,7 +21,7 @@ export const supervisor_list = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     const rows = await db.supervisor.listByStatus(args.status ?? 'active')
@@ -57,7 +57,7 @@ export const create_supervisor = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     const ticketIds = [...new Set(args.ticketIds)]
@@ -97,7 +97,7 @@ export const close_supervisor = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     const row = await db.supervisor.findById(args.supervisorId)
@@ -138,7 +138,7 @@ export const attach_tickets_to_supervisor = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     const row = await db.supervisor.findById(args.supervisorId)
@@ -181,7 +181,7 @@ export const detach_tickets_from_supervisor = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     const row = await db.supervisor.findById(args.supervisorId)

@@ -67,7 +67,7 @@ export const worktree = defineService({
       await mkdir(dirname(target), { recursive: true })
       if (!samePath(await realpath(dirname(target)), dirname(target)))
         throw new Error('repository_path_conflict')
-      const temporary = await mkdtemp(join(dirname(target), '.nexus-clone-'))
+      const temporary = await mkdtemp(join(dirname(target), '.supermesh-clone-'))
       try {
         await git(temporary, ['-c', 'http.followRedirects=false', '-c', 'protocol.file.allow=never', 'clone', '--', repository.remoteUrl, temporary], signal, 120000)
         const facts = await worktree.peek(temporary)
@@ -92,7 +92,7 @@ export const worktree = defineService({
   async create(agent: Agent, ticketId: string): Promise<{ branch: string, worktree: string, baseCommit: string, repositoryRoot: string }> {
     if (!/^[a-z0-9][\w-]*$/i.test(ticketId))
       throw new Error('invalid_worktree_identity')
-    const branch = `nexus/${ticketId}`
+    const branch = `dsh/${ticketId}`
     const ctx = getServerContext<Context>(server)
     if (!ctx.worktrees)
       throw new Error('worktrees_unavailable')

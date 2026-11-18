@@ -107,7 +107,7 @@ model Trigger {
   at        String
 
   /// 来源侧的引用，各渠道含义不同，统一放在这一列：
-  ///   PR 的 `open` / `merge` / `close`：head 分支名，例如 `nexus/T-105`
+  ///   PR 的 `open` / `merge` / `close`：head 分支名，例如 `dsh/T-105`
   ///   CI 的 `ci`：被检查的 commit sha
   ///   推送的 `push`：分支名
   ///   其余为空

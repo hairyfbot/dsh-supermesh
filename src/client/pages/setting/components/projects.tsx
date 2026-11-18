@@ -4,7 +4,7 @@ import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { parseRepositoryRemote } from '../../../../utils/repository'
-import { getApiNexusChannel, getApiNexusProject, patchApiNexusProjectId, postApiNexusProject } from '../../../apis'
+import { getApiSupermeshChannel, getApiSupermeshProject, patchApiSupermeshProjectId, postApiSupermeshProject } from '../../../apis'
 import { Empty } from '../../../components/empty'
 import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
@@ -13,14 +13,14 @@ import { AddRepository } from './add-repository'
 export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null) => void }): ReactNode {
   const { t } = useTranslation()
   const client = useQueryClient()
-  const projects = useQuery({ queryKey: keys.project, queryFn: () => getApiNexusProject() })
-  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const projects = useQuery({ queryKey: keys.project, queryFn: () => getApiSupermeshProject() })
+  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const toggleProject = useMutation({
-    mutationFn: (input: { id: string, enabled: boolean }) => patchApiNexusProjectId({ id: encodeURIComponent(input.id) }, { enabled: input.enabled }),
+    mutationFn: (input: { id: string, enabled: boolean }) => patchApiSupermeshProjectId({ id: encodeURIComponent(input.id) }, { enabled: input.enabled }),
     onSettled: () => client.invalidateQueries({ queryKey: keys.project }),
   })
   const refreshProject = useMutation({
-    mutationFn: () => postApiNexusProject(),
+    mutationFn: () => postApiSupermeshProject(),
     onSettled: () => client.invalidateQueries({ queryKey: keys.project }),
   })
   const gitlabHost = channels.data?.find(channel => channel.id === 'gitlab')?.host ?? 'https://gitlab.com'

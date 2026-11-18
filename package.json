@@ -1,17 +1,17 @@
 {
-  "name": "dsh-nexus",
+  "name": "dsh-supermesh",
   "type": "module",
   "version": "0.0.0",
   "packageManager": "pnpm@11.15.1",
   "description": "_description_",
   "author": "Hairy <wwu710632@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/dsh-tauri-desk/dsh-nexus#readme",
+  "homepage": "https://github.com/dsh-tauri-desk/dsh-supermesh#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dsh-tauri-desk/dsh-nexus.git"
+    "url": "git+https://github.com/dsh-tauri-desk/dsh-supermesh.git"
   },
-  "bugs": "https://github.com/dsh-tauri-desk/dsh-nexus/issues",
+  "bugs": "https://github.com/dsh-tauri-desk/dsh-supermesh/issues",
   "keywords": [],
   "sideEffects": false,
   "exports": {
@@ -24,6 +24,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "README.md",
+    "assets",
     "cordis.patch.yml",
     "dist",
     "src/client/components/icons.licenses.md",

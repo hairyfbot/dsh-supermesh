@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import type { GetApiNexusTicketidResponse } from '../../../../apis/index.type'
+import type { GetApiSupermeshTicketidResponse } from '../../../../apis/index.type'
 import { Empty } from '../../../../components/empty'
 import { IssueOpenIcon } from '../../../../components/icons'
 import { useActions } from '../../../../hooks/use-store'
 import { useTranslation } from '../../../../hooks/use-translation'
 import { Section } from './section'
 
-export function Issues({ issues }: { issues: GetApiNexusTicketidResponse['topics'] }): ReactNode {
+export function Issues({ issues }: { issues: GetApiSupermeshTicketidResponse['topics'] }): ReactNode {
   const { t } = useTranslation()
   const { openThread } = useActions()
   return (

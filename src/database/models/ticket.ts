@@ -219,7 +219,7 @@ export class Ticket extends Model<DB, 'ticket'> {
     await this.finish(ticket.id, 'done', at, new Date().toISOString())
     const message = `${ticket.id} 的变更请求已${outcome === 'merged' ? '合并' : '关闭'}：${ticket.prUrl ?? ticket.id}`
     for (const type of ['project', 'main'] as const)
-      await new Inbox(this.db).enqueue({ id: `nexus:${outcome}:${ticket.id}:${type}`, type, origin: 'system', kind: 'notice', projectId: ticket.projectId, ticketId: ticket.id, title: outcome === 'merged' ? 'PR merged' : 'PR closed', message })
+      await new Inbox(this.db).enqueue({ id: `supermesh:${outcome}:${ticket.id}:${type}`, type, origin: 'system', kind: 'notice', projectId: ticket.projectId, ticketId: ticket.id, title: outcome === 'merged' ? 'PR merged' : 'PR closed', message })
   }
 
   private async threadClosed(thread: Selectable<DB['thread']>, outcome: 'merged' | 'closed', at: string): Promise<void> {

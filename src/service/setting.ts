@@ -27,7 +27,7 @@ let writing: Promise<void> = Promise.resolve()
 
 export const setting = defineService({
   async load(): Promise<Settings> {
-    const value: unknown = await storage.getItem('setting')
+    const value: unknown = await storage.getItem('setting.json')
     if (value === null)
       return { ...defaults, administrators: [] }
     if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -43,7 +43,7 @@ export const setting = defineService({
     const updates = { ...patch, ...(patch.administrators === undefined ? {} : { administrators: normalizeAdministrators(patch.administrators) }), ...(patch.models === undefined ? {} : { models: normalizeModels(patch.models) }) }
     const operation = writing.then(async () => {
       const next = { ...await setting.load(), ...updates, updatedAt: new Date().toISOString() }
-      await storage.setItem('setting', next)
+      await storage.setItem('setting.json', next)
       return next
     })
     writing = operation.then(() => undefined, () => undefined)

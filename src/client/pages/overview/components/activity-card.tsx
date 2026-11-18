@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusTrigger } from '../../../apis'
+import { getApiSupermeshTrigger } from '../../../apis'
 import { ActivityIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
 import { useTranslation } from '../../../hooks/use-translation'
@@ -9,7 +9,7 @@ import { SummaryCard } from './summary-card'
 
 export function ActivityCard({ onMore }: { onMore: () => void }): ReactNode {
   const { t } = useTranslation()
-  const { data: triggers, isLoading, error } = useQuery({ queryKey: keys.trigger, queryFn: () => getApiNexusTrigger(), refetchInterval: 30_000 })
+  const { data: triggers, isLoading, error } = useQuery({ queryKey: keys.trigger, queryFn: () => getApiSupermeshTrigger(), refetchInterval: 30_000 })
   const now = Date.now()
   const recent = (triggers ?? []).filter(trigger => Date.parse(trigger.at) >= now - 86400000 && Date.parse(trigger.at) <= now)
   const metrics = { received: recent.length, filtered: recent.filter(trigger => !trigger.mentioned).length, rate: recent.filter(trigger => Date.parse(trigger.at) >= now - 3600000).length }

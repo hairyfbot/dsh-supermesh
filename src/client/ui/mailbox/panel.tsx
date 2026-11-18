@@ -1,14 +1,14 @@
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { GetApiNexusSessionidMailboxResponse } from '../../apis/index.type'
+import type { GetApiSupermeshSessionidMailboxResponse } from '../../apis/index.type'
 import { useAsyncState } from '@reause/core'
 import { useEffect, useId, useState } from 'react'
-import { getApiNexusSessionIdMailbox } from '../../apis'
+import { getApiSupermeshSessionIdMailbox } from '../../apis'
 import { useDshContext } from '../../hooks/use-dsh-context'
 import { useTranslation } from '../../hooks/use-translation'
 
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
-  interface SessionReferenceSourceMap { nexusMailbox: unknown }
+  interface SessionReferenceSourceMap { supermeshMailbox: unknown }
 }
 
 export function Panel({ sessionId }: Pick<PropsRuntime<'conversation.input.dock'>, 'sessionId'>) {
@@ -16,9 +16,9 @@ export function Panel({ sessionId }: Pick<PropsRuntime<'conversation.input.dock'
   const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(true)
   const listId = useId()
-  const { state: mailbox, execute, error } = useAsyncState<GetApiNexusSessionidMailboxResponse['mailbox'], [AbortSignal]>(async (signal) => {
+  const { state: mailbox, execute, error } = useAsyncState<GetApiSupermeshSessionidMailboxResponse['mailbox'], [AbortSignal]>(async (signal) => {
     try {
-      const { mailbox: result } = await getApiNexusSessionIdMailbox({ id: sessionId }, { signal })
+      const { mailbox: result } = await getApiSupermeshSessionIdMailbox({ id: sessionId }, { signal })
       return !signal.aborted && result?.sessionId === sessionId && Array.isArray(result.messages) ? result : null
     }
     catch (error) {
@@ -30,7 +30,7 @@ export function Panel({ sessionId }: Pick<PropsRuntime<'conversation.input.dock'
 
   // keep:effect Own the existing Session event subscription and cancel mailbox requests on disposal.
   useEffect(() => {
-    const reference = ctx.sessions.retain(sessionId, { source: 'nexusMailbox' })
+    const reference = ctx.sessions.retain(sessionId, { source: 'supermeshMailbox' })
     const events = reference.binding.eventSource
     let request: AbortController
     const refresh = () => {

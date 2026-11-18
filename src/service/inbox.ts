@@ -26,12 +26,12 @@ export const inbox = defineService({
       if (!revision && !restore)
         return
       const { events } = await session.history(agent.session.id)
-      if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some(message => message.source.kind === (restore ? 'nexus-mailbox-context' : 'nexus-mailbox') && message.source.revision === revision))
+      if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some(message => message.source.kind === (restore ? 'supermesh-mailbox-context' : 'supermesh-mailbox') && message.source.revision === revision))
         return
-      if (events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === (restore ? 'nexus-mailbox-context' : 'nexus-mailbox') && message.source.revision === revision)))
+      if (events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === (restore ? 'supermesh-mailbox-context' : 'supermesh-mailbox') && message.source.revision === revision)))
         return
       const text = `你有${mailbox.pendingCount}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`
-      const message = createUserMessage({ content: [{ type: 'text', text }], source: { kind: restore ? 'nexus-mailbox-context' : 'nexus-mailbox', form: 'notice', summary: text, revision } })
+      const message = createUserMessage({ content: [{ type: 'text', text }], source: { kind: restore ? 'supermesh-mailbox-context' : 'supermesh-mailbox', form: 'notice', summary: text, revision } })
       if (stopped || !(await session.resolve(agent.session.id)))
         return
       if (restore)
@@ -128,7 +128,7 @@ export const inbox = defineService({
             consumed = await session.receipts(id)
             receipts.set(id, consumed)
           }
-          const requestId = `nexus:inbox:${message.id}:${message.escalations}`
+          const requestId = `supermesh:inbox:${message.id}:${message.escalations}`
           const receipt = consumed.find(item => item.requestId === requestId)
           if (receipt) {
             await db.inbox.markRead([message.id], receipt.consumedAt)
@@ -192,7 +192,7 @@ export const inbox = defineService({
             continue
           if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused)
             continue
-          await session.send(id, `[Answer ${message.id}] ${message.answer}`, 'reply', `nexus:answer:${message.id}`)
+          await session.send(id, `[Answer ${message.id}] ${message.answer}`, 'reply', `supermesh:answer:${message.id}`)
           deliveredAnswers.add(`${message.id}:${id}`)
           await db.inbox.resetDelivery(message.id)
         }

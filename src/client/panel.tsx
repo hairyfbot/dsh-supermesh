@@ -7,7 +7,7 @@ import { useAsyncFn } from '@reause/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useId } from 'react'
 import { Case, Switch } from 'react-if-lite'
-import { putApiNexusSessionMain } from './apis'
+import { putApiSupermeshSessionMain } from './apis'
 import { useDshContext } from './hooks/use-dsh-context'
 import { useActions, useStore } from './hooks/use-store'
 import { useTranslation } from './hooks/use-translation'
@@ -37,7 +37,7 @@ export function Panel(): ReactNode {
   const ctx = useDshContext()
   const [opening, openMain] = useAsyncFn(async () => {
     const navigation = ctx.layout.beginNavigation()
-    const result = await putApiNexusSessionMain()
+    const result = await putApiSupermeshSessionMain()
     if (!result || typeof result.sessionId !== 'string' || !result.sessionId.trim())
       throw new Error(result && 'message' in result && typeof result.message === 'string' ? result.message : '打开主会话失败')
     if (!navigation.aborted)

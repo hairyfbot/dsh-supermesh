@@ -9,11 +9,11 @@ type NoticeEvent = Extract<SessionEvent, { type: 'user/message' }>
 
 declare module '@deepseek-ai/dsh-client-ui-chat/client' {
   interface ChatNodeDataMap {
-    'nexus-mailbox-notification': NoticeEvent
+    'supermesh-mailbox-notification': NoticeEvent
   }
 }
 
-export function Notification({ node }: Pick<ChatNodeViewProps<'nexus-mailbox-notification'>, 'node'>) {
+export function Notification({ node }: Pick<ChatNodeViewProps<'supermesh-mailbox-notification'>, 'node'>) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const bodyId = useId()

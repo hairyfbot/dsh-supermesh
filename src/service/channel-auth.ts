@@ -48,7 +48,7 @@ export const channelAuth = defineService({
       done: Promise.resolve(),
     }
     const ctx = getServerContext<Context>(server)
-    const dispose = ctx.effect(() => () => cancel(task), 'nexus:channel-auth')
+    const dispose = ctx.effect(() => () => cancel(task), 'supermesh:channel-auth')
     authentications.set(task.view.id, task)
     active.set(channelId, task)
     task.done = Promise.resolve().then(() => authenticate(task)).finally(() => {

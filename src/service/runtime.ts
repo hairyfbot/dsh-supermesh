@@ -79,18 +79,18 @@ async function activate(): Promise<() => Promise<void>> {
     await project.sync()
     restoreShell = await shell.start()
     await worker.recover()
-    unregister.push(scheduler.use({ id: 'nexus:runtime', cron: '* * * * * *' }, () => track(async () => {
+    unregister.push(scheduler.use({ id: 'supermesh:runtime', cron: '* * * * * *' }, () => track(async () => {
       await worker.reconcileBackground()
       await inbox.deliverAnswers()
       await inbox.deliver()
       await worker.reconcile()
       await closeFinishedSupervisors()
     })))
-    unregister.push(scheduler.use({ id: 'nexus:projects', cron: '*/5 * * * * *' }, () => track(async () => {
+    unregister.push(scheduler.use({ id: 'supermesh:projects', cron: '*/5 * * * * *' }, () => track(async () => {
       await project.sync()
       await shell.refresh()
     })))
-    unregister.push(scheduler.use({ id: 'nexus:github', cron: '*/30 * * * * *' }, () => track(async () => {
+    unregister.push(scheduler.use({ id: 'supermesh:github', cron: '*/30 * * * * *' }, () => track(async () => {
       await project.sync()
       const collected = await github.collectAll(controller.signal)
       const flushed = await github.flush(controller.signal)
@@ -98,7 +98,7 @@ async function activate(): Promise<() => Promise<void>> {
       if (failures.length)
         throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
     })))
-    unregister.push(scheduler.use({ id: 'nexus:gitlab', cron: '*/30 * * * * *' }, () => track(async () => {
+    unregister.push(scheduler.use({ id: 'supermesh:gitlab', cron: '*/30 * * * * *' }, () => track(async () => {
       const collected = await gitlab.collectAll(controller.signal)
       const flushed = await gitlab.flush(controller.signal)
       const failures = [...collected, ...flushed].filter(result => !result.ok)

@@ -23,7 +23,7 @@ export async function apply(ctx: Context): Promise<void> {
       yield await ctx.agentPresets.register(definition.preset)
       yield session.register(definition.preset.id)
     }
-  }, 'nexus:presets')
+  }, 'supermesh:presets')
 
   ctx.on('agent/created', ({ agent }) => handleAgentCreated(ctx, agent))
 
@@ -35,8 +35,8 @@ export async function apply(ctx: Context): Promise<void> {
       const admission = ctx.connection.admit({ headers: event.req.headers })
       return !('rejection' in admission) && admission.peer.principal.kind === 'owner'
     },
-  }), 'nexus:routes')
+  }), 'supermesh:routes')
 
-  await ctx.effect(() => runtime.start(), 'nexus:runtime')
-  await ctx.effect(() => skill.install(ctx), 'nexus:skills')
+  await ctx.effect(() => runtime.start(), 'supermesh:runtime')
+  await ctx.effect(() => skill.install(ctx), 'supermesh:skills')
 }

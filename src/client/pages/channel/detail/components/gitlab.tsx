@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import type { GetApiNexusChannelResponse } from '../../../../apis/index.type'
+import type { GetApiSupermeshChannelResponse } from '../../../../apis/index.type'
 import { Button, Input, Modal, SegmentedTabs, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useAsync, useTimeoutPoll } from '@reause/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
-import { deleteApiNexusChannelIdCredential, getApiNexusChannel, getApiNexusChannelIdAuthenticationAuthenticationId, postApiNexusChannelIdAuthentication, putApiNexusChannelIdConfiguration } from '../../../../apis'
+import { deleteApiSupermeshChannelIdCredential, getApiSupermeshChannel, getApiSupermeshChannelIdAuthenticationAuthenticationId, postApiSupermeshChannelIdAuthentication, putApiSupermeshChannelIdConfiguration } from '../../../../apis'
 import { GitLabIcon } from '../../../../components/icons'
 import { keys } from '../../../../config/query-keys'
 import { useTranslation } from '../../../../hooks/use-translation'
@@ -15,7 +15,7 @@ import { Section } from './section'
 export function GitlabDetail(): ReactNode {
   const { t } = useTranslation()
   const client = useQueryClient()
-  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const channels = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const channel = channels.data?.find(channel => channel.id === 'gitlab')
   const [expectedAccount, setExpectedAccount] = useState(channel?.expectedAccount ?? '')
   const id = useId()
@@ -31,7 +31,7 @@ export function GitlabDetail(): ReactNode {
   const [method, setMethod] = useState<'authorize' | 'token'>('authorize')
   const [host, setHost] = useState(channel?.host ?? 'https://gitlab.com')
   const [hostInvalid, setHostInvalid] = useState(false)
-  const [authentication, setAuthentication] = useState<Awaited<ReturnType<typeof postApiNexusChannelIdAuthentication>> | null>(null)
+  const [authentication, setAuthentication] = useState<Awaited<ReturnType<typeof postApiSupermeshChannelIdAuthentication>> | null>(null)
   const [authenticating, setAuthenticating] = useState(false)
   const [authNotice, setAuthNotice] = useState('')
   const [copyNotice, setCopyNotice] = useState('')
@@ -56,8 +56,8 @@ export function GitlabDetail(): ReactNode {
 
     }
   }, undefined)
-  async function reload(signal?: AbortSignal): Promise<GetApiNexusChannelResponse | null> {
-    const value = await getApiNexusChannel(signal ? { signal } : undefined)
+  async function reload(signal?: AbortSignal): Promise<GetApiSupermeshChannelResponse | null> {
+    const value = await getApiSupermeshChannel(signal ? { signal } : undefined)
     if (signal?.aborted)
       return null
     if (!Array.isArray(value))
@@ -65,7 +65,7 @@ export function GitlabDetail(): ReactNode {
     client.setQueryData(keys.channel, value)
     return value
   }
-  async function reloadSaved(signal?: AbortSignal): Promise<GetApiNexusChannelResponse[number]> {
+  async function reloadSaved(signal?: AbortSignal): Promise<GetApiSupermeshChannelResponse[number]> {
     const saved = (await reload(signal))?.find(channel => channel.id === 'gitlab')
     if (!saved)
       throw new Error('channel_reload_failed')
@@ -75,13 +75,13 @@ export function GitlabDetail(): ReactNode {
     if (!authId.current || lifetime.current.signal.aborted)
       return
     try {
-      await applyAuthentication(await getApiNexusChannelIdAuthenticationAuthenticationId({ id: 'gitlab', authenticationId: authId.current }, { signal: lifetime.current.signal }))
+      await applyAuthentication(await getApiSupermeshChannelIdAuthenticationAuthenticationId({ id: 'gitlab', authenticationId: authId.current }, { signal: lifetime.current.signal }))
     }
     catch {
       failAuthentication()
     }
   }, 1000, { immediate: false })
-  async function applyAuthentication(value: Awaited<ReturnType<typeof postApiNexusChannelIdAuthentication>>): Promise<void> {
+  async function applyAuthentication(value: Awaited<ReturnType<typeof postApiSupermeshChannelIdAuthentication>>): Promise<void> {
     if (lifetime.current.signal.aborted)
       return
     if (!value || typeof value.id !== 'string' || !value.id || value.channelId !== 'gitlab' || typeof value.output !== 'string' || !['pending', 'succeeded', 'failed'].includes(value.status) || (authId.current && authId.current !== value.id) || (value.userCode !== undefined && typeof value.userCode !== 'string') || (value.verificationUri !== undefined && typeof value.verificationUri !== 'string'))
@@ -119,7 +119,7 @@ export function GitlabDetail(): ReactNode {
     setCopyNotice('')
     setAuthNotice(t('channelAuthStarting'))
     try {
-      const value = await postApiNexusChannelIdAuthentication({ id: 'gitlab' }, { host: host.trim() }, { signal: lifetime.current.signal })
+      const value = await postApiSupermeshChannelIdAuthentication({ id: 'gitlab' }, { host: host.trim() }, { signal: lifetime.current.signal })
       await applyAuthentication(value)
       if (!lifetime.current.signal.aborted && value.status === 'pending')
         resume()
@@ -153,7 +153,7 @@ export function GitlabDetail(): ReactNode {
     setSaving(true)
     setNotice('')
     try {
-      const result = await putApiNexusChannelIdConfiguration({ id: 'gitlab' }, { host: host.trim(), ...(expectedAccount.trim() !== (channel?.expectedAccount ?? '').trim() ? { expectedAccount: expectedAccount.trim() } : {}), ...(token.trim() && !channel?.hasCredential ? { enabled: true } : {}), commitName: commitName.trim(), commitEmail: commitEmail.trim(), ...(token.trim() ? { token: token.trim() } : {}) }, { signal: lifetime.current.signal })
+      const result = await putApiSupermeshChannelIdConfiguration({ id: 'gitlab' }, { host: host.trim(), ...(expectedAccount.trim() !== (channel?.expectedAccount ?? '').trim() ? { expectedAccount: expectedAccount.trim() } : {}), ...(token.trim() && !channel?.hasCredential ? { enabled: true } : {}), commitName: commitName.trim(), commitEmail: commitEmail.trim(), ...(token.trim() ? { token: token.trim() } : {}) }, { signal: lifetime.current.signal })
       if (lifetime.current.signal.aborted)
         return
       if (!('channel' in result))
@@ -193,7 +193,7 @@ export function GitlabDetail(): ReactNode {
     setSaving(true)
     setNotice('')
     try {
-      const result = await putApiNexusChannelIdConfiguration({ id: 'gitlab' }, { enabled: !channel.enabled }, { signal: lifetime.current.signal })
+      const result = await putApiSupermeshChannelIdConfiguration({ id: 'gitlab' }, { enabled: !channel.enabled }, { signal: lifetime.current.signal })
       if (lifetime.current.signal.aborted)
         return
       if (!('channel' in result))
@@ -229,7 +229,7 @@ export function GitlabDetail(): ReactNode {
     setDeleting(true)
     setNotice('')
     try {
-      const result = await deleteApiNexusChannelIdCredential({ id: 'gitlab' }, { signal: lifetime.current.signal })
+      const result = await deleteApiSupermeshChannelIdCredential({ id: 'gitlab' }, { signal: lifetime.current.signal })
       if (lifetime.current.signal.aborted)
         return
       if (!('channel' in result))
@@ -326,13 +326,13 @@ export function GitlabDetail(): ReactNode {
           <Section title={t('channelAccount')} description={t('channelAccountDescription')}>
             <div className="flex flex-col gap-2">
               <label htmlFor={`${id}-username`} className="text-xs font-medium">{t('channelLoginName')}</label>
-              <Input id={`${id}-username`} value={expectedAccount} onChange={event => setExpectedAccount(event.target.value)} disabled={busy} maxLength={100} placeholder="nexus-bot" autoComplete="off" spellCheck={false} aria-describedby={`${id}-username-help`} />
+              <Input id={`${id}-username`} value={expectedAccount} onChange={event => setExpectedAccount(event.target.value)} disabled={busy} maxLength={100} placeholder="supermesh-bot" autoComplete="off" spellCheck={false} aria-describedby={`${id}-username-help`} />
               <p id={`${id}-username-help`} className="m-0 text-xs leading-5 text-[var(--dsw-alias-label-secondary)]">{t('channelLoginNameHelp')}</p>
             </div>
             <div className="grid gap-3 @min-[540px]:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${id}-commit-name`} className="text-xs font-medium">{t('channelCommitName')}</label>
-                <Input id={`${id}-commit-name`} placeholder="Nexus Bot" value={commitName} onChange={event => setCommitName(event.target.value)} disabled={busy} maxLength={200} autoComplete="off" />
+                <Input id={`${id}-commit-name`} placeholder="Supermesh Bot" value={commitName} onChange={event => setCommitName(event.target.value)} disabled={busy} maxLength={200} autoComplete="off" />
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${id}-commit-email`} className="text-xs font-medium">{t('channelCommitEmail')}</label>

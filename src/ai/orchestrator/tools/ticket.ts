@@ -34,7 +34,7 @@ export const create_ticket = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     return JSON.stringify(await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description))
@@ -66,7 +66,7 @@ export const list_ticket = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     return JSON.stringify(await db.ticket.listFiltered(args))

@@ -66,9 +66,9 @@ describe('repository cloning against real local git ownership', () => {
   it('rejects a nonrepository directory without deleting its contents', async () => {
     const target = join(directory, 'not-git')
     await mkdir(target)
-    await writeFile(join(target, 'keep.txt'), 'not owned by nexus')
+    await writeFile(join(target, 'keep.txt'), 'not owned by supermesh')
     await expect(worktree.clone('https://github.com/owner/repository', target)).rejects.toThrow('repository_path_conflict')
-    expect(await readFile(join(target, 'keep.txt'), 'utf8')).toBe('not owned by nexus')
+    expect(await readFile(join(target, 'keep.txt'), 'utf8')).toBe('not owned by supermesh')
   })
 
   it('cancellation before cloning rejects without publishing a final repository', async () => {

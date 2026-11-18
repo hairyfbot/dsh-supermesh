@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { PatchApiNexusSettingBody } from '../../../apis/index.type'
+import type { PatchApiSupermeshSettingBody } from '../../../apis/index.type'
 import type { RuntimeSettings } from '../../../store/setting'
 import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId } from 'react'
@@ -13,7 +13,7 @@ export function General({ value, baseline, pending, failed, onChange, onDiscard,
   failed: boolean
   onChange: (patch: Partial<RuntimeSettings>) => void
   onDiscard: () => void
-  onSave: (patch: PatchApiNexusSettingBody) => Promise<void>
+  onSave: (patch: PatchApiSupermeshSettingBody) => Promise<void>
 }): ReactNode {
   const { t } = useTranslation()
   const id = useId()

@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-BQDsJckZ.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-CeRc4RTt.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";
@@ -818,7 +818,7 @@ var GitHubChannel = class {
 			const { thread, target } = await this.destination(row);
 			const project = await this.projectForRepository(target.repository);
 			const environment = await this.verifyEnvironment(project.id, signal);
-			const marker = `<!-- nexus:${row.id} -->`;
+			const marker = `<!-- supermesh:${row.id} -->`;
 			const receipt = await this.state(target.repository, `comment:${row.id}`);
 			if (receipt) {
 				if (receipt.providerId !== environment.providerId || receipt.marker !== marker) throw new GhError("managed_comment_mismatch");
@@ -1486,7 +1486,7 @@ var GitLabChannel = class {
 			const { thread, target } = await this.destination(row);
 			const project = await this.projectForRepository(source(target));
 			const environment = await this.verifyEnvironment(project.id, signal);
-			const marker = `<!-- nexus:${row.id} -->`;
+			const marker = `<!-- supermesh:${row.id} -->`;
 			const receipt = await this.state(source(target), `comment:${row.id}`);
 			if (receipt) {
 				if (receipt.providerId !== environment.providerId || receipt.marker !== marker) throw new GitLabError("managed_comment_mismatch");
@@ -1758,7 +1758,7 @@ const read_channel = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		const offset = args.offset ?? 0;
 		const limit = args.limit ?? 50;
 		if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error("offset 必须非负，limit 必须在 1–100");
@@ -1848,7 +1848,7 @@ const reply_channel = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		const trigger = await db.trigger.findById(args.triggerId);
 		if (!trigger) throw new Error("触发不存在");
 		const thread = await db.thread.findById(trigger.threadId);
@@ -2014,7 +2014,7 @@ const report$2 = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
 		if (args.ticketId) {
 			const ticket = await db.ticket.findById(args.ticketId);
@@ -2063,7 +2063,7 @@ const ask$2 = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
 		if (args.ticketId) await db.ticket.requireOpen(args.ticketId, identity.projectId);
 		if (args.supervisorId && (await db.supervisor.findById(args.supervisorId))?.status !== "active") throw new Error("Supervisor 不存在或已关闭");
@@ -2098,7 +2098,7 @@ const escalate = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
 		return JSON.stringify(await db.inbox.escalateScoped(args.askId, {
 			type: "project",
@@ -2127,7 +2127,7 @@ const supervisor_list$1 = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
 		const rows = await db.supervisor.listByStatus(args.status ?? "active");
 		const result = [];
@@ -2156,7 +2156,7 @@ const archive = defineService({ async session(id) {
 		return true;
 	} catch (error) {
 		if (attempt === 2) {
-			ctx.logger.warn("nexus: archiving session %s failed: %s", id, error instanceof Error ? error.message : String(error));
+			ctx.logger.warn("supermesh: archiving session %s failed: %s", id, error instanceof Error ? error.message : String(error));
 			return false;
 		}
 		await new Promise((resolve) => setTimeout(resolve, 500));
@@ -2213,7 +2213,7 @@ const worker$1 = defineService({
 				if (!project.enabled) continue;
 				let started = false;
 				try {
-					const branch = `nexus/${ticket.id}`;
+					const branch = `dsh/${ticket.id}`;
 					let directory = worker.worktree;
 					if (await session.history(worker.id).then(() => true).catch(() => false)) {
 						if (directory && worker.branch === branch) await worktree.verify(project.directory, directory, branch);
@@ -2259,7 +2259,7 @@ const worker$1 = defineService({
 					await db.ticket.start(ticket.id, now, now);
 					running++;
 					started = true;
-					await session.send(worker.id, prompt, "queue", `nexus:worker:${worker.id}`);
+					await session.send(worker.id, prompt, "queue", `supermesh:worker:${worker.id}`);
 					await db.ticket.setPrepareError(ticket.id, null, now);
 				} catch (error) {
 					await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), (/* @__PURE__ */ new Date()).toISOString());
@@ -2331,7 +2331,7 @@ const worker$1 = defineService({
 					if (activity.running || activity.background || activity.queued) continue;
 					const note = "运行已恢复。先检查目录、git 历史与渠道的当前事实，再决定是否重做外部动作；不要重复开 PR 或发布评论。";
 					await db.worker.setRecoveryNote(worker.id, note);
-					if (!(await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) await session.send(worker.id, note, "queue", `nexus:recovery:${randomUUID()}`);
+					if (!(await db.inbox.listByTicket(ticket.id)).some((message) => message.kind === "ask" && message.status === "pending" && message.workerId === worker.id)) await session.send(worker.id, note, "queue", `supermesh:recovery:${randomUUID()}`);
 				} catch (error) {
 					if (stopped) break;
 					const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -2393,7 +2393,7 @@ async function finish(current, reason) {
 		const answered = asks.filter((message) => message.answer);
 		if (answered.length) {
 			const receipts = await session.receipts(current.id);
-			if (answered.some((message) => !receipts.some((receipt) => receipt.requestId === `nexus:answer:${message.id}`))) {
+			if (answered.some((message) => !receipts.some((receipt) => receipt.requestId === `supermesh:answer:${message.id}`))) {
 				await deferWhileWaiting(current);
 				return;
 			}
@@ -2462,7 +2462,7 @@ const manager = definePreset({
 	description: "一个仓库一个：派 Worker、看汇报、收尾，任务走到哪一步由它推。不写代码。",
 	instruction: `你是某个仓库的项目编排。长驻，管这个仓库下所有任务。
 
-当前工作目录是 Nexus 的共享代理工作区，不是代码仓库。先用 read_mailbox 读取你的项目 id、仓库地址和本地目录；读代码时用仓库绝对路径。克隆、改代码、切换分支和提交都是 Worker 的事。
+当前工作目录是 Supermesh 的共享代理工作区，不是代码仓库。先用 read_mailbox 读取你的项目 id、仓库地址和本地目录；读代码时用仓库绝对路径。克隆、改代码、切换分支和提交都是 Worker 的事。
 
 ## 你管三件事
 
@@ -2488,7 +2488,7 @@ dropped 说明这活不用做了。收工的时候留下 branch 和 worktree，�
 
 ## 分支命名
 
-\`nexus/<任务号>\`，例如 \`nexus/T-105\`。**末段必须是任务号**，
+\`dsh/<任务号>\`，例如 \`dsh/T-105\`。**末段必须是任务号**，
 PR 归哪张票就是靠这个字符串比对，猜错就挂到别的票上了。
 
 ## 收件箱
@@ -2559,7 +2559,7 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
 			},
 			execute: async (args, exec) => {
 				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (!identity) throw new Error("当前会话没有 Nexus 身份");
+				if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 				if (identity.role !== "project" || !identity.projectId) throw new Error("仅项目编排可调用");
 				return JSON.stringify(await db.ticket.listFiltered({
 					...args,
@@ -2720,7 +2720,7 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
 				},
 				branch: {
 					type: "string",
-					description: "分支名，省略则用 nexus/<任务号>。末段必须是任务号，PR 归哪张票就靠这个字符串比对。"
+					description: "分支名，省略则用 dsh/<任务号>。末段必须是任务号，PR 归哪张票就靠这个字符串比对。"
 				}
 			},
 			output: {
@@ -2786,7 +2786,7 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
 				if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
 				if (worker.status === "ended") throw new Error("Worker 已结束");
 				if (ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单已结束");
-				if (!await session.lookup(worker.id)) throw new Error("Worker 未在运行时加载、已归档或不属于 Nexus；不能直接发送");
+				if (!await session.lookup(worker.id)) throw new Error("Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送");
 				if (args.mode === "reply") {
 					const asks = (await db.inbox.listByTicket(ticket.id)).filter((row) => row.workerId === worker.id && row.kind === "ask" && row.status === "pending");
 					if (asks.length !== 1 || !db.inbox.owns(asks[0], {
@@ -2797,7 +2797,7 @@ Worker 问你的事，能自己答的就 answer。不该你决定的两条路：
 						type: "project",
 						projectId: identity.projectId
 					}, (/* @__PURE__ */ new Date()).toISOString());
-					await session.send(worker.id, `[Answer ${asks[0].id}] ${args.text}`, "reply", `nexus:answer:${asks[0].id}`);
+					await session.send(worker.id, `[Answer ${asks[0].id}] ${args.text}`, "reply", `supermesh:answer:${asks[0].id}`);
 				} else await session.send(worker.id, args.text, args.mode);
 				return JSON.stringify({
 					sent: true,
@@ -2962,7 +2962,7 @@ const answer = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role === "worker") throw new Error("Worker 没有收件箱");
 		const scope = identity.role === "project" && identity.projectId ? {
 			type: "project",
@@ -2974,11 +2974,11 @@ const answer = defineTool({
 		if (!scope) throw new Error("会话身份不完整");
 		const question = await db.inbox.findById(args.askId);
 		if (question?.origin === "worker") {
-			if (!question.workerId || !await session.lookup(question.workerId)) throw new Error("Worker 未在运行时加载、已归档或不属于 Nexus；不能直接回答");
+			if (!question.workerId || !await session.lookup(question.workerId)) throw new Error("Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接回答");
 			if ((await db.worker.findById(question.workerId))?.status === "ended") throw new Error("Worker 已结束");
 		}
 		const row = await db.inbox.answerScoped(args.askId, args.text, scope, (/* @__PURE__ */ new Date()).toISOString());
-		if (row.origin === "worker" && row.workerId) await session.send(row.workerId, `[Answer ${row.id}] ${args.text}`, "reply", `nexus:answer:${row.id}`);
+		if (row.origin === "worker" && row.workerId) await session.send(row.workerId, `[Answer ${row.id}] ${args.text}`, "reply", `supermesh:answer:${row.id}`);
 		return JSON.stringify({
 			id: args.askId,
 			status: "done",
@@ -3013,7 +3013,7 @@ const dispatch_ticket = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main" && identity.role !== "supervisor") throw new Error("仅主编排或 Supervisor 可派票");
 		const ticket = await db.ticket.requireOpen(args.ticketId);
 		if (identity.role === "supervisor" && !(await db.supervisorTicket.listBySupervisor(identity.supervisorId)).some((row) => row.ticketId === ticket.id)) throw new Error("工单不属于当前 Supervisor");
@@ -3055,7 +3055,7 @@ const note_ticket = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main" && identity.role !== "supervisor") throw new Error("仅主编排或 Supervisor 可通知项目");
 		const ticket = await db.ticket.findById(args.ticketId);
 		if (!ticket) throw new Error("工单不存在");
@@ -3098,7 +3098,7 @@ const ask_user = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const trigger = args.triggerId ? await db.trigger.findById(args.triggerId) : null;
 		if (args.triggerId && !trigger) throw new Error("触发不存在");
@@ -3147,7 +3147,7 @@ const supervisor_list = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const rows = await db.supervisor.listByStatus(args.status ?? "active");
 		return JSON.stringify(await Promise.all(rows.map(async (row) => ({
@@ -3189,7 +3189,7 @@ const create_supervisor = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const ticketIds = [...new Set(args.ticketIds)];
 		if (!ticketIds.length) throw new Error("至少需要一张工单");
@@ -3250,7 +3250,7 @@ const close_supervisor = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const row = await db.supervisor.findById(args.supervisorId);
 		if (!row) throw new Error("Supervisor 不存在");
@@ -3308,7 +3308,7 @@ const attach_tickets_to_supervisor = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const row = await db.supervisor.findById(args.supervisorId);
 		if (!row || row.status !== "active") throw new Error("Supervisor 不存在或已关闭");
@@ -3361,7 +3361,7 @@ const detach_tickets_from_supervisor = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const row = await db.supervisor.findById(args.supervisorId);
 		if (!row) throw new Error("Supervisor 不存在");
@@ -3414,7 +3414,7 @@ const triage_thread = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const thread = await db.thread.findById(args.threadId);
 		if (!thread) throw new Error("话题不存在");
@@ -3458,7 +3458,7 @@ const attach_thread_to_ticket = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		const ticket = await db.ticket.findById(args.ticketId);
 		if (!ticket || ticket.status === "cancelled") throw new Error("工单不存在或已 cancelled");
@@ -3516,7 +3516,7 @@ const unlink_thread = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		if (!await db.ticket.findById(args.ticketId)) throw new Error("工单不存在");
 		const links = await db.ticketThread.listByTicket(args.ticketId);
@@ -3574,7 +3574,7 @@ const create_ticket = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "main") throw new Error("仅主编排可调用");
 		return JSON.stringify(await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description));
 	}
@@ -3583,9 +3583,9 @@ const create_ticket = defineTool({
 const orchestrator = definePreset({
 	id: "orchestrator",
 	name: "主编排",
-	instruction: `你是 Nexus 的主编排。全局只有一个，管所有项目。
+	instruction: `你是 Supermesh 的主编排。全局只有一个，管所有项目。
 
-你运行在 Nexus 的共享代理工作区，不是任一项目的代码仓库。收到消息先用 read_mailbox 读取邮件、可用项目 id 与仓库地址，再决定话题归属，不从显示名或当前目录猜项目。
+你运行在 Supermesh 的共享代理工作区，不是任一项目的代码仓库。收到消息先用 read_mailbox 读取邮件、可用项目 id 与仓库地址，再决定话题归属，不从显示名或当前目录猜项目。
 
 ## 你只管路由
 
@@ -3687,7 +3687,7 @@ const orchestrator = definePreset({
 			},
 			execute: async (args, exec) => {
 				const identity = await session.resolve(exec.agent?.session.id ?? "");
-				if (!identity) throw new Error("当前会话没有 Nexus 身份");
+				if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 				if (identity.role !== "main") throw new Error("仅主编排可调用");
 				return JSON.stringify(await db.ticket.listFiltered(args));
 			}
@@ -3734,7 +3734,7 @@ const list_ticket = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
 		const links = await db.supervisorTicket.listBySupervisor(identity.supervisorId);
 		return JSON.stringify(await Promise.all(links.map(async (link) => {
@@ -3774,7 +3774,7 @@ const link_dependency = defineTool({
 	},
 	execute: async (args, exec) => {
 		const identity = await session.resolve(exec.agent?.session.id ?? "");
-		if (!identity) throw new Error("当前会话没有 Nexus 身份");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
 		const links = await db.supervisorTicket.listBySupervisor(identity.supervisorId);
 		if (![args.ticketId, args.dependsOn].every((id) => links.some((row) => row.ticketId === id))) throw new Error("依赖双方必须属于当前 Supervisor");
@@ -3872,7 +3872,7 @@ const agents = {
 				},
 				execute: async (args, exec) => {
 					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Nexus 身份");
+					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 					if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
 					return JSON.stringify(await db.inbox.enqueue({
 						type: "main",
@@ -3904,7 +3904,7 @@ const agents = {
 				},
 				execute: async (args, exec) => {
 					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Nexus 身份");
+					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 					if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
 					return JSON.stringify(await db.inbox.enqueueAsk({
 						type: "main",
@@ -3995,7 +3995,7 @@ PR 已合并时不改写，在报告记录尚未记名的人；不得用空提�
 
 ## 渠道
 
-读原文用 read_channel，路径写法见对应的 \`nexus-channel-<id>\` skill。
+读原文用 read_channel，路径写法见对应的 \`supermesh-channel-<id>\` skill。
 要说话用 reply_channel，锚点是触发 id，不用猜发到哪。
 
 **先回复再干活。** 人需要知道我们接下了。但只对真人请求回复 ——
@@ -4052,7 +4052,7 @@ CI 事件、自动化动作不需要你说「收到」。
 				},
 				execute: async (args, exec) => {
 					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Nexus 身份");
+					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 					if (identity.role !== "worker" || !identity.workerId || !identity.ticketId) throw new Error("仅 Worker 可调用");
 					const worker = await db.worker.findById(identity.workerId);
 					if (!worker || worker.status === "ended") throw new Error("Worker 已结束");
@@ -4079,7 +4079,7 @@ CI 事件、自动化动作不需要你说「收到」。
 				},
 				execute: async (args, exec) => {
 					const identity = await session.resolve(exec.agent?.session.id ?? "");
-					if (!identity) throw new Error("当前会话没有 Nexus 身份");
+					if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 					if (identity.role !== "worker" || !identity.workerId || !identity.ticketId) throw new Error("仅 Worker 可调用");
 					const ticket = await db.ticket.requireOpen(identity.ticketId);
 					const worker = await db.worker.findById(identity.workerId);
@@ -4123,13 +4123,13 @@ async function handleAgentCreated(ctx, agent) {
 	if (definition?.tools.length) ctx.effect(() => agent.ctx.effect(() => {
 		const disposers = definition.tools.map((tool) => agent.ctx.tools.register(tool));
 		return () => disposers.forEach((dispose) => dispose());
-	}, "nexus:tools"), "nexus:agent-tools");
+	}, "supermesh:tools"), "supermesh:agent-tools");
 	const role = await session.attach(agent);
 	if (!role) return;
 	if (role === "worker") return;
 	ctx.effect(() => agent.ctx.on("agent/status", ({ status }) => {
 		if (status === "idle") inbox.notify(agent).catch((error) => ctx.logger.error(error));
-	}), "nexus:mailbox-notice");
+	}), "supermesh:mailbox-notice");
 	await inbox.notify(agent, true);
 }
 // src/events/session-event.ts
@@ -4495,7 +4495,7 @@ async function activate() {
 		restoreShell = await shell.start();
 		await worker$1.recover();
 		unregister.push(scheduler.use({
-			id: "nexus:runtime",
+			id: "supermesh:runtime",
 			cron: "* * * * * *"
 		}, () => track(async () => {
 			await worker$1.reconcileBackground();
@@ -4505,14 +4505,14 @@ async function activate() {
 			await closeFinishedSupervisors();
 		})));
 		unregister.push(scheduler.use({
-			id: "nexus:projects",
+			id: "supermesh:projects",
 			cron: "*/5 * * * * *"
 		}, () => track(async () => {
 			await project.sync();
 			await shell.refresh();
 		})));
 		unregister.push(scheduler.use({
-			id: "nexus:github",
+			id: "supermesh:github",
 			cron: "*/30 * * * * *"
 		}, () => track(async () => {
 			await project.sync();
@@ -4522,7 +4522,7 @@ async function activate() {
 			if (failures.length) throw new Error(failures.map((result) => result.reason ?? "channel_operation_failed").join(", "));
 		})));
 		unregister.push(scheduler.use({
-			id: "nexus:gitlab",
+			id: "supermesh:gitlab",
 			cron: "*/30 * * * * *"
 		}, () => track(async () => {
 			const collected = await gitlab.collectAll(controller.signal);
@@ -4567,7 +4567,7 @@ async function apply(ctx) {
 			yield await ctx.agentPresets.register(definition.preset);
 			yield session.register(definition.preset.id);
 		}
-	}, "nexus:presets");
+	}, "supermesh:presets");
 	ctx.on("agent/created", ({ agent }) => handleAgentCreated(ctx, agent));
 	ctx.on("session/event", handleSessionEvent);
 	await ctx.effect(() => server(ctx, {
@@ -4576,8 +4576,8 @@ async function apply(ctx) {
 			const admission = ctx.connection.admit({ headers: event.req.headers });
 			return !("rejection" in admission) && admission.peer.principal.kind === "owner";
 		}
-	}), "nexus:routes");
-	await ctx.effect(() => runtime.start(), "nexus:runtime");
-	await ctx.effect(() => skill.install(ctx), "nexus:skills");
+	}), "supermesh:routes");
+	await ctx.effect(() => runtime.start(), "supermesh:runtime");
+	await ctx.effect(() => skill.install(ctx), "supermesh:skills");
 }
 export { apply, inject };

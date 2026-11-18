@@ -19,7 +19,7 @@ export const supervisor_list = defineTool({
   execute: async (args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (!identity)
-      throw new Error('当前会话没有 Nexus 身份')
+      throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'project' || !identity.projectId)
       throw new Error('仅项目编排可调用')
     const rows = await db.supervisor.listByStatus(args.status ?? 'active')

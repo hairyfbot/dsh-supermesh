@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { OverviewChannelKind } from '../../../types'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiNexusChannel } from '../../../apis'
+import { getApiSupermeshChannel } from '../../../apis'
 import { FeishuIcon, GitHubIcon, GitLabIcon } from '../../../components/icons'
 import { keys } from '../../../config/query-keys'
 import { useActions } from '../../../hooks/use-store'
@@ -11,7 +11,7 @@ import { useTranslation } from '../../../hooks/use-translation'
 export function Card({ kind }: { kind: OverviewChannelKind }): ReactNode {
   const { t } = useTranslation()
   const { openChannel } = useActions()
-  const { data: channels, error, isLoading } = useQuery({ queryKey: keys.channel, queryFn: () => getApiNexusChannel() })
+  const { data: channels, error, isLoading } = useQuery({ queryKey: keys.channel, queryFn: () => getApiSupermeshChannel() })
   const channel = channels?.find(channel => channel.id === kind)
   const connected = channel?.status === 'online'
   const configured = channel?.configured ?? Boolean(channel?.accounts.length)

@@ -1,4 +1,4 @@
-import type { DshNexusKey } from './locale'
+import type { DshSupermeshKey } from './locale'
 
 export type OverviewView = 'recent' | 'hierarchy'
 export type OverviewChannelKind = 'github' | 'feishu' | 'gitlab'
@@ -10,7 +10,7 @@ export interface OverviewChannel {
 }
 
 export interface OverviewTaskSegment {
-  name: DshNexusKey
+  name: DshSupermeshKey
   value: number
   color: string
 }
@@ -27,7 +27,7 @@ export interface AgentGraphNode {
   taskId?: string
 }
 
-export type GraphNode = Omit<AgentGraphNode, 'label'> & { label: DshNexusKey, status: string, sessionId: string | null }
+export type GraphNode = Omit<AgentGraphNode, 'label'> & { label: DshSupermeshKey, status: string, sessionId: string | null }
 
 export interface AgentGraphEdge {
   source: string

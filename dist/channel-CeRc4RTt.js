@@ -700,7 +700,7 @@ var Inbox = class Inbox extends Model {
 	async enqueueAnswer(row) {
 		if (!row.answer || !row.answeredBy || row.answeredBy === "user" || row.origin !== "main" && row.origin !== "project" && row.origin !== "supervisor") return;
 		await this.enqueue({
-			id: `nexus:answer:${row.id}`,
+			id: `supermesh:answer:${row.id}`,
 			type: row.origin,
 			origin: row.answeredBy,
 			kind: "notice",
@@ -1116,7 +1116,7 @@ var Ticket = class Ticket extends Model {
 		await this.finish(ticket.id, "done", at, (/* @__PURE__ */ new Date()).toISOString());
 		const message = `${ticket.id} 的变更请求已${outcome === "merged" ? "合并" : "关闭"}：${ticket.prUrl ?? ticket.id}`;
 		for (const type of ["project", "main"]) await new Inbox(this.db).enqueue({
-			id: `nexus:${outcome}:${ticket.id}:${type}`,
+			id: `supermesh:${outcome}:${ticket.id}:${type}`,
 			type,
 			origin: "system",
 			kind: "notice",
@@ -1370,7 +1370,7 @@ var Worker = class Worker extends Model {
 				endedAt: null,
 				title: ticket.title,
 				endedReason: null,
-				branch: branch ?? `nexus/${ticketId}`,
+				branch: branch ?? `dsh/${ticketId}`,
 				worktree: null,
 				reportState: null,
 				report: null,
@@ -1489,11 +1489,11 @@ const { error } = await new Migrator({
 	provider: new MigrationProvider(database, migrations)
 }).migrateToLatest();
 if (error) throw error;
-const DSH_PLUGIN_HOME = `${process.env.DSH_HOME ?? join(homedir(), ".dsh")}/.nexus`;
+const DSH_PLUGIN_HOME = `${process.env.DSH_HOME ?? join(homedir(), ".dsh")}/.supermesh`;
 // src/storage/index.ts
 const storage = createStorage({ driver: fs({
 	atomic: true,
-	base: `${DSH_PLUGIN_HOME}/storage.json`
+	base: DSH_PLUGIN_HOME
 }) });
 // src/utils/service.ts
 function defineService(service) {
@@ -1535,7 +1535,7 @@ const roles$1 = [
 let writing$2 = Promise.resolve();
 const setting = defineService({
 	async load() {
-		const value = await storage.getItem("setting");
+		const value = await storage.getItem("setting.json");
 		if (value === null) return {
 			...defaults,
 			administrators: []
@@ -1564,7 +1564,7 @@ const setting = defineService({
 				...updates,
 				updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 			};
-			await storage.setItem("setting", next);
+			await storage.setItem("setting.json", next);
 			return next;
 		});
 		writing$2 = operation.then(() => void 0, () => void 0);
@@ -1786,7 +1786,7 @@ const session = defineService({
 			if (current && current !== agent.session.id) throw new Error("ambiguous_main_session");
 		}
 		await bindWorkspace(agent.session.id, agent.session.header.cwd);
-		if (role === "main") await storage.setItem("mainSessionId", agent.session.id);
+		if (role === "main") await storage.setItem("orchestrator.id", agent.session.id);
 		return role;
 	},
 	start() {
@@ -1843,10 +1843,10 @@ const session = defineService({
 			role: "supervisor",
 			supervisorId: supervisor.id
 		} : null;
-		return preset === presets$1.main && await storage.getItem("mainSessionId") === id ? { role: "main" } : null;
+		return preset === presets$1.main && await storage.getItem("orchestrator.id") === id ? { role: "main" } : null;
 	},
 	async findMain() {
-		const id = await storage.getItem("mainSessionId");
+		const id = await storage.getItem("orchestrator.id");
 		return id && (await session.resolve(id))?.role === "main" ? id : null;
 	},
 	async create(role, options) {
@@ -1893,7 +1893,7 @@ const session = defineService({
 				agentPreset: presets$1[role]
 			})).sessionId;
 			if (id !== requestedId) throw new Error("session_identity_conflict");
-			if (role === "main") await storage.setItem("mainSessionId", id);
+			if (role === "main") await storage.setItem("orchestrator.id", id);
 			if (project && role === "project") await db.project.setOrchestrator(project.id, id, (/* @__PURE__ */ new Date()).toISOString());
 			if (supervisor && role === "supervisor") await db.supervisor.attachSession(supervisor.id, id);
 			const title = role === "main" ? "[路由] 主编排" : role === "project" ? `[路由] ${project.name}` : role === "supervisor" ? `[协调] ${supervisor.title}` : void 0;
@@ -1932,7 +1932,7 @@ const session = defineService({
 	async cancel(id, keepInbox = false) {
 		(await resolveAgent(id)).cancel({
 			kind: "hook",
-			reason: "nexus_cancel"
+			reason: "supermesh_cancel"
 		}, { keepInbox });
 	},
 	async rename(id, title) {
@@ -2006,7 +2006,7 @@ const session = defineService({
 		if ("agent" in result) {
 			result.agent.cancel({
 				kind: "hook",
-				reason: "nexus_stop"
+				reason: "supermesh_stop"
 			}, { keepInbox: true });
 			await result.agent.whenIdle();
 		}
@@ -2055,8 +2055,8 @@ const inbox = defineService({
 			const revision = mailbox.messages.map((message) => [message.id, message.escalations]).sort().map((parts) => parts.join(":")).join("|");
 			if (!revision && !restore) return;
 			const { events } = await session.history(agent.session.id);
-			if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((message) => message.source.kind === (restore ? "nexus-mailbox-context" : "nexus-mailbox") && message.source.revision === revision)) return;
-			if (events.some((event) => (event.type === "user/message" ? [event.data] : event.type === "agent/inbox/spliced" ? event.data.inserted : []).some((message) => message.source.kind === (restore ? "nexus-mailbox-context" : "nexus-mailbox") && message.source.revision === revision))) return;
+			if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some((message) => message.source.kind === (restore ? "supermesh-mailbox-context" : "supermesh-mailbox") && message.source.revision === revision)) return;
+			if (events.some((event) => (event.type === "user/message" ? [event.data] : event.type === "agent/inbox/spliced" ? event.data.inserted : []).some((message) => message.source.kind === (restore ? "supermesh-mailbox-context" : "supermesh-mailbox") && message.source.revision === revision))) return;
 			const text = `你有${mailbox.pendingCount}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`;
 			const message = createUserMessage({
 				content: [{
@@ -2064,7 +2064,7 @@ const inbox = defineService({
 					text
 				}],
 				source: {
-					kind: restore ? "nexus-mailbox-context" : "nexus-mailbox",
+					kind: restore ? "supermesh-mailbox-context" : "supermesh-mailbox",
 					form: "notice",
 					summary: text,
 					revision
@@ -2164,7 +2164,7 @@ const inbox = defineService({
 						consumed = await session.receipts(id);
 						receipts.set(id, consumed);
 					}
-					const requestId = `nexus:inbox:${message.id}:${message.escalations}`;
+					const requestId = `supermesh:inbox:${message.id}:${message.escalations}`;
 					const receipt = consumed.find((item) => item.requestId === requestId);
 					if (receipt) {
 						await db.inbox.markRead([message.id], receipt.consumedAt);
@@ -2217,7 +2217,7 @@ const inbox = defineService({
 					} else if (message.origin === "main") id = await session.findMain();
 					if (!id || deliveredAnswers.has(`${message.id}:${id}`) || stopped$2) continue;
 					if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused) continue;
-					await session.send(id, `[Answer ${message.id}] ${message.answer}`, "reply", `nexus:answer:${message.id}`);
+					await session.send(id, `[Answer ${message.id}] ${message.answer}`, "reply", `supermesh:answer:${message.id}`);
 					deliveredAnswers.add(`${message.id}:${id}`);
 					await db.inbox.resetDelivery(message.id);
 				} catch (error) {
@@ -2528,7 +2528,7 @@ const channelAuth = defineService({
 			controller: new AbortController(),
 			done: Promise.resolve()
 		};
-		const dispose = getServerContext(server).effect(() => () => cancel(task), "nexus:channel-auth");
+		const dispose = getServerContext(server).effect(() => () => cancel(task), "supermesh:channel-auth");
 		authentications.set(task.view.id, task);
 		active.set(channelId, task);
 		task.done = Promise.resolve().then(() => authenticate(task)).finally(() => {
@@ -3025,7 +3025,7 @@ const worktree = defineService({
 			if (existing) return existing;
 			await mkdir(dirname(target), { recursive: true });
 			if (!samePath$1(await realpath(dirname(target)), dirname(target))) throw new Error("repository_path_conflict");
-			const temporary = await mkdtemp(join(dirname(target), ".nexus-clone-"));
+			const temporary = await mkdtemp(join(dirname(target), ".supermesh-clone-"));
 			try {
 				await git(temporary, [
 					"-c",
@@ -3060,7 +3060,7 @@ const worktree = defineService({
 	},
 	async create(agent, ticketId) {
 		if (!/^[a-z0-9][\w-]*$/i.test(ticketId)) throw new Error("invalid_worktree_identity");
-		const branch = `nexus/${ticketId}`;
+		const branch = `dsh/${ticketId}`;
 		const ctx = getServerContext(server);
 		if (!ctx.worktrees) throw new Error("worktrees_unavailable");
 		const created = await ctx.worktrees.create(agent, {
@@ -3582,7 +3582,7 @@ var session_open_post_default = defineHandler(async () => {
 // src/server/routes/session.role.get.ts
 var session_role_get_default = defineHandler(async () => {
 	const [mainSessionId, projects, supervisors, workers] = await Promise.all([
-		storage.getItem("mainSessionId"),
+		storage.getItem("orchestrator.id"),
 		db.project.listAll(),
 		db.supervisor.listByStatus("active"),
 		db.worker.listRecent()
@@ -3755,45 +3755,45 @@ const authorize = defineHandler(async (event) => {
 });
 const server = defineWebServer((app) => {
 	app.use(authorize);
-	app.get("/api/nexus/project", project_get_default);
-	app.post("/api/nexus/project", project_post_default);
-	app.patch("/api/nexus/project/:id", project__id__patch_default);
-	app.put("/api/nexus/project/:id/session", project__id__session_put_default);
-	app.post("/api/nexus/project/:id/opening", project__id__opening_post_default);
-	app.post("/api/nexus/repository", project_repository_post_default);
-	app.get("/api/nexus/ticket", ticket_get_default);
-	app.get("/api/nexus/ticket/current", ticket_current_get_default);
-	app.get("/api/nexus/ticket/:id", ticket__id__get_default);
-	app.patch("/api/nexus/ticket/:id", ticket__id__patch_default);
-	app.post("/api/nexus/ask/:id/answer", ask__id__answer_post_default);
-	app.get("/api/nexus/worker", worker_get_default);
-	app.get("/api/nexus/supervisor", supervisor_get_default);
-	app.get("/api/nexus/scope", scope_get_default);
-	app.get("/api/nexus/node", node_get_default);
-	app.get("/api/nexus/edge", edge_get_default);
-	app.get("/api/nexus/group", group_get_default);
-	app.get("/api/nexus/status", status_get_default);
-	app.get("/api/nexus/message", message_get_default);
-	app.get("/api/nexus/pending", pending_get_default);
-	app.get("/api/nexus/delivery", delivery_get_default);
-	app.get("/api/nexus/thread", thread_get_default);
-	app.get("/api/nexus/trigger", trigger_get_default);
-	app.get("/api/nexus/subscription", subscription_get_default);
-	app.get("/api/nexus/channel", channel_get_default);
-	app.put("/api/nexus/channel/:id/configuration", channel__id__configuration_put_default);
-	app.delete("/api/nexus/channel/:id/credential", channel__id__credential_delete_default);
-	app.post("/api/nexus/channel/:id/authentication", channel__id__authentication_post_default);
-	app.get("/api/nexus/channel/:id/authentication/:authenticationId", channel__id__authentication__authenticationId__get_default);
-	app.get("/api/nexus/setting", setting_get_default);
-	app.patch("/api/nexus/setting", setting_patch_default);
-	app.get("/api/nexus/agent/model", agent_model_get_default);
-	app.patch("/api/nexus/agent/model", agent_model_patch_default);
-	app.get("/api/nexus/agent/model/catalog", agent_model_catalog_get_default);
-	app.put("/api/nexus/session/main", session_open_post_default);
-	app.get("/api/nexus/session/role", session_role_get_default);
-	app.get("/api/nexus/session/:id/context", session__id__context_get_default);
-	app.get("/api/nexus/session/:id/mailbox", session__id__mailbox_get_default);
-	app.patch("/api/nexus/session/:id/mailbox/:messageId", session__id__mailbox__messageId__patch_default);
+	app.get("/api/supermesh/project", project_get_default);
+	app.post("/api/supermesh/project", project_post_default);
+	app.patch("/api/supermesh/project/:id", project__id__patch_default);
+	app.put("/api/supermesh/project/:id/session", project__id__session_put_default);
+	app.post("/api/supermesh/project/:id/opening", project__id__opening_post_default);
+	app.post("/api/supermesh/repository", project_repository_post_default);
+	app.get("/api/supermesh/ticket", ticket_get_default);
+	app.get("/api/supermesh/ticket/current", ticket_current_get_default);
+	app.get("/api/supermesh/ticket/:id", ticket__id__get_default);
+	app.patch("/api/supermesh/ticket/:id", ticket__id__patch_default);
+	app.post("/api/supermesh/ask/:id/answer", ask__id__answer_post_default);
+	app.get("/api/supermesh/worker", worker_get_default);
+	app.get("/api/supermesh/supervisor", supervisor_get_default);
+	app.get("/api/supermesh/scope", scope_get_default);
+	app.get("/api/supermesh/node", node_get_default);
+	app.get("/api/supermesh/edge", edge_get_default);
+	app.get("/api/supermesh/group", group_get_default);
+	app.get("/api/supermesh/status", status_get_default);
+	app.get("/api/supermesh/message", message_get_default);
+	app.get("/api/supermesh/pending", pending_get_default);
+	app.get("/api/supermesh/delivery", delivery_get_default);
+	app.get("/api/supermesh/thread", thread_get_default);
+	app.get("/api/supermesh/trigger", trigger_get_default);
+	app.get("/api/supermesh/subscription", subscription_get_default);
+	app.get("/api/supermesh/channel", channel_get_default);
+	app.put("/api/supermesh/channel/:id/configuration", channel__id__configuration_put_default);
+	app.delete("/api/supermesh/channel/:id/credential", channel__id__credential_delete_default);
+	app.post("/api/supermesh/channel/:id/authentication", channel__id__authentication_post_default);
+	app.get("/api/supermesh/channel/:id/authentication/:authenticationId", channel__id__authentication__authenticationId__get_default);
+	app.get("/api/supermesh/setting", setting_get_default);
+	app.patch("/api/supermesh/setting", setting_patch_default);
+	app.get("/api/supermesh/agent/model", agent_model_get_default);
+	app.patch("/api/supermesh/agent/model", agent_model_patch_default);
+	app.get("/api/supermesh/agent/model/catalog", agent_model_catalog_get_default);
+	app.put("/api/supermesh/session/main", session_open_post_default);
+	app.get("/api/supermesh/session/role", session_role_get_default);
+	app.get("/api/supermesh/session/:id/context", session__id__context_get_default);
+	app.get("/api/supermesh/session/:id/mailbox", session__id__mailbox_get_default);
+	app.patch("/api/supermesh/session/:id/mailbox/:messageId", session__id__mailbox__messageId__patch_default);
 });
 // src/service/channel.ts
 const presets = [
@@ -3868,7 +3868,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BalW06P-.js");
+			const { shell } = await import("./shell-MvpbuYeN.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3877,7 +3877,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BalW06P-.js");
+			const { shell } = await import("./shell-MvpbuYeN.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3887,7 +3887,7 @@ function credentials() {
 	return getServerContext(server).credentials;
 }
 function ref(kind) {
-	return credentialRef(kind === "github" ? "NEXUS_GITHUB_TOKEN" : "NEXUS_GITLAB_TOKEN");
+	return credentialRef(kind === "github" ? "SUPERMESH_GITHUB_TOKEN" : "SUPERMESH_GITLAB_TOKEN");
 }
 function readMetadata(raw, kind) {
 	if (!raw) return {

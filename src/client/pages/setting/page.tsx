@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import type { PatchApiNexusSettingBody } from '../../apis/index.type'
+import type { PatchApiSupermeshSettingBody } from '../../apis/index.type'
 import type { RuntimeSettings } from '../../store/setting'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Case, Switch } from 'react-if-lite'
-import { getApiNexusSetting, patchApiNexusSetting } from '../../apis'
+import { getApiSupermeshSetting, patchApiSupermeshSetting } from '../../apis'
 import { ActivityIcon, AgentIcon, GitBranchIcon, TasksIcon } from '../../components/icons'
 import { keys } from '../../config/query-keys'
 import { useActions, useStore } from '../../hooks/use-store'
@@ -41,10 +41,10 @@ export function Setting(): ReactNode {
   const { t } = useTranslation()
   const activeSection = useStore(state => state.setting.section)
   const { setSettingSection } = useActions()
-  const setting = useQuery({ queryKey: keys.setting, queryFn: () => getApiNexusSetting() })
+  const setting = useQuery({ queryKey: keys.setting, queryFn: () => getApiSupermeshSetting() })
   const client = useQueryClient()
   const saveSetting = useMutation({
-    mutationFn: (input: PatchApiNexusSettingBody) => patchApiNexusSetting(input),
+    mutationFn: (input: PatchApiSupermeshSettingBody) => patchApiSupermeshSetting(input),
     onSettled: () => client.invalidateQueries({ queryKey: keys.setting }),
   })
   const baseline = setting.data ? toRuntime(setting.data) : null
@@ -79,7 +79,7 @@ export function Setting(): ReactNode {
     setNotice(null)
     setFailed(null)
   }
-  const save = async (patch: PatchApiNexusSettingBody, section: Failed): Promise<void> => {
+  const save = async (patch: PatchApiSupermeshSettingBody, section: Failed): Promise<void> => {
     setNotice(null)
     setFailed(null)
     try {

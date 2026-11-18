@@ -42,7 +42,7 @@ const { project: projects } = await import('../../src/service/project.ts')
 const { worktree } = await import('../../src/service/worktree.ts')
 const git = promisify(execFile)
 const roles = ['orchestrator', 'manager', 'supervisor', 'worker']
-const agentDirectory = join(process.env.DSH_HOME, '.nexus')
+const agentDirectory = join(process.env.DSH_HOME, '.supermesh')
 const now = new Date().toISOString()
 let runtime
 
@@ -153,7 +153,7 @@ async function settle() {
 
 async function expectWake(id, count) {
   await settle()
-  const notices = runtime.proposals.filter(item => item.id === id).flatMap(item => item.messages).filter(message => message.source.kind === 'nexus-mailbox')
+  const notices = runtime.proposals.filter(item => item.id === id).flatMap(item => item.messages).filter(message => message.source.kind === 'supermesh-mailbox')
   assert.equal(notices.length, 1, `${id} must receive exactly one waking internal-mail notice`)
   assert.equal(notices[0].content[0].text, `你有${count}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`)
   assert.equal(notices[0].content.some(part => part.type === 'text' && part.text.includes('Private payload')), false)
@@ -166,35 +166,35 @@ const cases = {
   async shell() {
     const { credentialRef } = await import('@deepseek-ai/dsh-credentials')
     const { shell } = await import('../../src/service/shell.ts')
-    const botToken = 'nexus-synthetic-bot-for-local-cli-only'
-    const personalToken = 'nexus-synthetic-personal-must-not-be-used'
-    const metadata = { commitName: 'Nexus isolated bot', commitEmail: 'nexus-bot@example.invalid' }
-    await runtime.ctx.credentials.set(credentialRef('NEXUS_GITHUB_TOKEN'), botToken)
-    await db.channel.saveConfiguration('github', 'GitHub', 'https://github.com', true, metadata, { name: 'nexus-isolated-bot', avatar: null })
+    const botToken = 'supermesh-synthetic-bot-for-local-cli-only'
+    const personalToken = 'supermesh-synthetic-personal-must-not-be-used'
+    const metadata = { commitName: 'Supermesh isolated bot', commitEmail: 'supermesh-bot@example.invalid' }
+    await runtime.ctx.credentials.set(credentialRef('SUPERMESH_GITHUB_TOKEN'), botToken)
+    await db.channel.saveConfiguration('github', 'GitHub', 'https://github.com', true, metadata, { name: 'supermesh-isolated-bot', avatar: null })
     await mkdir(process.env.GH_CONFIG_DIR, { recursive: true })
     await writeFile(join(process.env.GH_CONFIG_DIR, 'hosts.yml'), JSON.stringify({ 'github.com': { oauth_token: personalToken, user: 'ambient-account', git_protocol: 'https' } }), { mode: 0o600 })
     const directory = join(process.cwd(), 'shell-repository')
     const linked = join(process.cwd(), 'shell-linked-worktree')
     await mkdir(directory)
     await git('git', ['init'], { cwd: directory })
-    await git('git', ['remote', 'add', 'origin', 'https://github.com/example/nexus-shell.git'], { cwd: directory })
+    await git('git', ['remote', 'add', 'origin', 'https://github.com/example/supermesh-shell.git'], { cwd: directory })
     await git('git', ['-c', 'user.name=Initial author', '-c', 'user.email=initial@example.invalid', '-c', 'core.hooksPath=', '-c', 'commit.gpgSign=false', 'commit', '--allow-empty', '-m', 'Initialize isolated test repository'], { cwd: directory })
-    await git('git', ['worktree', 'add', '-b', 'nexus/shell-test', linked], { cwd: directory })
+    await git('git', ['worktree', 'add', '-b', 'dsh/shell-test', linked], { cwd: directory })
     const workspace = await runtime.ctx.workspaceRegistry.create(directory, 'Shell repository')
     await projects.sync()
     assert.equal((await db.project.findByWorkspace(workspace.id)).enabled, 1)
     const gitlabHost = 'gitlab.example.invalid'
-    const gitlabToken = 'nexus-synthetic-gitlab-bot-local-only'
-    const gitlabMetadata = { commitName: 'Nexus GitLab bot', commitEmail: 'nexus-gitlab@example.invalid' }
+    const gitlabToken = 'supermesh-synthetic-gitlab-bot-local-only'
+    const gitlabMetadata = { commitName: 'Supermesh GitLab bot', commitEmail: 'supermesh-gitlab@example.invalid' }
     const gitlabDirectory = join(process.cwd(), 'shell-gitlab-subgroup')
-    if (process.env.NEXUS_TEST_GLAB_DIR) {
-      await runtime.ctx.credentials.set(credentialRef('NEXUS_GITLAB_TOKEN'), gitlabToken)
-      await db.channel.saveConfiguration('gitlab', 'GitLab', `https://${gitlabHost}`, true, gitlabMetadata, { name: 'nexus-gitlab-bot', avatar: null })
+    if (process.env.SUPERMESH_TEST_GLAB_DIR) {
+      await runtime.ctx.credentials.set(credentialRef('SUPERMESH_GITLAB_TOKEN'), gitlabToken)
+      await db.channel.saveConfiguration('gitlab', 'GitLab', `https://${gitlabHost}`, true, gitlabMetadata, { name: 'supermesh-gitlab-bot', avatar: null })
       await mkdir(process.env.GLAB_CONFIG_DIR, { recursive: true })
       await writeFile(join(process.env.GLAB_CONFIG_DIR, 'config.yml'), JSON.stringify({ hosts: { [gitlabHost]: { token: personalToken, user: 'ambient-gitlab-account', api_protocol: 'https' } } }), { mode: 0o600 })
       await mkdir(gitlabDirectory)
       await git('git', ['init'], { cwd: gitlabDirectory })
-      await git('git', ['remote', 'add', 'origin', `https://${gitlabHost}/group/subgroup/nexus-shell.git`], { cwd: gitlabDirectory })
+      await git('git', ['remote', 'add', 'origin', `https://${gitlabHost}/group/subgroup/supermesh-shell.git`], { cwd: gitlabDirectory })
       await runtime.ctx.workspaceRegistry.create(gitlabDirectory, 'GitLab subgroup repository')
       await projects.sync()
     }
@@ -209,7 +209,7 @@ const cases = {
     }
     const nativeShell = command => process.platform === 'win32' ? ['pwsh', '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', `${command}; exit $LASTEXITCODE`] : ['bash', '-c', command]
     try {
-      assert.equal((await runtime.ctx.credentials.resolve(credentialRef('NEXUS_GITHUB_TOKEN'))).value === botToken, true, 'GitHub credential must survive GitLab credential registration')
+      assert.equal((await runtime.ctx.credentials.resolve(credentialRef('SUPERMESH_GITHUB_TOKEN'))).value === botToken, true, 'GitHub credential must survive GitLab credential registration')
       stop = await shell.start()
       assert.equal(process.env.GH_TOKEN === undefined, true, 'start must remove ambient personal tokens')
       const auth = await run(nativeShell('gh auth token'), directory, undefined, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
@@ -234,7 +234,7 @@ const cases = {
       const merging = await run(nativeShell('gh-default auth token'), directory, undefined, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
       assert.equal(`${merging.output}${merging.error}`.includes(botToken), false, 'the default-login merge entry must never answer with the bot credential')
       assert.notEqual(merging.output.trim(), botToken)
-      if (process.env.NEXUS_TEST_GLAB_DIR) {
+      if (process.env.SUPERMESH_TEST_GLAB_DIR) {
         const auth = await run(nativeShell(`glab config get token --host ${gitlabHost}`), gitlabDirectory, undefined, { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken, OAUTH_TOKEN: personalToken, CI_JOB_TOKEN: personalToken })
         assert.equal(auth.code, 0, 'real portable glab must run through the native shell shim')
         assert.equal(auth.output.trim() === gitlabToken, true, 'glab shim must select the private bot config rather than ambient tokens/config')
@@ -256,7 +256,7 @@ const cases = {
         assert.notEqual(disabledCredential.code, 0, 'disabled GitLab must not answer git credential requests')
         assert.equal(`${disabledCredential.output}${disabledCredential.error}`.includes(gitlabToken), false)
         assert.equal(`${disabledCredential.output}${disabledCredential.error}`.includes(personalToken), false)
-        process.stdout.write('NEXUS_GLAB_REAL_PASS\n')
+        process.stdout.write('SUPERMESH_GLAB_REAL_PASS\n')
       }
       await db.channel.setEnabled('github', false)
       await shell.refresh()
@@ -282,12 +282,12 @@ const cases = {
     const directory = join(process.cwd(), 'real-repository')
     await mkdir(directory)
     await git('git', ['init'], { cwd: directory })
-    await git('git', ['remote', 'add', 'origin', 'https://github.com/example/nexus-project.git'], { cwd: directory })
+    await git('git', ['remote', 'add', 'origin', 'https://github.com/example/supermesh-project.git'], { cwd: directory })
     const workspace = await runtime.ctx.workspaceRegistry.create(directory, 'Real repository')
     await projects.sync()
     const initial = await db.project.findByWorkspace(workspace.id)
     assert.equal(initial.enabled, 1)
-    assert.equal(initial.remoteUrl, 'https://github.com/example/nexus-project')
+    assert.equal(initial.remoteUrl, 'https://github.com/example/supermesh-project')
     assert.equal((await projects.list()).find(row => row.id === initial.id).available, true)
     await db.project.setEnabled(initial.id, false, now)
     await projects.sync()
@@ -297,7 +297,7 @@ const cases = {
     await projects.sync()
     assert.equal((await db.project.findById(initial.id)).enabled, 0)
     assert.equal((await projects.list()).find(row => row.id === initial.id).available, false)
-    await git('git', ['remote', 'add', 'origin', 'git@github.com:example/nexus-project.git'], { cwd: directory })
+    await git('git', ['remote', 'add', 'origin', 'git@github.com:example/supermesh-project.git'], { cwd: directory })
     await projects.sync()
     assert.equal((await db.project.findById(initial.id)).enabled, 0)
     await db.project.setEnabled(initial.id, true, now)
@@ -364,7 +364,7 @@ const cases = {
     await runtime.close()
     runtime = await start()
     assert.deepEqual(new Set((await session.workspace()).sessionIds), new Set(ids), 'repaired membership must survive another restart')
-    await storage.removeItem('mainSessionId')
+    await storage.removeItem('orchestrator.id')
     const legacy = await runtime.ctx.sessionController.create({ cwd: p.directory, agentPreset: 'orchestrator' })
     assert.equal(await session.findMain(), legacy.sessionId, 'an existing main in a different immutable cwd must retain its identity')
     const legacyHistory = await session.history(legacy.sessionId)
@@ -446,12 +446,12 @@ const cases = {
 try {
   const manifest = require('@deepseek-ai/dsh/package.json')
   assert.equal(manifest.name, '@deepseek-ai/dsh')
-  assert.equal(process.cwd(), process.env.NEXUS_TEST_CWD)
+  assert.equal(process.cwd(), process.env.SUPERMESH_TEST_CWD)
   assert.equal(process.env.DSH_HOME, join(process.cwd(), 'home'))
   assert.equal(Object.hasOwn(cases, process.argv[2]), true, 'unknown integration case')
   runtime = await start()
   await cases[process.argv[2]]()
-  process.stdout.write(`NEXUS_RUNTIME_PASS ${process.argv[2]} DSH=${manifest.version}\n`)
+  process.stdout.write(`SUPERMESH_RUNTIME_PASS ${process.argv[2]} DSH=${manifest.version}\n`)
 }
 finally {
   if (runtime)
