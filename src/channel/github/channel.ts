@@ -258,11 +258,12 @@ export class GitHubChannel {
     if (firstError)
       throw firstError
     const signature = digest(revisions.sort())
-    // 本次已读完 [since, startedAt)，since 推进到起点前 5 秒重叠（与官方 cursorAt 同值）。
-    // 重叠靠确定性触发 id 去重；不能推进到 cursor.through，那会漏掉两个窗口之间的条目。
-    const next = new Date(Date.parse(startedAt) - 5_000).toISOString()
+    // 游标按「读到的最新条目时间」推进，回退 5 秒重叠（官方 cursorAt 同值）。
+    // 空结果不动游标 —— 按 startedAt 推进会跳过采集窗口内新建的条目，正是漏采的原因。
+    const newest = Math.max(...rows.map(row => Date.parse(timestamp(row.updated_at))).filter(Number.isFinite))
+    const moved = Number.isFinite(newest) ? new Date(newest - 5_000).toISOString() : since
     await this.save(repository, `cursor:${name}`, {
-      since: next < cursor.since ? cursor.since : next,
+      since: moved > since ? moved : since,
       signature,
       through: startedAt,
     })

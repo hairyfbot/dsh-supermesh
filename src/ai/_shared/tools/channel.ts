@@ -5,6 +5,60 @@ import { gitlab } from '../../../channel/gitlab/channel'
 import { db } from '../../../database'
 import { session } from '../../../service/session'
 
+/**
+ * 渠道观测策略：回复前必须先读过那条话题。
+ *
+ * 照官方 `dsh-fs-observation-policy` 的结构：按 owner（这里是会话对象，弱引用，
+ * 会话回收时状态自动释放）持有每个话题的观测记录；写入前校验，未见即拒绝并给出错误码。
+ * 目的是让 Agent 先看清渠道现状再决定要不要说话，避免重复发言。
+ */
+interface Observation {
+  /** 读到的最后一条消息 id，用作「读的是哪一版」的依据。 */
+  version: string
+}
+
+const observed = new WeakMap<object, Map<string, Observation>>()
+
+function owner(exec: { agent?: { session?: object } }): object | undefined {
+  return exec.agent?.session
+}
+
+function observe(exec: { agent?: { session?: object } }, threadId: string, version: string): void {
+  const holder = owner(exec)
+  if (!holder)
+    return
+  let byTarget = observed.get(holder)
+  if (!byTarget) {
+    byTarget = new Map()
+    observed.set(holder, byTarget)
+  }
+  byTarget.set(threadId, { version })
+}
+
+/** 与官方 `requirePresent` 同义：没读过就抛出带错误码的拒绝。 */
+function requireObserved(exec: { agent?: { session?: object } }, threadId: string, verb: string): Observation {
+  const holder = owner(exec)
+  const prior = holder ? observed.get(holder)?.get(threadId) : undefined
+  if (!prior) {
+    const error = new Error(`${verb} 需要先读过这个话题：调用 read_channel，resource 用 thread/<id> 或 trigger/<triggerId>`)
+    error.name = 'ChannelNotObserved'
+    throw error
+  }
+  return prior
+}
+
+/** 话题的最新消息 id，用于判定「读的是哪一版」。 */
+async function latestVersion(threadId: string): Promise<string> {
+  const triggers = await db.trigger.listRecent(1000)
+  const latest = triggers.filter(item => item.threadId === threadId).sort((a, b) => b.at.localeCompare(a.at))[0]
+  return latest?.id ?? 'empty'
+}
+
+/** 记下「这个会话读过这个话题」，并把读到的那一版留下来。 */
+async function markThread(exec: { agent?: { session?: object } }, threadId: string): Promise<void> {
+  observe(exec, threadId, await latestVersion(threadId))
+}
+
 export const read_channel = defineTool({
   name: 'read_channel',
   description: '读渠道原文，靠 resource 路径前缀分发。返回 { items, next_offset, next_resource }，两条翻页轴都要跟完。',
@@ -46,6 +100,7 @@ export const read_channel = defineTool({
         throw new Error('触发不存在')
       if (identity.role === 'worker' && !allowedThreads.has(trigger.threadId))
         throw new Error('Worker 只能读取本任务来源')
+      await markThread(exec, trigger.threadId)
       items = [trigger]
     }
     else if (resource.startsWith('thread/')) {
@@ -54,6 +109,7 @@ export const read_channel = defineTool({
         throw new Error('话题不存在')
       if (identity.role === 'worker' && !allowedThreads.has(thread.id))
         throw new Error('Worker 只能读取本任务来源')
+      await markThread(exec, thread.id)
       items = [thread]
       nextResource = thread.kind !== 'ci' ? thread.url : null
     }
@@ -61,6 +117,7 @@ export const read_channel = defineTool({
       const thread = (await db.thread.findById(resource))!
       if (identity.role === 'worker' && !allowedThreads.has(thread.id))
         throw new Error('Worker 只能读取本任务来源')
+      await markThread(exec, thread.id)
       items = [thread]
       nextResource = thread.kind !== 'ci' ? thread.url : null
     }
@@ -71,6 +128,7 @@ export const read_channel = defineTool({
       if (identity.role === 'worker' && ticket.id !== identity.ticketId)
         throw new Error('Worker 只能读取本任务来源')
       const threads = await db.ticketThread.listByTicket(ticket.id)
+      for (const link of threads) await markThread(exec, link.threadId)
       items = [ticket, ...threads.map(link => ({ resource: `thread/${link.threadId}` }))]
     }
     else {
@@ -102,6 +160,13 @@ export const read_channel = defineTool({
         if (!allowed)
           throw new Error('Worker 只能读取本任务来源')
       }
+      // 读的是渠道原文，同样算作「已看过这个话题」。
+      try {
+        const matched = await db.thread.findByRef(isGitLab ? 'gitlab' : 'github', resource.replace(/^https?:\/\/[^/]+\//, '').replace(/\/pull\//, ':').replace(/\/issues\//, ':'))
+        if (matched)
+          await markThread(exec, matched.id)
+      }
+      catch {}
       return JSON.stringify(isGitLab ? await gitlab.read(target, offset, limit) : await github.read(resource, offset, limit))
     }
     const page = items.slice(offset, offset + limit)
@@ -138,6 +203,8 @@ export const reply_channel = defineTool({
     const thread = await db.thread.findById(trigger.threadId)
     if (!thread || thread.kind === 'ci' || !thread.url)
       throw new Error('该触发没有可回复地址')
+    // 先读后写（照官方 observe/requirePresent）：没读过这个话题就不许回复。
+    requireObserved(exec, thread.id, 'reply')
     if (identity.role === 'worker') {
       if (!identity.ticketId || !(await db.ticketThread.listByTicket(identity.ticketId)).some(row => row.threadId === thread.id))
         throw new Error('Worker 只能回复本任务来源')
