@@ -20,7 +20,7 @@ describe('nexus in the official DSH shell', () => {
     openedUrl = (await commands.openDshPage()).url
   })
   afterEach(async () => {
-    const restored = await commands.nexusRequest('/api/nexus/settings', 'PATCH', { maxWorkers: 10 })
+    const restored = await commands.nexusRequest('/api/nexus/setting', 'PATCH', { maxWorkers: 10 })
     expect(restored.status).toBe(200)
     expect(restored.body).toMatchObject({ maxWorkers: 10 })
   })
@@ -28,34 +28,48 @@ describe('nexus in the official DSH shell', () => {
     await commands.closeDsh()
   })
 
-  it('loads the Nexus client and its authenticated plugin panel route in Chromium', async () => {
+  it('loads the Nexus client and its authenticated resource routes in Chromium', async () => {
     expect(new URL(openedUrl).pathname).toBe('/')
-    const panel = await commands.nexusRequest('/api/nexus/panel', 'GET')
-    expect(panel.status).toBe(200)
-    expect(panel.body).toMatchObject({
-      projects: [],
-      tickets: [],
-      mainSessionId: null,
-      graph: { nodes: [], edges: [], groups: [] },
-      run: { state: 'idle', reason: null },
-      settings: { maxWorkers: 10, autoMerge: false },
-    })
+    const [project, ticket, node, edge, group, status, setting] = await Promise.all([
+      commands.nexusRequest('/api/nexus/project', 'GET'),
+      commands.nexusRequest('/api/nexus/ticket', 'GET'),
+      commands.nexusRequest('/api/nexus/node', 'GET'),
+      commands.nexusRequest('/api/nexus/edge', 'GET'),
+      commands.nexusRequest('/api/nexus/group', 'GET'),
+      commands.nexusRequest('/api/nexus/status', 'GET'),
+      commands.nexusRequest('/api/nexus/setting', 'GET'),
+    ])
+    expect(project.status).toBe(200)
+    expect(project.body).toEqual([])
+    expect(ticket.status).toBe(200)
+    expect(ticket.body).toEqual([])
+    expect(node.status).toBe(200)
+    expect(node.body).toEqual([])
+    expect(edge.status).toBe(200)
+    expect(edge.body).toEqual([])
+    expect(group.status).toBe(200)
+    expect(group.body).toEqual([])
+    expect(status.status).toBe(200)
+    expect(status.body).toMatchObject({ state: 'idle', reason: null })
+    expect(setting.status).toBe(200)
+    expect(setting.body).toMatchObject({ maxWorkers: 10, autoMerge: false })
     expect(await commands.getDshErrors()).toEqual([])
   })
 
+  it('removed the aggregate panel route', async () => {
+    const panel = await commands.nexusRequest('/api/nexus/panel', 'GET')
+    expect(panel.status).toBe(404)
+  })
+
   it('persists a safe settings change through real services and rejects invalid input without changing it', async () => {
-    const saved = await commands.nexusRequest('/api/nexus/settings', 'PATCH', { maxWorkers: 3 })
+    const saved = await commands.nexusRequest('/api/nexus/setting', 'PATCH', { maxWorkers: 3 })
     expect(saved.status).toBe(200)
     expect(saved.body).toMatchObject({ maxWorkers: 3, autoMerge: false })
-    const invalid = await commands.nexusRequest('/api/nexus/settings', 'PATCH', { maxWorkers: 0 })
+    const invalid = await commands.nexusRequest('/api/nexus/setting', 'PATCH', { maxWorkers: 0 })
     expect(invalid.status).toBe(400)
     expect(invalid.body).toMatchObject({ message: 'invalid_config' })
-    const panel = await commands.nexusRequest('/api/nexus/panel', 'GET')
-    expect(panel.status).toBe(200)
-    expect(panel.body).toMatchObject({
-      settings: { maxWorkers: 3, autoMerge: false },
-      mainSessionId: null,
-      graph: { nodes: [], edges: [], groups: [] },
-    })
+    const setting = await commands.nexusRequest('/api/nexus/setting', 'GET')
+    expect(setting.status).toBe(200)
+    expect(setting.body).toMatchObject({ maxWorkers: 3, autoMerge: false })
   })
 })

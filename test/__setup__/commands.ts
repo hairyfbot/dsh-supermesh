@@ -38,8 +38,8 @@ export const nexusRequest: BrowserCommand<[string, string, unknown?], { status: 
   const page = sessions.get(context.sessionId)?.page
   if (!page)
     throw new Error('DSH page must be opened first')
-  if (!['/api/nexus/panel', '/api/nexus/settings'].includes(path))
-    throw new Error('E2E only permits the Nexus panel and settings endpoints')
+  if (!path.startsWith('/api/nexus/'))
+    throw new Error('E2E only permits Nexus endpoints')
   return page.evaluate(async ({ path, method, body }) => {
     const response = await fetch(path, {
       method,
@@ -69,10 +69,11 @@ export const openNexusMainSession: BrowserCommand<[], { sessionId: string, panel
     throw new Error(`main session creation failed: ${await response.text()}`)
   const result = await response.json() as { sessionId: string }
   const panel = await page.evaluate(async () => {
-    const response = await fetch('/api/nexus/panel')
+    const response = await fetch('/api/nexus/session/role')
     if (!response.ok)
-      throw new Error('panel lookup failed')
-    return response.json() as Promise<{ mainSessionId: unknown }>
+      throw new Error('session role lookup failed')
+    const value = await response.json() as { sessions: { sessionId: string, role: string }[] }
+    return { mainSessionId: value.sessions.find(session => session.role === 'main')?.sessionId ?? null }
   })
   return { sessionId: result.sessionId, panelSessionId: panel.mainSessionId, errors: session.errors() }
 }
