@@ -37,14 +37,20 @@ export class FetchGitLabRunner implements GitLabRunner {
         response = await fetch(url.href, {
           dispatcher,
           method: request.method,
-          headers: { authorization: `Bearer ${token}`, accept: 'application/json', ...(request.body ? { 'content-type': 'application/json' } : {}) },
+          headers: { authorization: `Bearer ${token}`, accept: 'application/json', ...(request.body ? { 'content-type': 'application/json' } : {}), ...request.headers },
           ...(request.body ? { body: JSON.stringify(request.body) } : {}),
-          redirect: 'error',
+          redirect: 'follow',
           signal: request.signal ? AbortSignal.any([request.signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000),
         })
       }
-      catch {
-        throw new GitLabError(request.signal?.aborted ? 'interrupted' : 'transport_unknown')
+      catch (error) {
+        const cause = (error as { cause?: { message?: string, code?: string } }).cause
+        const detail = [error instanceof Error ? error.message : String(error), cause?.message, cause?.code].filter(Boolean).join(' / ')
+        throw new GitLabError(request.signal?.aborted ? 'interrupted' : `transport_unknown: ${detail.slice(0, 200)}`)
+      }
+      if (response.status === 304) {
+        await response.body?.cancel()
+        return { body: null, etag: response.headers.get('etag') ?? null, notModified: true }
       }
       if (!response.ok) {
         await response.body?.cancel()
@@ -52,12 +58,15 @@ export class FetchGitLabRunner implements GitLabRunner {
         const retryAfter = retry && /^\d+$/.test(retry) ? Number(retry) : retry ? Math.max(0, Math.ceil((Date.parse(retry) - Date.now()) / 1000)) : undefined
         throw new GitLabError(response.status === 401 ? 'not_logged_in' : response.status === 429 ? 'rate_limited' : response.status === 403 ? 'forbidden' : response.status === 404 ? 'not_found' : response.status >= 400 && response.status < 500 ? 'remote_rejected' : 'transport_unknown', Number.isFinite(retryAfter) ? retryAfter : undefined)
       }
+      let body: unknown
       try {
-        return await response.json()
+        body = await response.json()
       }
       catch {
         throw new GitLabError('invalid_response')
       }
+      // 只有需要条件请求的调用方才付这份拷贝成本。
+      return request.withEtag ? { body, etag: response.headers.get('etag') ?? null } : body
     }
     finally {
       await dispatcher.close()

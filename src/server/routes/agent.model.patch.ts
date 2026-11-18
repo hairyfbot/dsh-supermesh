@@ -31,8 +31,8 @@ export default defineHandler(async (event): Promise<RoleModels> => {
     try {
       await roleModel.resolve(entry)
     }
-    catch {
-      throw new HTTPError({ status: 400, message: 'unresolved_agent_model' })
+    catch (error) {
+      throw new HTTPError({ status: 400, message: `unresolved_agent_model: ${error instanceof Error ? error.message : String(error)}` })
     }
   }
   const current = (await setting.load()).models

@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-CKbi6Bfj.js";
+import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-DSzmrSyL.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -258,6 +258,7 @@ var ExecFileGhRunner = class {
 			"--include",
 			request.path
 		];
+		for (const [key, value] of Object.entries(request.headers ?? {})) args.push("-H", `${key}: ${value}`);
 		if (request.body) args.push("--input", "-");
 		return new Promise((resolve, reject) => {
 			const child = execFile("gh", args, {
@@ -269,6 +270,10 @@ var ExecFileGhRunner = class {
 				const response = stdout.replace(/\r\n/g, "\n");
 				const status = Number(/^HTTP\/\S+ (\d+)/m.exec(response)?.[1]);
 				const retryAfter = /^retry-after: (\d+)/im.exec(response)?.[1];
+				if (status === 304) {
+					resolve({ notModified: true });
+					return;
+				}
 				if (error) {
 					const code = error.code;
 					reject(new GhError(code === "ENOENT" ? "gh_missing" : status === 401 || /gh auth login|not logged/i.test(stderr) ? "not_logged_in" : status === 429 || /rate limit/i.test(stderr) ? "rate_limited" : status === 403 ? "forbidden" : status === 404 ? "not_found" : status >= 400 && status < 500 ? "remote_rejected" : code === "ABORT_ERR" ? "interrupted" : "transport_unknown", retryAfter ? Number(retryAfter) : void 0));
@@ -288,6 +293,18 @@ var ExecFileGhRunner = class {
 	}
 };
 // src/channel/github/channel.ts
+/** 已结束的 PR 只在这么久之内继续轮询；更早的彻底不碰，避免历史堆积拖慢采集。 */
+const POLL_HORIZON_MS$1 = 12096e5;
+/**
+* 是否该轮询这个 PR：有活票就必须轮询；否则仅在近 `POLL_HORIZON_MS` 有活动时才轮询。
+* 与官方 `sources/poll.ts` 的 `polled` 同一策略。
+*/
+async function polled$1(ticketIds, updatedAt) {
+	const tickets = await Promise.all(ticketIds.map((id) => db.ticket.findById(id)));
+	if (tickets.some((ticket) => !!ticket && !["done", "cancelled"].includes(ticket.status))) return true;
+	const times = [updatedAt ?? "", ...tickets.map((ticket) => ticket?.endedAt ?? "")].map(Date.parse).filter(Number.isFinite);
+	return times.length > 0 && Date.now() - Math.max(...times) < POLL_HORIZON_MS$1;
+}
 var GitHubChannel = class {
 	runner;
 	publishing = /* @__PURE__ */ new Map();
@@ -297,13 +314,14 @@ var GitHubChannel = class {
 	exclusive(key, action) {
 		return singlet(`github:exclusive:${key}`, action)();
 	}
-	async request(path, signal, method = "GET", body) {
+	async request(path, signal, method = "GET", body, headers) {
 		signal?.throwIfAborted();
 		return this.runner.request({
 			site: "github.com",
 			path,
 			method,
 			body,
+			headers,
 			signal
 		});
 	}
@@ -434,16 +452,20 @@ var GitHubChannel = class {
 					}
 				}, signal));
 				for (const thread of await db.thread.listByChannel("github")) {
-					if (thread.kind !== "pull" || !thread.url || !(await db.ticketThread.listTicketIds(thread.id)).length) continue;
+					if (thread.kind !== "pull" || !thread.url) continue;
+					const ticketIds = await db.ticketThread.listTicketIds(thread.id);
+					if (!ticketIds.length) continue;
+					if (!await polled$1(ticketIds, thread.updatedAt)) continue;
+					if ((await Promise.all(ticketIds.map((id) => db.ticket.findById(id)))).every((ticket) => !!ticket && ["done", "cancelled"].includes(ticket.status) && !!ticket.prState && ["merged", "closed"].includes(ticket.prState))) continue;
 					await attempt(async () => {
 						const target = parseResource$1(thread.url);
 						if (target.repository !== repo) return;
 						const root = `repos/${repo}/pulls/${target.number}`;
 						for (const [path, kind] of [["reviews", "review"], ["comments", "review_comment"]]) await attempt(async () => {
-							for (const row of await this.pages(`${root}/${path}`, signal)) {
+							await this.stream(repo, `pull:${target.number}:${path}`, `${root}/${path}?sort=updated&direction=asc`, baseline, async (row) => {
 								await this.acceptAnswers(thread, row);
 								await this.ingest(thread, row, "comment", baseline, kind);
-							}
+							}, signal);
 						});
 						const result = await this.collectPullRequest(projectId, thread.id, signal);
 						if (!result.ok) throw new GhError(result.reason);
@@ -468,7 +490,11 @@ var GitHubChannel = class {
 	async stream(repository, name, path, baseline, accept, signal) {
 		const cursor = await this.state(repository, `cursor:${name}`) ?? { since: baseline };
 		const startedAt = now$1();
-		const rows = await this.pages(`${path}&since=${encodeURIComponent(cursor.since)}`, signal);
+		const since = cursor.since;
+		const conditional = cursor.etag && cursor.etagSince === since ? { "If-None-Match": cursor.etag } : void 0;
+		const value = await this.request(`${path}&since=${encodeURIComponent(since)}&per_page=100`, signal, "GET", void 0, conditional);
+		if (value && typeof value === "object" && value.notModified) return;
+		const rows = array$1(value).map(record$1);
 		const revisions = [];
 		let firstError;
 		for (const row of rows) {
@@ -483,9 +509,10 @@ var GitHubChannel = class {
 		}
 		if (firstError) throw firstError;
 		const signature = digest$1(revisions.sort());
-		const overlap = (/* @__PURE__ */ new Date(Date.parse(startedAt) - 12e4)).toISOString();
+		const newest = Math.max(...rows.map((row) => Date.parse(timestamp$1(row.updated_at))).filter(Number.isFinite));
+		const moved = Number.isFinite(newest) ? (/* @__PURE__ */ new Date(newest - 5e3)).toISOString() : since;
 		await this.save(repository, `cursor:${name}`, {
-			since: overlap < cursor.since ? cursor.since : overlap,
+			since: moved > since ? moved : since,
 			signature,
 			through: startedAt
 		});
@@ -814,6 +841,7 @@ var GitHubChannel = class {
 		const body = typeof row.body === "string" ? row.body : "";
 		const answers = /* @__PURE__ */ new Map();
 		const conflicts = /* @__PURE__ */ new Set();
+		let anonymous;
 		let fenced = false;
 		for (const line of body.split(/\r?\n/)) {
 			if (/^\s*~{3}|^\s*```/.test(line)) {
@@ -821,15 +849,24 @@ var GitHubChannel = class {
 				continue;
 			}
 			if (fenced) continue;
-			if (!/^answer[ \t]/i.test(line)) continue;
-			const content = line.slice(7).trim();
+			if (!/^answer(?:[ \t:：]|$)/i.test(line)) continue;
+			const content = line.slice(6).trim().replace(/^[:：]\s*/, "").trim();
+			if (!content) continue;
 			const separator = content.indexOf(": ");
-			if (separator < 1) continue;
-			const id = content.slice(0, separator).trim();
-			const answer = content.slice(separator + 2).trim();
-			if (!answer || /\s/.test(id)) continue;
-			if (answers.has(id) && answers.get(id) !== answer) conflicts.add(id);
-			answers.set(id, answer);
+			const candidate = separator > 0 ? content.slice(0, separator).trim() : "";
+			if (candidate && /^[0-9a-f][\w:-]{7,}$/i.test(candidate) && content.slice(separator + 2).trim()) {
+				const answer = content.slice(separator + 2).trim();
+				if (answers.has(candidate) && answers.get(candidate) !== answer) conflicts.add(candidate);
+				answers.set(candidate, answer);
+				continue;
+			}
+			anonymous ??= content;
+		}
+		if (anonymous !== void 0) {
+			const pending = (await db.inbox.listPendingAsk()).filter((ask) => ask.type === "user");
+			const scoped = pending.filter((ask) => ask.threadId === thread.id);
+			const only = scoped.length === 1 ? scoped[0] : scoped.length === 0 && pending.length === 1 ? pending[0] : void 0;
+			if (only) answers.set(only.id, anonymous);
 		}
 		for (const [id, answer] of answers) {
 			if (conflicts.has(id)) continue;
@@ -934,7 +971,7 @@ var GitHubChannel = class {
 				await this.destination(current);
 				await db.inbox.recordDeliveryFailure(row.id, "publishing", now$1());
 				posting = true;
-				const body = row.kind === "ask" ? `${row.message}\n\n问题编号：${row.id}\n请回复：answer ${row.id}: 你的回答` : row.message;
+				const body = row.kind === "ask" ? `${row.message}\n\n回复格式：\`answer: 你的回答\`` : row.message;
 				remote = record$1(await this.request(root, signal, "POST", { body: `${body}\n\n${marker}` }));
 			}
 			if (identity$1(record$1(remote.user).id) !== environment.providerId || !text$1(remote.body).includes(marker)) throw new GhError("managed_comment_mismatch");
@@ -1125,14 +1162,29 @@ var FetchGitLabRunner = class {
 					headers: {
 						authorization: `Bearer ${token}`,
 						accept: "application/json",
-						...request.body ? { "content-type": "application/json" } : {}
+						...request.body ? { "content-type": "application/json" } : {},
+						...request.headers
 					},
 					...request.body ? { body: JSON.stringify(request.body) } : {},
-					redirect: "error",
+					redirect: "follow",
 					signal: request.signal ? AbortSignal.any([request.signal, AbortSignal.timeout(3e4)]) : AbortSignal.timeout(3e4)
 				});
-			} catch {
-				throw new GitLabError(request.signal?.aborted ? "interrupted" : "transport_unknown");
+			} catch (error) {
+				const cause = error.cause;
+				const detail = [
+					error instanceof Error ? error.message : String(error),
+					cause?.message,
+					cause?.code
+				].filter(Boolean).join(" / ");
+				throw new GitLabError(request.signal?.aborted ? "interrupted" : `transport_unknown: ${detail.slice(0, 200)}`);
+			}
+			if (response.status === 304) {
+				await response.body?.cancel();
+				return {
+					body: null,
+					etag: response.headers.get("etag") ?? null,
+					notModified: true
+				};
 			}
 			if (!response.ok) {
 				await response.body?.cancel();
@@ -1140,11 +1192,16 @@ var FetchGitLabRunner = class {
 				const retryAfter = retry && /^\d+$/.test(retry) ? Number(retry) : retry ? Math.max(0, Math.ceil((Date.parse(retry) - Date.now()) / 1e3)) : void 0;
 				throw new GitLabError(response.status === 401 ? "not_logged_in" : response.status === 429 ? "rate_limited" : response.status === 403 ? "forbidden" : response.status === 404 ? "not_found" : response.status >= 400 && response.status < 500 ? "remote_rejected" : "transport_unknown", Number.isFinite(retryAfter) ? retryAfter : void 0);
 			}
+			let body;
 			try {
-				return await response.json();
+				body = await response.json();
 			} catch {
 				throw new GitLabError("invalid_response");
 			}
+			return request.withEtag ? {
+				body,
+				etag: response.headers.get("etag") ?? null
+			} : body;
 		} finally {
 			await dispatcher.close();
 		}
@@ -1243,12 +1300,42 @@ var GitLabChannel = class {
 		await this.save(source(target), "verified_environment", result);
 		return result;
 	}
-	async pages(site, path, signal) {
+	async requestValue(site, path, signal, headers) {
+		const value = await this.runner.request({
+			site,
+			method: "GET",
+			path,
+			withEtag: true,
+			...headers ? { headers } : {},
+			...signal ? { signal } : {}
+		});
+		return {
+			body: value?.body ?? null,
+			etag: value?.etag ?? null,
+			notModified: value?.notModified === true
+		};
+	}
+	async pages(site, path, signal, since, etag) {
 		const result = [];
+		const stamp = since && /\/projects\/[^/]+\/(?:issues|merge_requests)(?:\?|$)/.test(path) ? `&updated_after=${encodeURIComponent(since)}` : "";
+		let latest = null;
 		for (let page = 1;; page++) {
-			const batch = array(await this.request(site, `${path + (path.includes("?") ? "&" : "?")}per_page=100&page=${page}`, signal)).map(record);
+			const url = `${path + (path.includes("?") ? "&" : "?")}per_page=100&page=${page}${stamp}`;
+			const headers = page === 1 && etag ? { "if-none-match": etag } : void 0;
+			const value = await this.requestValue(site, url, signal, headers);
+			if (page === 1 && value.notModified) return {
+				rows: [],
+				etag: value.etag ?? etag ?? null,
+				notModified: true
+			};
+			if (page === 1) latest = value.etag;
+			const batch = array(value.body).map(record);
 			result.push(...batch);
-			if (batch.length < 100) return result;
+			if (batch.length < 100) return {
+				rows: result,
+				etag: latest,
+				notModified: false
+			};
 		}
 	}
 	async read(resource, offset = 0, limit = 50, signal) {
@@ -1258,7 +1345,7 @@ var GitLabChannel = class {
 		await this.verifyEnvironment(project.id, signal);
 		const main = record(await this.request(target.site, apiRoot(target), signal));
 		validateTopic(main, target);
-		const notes = await this.pages(target.site, `${apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal);
+		const notes = (await this.pages(target.site, `${apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal)).rows;
 		const items = [item(main, target.kind, target), ...notes.map((row) => item(row, "comment", target)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))];
 		return {
 			items: items.slice(offset, offset + limit),
@@ -1276,7 +1363,10 @@ var GitLabChannel = class {
 			if (!project$2.enabled || project$2.available === false || !remoteGitlab(project$2.remoteUrl, site)) continue;
 			results.push({
 				projectId: project$2.id,
-				...await this.collect(project$2.id, signal)
+				...await this.collect(project$2.id, signal).then((result) => {
+					if (!result.ok) console.error(`[gitlab:collect] ${project$2.name} ${project$2.remoteUrl} -> ${result.reason}`);
+					return result;
+				})
 			});
 		}
 		return results;
@@ -1309,6 +1399,7 @@ var GitLabChannel = class {
 				}
 				for (const thread of await db.thread.listByChannel("gitlab")) {
 					if (!thread.url || !["issue", "pull"].includes(thread.kind)) continue;
+					if (!await polled(thread)) continue;
 					try {
 						const resource = parseResource(thread.url, target.site);
 						if (source(resource) !== repository) continue;
@@ -1321,6 +1412,16 @@ var GitLabChannel = class {
 						if (signal?.aborted) throw error;
 						errors.push(failure(error));
 					}
+				}
+				const branch = await this.defaultBranch(target.site, target.repository, signal);
+				if (branch) await this.collectBranch(projectId, branch, signal).catch((error) => {
+					errors.push(`ci:${failure(error)}`);
+				});
+				for (const ref of await this.activeBranches(target.site, target.repository, signal)) {
+					if (ref === branch) continue;
+					await this.collectBranch(projectId, ref, signal).catch((error) => {
+						errors.push(`ci:${failure(error)}`);
+					});
 				}
 			} catch (error) {
 				if (signal?.aborted) throw error;
@@ -1335,7 +1436,9 @@ var GitLabChannel = class {
 	async stream(repository, name, site, path, accept, signal) {
 		const cursor = await this.state(repository, `cursor:${name}`) ?? { since: "1970-01-01T00:00:00.000Z" };
 		const startedAt = now();
-		const rows = await this.pages(site, path, signal);
+		const page = await this.pages(site, path, signal, cursor.since, cursor.etag ?? void 0);
+		if (page.notModified) return;
+		const rows = page.rows;
 		const revisions = [];
 		let firstError;
 		for (const row of rows) {
@@ -1350,10 +1453,92 @@ var GitLabChannel = class {
 		}
 		if (firstError) throw firstError;
 		const signature = digest(revisions.sort());
-		await this.save(repository, `cursor:${name}`, cursor.signature === signature && cursor.through ? { since: cursor.through } : {
-			since: cursor.since,
+		await this.save(repository, `cursor:${name}`, {
+			since: cursorAt(startedAt),
 			signature,
-			through: startedAt
+			through: startedAt,
+			etag: page.etag
+		});
+	}
+	/** 活跃 MR 的源分支。只取 opened，已关的不再采 CI。 */
+	async activeBranches(site, repository, signal) {
+		const path = `projects/${encodeURIComponent(repository)}/merge_requests?state=opened&per_page=100`;
+		const rows = array(await this.request(site, path, signal)).map(record);
+		return [...new Set(rows.map((row) => text(row.source_branch)).filter(Boolean))];
+	}
+	/** 取项目默认分支，用于 CI 采集。 */
+	async defaultBranch(site, repository, signal) {
+		const row = record(await this.request(site, `projects/${encodeURIComponent(repository)}`, signal));
+		return (typeof row.default_branch === "string" ? row.default_branch.trim() : "") || null;
+	}
+	/** 采默认分支的 pipeline 状态，变化时给项目编排发触发（对应 GitHub 的 collectBranch）。 */
+	async collectBranch(projectId, branch, signal) {
+		const project = await this.project(projectId);
+		const site = await this.site();
+		const target = remoteGitlab(project.remoteUrl, site);
+		if (!target) return;
+		const path = `projects/${encodeURIComponent(target.repository)}/pipelines?ref=${encodeURIComponent(branch)}&per_page=1`;
+		const latest = array(await this.request(site, path, signal)).map(record)[0];
+		if (!latest) return;
+		const state = text(latest.status);
+		const head = text(latest.sha);
+		const ref = `${target.repository}:branch:${branch}`;
+		const { row: watch } = await db.ciWatch.recordRevision({
+			id: `gitlab:${ref}`,
+			channelId: "gitlab",
+			kind: "branch",
+			ref,
+			fingerprint: digest({
+				state,
+				head
+			}),
+			head,
+			updatedAt: now()
+		});
+		if (watch.revision === 0 && [
+			"success",
+			"skipped",
+			"manual"
+		].includes(state)) return;
+		const threadId = `gitlab:${ref}`;
+		await db.thread.record({
+			id: threadId,
+			channelId: "gitlab",
+			refId: ref,
+			kind: "ci",
+			title: `CI ${branch}`,
+			url: null,
+			projectId,
+			triage: "claimed",
+			triagedAt: now(),
+			createdAt: now(),
+			updatedAt: now()
+		});
+		const triggerId = `${watch.id}:revision:${watch.revision}`;
+		const message = `${branch} CI ${state}`;
+		await db.trigger.ingest({
+			id: triggerId,
+			channelId: "gitlab",
+			threadId,
+			kind: "ci",
+			actorName: null,
+			human: 0,
+			mentioned: 0,
+			text: message,
+			url: text(latest.web_url),
+			at: now(),
+			ref: head
+		});
+		await db.inbox.enqueue({
+			id: `${triggerId}:project:${projectId}`,
+			type: "project",
+			origin: "system",
+			kind: "notice",
+			projectId,
+			triggerId,
+			threadId,
+			title: message,
+			message
 		});
 	}
 	async ensureThread(target, row) {
@@ -1445,6 +1630,12 @@ var GitLabChannel = class {
 		const state = row.state === "merged" ? "merged" : row.state === "closed" ? "closed" : row.state === "opened" ? "open" : null;
 		if (!state) throw new GitLabError("invalid_response");
 		const branch = typeof row.source_branch === "string" ? text(row.source_branch) : null;
+		const worker = branch ? await db.worker.findByBranch(branch) : void 0;
+		const owned = worker && await db.ticket.findById(worker.ticketId);
+		if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
+			await db.ticketThread.link(owned.id, thread.id, now());
+			await db.ticket.setPullRequest(owned.id, thread.url, state, owned.ciState);
+		}
 		for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
 			const ticket = await db.ticket.findById(ticketId);
 			if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ["done", "cancelled"].includes(ticket.status)) continue;
@@ -1578,7 +1769,7 @@ var GitLabChannel = class {
 				};
 			}
 			const root = `${apiRoot(target)}/notes`;
-			const existing = (await this.pages(target.site, root, signal)).filter((comment) => record(comment.author).id != null && identity(record(comment.author).id) === environment.providerId && typeof comment.body === "string" && comment.body.includes(marker));
+			const existing = (await this.pages(target.site, root, signal)).rows.filter((comment) => record(comment.author).id != null && identity(record(comment.author).id) === environment.providerId && typeof comment.body === "string" && comment.body.includes(marker));
 			if (existing.length > 1) throw new GitLabError("ambiguous_delivery");
 			let remote = existing[0];
 			if (!remote) {
@@ -1668,6 +1859,25 @@ var GitLabChannel = class {
 		return results;
 	}
 };
+/** 没有活票的话题，最后一次活动超过这个时长就不再轮询（官方 POLL_HORIZON_MS）。 */
+const POLL_HORIZON_MS = 12096e5;
+/**
+* 是否该轮询这个话题（照官方 `poll.ts` 的 `polled`）：
+* 有活票必轮询；否则只在最后一次触发/结单后的 14 天内轮询。
+* 否则每轮都把所有历史话题翻一遍，话题一多就变成 O(n) 阻塞。
+*/
+async function polled(thread, at = Date.now()) {
+	const ticketIds = await db.ticketThread.listTicketIds(thread.id);
+	if (!ticketIds.length) return true;
+	const tickets = await Promise.all(ticketIds.map((id) => db.ticket.findById(id)));
+	if (tickets.some((ticket) => ticket && !["done", "cancelled"].includes(ticket.status))) return true;
+	const times = [thread.updatedAt, ...tickets.map((ticket) => ticket?.endedAt ?? "")].map((value) => Date.parse(value)).filter(Number.isFinite);
+	return at - Math.max(...times) < POLL_HORIZON_MS;
+}
+/** 游标回退 5 秒，靠确定性 id 去重，避免远程迟到的事件被漏掉（官方 `cursorAt`）。 */
+function cursorAt(started) {
+	return (/* @__PURE__ */ new Date(Date.parse(started) - 5e3)).toISOString();
+}
 const gitlab = new GitLabChannel();
 function remoteGitlab(remoteUrl, host) {
 	if (!remoteUrl) return null;
@@ -1717,14 +1927,14 @@ function parseResource(resource, site) {
 	} catch {
 		throw new GitLabError("invalid_resource");
 	}
-	const match = /^\/(.+)\/-\/(issues|merge_requests)\/([1-9]\d*)\/?$/.exec(url.pathname);
+	const match = /^\/(.+)\/-\/(issues|work_items|merge_requests)\/([1-9]\d*)\/?$/.exec(url.pathname);
 	const repository = match && repositoryPath(match[1]);
 	const number = Number(match?.[3]);
 	if (url.origin !== site || url.protocol !== "https:" || url.username || url.password || url.search || url.hash && !/^#note_[1-9]\d*$/.test(url.hash) || !repository || !Number.isSafeInteger(number)) throw new GitLabError("invalid_resource");
 	return {
 		site,
 		repository,
-		kind: match[2] === "issues" ? "issue" : "pull",
+		kind: match[2] === "merge_requests" ? "pull" : "issue",
 		number
 	};
 }
@@ -1792,12 +2002,47 @@ function digest(value) {
 	return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 function failure(error) {
-	return error instanceof GitLabError ? error.code : error instanceof Error && error.name === "AbortError" ? "interrupted" : "transport_unknown";
+	if (error instanceof GitLabError) return error.code;
+	if (error instanceof Error) return error.name === "AbortError" ? "interrupted" : `transport_unknown(${error.message.slice(0, 120)})`;
+	return "transport_unknown";
 }
 function escapeRegex(value) {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 // src/ai/_shared/tools/channel.ts
+const observed = /* @__PURE__ */ new WeakMap();
+function owner(exec) {
+	return exec.agent?.session;
+}
+function observe(exec, threadId, version) {
+	const holder = owner(exec);
+	if (!holder) return;
+	let byTarget = observed.get(holder);
+	if (!byTarget) {
+		byTarget = /* @__PURE__ */ new Map();
+		observed.set(holder, byTarget);
+	}
+	byTarget.set(threadId, { version });
+}
+/** 与官方 `requirePresent` 同义：没读过就抛出带错误码的拒绝。 */
+function requireObserved(exec, threadId, verb) {
+	const holder = owner(exec);
+	const prior = holder ? observed.get(holder)?.get(threadId) : void 0;
+	if (!prior) {
+		const error = /* @__PURE__ */ new Error(`${verb} 需要先读过这个话题：调用 read_channel，resource 用 thread/<id> 或 trigger/<triggerId>`);
+		error.name = "ChannelNotObserved";
+		throw error;
+	}
+	return prior;
+}
+/** 话题的最新消息 id，用于判定「读的是哪一版」。 */
+async function latestVersion(threadId) {
+	return (await db.trigger.listRecent(1e3)).filter((item) => item.threadId === threadId).sort((a, b) => b.at.localeCompare(a.at))[0]?.id ?? "empty";
+}
+/** 记下「这个会话读过这个话题」，并把读到的那一版留下来。 */
+async function markThread(exec, threadId) {
+	observe(exec, threadId, await latestVersion(threadId));
+}
 const read_channel = defineTool({
 	name: "read_channel",
 	description: "读渠道原文，靠 resource 路径前缀分发。返回 { items, next_offset, next_resource }，两条翻页轴都要跟完。",
@@ -1841,23 +2086,28 @@ const read_channel = defineTool({
 			const trigger = await db.trigger.findById(resource.slice(8));
 			if (!trigger) throw new Error("触发不存在");
 			if (identity.role === "worker" && !allowedThreads.has(trigger.threadId)) throw new Error("Worker 只能读取本任务来源");
+			await markThread(exec, trigger.threadId);
 			items = [trigger];
 		} else if (resource.startsWith("thread/")) {
 			const thread = await db.thread.findById(resource.slice(7));
 			if (!thread) throw new Error("话题不存在");
 			if (identity.role === "worker" && !allowedThreads.has(thread.id)) throw new Error("Worker 只能读取本任务来源");
+			await markThread(exec, thread.id);
 			items = [thread];
 			nextResource = thread.kind !== "ci" ? thread.url : null;
 		} else if (await isThreadId(resource)) {
 			const thread = await db.thread.findById(resource);
 			if (identity.role === "worker" && !allowedThreads.has(thread.id)) throw new Error("Worker 只能读取本任务来源");
+			await markThread(exec, thread.id);
 			items = [thread];
 			nextResource = thread.kind !== "ci" ? thread.url : null;
 		} else if (resource.startsWith("ticket/")) {
 			const ticket = await db.ticket.findById(resource.slice(7));
 			if (!ticket) throw new Error("工单不存在");
 			if (identity.role === "worker" && ticket.id !== identity.ticketId) throw new Error("Worker 只能读取本任务来源");
-			items = [ticket, ...(await db.ticketThread.listByTicket(ticket.id)).map((link) => ({ resource: `thread/${link.threadId}` }))];
+			const threads = await db.ticketThread.listByTicket(ticket.id);
+			for (const link of threads) await markThread(exec, link.threadId);
+			items = [ticket, ...threads.map((link) => ({ resource: `thread/${link.threadId}` }))];
 		} else {
 			const isGitHub = resource.startsWith("github:") || (() => {
 				try {
@@ -1881,6 +2131,10 @@ const read_channel = defineTool({
 				}
 				if (!allowed) throw new Error("Worker 只能读取本任务来源");
 			}
+			try {
+				const matched = await db.thread.findByRef(isGitLab ? "gitlab" : "github", resource.replace(/^https?:\/\/[^/]+\//, "").replace(/\/pull\//, ":").replace(/\/issues\//, ":"));
+				if (matched) await markThread(exec, matched.id);
+			} catch {}
 			return JSON.stringify(isGitLab ? await gitlab.read(target, offset, limit) : await github.read(resource, offset, limit));
 		}
 		const page = items.slice(offset, offset + limit);
@@ -1923,6 +2177,7 @@ const reply_channel = defineTool({
 		if (!trigger) throw new Error("触发不存在");
 		const thread = await db.thread.findById(trigger.threadId);
 		if (!thread || thread.kind === "ci" || !thread.url) throw new Error("该触发没有可回复地址");
+		requireObserved(exec, thread.id, "reply");
 		if (identity.role === "worker") {
 			if (!identity.ticketId || !(await db.ticketThread.listByTicket(identity.ticketId)).some((row) => row.threadId === thread.id)) throw new Error("Worker 只能回复本任务来源");
 			await db.ticket.requireOpen(identity.ticketId);
@@ -4084,18 +4339,28 @@ async function activate() {
 			cron: "*/30 * * * * *"
 		}, () => track(async () => {
 			await project.sync();
-			const collected = await github.collectAll(controller.signal);
-			const flushed = await github.flush(controller.signal);
-			const failures = [...collected, ...flushed].filter((result) => !result.ok);
+			const failures = (await github.collectAll(controller.signal)).filter((result) => !result.ok);
+			if (failures.length) throw new Error(failures.map((result) => result.reason ?? "channel_operation_failed").join(", "));
+		})));
+		unregister.push(scheduler.use({
+			id: "supermesh:github:flush",
+			cron: "*/10 * * * * *"
+		}, () => track(async () => {
+			const failures = (await github.flush(controller.signal)).filter((result) => !result.ok);
 			if (failures.length) throw new Error(failures.map((result) => result.reason ?? "channel_operation_failed").join(", "));
 		})));
 		unregister.push(scheduler.use({
 			id: "supermesh:gitlab",
 			cron: "*/30 * * * * *"
 		}, () => track(async () => {
-			const collected = await gitlab.collectAll(controller.signal);
-			const flushed = await gitlab.flush(controller.signal);
-			const failures = [...collected, ...flushed].filter((result) => !result.ok);
+			const failures = (await gitlab.collectAll(controller.signal)).filter((result) => !result.ok);
+			if (failures.length) throw new Error(failures.map((result) => result.reason ?? "channel_operation_failed").join(", "));
+		})));
+		unregister.push(scheduler.use({
+			id: "supermesh:gitlab:flush",
+			cron: "*/10 * * * * *"
+		}, () => track(async () => {
+			const failures = (await gitlab.flush(controller.signal)).filter((result) => !result.ok);
 			if (failures.length) throw new Error(failures.map((result) => result.reason ?? "channel_operation_failed").join(", "));
 		})));
 		dispose = close;

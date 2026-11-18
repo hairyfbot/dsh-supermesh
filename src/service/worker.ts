@@ -68,7 +68,19 @@ export const worker = defineService({
       await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
     }
     let running = (await db.worker.listRunning()).length
-    for (const worker of await db.worker.listQueued()) {
+    // flow.md：`running --> waiting : Worker 结束需重开`。`waiting` 没有依赖时同样要能被派工，
+    // 否则一旦编排把票置回 waiting，它就再也不会被拾起（MR 开着也不会继续改）。
+    const queueable = [...await db.worker.listQueued()]
+    for (const waiting of await db.ticket.listFiltered({ status: 'waiting' })) {
+      if (waiting.paused || waiting.prepareError)
+        continue
+      if (waiting.prState === 'merged' || waiting.prState === 'closed')
+        continue
+      if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
+        continue
+      await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
+    }
+    for (const worker of [...queueable, ...await db.worker.listQueued()]) {
       if (stopped || running >= settings.maxWorkers)
         break
       const ticket = await db.ticket.findById(worker.ticketId)

@@ -122,6 +122,10 @@ async function authenticate(task: Authentication): Promise<void> {
     const args = task.view.channelId === 'github'
       ? ['auth', 'login', '--hostname', hostname, '--git-protocol', 'https', '--web', '--insecure-storage']
       : ['auth', 'login', '--hostname', hostname, '--git-protocol', 'https', '--api-protocol', 'https', '--device', '--insecure-storage']
+    // glab 只把凭据当 PAT 发 PRIVATE-TOKEN；OAuth（device/web）拿到的是需要 Bearer 的
+    // access token，写回配置后 glab 依旧按 PAT 发，必然 401。GitLab 侧只能走 Token 认证。
+    if (task.view.channelId === 'gitlab')
+      throw new TypeError('channel_gitlab_token_only')
     await command(task, args, env, true)
     task.controller.signal.throwIfAborted()
     const tokenArgs = task.view.channelId === 'github' ? ['auth', 'token', '--hostname', hostname] : ['config', 'get', 'token', '--host', hostname]

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import type { GetApiSupermeshChannelResponse } from '../../../../apis/index.type'
-import { Button, Input, Modal, SegmentedTabs, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useAsync, useTimeoutPoll } from '@reause/core'
+import { Button, Input, Modal, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useAsync } from '@reause/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
-import { deleteApiSupermeshChannelIdCredential, getApiSupermeshChannel, getApiSupermeshChannelIdAuthenticationAuthenticationId, postApiSupermeshChannelIdAuthentication, putApiSupermeshChannelIdConfiguration } from '../../../../apis'
+import { deleteApiSupermeshChannelIdCredential, getApiSupermeshChannel, putApiSupermeshChannelIdConfiguration } from '../../../../apis'
 import { GitLabIcon } from '../../../../components/icons'
 import { keys } from '../../../../config/query-keys'
 import { useTranslation } from '../../../../hooks/use-translation'
@@ -33,15 +33,8 @@ export function GitlabDetail(): ReactNode {
   const [token, setToken] = useState('')
   const [commitName, setCommitName] = useState(channel?.commitName ?? '')
   const [commitEmail, setCommitEmail] = useState(channel?.commitEmail ?? '')
-  const [method, setMethod] = useState<'authorize' | 'token'>('authorize')
   const [host, setHost] = useState(channel?.host ?? 'https://gitlab.com')
   const [hostInvalid, setHostInvalid] = useState(false)
-  const [authentication, setAuthentication] = useState<Awaited<ReturnType<typeof postApiSupermeshChannelIdAuthentication>> | null>(null)
-  const [authenticating, setAuthenticating] = useState(false)
-  const [authNotice, setAuthNotice] = useState('')
-  const [copyNotice, setCopyNotice] = useState('')
-  const authRequest = useRef(false)
-  const authId = useRef<string | null>(null)
   const lifetime = useRef(new AbortController())
   // keep:effect Abort authentication requests when this channel component is disposed.
   useEffect(() => {
@@ -76,81 +69,8 @@ export function GitlabDetail(): ReactNode {
       throw new Error('channel_reload_failed')
     return saved
   }
-  const { pause, resume } = useTimeoutPoll(async () => {
-    if (!authId.current || lifetime.current.signal.aborted)
-      return
-    try {
-      await applyAuthentication(await getApiSupermeshChannelIdAuthenticationAuthenticationId({ id: 'gitlab', authenticationId: authId.current }, { signal: lifetime.current.signal }))
-    }
-    catch {
-      failAuthentication()
-    }
-  }, 1000, { immediate: false })
-  async function applyAuthentication(value: Awaited<ReturnType<typeof postApiSupermeshChannelIdAuthentication>>): Promise<void> {
-    if (lifetime.current.signal.aborted)
-      return
-    if (!value || typeof value.id !== 'string' || !value.id || value.channelId !== 'gitlab' || typeof value.output !== 'string' || !['pending', 'succeeded', 'failed'].includes(value.status) || (authId.current && authId.current !== value.id) || (value.userCode !== undefined && typeof value.userCode !== 'string') || (value.verificationUri !== undefined && typeof value.verificationUri !== 'string'))
-      throw new Error('invalid_authentication')
-    authId.current = value.id
-    setAuthentication(value)
-    if (value.status === 'pending') {
-      setAuthNotice(t('channelAuthPending'))
-      return
-    }
-    pause()
-    setAuthNotice(t(value.status === 'succeeded' ? 'channelAuthSucceeded' : 'channelAuthFailed'))
-    if (value.status === 'succeeded')
-      await reload(lifetime.current.signal)
-    authRequest.current = false
-    setAuthenticating(false)
-  }
-  function failAuthentication(): void {
-    if (lifetime.current.signal.aborted)
-      return
-    pause()
-    authRequest.current = false
-    setAuthenticating(false)
-    setAuthNotice(t('channelAuthFailed'))
-  }
-  const authorize = async (): Promise<void> => {
-    if (authRequest.current || savingRequest.current)
-      return
-    if (!validateHost())
-      return
-    authRequest.current = true
-    authId.current = null
-    setAuthenticating(true)
-    setAuthentication(null)
-    setCopyNotice('')
-    setAuthNotice(t('channelAuthStarting'))
-    try {
-      const value = await postApiSupermeshChannelIdAuthentication({ id: 'gitlab' }, { host: host.trim() }, { signal: lifetime.current.signal })
-      await applyAuthentication(value)
-      if (!lifetime.current.signal.aborted && value.status === 'pending')
-        resume()
-    }
-    catch {
-      failAuthentication()
-    }
-  }
-  const copyCode = async (): Promise<void> => {
-    if (!authentication?.userCode)
-      return
-    try {
-      await navigator.clipboard.writeText(authentication.userCode)
-      if (!lifetime.current.signal.aborted)
-        setCopyNotice(t('channelAuthCopied'))
-    }
-    catch {
-      if (!lifetime.current.signal.aborted)
-        setCopyNotice(t('channelAuthCopyFailed'))
-    }
-  }
-  const verification = authentication?.verificationUri && URL.canParse(authentication.verificationUri) ? new URL(authentication.verificationUri) : null
-  const authHost = URL.canParse(host) ? new URL(host).origin : null
-  const verificationUri = verification?.protocol === 'https:' && verification.origin === authHost && !verification.username && !verification.password ? verification.href : null
   const save = async (): Promise<void> => {
-    if (savingRequest.current || authRequest.current)
+    if (savingRequest.current)
       return
     if (!validateHost())
       return
@@ -186,12 +106,9 @@ export function GitlabDetail(): ReactNode {
     setToken('')
     setHostInvalid(false)
     setNotice('')
-    setAuthNotice('')
-    setCopyNotice('')
-    setAuthentication(null)
   }
   const toggle = async (): Promise<void> => {
-    if (!channel?.hasCredential || savingRequest.current || authRequest.current)
+    if (!channel?.hasCredential || savingRequest.current)
       return
     savingRequest.current = true
     setSaving(true)
@@ -215,7 +132,7 @@ export function GitlabDetail(): ReactNode {
     }
   }
   function openDelete(): void {
-    if (!channel?.hasCredential || savingRequest.current || authRequest.current)
+    if (!channel?.hasCredential || savingRequest.current)
       return
     savingRequest.current = true
     setDeleteConfirming(true)
@@ -227,7 +144,7 @@ export function GitlabDetail(): ReactNode {
     setDeleteConfirming(false)
   }
   const deleteCredential = async (): Promise<void> => {
-    if (!deleteConfirming || deleteRequest.current || authRequest.current)
+    if (!deleteConfirming || deleteRequest.current)
       return
     deleteRequest.current = true
     setDeleting(true)
@@ -269,11 +186,7 @@ export function GitlabDetail(): ReactNode {
     setHostInvalid(!valid)
     return valid
   }
-  const busy = saving || authenticating || deleteConfirming
-  const tabs = [
-    { value: 'authorize' as const, label: <span className="inline-flex items-center gap-1.5">{t('channelAuthorize')}</span>, id: `${id}-authorize`, panelId: `${id}-authorize-panel` },
-    { value: 'token' as const, label: t('channelToken'), id: `${id}-token`, panelId: `${id}-token-panel` },
-  ] as const
+  const busy = saving || deleteConfirming
   return (
     <>
       <DetailHeader
@@ -339,36 +252,9 @@ export function GitlabDetail(): ReactNode {
             </div>
             <p className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelCommitHelp')}</p>
             <div className="flex flex-col gap-3 border-t border-(--dsw-alias-border-l3) pt-4">
-              <div className="max-w-full overflow-x-auto"><SegmentedTabs value={method} onChange={setMethod} items={tabs} label={t('channelLoginMethod')} size="sm" className="w-fit" /></div>
-              <div key={method} id={`${id}-${method}-panel`} role="tabpanel" aria-labelledby={`${id}-${method}`} tabIndex={0} className="flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)">
-                {method === 'authorize'
-                  ? (
-                      <>
-                        <p className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelGitlabAuthorizeDescription')}</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button size="sm" variant="primary" disabled={busy} onClick={() => void authorize()}>{t('channelAuthorizeAction', { name: 'GitLab' })}</Button>
-                          {authNotice && <p role="status" className="m-0 text-xs leading-5">{authNotice}</p>}
-                        </div>
-                        {authentication?.userCode && (
-                          <div className="flex flex-wrap items-center gap-2 text-xs">
-                            <span>{t('channelAuthCode')}</span>
-                            <code>{authentication.userCode}</code>
-                            <Button size="sm" variant="outline" onClick={() => void copyCode()}>{t('channelAuthCopyCode')}</Button>
-                            {copyNotice && <span role="status">{copyNotice}</span>}
-                          </div>
-                        )}
-                        {verificationUri && <a href={verificationUri} target="_blank" rel="noopener noreferrer" className="text-xs text-(--dsw-alias-state-business-primary) underline">{t('channelAuthOpenVerification')}</a>}
-                        {authentication?.output && <pre aria-label={t('channelAuthOutput')} className="m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-(--dsw-alias-card-fill) px-3 py-2 font-mono text-xs leading-5">{authentication.output}</pre>}
-                      </>
-                    )
-                  : (
-                      <>
-                        <label htmlFor={`${id}-token-value`} className="text-xs font-medium">{t('channelTokenLabel')}</label>
-                        <Input id={`${id}-token-value`} className="w-full min-w-0" type="password" value={token} onChange={event => setToken(event.target.value)} disabled={busy} autoComplete="new-password" placeholder={t('channelTokenPlaceholder')} aria-describedby={`${id}-token-help`} />
-                        <p id={`${id}-token-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelGitlabTokenDescription')}</p>
-                      </>
-                    )}
-              </div>
+              <label htmlFor={`${id}-token-value`} className="text-xs font-medium">{t('channelTokenLabel')}</label>
+              <Input id={`${id}-token-value`} className="w-full min-w-0" type="password" value={token} onChange={event => setToken(event.target.value)} disabled={busy} autoComplete="new-password" placeholder={t('channelTokenPlaceholder')} aria-describedby={`${id}-token-help`} />
+              <p id={`${id}-token-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelGitlabTokenDescription')}</p>
             </div>
             {dirty && (
               <div className="flex flex-wrap justify-end gap-2">

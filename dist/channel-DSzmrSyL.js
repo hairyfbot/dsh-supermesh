@@ -1077,6 +1077,11 @@ var Ticket = class Ticket extends Model {
 				prepareError: null
 			};
 			await trx.insertInto("ticket").values(row).execute();
+			await trx.updateTable("thread").set({
+				projectId,
+				triage: "claimed",
+				triagedAt: now
+			}).where("id", "in", ids).where("triage", "=", "pending").execute();
 			for (const [index, threadId] of ids.entries()) await trx.insertInto("ticket_thread").values({
 				ticketId: id,
 				threadId,
@@ -1824,10 +1829,10 @@ var agent_model_patch_default = defineHandler(async (event) => {
 	} : null;
 	if (entry) try {
 		await roleModel.resolve(entry);
-	} catch {
+	} catch (error) {
 		throw new HTTPError({
 			status: 400,
-			message: "unresolved_agent_model"
+			message: `unresolved_agent_model: ${error instanceof Error ? error.message : String(error)}`
 		});
 	}
 	const models = {
@@ -2656,7 +2661,7 @@ async function authenticate(task) {
 		if (!task.origin) task.origin = site(task.view.channelId, (await channel.list()).find((item) => item.id === task.view.channelId)?.host ?? "https://gitlab.com");
 		env = await channelProxyEnvironment(new URL(task.origin), env);
 		const hostname = new URL(task.origin).host;
-		await command(task, task.view.channelId === "github" ? [
+		const args = task.view.channelId === "github" ? [
 			"auth",
 			"login",
 			"--hostname",
@@ -2676,7 +2681,9 @@ async function authenticate(task) {
 			"https",
 			"--device",
 			"--insecure-storage"
-		], env, true);
+		];
+		if (task.view.channelId === "gitlab") throw new TypeError("channel_gitlab_token_only");
+		await command(task, args, env, true);
 		task.controller.signal.throwIfAborted();
 		const token = (await command(task, task.view.channelId === "github" ? [
 			"auth",
@@ -3807,7 +3814,14 @@ const worker = defineService({
 			await db.worker.queue(waiting.id, waiting.projectId).catch(() => void 0);
 		}
 		let running = (await db.worker.listRunning()).length;
-		for (const worker of await db.worker.listQueued()) {
+		const queueable = [...await db.worker.listQueued()];
+		for (const waiting of await db.ticket.listFiltered({ status: "waiting" })) {
+			if (waiting.paused || waiting.prepareError) continue;
+			if (waiting.prState === "merged" || waiting.prState === "closed") continue;
+			if ((await db.worker.listByTicket(waiting.id)).some((worker) => worker.status !== "ended")) continue;
+			await db.worker.queue(waiting.id, waiting.projectId).catch(() => void 0);
+		}
+		for (const worker of [...queueable, ...await db.worker.listQueued()]) {
 			if (stopped || running >= settings.maxWorkers) break;
 			const ticket = await db.ticket.findById(worker.ticketId);
 			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") {
@@ -4398,7 +4412,7 @@ const channel = defineService({
 			const enabled = supported && Boolean(row?.enabled);
 			const stored = await db.sourceState.find(preset.id, "configuration");
 			const configured = hasCredential || members.length > 0 || Boolean(stored);
-			const metadata = readMetadata(stored?.value, preset.id);
+			const metadata = readMetadata(stored?.value);
 			return {
 				id: preset.id,
 				kind: preset.id,
@@ -4438,7 +4452,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BxpgyEJ1.js");
+			const { shell } = await import("./shell-DSvCxxH9.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4447,7 +4461,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-BxpgyEJ1.js");
+			const { shell } = await import("./shell-DSvCxxH9.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4462,7 +4476,7 @@ function ref(kind) {
 function legacyRef(kind) {
 	return credentialRef(kind === "github" ? "NEXUS_GITHUB_TOKEN" : "NEXUS_GITLAB_TOKEN");
 }
-function readMetadata(raw, kind) {
+function readMetadata(raw) {
 	if (!raw) return {
 		commitName: "",
 		commitEmail: ""

@@ -173,6 +173,9 @@ export class Ticket extends Model<DB, 'ticket'> {
       }
       const row: Insertable<DB['ticket']> = { id, projectId, channelId: threads.find(row => row.id === ids[0])!.channelId, title, description: description ?? null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, prepareError: null }
       await trx.insertInto('ticket').values(row).execute()
+      // 建票即确定归属：话题若还停在 pending，投递给项目编排时就绕过了主编排的 claim，
+      // 界面会一直显示"未分诊"。这里补上归属，与 flow.md 的 triage=claimed 对齐。
+      await trx.updateTable('thread').set({ projectId, triage: 'claimed', triagedAt: now }).where('id', 'in', ids).where('triage', '=', 'pending').execute()
       for (const [index, threadId] of ids.entries()) await trx.insertInto('ticket_thread').values({ ticketId: id, threadId, createdAt: new Date(Date.parse(now) + index).toISOString() }).execute()
       return (await new Ticket(trx).findById(id))!
     }))

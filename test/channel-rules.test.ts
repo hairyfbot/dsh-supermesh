@@ -11,7 +11,7 @@ describe('渠道配置可信边界', () => {
   })
   it('卸载后的历史配置metadata仍可读取，坏metadata不静默清空', () => {
     expect(readConfigurationMetadata()).toEqual({ commitName: '', commitEmail: '' })
-    expect(readConfigurationMetadata(JSON.stringify({ commitName: 'Bot', commitEmail: 'bot@example.com', expectedAccount: 'legacy-bot' }))).toEqual({ commitName: 'Bot', commitEmail: 'bot@example.com', expectedAccount: 'legacy-bot' })
+    expect(readConfigurationMetadata(JSON.stringify({ commitName: 'Bot', commitEmail: 'bot@example.com', expectedAccount: 'legacy-bot' }))).toEqual({ commitName: 'Bot', commitEmail: 'bot@example.com' })
     expect(() => readConfigurationMetadata('{')).toThrow()
     expect(() => readConfigurationMetadata(JSON.stringify({ commitName: 1, commitEmail: '' }))).toThrow('invalid_channel_metadata')
   })

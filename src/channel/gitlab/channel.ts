@@ -12,7 +12,7 @@ type Thread = Selectable<DB['thread']>
 type Inbox = Selectable<DB['inbox']>
 interface Resource { site: string, repository: string, number: number, kind: 'issue' | 'pull' }
 interface Identity { providerId: string, login: string, repositoryId: string }
-interface Cursor { since: string, signature?: string, through?: string }
+interface Cursor { since: string, signature?: string, through?: string, etag?: string | null }
 interface Receipt { remoteId: string, providerId: string, marker: string, url: string }
 
 export class GitLabChannel {
@@ -100,14 +100,30 @@ export class GitLabChannel {
     return result
   }
 
-  private async pages(site: string, path: string, signal?: AbortSignal): Promise<Record<string, unknown>[]> {
+  private async requestValue(site: string, path: string, signal?: AbortSignal, headers?: Record<string, string>): Promise<{ body: unknown, etag: string | null, notModified: boolean }> {
+    const value = await this.runner.request({ site, method: 'GET', path, withEtag: true, ...(headers ? { headers } : {}), ...(signal ? { signal } : {}) }) as { body?: unknown, etag?: string | null, notModified?: boolean } | null
+    return { body: value?.body ?? null, etag: value?.etag ?? null, notModified: value?.notModified === true }
+  }
+
+  private async pages(site: string, path: string, signal?: AbortSignal, since?: string, etag?: string): Promise<{ rows: Record<string, unknown>[], etag: string | null, notModified: boolean }> {
     const result: Record<string, unknown>[] = []
+    // 只有 issues / merge_requests 这类顶层列表支持 updated_after；notes、pipelines 传它会被拒。
+    const supports = since && /\/projects\/[^/]+\/(?:issues|merge_requests)(?:\?|$)/.test(path)
+    const stamp = supports ? `&updated_after=${encodeURIComponent(since)}` : ''
+    let latest: string | null = null
     for (let page = 1; ; page++) {
-      const value = await this.request(site, `${path + (path.includes('?') ? '&' : '?')}per_page=100&page=${page}`, signal)
-      const batch = array(value).map(record)
+      const url = `${path + (path.includes('?') ? '&' : '?')}per_page=100&page=${page}${stamp}`
+      // 只在第一页带条件头；ETag 对应整个列表的表示，翻到第二页就不再适用。
+      const headers = page === 1 && etag ? { 'if-none-match': etag } : undefined
+      const value = await this.requestValue(site, url, signal, headers)
+      if (page === 1 && value.notModified)
+        return { rows: [], etag: value.etag ?? etag ?? null, notModified: true }
+      if (page === 1)
+        latest = value.etag
+      const batch = array(value.body).map(record)
       result.push(...batch)
       if (batch.length < 100)
-        return result
+        return { rows: result, etag: latest, notModified: false }
     }
   }
 
@@ -119,8 +135,8 @@ export class GitLabChannel {
     await this.verifyEnvironment(project.id, signal)
     const main = record(await this.request(target.site, apiRoot(target), signal))
     validateTopic(main, target)
-    const notes = await this.pages(target.site, `${apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal)
-    const items = [item(main, target.kind, target), ...notes.map(row => item(row, 'comment', target)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))]
+    const notes = (await this.pages(target.site, `${apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal)).rows
+    const items = [item(main, target.kind, target), ...notes.map((row: Record<string, unknown>) => item(row, 'comment', target)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))]
     return { items: items.slice(offset, offset + limit), next_offset: offset + limit < items.length ? offset + limit : null, next_resource: null }
   }
 
@@ -134,7 +150,11 @@ export class GitLabChannel {
       signal?.throwIfAborted()
       if (!project.enabled || project.available === false || !remoteGitlab(project.remoteUrl, site))
         continue
-      results.push({ projectId: project.id, ...await this.collect(project.id, signal) })
+      results.push({ projectId: project.id, ...await this.collect(project.id, signal).then((result) => {
+        if (!result.ok)
+          console.error(`[gitlab:collect] ${project.name} ${project.remoteUrl} -> ${result.reason}`)
+        return result
+      }) })
     }
     return results
   }
@@ -169,6 +189,8 @@ export class GitLabChannel {
         for (const thread of await db.thread.listByChannel('gitlab')) {
           if (!thread.url || !['issue', 'pull'].includes(thread.kind))
             continue
+          if (!await polled(thread))
+            continue
           try {
             const resource = parseResource(thread.url, target.site)
             if (source(resource) !== repository)
@@ -185,6 +207,20 @@ export class GitLabChannel {
             errors.push(failure(error))
           }
         }
+        const branch = await this.defaultBranch(target.site, target.repository, signal)
+        if (branch) {
+          await this.collectBranch(projectId, branch, signal).catch((error) => {
+            errors.push(`ci:${failure(error)}`)
+          })
+        }
+        // MR 的 pipeline 跑在源分支上，默认分支永远看不到它 —— 这正是代码托管流程里最该盯的 CI。
+        for (const ref of await this.activeBranches(target.site, target.repository, signal)) {
+          if (ref === branch)
+            continue
+          await this.collectBranch(projectId, ref, signal).catch((error) => {
+            errors.push(`ci:${failure(error)}`)
+          })
+        }
       }
       catch (error) {
         if (signal?.aborted)
@@ -198,7 +234,11 @@ export class GitLabChannel {
   private async stream(repository: string, name: string, site: string, path: string, accept: (row: Record<string, unknown>) => Promise<void>, signal?: AbortSignal): Promise<void> {
     const cursor = await this.state<Cursor>(repository, `cursor:${name}`) ?? { since: '1970-01-01T00:00:00.000Z' }
     const startedAt = now()
-    const rows = await this.pages(site, path, signal)
+    const page = await this.pages(site, path, signal, cursor.since, cursor.etag ?? undefined)
+    // 304：远端表示没变，游标与签名都用不着更新，直接按无新增处理。
+    if (page.notModified)
+      return
+    const rows = page.rows
     const revisions = []
     let firstError: unknown
     for (const row of rows) {
@@ -216,7 +256,49 @@ export class GitLabChannel {
     if (firstError)
       throw firstError
     const signature = digest(revisions.sort())
-    await this.save(repository, `cursor:${name}`, cursor.signature === signature && cursor.through ? { since: cursor.through } : { since: cursor.since, signature, through: startedAt })
+    // since 推进到本次读取起点前 5 秒：只在数据未变时推进会让持续有更新的仓库永久漏采，
+    // 重叠区靠确定性 trigger id 去重（与官方 cursorAt 一致）。
+    await this.save(repository, `cursor:${name}`, { since: cursorAt(startedAt), signature, through: startedAt, etag: page.etag })
+  }
+
+  /** 活跃 MR 的源分支。只取 opened，已关的不再采 CI。 */
+  private async activeBranches(site: string, repository: string, signal?: AbortSignal): Promise<string[]> {
+    const path = `projects/${encodeURIComponent(repository)}/merge_requests?state=opened&per_page=100`
+    const rows = array(await this.request(site, path, signal)).map(record)
+    return [...new Set(rows.map(row => text(row.source_branch)).filter(Boolean))]
+  }
+
+  /** 取项目默认分支，用于 CI 采集。 */
+  private async defaultBranch(site: string, repository: string, signal?: AbortSignal): Promise<string | null> {
+    const row = record(await this.request(site, `projects/${encodeURIComponent(repository)}`, signal))
+    const branch = typeof row.default_branch === 'string' ? row.default_branch.trim() : ''
+    return branch || null
+  }
+
+  /** 采默认分支的 pipeline 状态，变化时给项目编排发触发（对应 GitHub 的 collectBranch）。 */
+  async collectBranch(projectId: string, branch: string, signal?: AbortSignal): Promise<void> {
+    const project = await this.project(projectId)
+    const site = await this.site()
+    const target = remoteGitlab(project.remoteUrl, site)
+    if (!target)
+      return
+    const path = `projects/${encodeURIComponent(target.repository)}/pipelines?ref=${encodeURIComponent(branch)}&per_page=1`
+    const rows = array(await this.request(site, path, signal)).map(record)
+    const latest = rows[0]
+    if (!latest)
+      return
+    const state = text(latest.status)
+    const head = text(latest.sha)
+    const ref = `${target.repository}:branch:${branch}`
+    const { row: watch } = await db.ciWatch.recordRevision({ id: `gitlab:${ref}`, channelId: 'gitlab', kind: 'branch', ref, fingerprint: digest({ state, head }), head, updatedAt: now() })
+    if (watch.revision === 0 && ['success', 'skipped', 'manual'].includes(state))
+      return
+    const threadId = `gitlab:${ref}`
+    await db.thread.record({ id: threadId, channelId: 'gitlab', refId: ref, kind: 'ci', title: `CI ${branch}`, url: null, projectId, triage: 'claimed', triagedAt: now(), createdAt: now(), updatedAt: now() })
+    const triggerId = `${watch.id}:revision:${watch.revision}`
+    const message = `${branch} CI ${state}`
+    await db.trigger.ingest({ id: triggerId, channelId: 'gitlab', threadId, kind: 'ci', actorName: null, human: 0, mentioned: 0, text: message, url: text(latest.web_url), at: now(), ref: head })
+    await db.inbox.enqueue({ id: `${triggerId}:project:${projectId}`, type: 'project', origin: 'system', kind: 'notice', projectId, triggerId, threadId, title: message, message })
   }
 
   private async ensureThread(target: Resource, row: Record<string, unknown>): Promise<Thread> {
@@ -275,6 +357,14 @@ export class GitLabChannel {
     if (!state)
       throw new GitLabError('invalid_response')
     const branch = typeof row.source_branch === 'string' ? text(row.source_branch) : null
+    // 分支反查 Worker 建立绑定：prUrl 只能由这里写入，若要求它已等于 thread.url 才写，
+    // 就成环了 —— 永远为空、MR 合并也不会结单。
+    const worker = branch ? await db.worker.findByBranch(branch) : undefined
+    const owned = worker && await db.ticket.findById(worker.ticketId)
+    if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
+      await db.ticketThread.link(owned.id, thread.id, now())
+      await db.ticket.setPullRequest(owned.id, thread.url, state, owned.ciState)
+    }
     for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
       const ticket = await db.ticket.findById(ticketId)
       if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ['done', 'cancelled'].includes(ticket.status))
@@ -435,7 +525,7 @@ export class GitLabChannel {
           return { ok: false, reason: 'earlier_delivery_pending' }
       }
       const root = `${apiRoot(target)}/notes`
-      const comments = await this.pages(target.site, root, signal)
+      const comments = (await this.pages(target.site, root, signal)).rows
       const existing = comments.filter(comment => record(comment.author).id != null && identity(record(comment.author).id) === environment.providerId && typeof comment.body === 'string' && comment.body.includes(marker))
       if (existing.length > 1)
         throw new GitLabError('ambiguous_delivery')
@@ -508,6 +598,32 @@ export class GitLabChannel {
   }
 }
 
+/** 没有活票的话题，最后一次活动超过这个时长就不再轮询（官方 POLL_HORIZON_MS）。 */
+const POLL_HORIZON_MS = 14 * 24 * 3600_000
+
+/**
+ * 是否该轮询这个话题（照官方 `poll.ts` 的 `polled`）：
+ * 有活票必轮询；否则只在最后一次触发/结单后的 14 天内轮询。
+ * 否则每轮都把所有历史话题翻一遍，话题一多就变成 O(n) 阻塞。
+ */
+async function polled(thread: Selectable<DB['thread']>, at = Date.now()): Promise<boolean> {
+  const ticketIds = await db.ticketThread.listTicketIds(thread.id)
+  if (!ticketIds.length)
+    return true
+  const tickets = await Promise.all(ticketIds.map(id => db.ticket.findById(id)))
+  if (tickets.some(ticket => ticket && !['done', 'cancelled'].includes(ticket.status)))
+    return true
+  const times = [thread.updatedAt, ...tickets.map(ticket => ticket?.endedAt ?? '')]
+    .map(value => Date.parse(value))
+    .filter(Number.isFinite)
+  return at - Math.max(...times) < POLL_HORIZON_MS
+}
+
+/** 游标回退 5 秒，靠确定性 id 去重，避免远程迟到的事件被漏掉（官方 `cursorAt`）。 */
+function cursorAt(started: string): string {
+  return new Date(Date.parse(started) - 5000).toISOString()
+}
+
 export const gitlab = new GitLabChannel()
 
 export function remoteGitlab(remoteUrl: string | null, host: string): { site: string, repository: string } | null {
@@ -551,12 +667,14 @@ function parseResource(resource: string, site: string): Resource {
     url = new URL(resource.startsWith('gitlab/') ? `${site}/${resource.slice(7)}` : resource)
   }
   catch { throw new GitLabError('invalid_resource') }
-  const match = /^\/(.+)\/-\/(issues|merge_requests)\/([1-9]\d*)\/?$/.exec(url.pathname)
+  const match = /^\/(.+)\/-\/(issues|work_items|merge_requests)\/([1-9]\d*)\/?$/.exec(url.pathname)
   const repository = match && repositoryPath(match[1]!)
   const number = Number(match?.[3])
   if (url.origin !== site || url.protocol !== 'https:' || url.username || url.password || url.search || (url.hash && !/^#note_[1-9]\d*$/.test(url.hash)) || !repository || !Number.isSafeInteger(number))
     throw new GitLabError('invalid_resource')
-  return { site, repository, kind: match![2] === 'issues' ? 'issue' : 'pull', number }
+  // GitLab 新版把 issue 的规范地址改成 `/-/work_items/<iid>`，旧地址仍可用；
+  // 两者都归到 issue，否则采集会以 invalid_resource 整轮失败。
+  return { site, repository, kind: match![2] === 'merge_requests' ? 'pull' : 'issue', number }
 }
 
 function source(target: { site: string, repository: string }): string {
@@ -632,7 +750,11 @@ function digest(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
 function failure(error: unknown): string {
-  return error instanceof GitLabError ? error.code : error instanceof Error && error.name === 'AbortError' ? 'interrupted' : 'transport_unknown'
+  if (error instanceof GitLabError)
+    return error.code
+  if (error instanceof Error)
+    return error.name === 'AbortError' ? 'interrupted' : `transport_unknown(${error.message.slice(0, 120)})`
+  return 'transport_unknown'
 }
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

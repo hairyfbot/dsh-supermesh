@@ -7248,7 +7248,7 @@ function FeishuDetail() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.channel,
-			queryFn: _temp$28,
+			queryFn: _temp$29,
 			staleTime: 0,
 			gcTime: 0,
 			refetchOnMount: "always"
@@ -7258,7 +7258,7 @@ function FeishuDetail() {
 	const { data: channels, error } = useQuery(t0);
 	let t1;
 	if ($[1] !== channels) {
-		t1 = channels?.find(_temp2$17)?.name;
+		t1 = channels?.find(_temp2$18)?.name;
 		$[1] = channels;
 		$[2] = t1;
 	} else t1 = $[2];
@@ -7329,10 +7329,10 @@ function FeishuDetail() {
 	} else t9 = $[18];
 	return t9;
 }
-function _temp2$17(channel) {
+function _temp2$18(channel) {
 	return channel.id === "feishu";
 }
-function _temp$28() {
+function _temp$29() {
 	return getApiSupermeshChannel();
 }
 // src/client/pages/channel/detail/components/section.tsx
@@ -7938,15 +7938,8 @@ function GitlabDetail() {
 	const [token, setToken] = (0, react.useState)("");
 	const [commitName, setCommitName] = (0, react.useState)(channel_0?.commitName ?? "");
 	const [commitEmail, setCommitEmail] = (0, react.useState)(channel_0?.commitEmail ?? "");
-	const [method, setMethod] = (0, react.useState)("authorize");
 	const [host, setHost] = (0, react.useState)(channel_0?.host ?? "https://gitlab.com");
 	const [hostInvalid, setHostInvalid] = (0, react.useState)(false);
-	const [authentication, setAuthentication] = (0, react.useState)(null);
-	const [authenticating, setAuthenticating] = (0, react.useState)(false);
-	const [authNotice, setAuthNotice] = (0, react.useState)("");
-	const [copyNotice, setCopyNotice] = (0, react.useState)("");
-	const authRequest = (0, react.useRef)(false);
-	const authId = (0, react.useRef)(null);
 	const lifetime = (0, react.useRef)(new AbortController());
 	(0, react.useEffect)(() => {
 		const controller = new AbortController();
@@ -7973,74 +7966,8 @@ function GitlabDetail() {
 		if (!saved) throw new Error("channel_reload_failed");
 		return saved;
 	}
-	const { pause, resume } = useTimeoutPoll(async () => {
-		if (!authId.current || lifetime.current.signal.aborted) return;
-		try {
-			await applyAuthentication(await getApiSupermeshChannelIdAuthenticationAuthenticationId({
-				id: "gitlab",
-				authenticationId: authId.current
-			}, { signal: lifetime.current.signal }));
-		} catch {
-			failAuthentication();
-		}
-	}, 1e3, { immediate: false });
-	async function applyAuthentication(value_0) {
-		if (lifetime.current.signal.aborted) return;
-		if (!value_0 || typeof value_0.id !== "string" || !value_0.id || value_0.channelId !== "gitlab" || typeof value_0.output !== "string" || ![
-			"pending",
-			"succeeded",
-			"failed"
-		].includes(value_0.status) || authId.current && authId.current !== value_0.id || value_0.userCode !== void 0 && typeof value_0.userCode !== "string" || value_0.verificationUri !== void 0 && typeof value_0.verificationUri !== "string") throw new Error("invalid_authentication");
-		authId.current = value_0.id;
-		setAuthentication(value_0);
-		if (value_0.status === "pending") {
-			setAuthNotice(t("channelAuthPending"));
-			return;
-		}
-		pause();
-		setAuthNotice(t(value_0.status === "succeeded" ? "channelAuthSucceeded" : "channelAuthFailed"));
-		if (value_0.status === "succeeded") await reload(lifetime.current.signal);
-		authRequest.current = false;
-		setAuthenticating(false);
-	}
-	function failAuthentication() {
-		if (lifetime.current.signal.aborted) return;
-		pause();
-		authRequest.current = false;
-		setAuthenticating(false);
-		setAuthNotice(t("channelAuthFailed"));
-	}
-	const authorize = async () => {
-		if (authRequest.current || savingRequest.current) return;
-		if (!validateHost()) return;
-		authRequest.current = true;
-		authId.current = null;
-		setAuthenticating(true);
-		setAuthentication(null);
-		setCopyNotice("");
-		setAuthNotice(t("channelAuthStarting"));
-		try {
-			const value_1 = await postApiSupermeshChannelIdAuthentication({ id: "gitlab" }, { host: host.trim() }, { signal: lifetime.current.signal });
-			await applyAuthentication(value_1);
-			if (!lifetime.current.signal.aborted && value_1.status === "pending") resume();
-		} catch {
-			failAuthentication();
-		}
-	};
-	const copyCode = async () => {
-		if (!authentication?.userCode) return;
-		try {
-			await navigator.clipboard.writeText(authentication.userCode);
-			if (!lifetime.current.signal.aborted) setCopyNotice(t("channelAuthCopied"));
-		} catch {
-			if (!lifetime.current.signal.aborted) setCopyNotice(t("channelAuthCopyFailed"));
-		}
-	};
-	const verification = authentication?.verificationUri && URL.canParse(authentication.verificationUri) ? new URL(authentication.verificationUri) : null;
-	const authHost = URL.canParse(host) ? new URL(host).origin : null;
-	const verificationUri = verification?.protocol === "https:" && verification.origin === authHost && !verification.username && !verification.password ? verification.href : null;
 	const save = async () => {
-		if (savingRequest.current || authRequest.current) return;
+		if (savingRequest.current) return;
 		if (!validateHost()) return;
 		savingRequest.current = true;
 		setSaving(true);
@@ -8073,12 +8000,9 @@ function GitlabDetail() {
 		setToken("");
 		setHostInvalid(false);
 		setNotice("");
-		setAuthNotice("");
-		setCopyNotice("");
-		setAuthentication(null);
 	}
 	const toggle = async () => {
-		if (!channel_0?.hasCredential || savingRequest.current || authRequest.current) return;
+		if (!channel_0?.hasCredential || savingRequest.current) return;
 		savingRequest.current = true;
 		setSaving(true);
 		setNotice("");
@@ -8095,7 +8019,7 @@ function GitlabDetail() {
 		}
 	};
 	function openDelete() {
-		if (!channel_0?.hasCredential || savingRequest.current || authRequest.current) return;
+		if (!channel_0?.hasCredential || savingRequest.current) return;
 		savingRequest.current = true;
 		setDeleteConfirming(true);
 	}
@@ -8105,7 +8029,7 @@ function GitlabDetail() {
 		setDeleteConfirming(false);
 	}
 	const deleteCredential = async () => {
-		if (!deleteConfirming || deleteRequest.current || authRequest.current) return;
+		if (!deleteConfirming || deleteRequest.current) return;
 		deleteRequest.current = true;
 		setDeleting(true);
 		setNotice("");
@@ -8127,8 +8051,8 @@ function GitlabDetail() {
 			}
 		}
 	};
-	function normalizeHost(value_2) {
-		return URL.canParse(value_2.trim()) ? new URL(value_2.trim()).href : value_2.trim();
+	function normalizeHost(value_0) {
+		return URL.canParse(value_0.trim()) ? new URL(value_0.trim()).href : value_0.trim();
 	}
 	const dirty = normalizeHost(host) !== normalizeHost(channel_0?.host ?? "https://gitlab.com") || commitName.trim() !== (channel_0?.commitName ?? "").trim() || commitEmail.trim() !== (channel_0?.commitEmail ?? "").trim() || Boolean(token.trim());
 	function validateHost() {
@@ -8137,21 +8061,7 @@ function GitlabDetail() {
 		setHostInvalid(!valid);
 		return valid;
 	}
-	const busy = saving || authenticating || deleteConfirming;
-	const tabs = [{
-		value: "authorize",
-		label: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-			className: "inline-flex items-center gap-1.5",
-			children: t("channelAuthorize")
-		}),
-		id: `${id}-authorize`,
-		panelId: `${id}-authorize-panel`
-	}, {
-		value: "token",
-		label: t("channelToken"),
-		id: `${id}-token`,
-		panelId: `${id}-token-panel`
-	}];
+	const busy = saving || deleteConfirming;
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(DetailHeader, {
 			name: channel_0?.name ?? "GitLab",
@@ -8295,94 +8205,29 @@ function GitlabDetail() {
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: "flex flex-col gap-3 border-t border-(--dsw-alias-border-l3) pt-4",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								className: "max-w-full overflow-x-auto",
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.SegmentedTabs, {
-									value: method,
-									onChange: setMethod,
-									items: tabs,
-									label: t("channelLoginMethod"),
-									size: "sm",
-									className: "w-fit"
+							children: [
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
+									htmlFor: `${id}-token-value`,
+									className: "text-xs font-medium",
+									children: t("channelTokenLabel")
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+									id: `${id}-token-value`,
+									className: "w-full min-w-0",
+									type: "password",
+									value: token,
+									onChange: (event_2) => setToken(event_2.target.value),
+									disabled: busy,
+									autoComplete: "new-password",
+									placeholder: t("channelTokenPlaceholder"),
+									"aria-describedby": `${id}-token-help`
+								}),
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+									id: `${id}-token-help`,
+									className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
+									children: t("channelGitlabTokenDescription")
 								})
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
-								id: `${id}-${method}-panel`,
-								role: "tabpanel",
-								"aria-labelledby": `${id}-${method}`,
-								tabIndex: 0,
-								className: "flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)",
-								children: method === "authorize" ? /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-										children: t("channelGitlabAuthorizeDescription")
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: "flex flex-wrap items-center gap-2",
-										children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-											size: "sm",
-											variant: "primary",
-											disabled: busy,
-											onClick: () => void authorize(),
-											children: t("channelAuthorizeAction", { name: "GitLab" })
-										}), authNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-											role: "status",
-											className: "m-0 text-xs leading-5",
-											children: authNotice
-										})]
-									}),
-									authentication?.userCode && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: "flex flex-wrap items-center gap-2 text-xs",
-										children: [
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: t("channelAuthCode") }),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)("code", { children: authentication.userCode }),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-												size: "sm",
-												variant: "outline",
-												onClick: () => void copyCode(),
-												children: t("channelAuthCopyCode")
-											}),
-											copyNotice && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-												role: "status",
-												children: copyNotice
-											})
-										]
-									}),
-									verificationUri && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("a", {
-										href: verificationUri,
-										target: "_blank",
-										rel: "noopener noreferrer",
-										className: "text-xs text-(--dsw-alias-state-business-primary) underline",
-										children: t("channelAuthOpenVerification")
-									}),
-									authentication?.output && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("pre", {
-										"aria-label": t("channelAuthOutput"),
-										className: "m-0 w-full whitespace-pre-wrap break-words rounded-lg bg-(--dsw-alias-card-fill) px-3 py-2 font-mono text-xs leading-5",
-										children: authentication.output
-									})
-								] }) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
-										htmlFor: `${id}-token-value`,
-										className: "text-xs font-medium",
-										children: t("channelTokenLabel")
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-										id: `${id}-token-value`,
-										className: "w-full min-w-0",
-										type: "password",
-										value: token,
-										onChange: (event_2) => setToken(event_2.target.value),
-										disabled: busy,
-										autoComplete: "new-password",
-										placeholder: t("channelTokenPlaceholder"),
-										"aria-describedby": `${id}-token-help`
-									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-										id: `${id}-token-help`,
-										className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-										children: t("channelGitlabTokenDescription")
-									})
-								] })
-							}, method)]
+							]
 						}),
 						dirty && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: "flex flex-wrap justify-end gap-2",
@@ -8416,7 +8261,7 @@ function ChannelDetail() {
 	const $ = (0, import_dist.c)(21);
 	const { t } = useTranslation();
 	const { go } = useActions();
-	const kind = useStore(_temp$27);
+	const kind = useStore(_temp$28);
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
@@ -8519,7 +8364,7 @@ function ChannelDetail() {
 	} else t10 = $[20];
 	return t10;
 }
-function _temp$27(state) {
+function _temp$28(state) {
 	return state.channel.selected;
 }
 // src/client/pages/channel/components/card.tsx
@@ -8532,7 +8377,7 @@ function Card(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.channel,
-			queryFn: _temp$26
+			queryFn: _temp$27
 		};
 		$[0] = t1;
 	} else t1 = $[0];
@@ -8737,7 +8582,7 @@ function Card(t0) {
 	} else t19 = $[59];
 	return t19;
 }
-function _temp$26() {
+function _temp$27() {
 	return getApiSupermeshChannel();
 }
 // src/client/pages/channel/page.tsx
@@ -59375,7 +59220,7 @@ function ActivityCard(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.trigger,
-			queryFn: _temp$25,
+			queryFn: _temp$26,
 			refetchInterval: 3e4
 		};
 		$[0] = t1;
@@ -59393,7 +59238,7 @@ function ActivityCard(t0) {
 		} else t5 = $[5];
 		const recent = (triggers ?? []).filter(t5);
 		t2 = recent.length;
-		t3 = recent.filter(_temp2$16).length;
+		t3 = recent.filter(_temp2$17).length;
 		let t6;
 		if ($[6] === Symbol.for("react.memo_cache_sentinel")) {
 			t6 = (trigger_1) => Date.parse(trigger_1.at) >= now - 36e5;
@@ -59519,21 +59364,22 @@ function ActivityCard(t0) {
 	} else t12 = $[32];
 	return t12;
 }
-function _temp2$16(trigger_0) {
+function _temp2$17(trigger_0) {
 	return !trigger_0.mentioned;
 }
-function _temp$25() {
+function _temp$26() {
 	return getApiSupermeshTrigger();
 }
 // src/client/pages/overview/components/ask-card.tsx
 function AskCard() {
-	const $ = (0, import_dist.c)(29);
+	const $ = (0, import_dist.c)(31);
 	const client = useQueryClient();
+	const { openThread } = useActions();
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.pending,
-			queryFn: _temp$24,
+			queryFn: _temp$25,
 			refetchInterval: 15e3
 		};
 		$[0] = t0;
@@ -59542,7 +59388,7 @@ function AskCard() {
 	let t1;
 	if ($[1] !== client) {
 		t1 = {
-			mutationFn: _temp2$15,
+			mutationFn: _temp2$16,
 			onSettled: () => client.invalidateQueries({ queryKey: keys.pending })
 		};
 		$[1] = client;
@@ -59555,12 +59401,12 @@ function AskCard() {
 	let t4;
 	let t5;
 	let t6;
-	if ($[3] !== answer || $[4] !== failure || $[5] !== pending || $[6] !== pendingError) {
+	if ($[3] !== answer || $[4] !== failure || $[5] !== openThread || $[6] !== pending || $[7] !== pendingError) {
 		t6 = Symbol.for("react.early_return_sentinel");
 		bb0: {
 			const asks = pending?.filter(_temp3$10) ?? [];
 			let t7;
-			if ($[12] !== answer) {
+			if ($[13] !== answer) {
 				t7 = (id, text) => {
 					setFailure(null);
 					answer.mutateAsync({
@@ -59572,9 +59418,9 @@ function AskCard() {
 						setFailure(error instanceof Error ? error.message : "答复提交失败");
 					});
 				};
-				$[12] = answer;
-				$[13] = t7;
-			} else t7 = $[13];
+				$[13] = answer;
+				$[14] = t7;
+			} else t7 = $[14];
 			const submit = t7;
 			if (!asks.length && !failure && !pendingError) {
 				t6 = null;
@@ -59582,15 +59428,15 @@ function AskCard() {
 			}
 			t2 = "flex flex-col rounded-2xl border border-(--dsw-alias-border-l3) p-5";
 			t3 = "待答问题";
-			if ($[14] === Symbol.for("react.memo_cache_sentinel")) {
+			if ($[15] === Symbol.for("react.memo_cache_sentinel")) {
 				t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", {
 					className: "cursor-pointer text-sm font-medium",
 					children: "待答问题"
 				});
-				$[14] = t4;
-			} else t4 = $[14];
+				$[15] = t4;
+			} else t4 = $[15];
 			let t8;
-			if ($[15] !== answer || $[16] !== submit) {
+			if ($[16] !== answer || $[17] !== openThread || $[18] !== submit) {
 				t8 = (message_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
 					className: "mt-3 flex flex-col gap-2 border-t border-(--dsw-alias-border-l3) pt-3",
 					onSubmit: (event) => {
@@ -59602,64 +59448,76 @@ function AskCard() {
 						className: "m-0 whitespace-pre-wrap",
 						children: message_0.message
 					}), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-						className: "flex gap-2",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
-							name: "answer",
-							required: true,
-							"aria-label": "答复内容",
-							disabled: answer.isPending
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
-							type: "submit",
-							size: "sm",
-							variant: "primary",
-							disabled: answer.isPending,
-							children: "提交答复"
-						})]
+						className: "flex items-center gap-2",
+						children: [
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+								name: "answer",
+								required: true,
+								"aria-label": "答复内容",
+								disabled: answer.isPending
+							}),
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								type: "submit",
+								size: "sm",
+								variant: "primary",
+								disabled: answer.isPending,
+								children: "提交答复"
+							}),
+							message_0.threadId && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								type: "button",
+								size: "sm",
+								variant: "outline",
+								onClick: () => openThread(message_0.threadId),
+								children: "打开话题"
+							})
+						]
 					})]
 				}, message_0.id);
-				$[15] = answer;
-				$[16] = submit;
-				$[17] = t8;
-			} else t8 = $[17];
+				$[16] = answer;
+				$[17] = openThread;
+				$[18] = submit;
+				$[19] = t8;
+			} else t8 = $[19];
 			t5 = asks.map(t8);
 		}
 		$[3] = answer;
 		$[4] = failure;
-		$[5] = pending;
-		$[6] = pendingError;
-		$[7] = t2;
-		$[8] = t3;
-		$[9] = t4;
-		$[10] = t5;
-		$[11] = t6;
+		$[5] = openThread;
+		$[6] = pending;
+		$[7] = pendingError;
+		$[8] = t2;
+		$[9] = t3;
+		$[10] = t4;
+		$[11] = t5;
+		$[12] = t6;
 	} else {
-		t2 = $[7];
-		t3 = $[8];
-		t4 = $[9];
-		t5 = $[10];
-		t6 = $[11];
+		t2 = $[8];
+		t3 = $[9];
+		t4 = $[10];
+		t5 = $[11];
+		t6 = $[12];
 	}
 	if (t6 !== Symbol.for("react.early_return_sentinel")) return t6;
 	let t7;
-	if ($[18] !== pendingError) {
+	if ($[20] !== pendingError) {
 		t7 = pendingError && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
 			children: pendingError instanceof Error ? pendingError.message : "待答问题加载失败"
 		});
-		$[18] = pendingError;
-		$[19] = t7;
-	} else t7 = $[19];
+		$[20] = pendingError;
+		$[21] = t7;
+	} else t7 = $[21];
 	let t8;
-	if ($[20] !== failure) {
+	if ($[22] !== failure) {
 		t8 = failure && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			role: "alert",
 			children: failure
 		});
-		$[20] = failure;
-		$[21] = t8;
-	} else t8 = $[21];
+		$[22] = failure;
+		$[23] = t8;
+	} else t8 = $[23];
 	let t9;
-	if ($[22] !== t2 || $[23] !== t3 || $[24] !== t4 || $[25] !== t5 || $[26] !== t7 || $[27] !== t8) {
+	if ($[24] !== t2 || $[25] !== t3 || $[26] !== t4 || $[27] !== t5 || $[28] !== t7 || $[29] !== t8) {
 		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("details", {
 			className: t2,
 			"aria-label": t3,
@@ -59670,23 +59528,23 @@ function AskCard() {
 				t8
 			]
 		});
-		$[22] = t2;
-		$[23] = t3;
-		$[24] = t4;
-		$[25] = t5;
-		$[26] = t7;
-		$[27] = t8;
-		$[28] = t9;
-	} else t9 = $[28];
+		$[24] = t2;
+		$[25] = t3;
+		$[26] = t4;
+		$[27] = t5;
+		$[28] = t7;
+		$[29] = t8;
+		$[30] = t9;
+	} else t9 = $[30];
 	return t9;
 }
 function _temp3$10(message) {
 	return message.kind === "ask";
 }
-function _temp2$15(input) {
+function _temp2$16(input) {
 	return postApiSupermeshAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer });
 }
-function _temp$24() {
+function _temp$25() {
 	return getApiSupermeshPending();
 }
 // src/client/pages/overview/components/channel-tile.tsx
@@ -59784,7 +59642,7 @@ function ChannelCard(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.channel,
-			queryFn: _temp$23
+			queryFn: _temp$24
 		};
 		$[0] = t1;
 	} else t1 = $[0];
@@ -59797,7 +59655,7 @@ function ChannelCard(t0) {
 	let t6;
 	let t7;
 	if ($[1] !== channels || $[2] !== error || $[3] !== isLoading || $[4] !== onMore || $[5] !== t) {
-		const items = (channels ?? []).map(_temp2$14);
+		const items = (channels ?? []).map(_temp2$15);
 		T0 = SummaryCard;
 		if ($[13] !== t) {
 			t2 = t("overviewChannels");
@@ -59902,14 +59760,14 @@ function _temp4$6(channel_1) {
 function _temp3$9(channel_0) {
 	return channel_0.connected;
 }
-function _temp2$14(channel) {
+function _temp2$15(channel) {
 	return {
 		kind: channel.kind,
 		name: channel.name,
 		connected: channel.status === "online"
 	};
 }
-function _temp$23() {
+function _temp$24() {
 	return getApiSupermeshChannel();
 }
 // src/client/pages/overview/components/task-chart.tsx
@@ -59932,7 +59790,7 @@ function TaskChart(t0) {
 	} else t1 = $[2];
 	let t2;
 	if ($[5] !== segments) {
-		t2 = segments.some(_temp$22) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
+		t2 = segments.some(_temp$23) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
 			width: "100%",
 			height: "100%",
 			minWidth: 0,
@@ -59953,7 +59811,7 @@ function TaskChart(t0) {
 					cornerRadius: 4,
 					stroke: "none",
 					isAnimationActive: false,
-					children: segments.map(_temp2$13)
+					children: segments.map(_temp2$14)
 				})
 			})
 		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
@@ -59987,10 +59845,10 @@ function TaskChart(t0) {
 	} else t3 = $[9];
 	return t3;
 }
-function _temp2$13(segment_0) {
+function _temp2$14(segment_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment_0.color }, segment_0.name);
 }
-function _temp$22(segment_1) {
+function _temp$23(segment_1) {
 	return segment_1.value > 0;
 }
 // src/client/pages/overview/components/task-card.tsx
@@ -60016,7 +59874,7 @@ function TaskCard(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.ticketPage(1, 100),
-			queryFn: _temp$21
+			queryFn: _temp$22
 		};
 		$[0] = t1;
 	} else t1 = $[0];
@@ -60138,7 +59996,7 @@ function TaskCard(t0) {
 	} else t4 = $[12];
 	return t4;
 }
-function _temp$21() {
+function _temp$22() {
 	return getApiSupermeshTicket({
 		page: "1",
 		pageSize: "100"
@@ -60547,7 +60405,7 @@ function GraphCanvas(t0) {
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { zoomGraph, panGraph, resetGraph, selectAgent, openTicket } = useActions();
-	const { zoom, x, y, selectedId } = useStore(_temp$20);
+	const { zoom, x, y, selectedId } = useStore(_temp$21);
 	const drag = (0, react.useRef)(null);
 	const [fit, setFit] = (0, react.useState)(false);
 	let t1;
@@ -60595,7 +60453,7 @@ function GraphCanvas(t0) {
 					const members = nodes.filter((node_0) => group.nodeIds.includes(node_0.id));
 					if (!members.length) return [];
 					const inset = 16 + index * 6;
-					const x_0 = Math.min(...members.map(_temp2$12)) - inset;
+					const x_0 = Math.min(...members.map(_temp2$13)) - inset;
 					const y_0 = Math.min(...members.map(_temp3$8)) - 12 - index * 6;
 					return [{
 						...group,
@@ -61107,10 +60965,10 @@ function _temp4$5(node_3) {
 function _temp3$8(node_2) {
 	return node_2.y;
 }
-function _temp2$12(node_1) {
+function _temp2$13(node_1) {
 	return node_1.x;
 }
-function _temp$20(state) {
+function _temp$21(state) {
 	return state.graph;
 }
 // src/client/pages/overview/components/graph.tsx
@@ -61121,7 +60979,7 @@ function Graph() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.node,
-			queryFn: _temp$19,
+			queryFn: _temp$20,
 			refetchInterval: 15e3
 		};
 		$[0] = t0;
@@ -61131,7 +60989,7 @@ function Graph() {
 	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.edge,
-			queryFn: _temp2$11,
+			queryFn: _temp2$12,
 			refetchInterval: 15e3
 		};
 		$[1] = t1;
@@ -61265,10 +61123,10 @@ function _temp4$4(edge) {
 function _temp3$7() {
 	return getApiSupermeshGroup();
 }
-function _temp2$11() {
+function _temp2$12() {
 	return getApiSupermeshEdge();
 }
-function _temp$19() {
+function _temp$20() {
 	return getApiSupermeshNode();
 }
 // src/client/pages/overview/components/status-tag.tsx
@@ -61279,7 +61137,7 @@ function StatusTag() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.status,
-			queryFn: _temp$18,
+			queryFn: _temp$19,
 			refetchInterval: 1e4
 		};
 		$[0] = t0;
@@ -61347,7 +61205,7 @@ function StatusTag() {
 	} else t6 = $[16];
 	return t6;
 }
-function _temp$18() {
+function _temp$19() {
 	return getApiSupermeshStatus();
 }
 // src/client/pages/ticket/components/row.tsx
@@ -61366,7 +61224,7 @@ function Row$1(t0) {
 			$[4] = t2;
 		} else t2 = $[4];
 		const sessions = nodes.filter(t2);
-		t1 = sessions.find(_temp$17) ?? sessions.at(-1);
+		t1 = sessions.find(_temp$18) ?? sessions.at(-1);
 		$[0] = nodes;
 		$[1] = task.id;
 		$[2] = t1;
@@ -61436,7 +61294,7 @@ function Row$1(t0) {
 				$[41] = t12;
 			} else t12 = $[41];
 			const ticketSubscriptions = subscriptions.filter(t12);
-			t11 = triggers.filter((trigger) => ticketSubscriptions.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp2$10);
+			t11 = triggers.filter((trigger) => ticketSubscriptions.some((subscription_0) => subscription_0.threadId === trigger.threadId)).toSorted(_temp2$11);
 			$[36] = subscriptions;
 			$[37] = task.id;
 			$[38] = triggers;
@@ -61705,10 +61563,10 @@ function Row$1(t0) {
 	} else t24 = $[107];
 	return t24;
 }
-function _temp2$10(a, b) {
+function _temp2$11(a, b) {
 	return b.at.localeCompare(a.at);
 }
-function _temp$17(node_0) {
+function _temp$18(node_0) {
 	return node_0.status === "running";
 }
 // src/client/pages/overview/components/task-list.tsx
@@ -61719,7 +61577,7 @@ function TaskList() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.ticketPage(1, 5),
-			queryFn: _temp$16
+			queryFn: _temp$17
 		};
 		$[0] = t0;
 	} else t0 = $[0];
@@ -61728,7 +61586,7 @@ function TaskList() {
 	if ($[1] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.node,
-			queryFn: _temp2$9,
+			queryFn: _temp2$10,
 			refetchInterval: 15e3
 		};
 		$[1] = t1;
@@ -61908,10 +61766,10 @@ function _temp4$3() {
 function _temp3$6() {
 	return getApiSupermeshChannel();
 }
-function _temp2$9() {
+function _temp2$10() {
 	return getApiSupermeshNode();
 }
-function _temp$16() {
+function _temp$17() {
 	return getApiSupermeshTicket({
 		page: "1",
 		pageSize: "5"
@@ -61922,7 +61780,7 @@ function TaskViewCard() {
 	const $ = (0, import_dist.c)(39);
 	const { t } = useTranslation();
 	const { setOverviewView } = useActions();
-	const view = useStore(_temp$15);
+	const view = useStore(_temp$16);
 	const t0 = (0, react.useId)();
 	let t1;
 	if ($[0] !== t0) {
@@ -62058,7 +61916,7 @@ function TaskViewCard() {
 	} else t20 = $[38];
 	return t20;
 }
-function _temp$15(state) {
+function _temp$16(state) {
 	return state.overview.view;
 }
 // src/client/pages/overview/page.tsx
@@ -62416,7 +62274,7 @@ function General(t0) {
 	if ($[0] !== value.administrators) {
 		administrators = value.administrators.join(",");
 		names = administrators.split(/[,\s]+/).filter(Boolean);
-		t1 = names.length <= 100 && names.every(_temp$14);
+		t1 = names.length <= 100 && names.every(_temp$15);
 		$[0] = value.administrators;
 		$[1] = administrators;
 		$[2] = names;
@@ -62758,7 +62616,7 @@ function General(t0) {
 	} else t43 = $[103];
 	return t43;
 }
-function _temp$14(name) {
+function _temp$15(name) {
 	return /^[a-z0-9][\w.-]{0,254}$/i.test(name);
 }
 // src/utils/repository.ts
@@ -63560,13 +63418,13 @@ function numbersValid(value) {
 function Setting() {
 	const $ = (0, import_dist.c)(176);
 	const { t } = useTranslation();
-	const activeSection = useStore(_temp$13);
+	const activeSection = useStore(_temp$14);
 	const { setSettingSection } = useActions();
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.setting,
-			queryFn: _temp2$8
+			queryFn: _temp2$9
 		};
 		$[0] = t0;
 	} else t0 = $[0];
@@ -64208,10 +64066,10 @@ function Setting() {
 function _temp3$5(input) {
 	return patchApiSupermeshSetting(input);
 }
-function _temp2$8() {
+function _temp2$9() {
 	return getApiSupermeshSetting();
 }
-function _temp$13(state) {
+function _temp$14(state) {
 	return state.setting.section;
 }
 // src/client/pages/ticket/detail/components/arrivals.tsx
@@ -64230,7 +64088,7 @@ function Arrivals(t0) {
 				$[5] = triggers;
 				$[6] = t3;
 			} else t3 = $[6];
-			const arrivals = [...triggers.map(_temp$12), ...inbox.filter(t3).map(_temp2$7)].sort(_temp3$4);
+			const arrivals = [...triggers.map(_temp$13), ...inbox.filter(t3).map(_temp2$8)].sort(_temp3$4);
 			let t4;
 			if ($[7] !== t) {
 				t4 = (arrival) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("li", {
@@ -64327,7 +64185,7 @@ function Arrivals(t0) {
 function _temp3$4(a, b) {
 	return b.at.localeCompare(a.at);
 }
-function _temp2$7(message_0) {
+function _temp2$8(message_0) {
 	return {
 		id: `inbox-${message_0.id}`,
 		message: message_0.message,
@@ -64335,7 +64193,7 @@ function _temp2$7(message_0) {
 		answer: message_0.answer
 	};
 }
-function _temp$12(trigger) {
+function _temp$13(trigger) {
 	return {
 		id: `trigger-${trigger.id}`,
 		message: trigger.text,
@@ -64593,7 +64451,7 @@ function Relations(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.ticketPage(1, 100),
-			queryFn: _temp$11
+			queryFn: _temp$12
 		};
 		$[0] = t1;
 	} else t1 = $[0];
@@ -64677,7 +64535,7 @@ function Relations(t0) {
 	if (t3 !== Symbol.for("react.early_return_sentinel")) return t3;
 	return t2;
 }
-function _temp$11() {
+function _temp$12() {
 	return getApiSupermeshTicket({
 		page: "1",
 		pageSize: "100"
@@ -64689,7 +64547,7 @@ function TicketDetail() {
 	const { t } = useTranslation();
 	const ctx = useDshContext();
 	const { go } = useActions();
-	const { ticketId, returnTo } = useStore(_temp$10);
+	const { ticketId, returnTo } = useStore(_temp$11);
 	let t0;
 	if ($[0] !== ticketId) {
 		t0 = keys.ticketDetail(ticketId ?? "");
@@ -64803,7 +64661,7 @@ function TicketDetail() {
 	const unavailable = stored !== void 0 && !detail;
 	let t12;
 	if ($[24] !== detail?.executions) {
-		t12 = detail?.executions.toSorted(_temp2$6).at(-1);
+		t12 = detail?.executions.toSorted(_temp2$7).at(-1);
 		$[24] = detail?.executions;
 		$[25] = t12;
 	} else t12 = $[25];
@@ -65291,10 +65149,10 @@ function _temp4$2(id) {
 function _temp3$3(message) {
 	return message.supervisorId;
 }
-function _temp2$6(a, b) {
+function _temp2$7(a, b) {
 	return a.createdAt.localeCompare(b.createdAt);
 }
-function _temp$10(state) {
+function _temp$11(state) {
 	return state.navigation;
 }
 // src/client/components/pagination.tsx
@@ -65501,7 +65359,7 @@ function Ticket() {
 	if ($[7] === Symbol.for("react.memo_cache_sentinel")) {
 		t3 = {
 			queryKey: keys.node,
-			queryFn: _temp$9,
+			queryFn: _temp$10,
 			refetchInterval: 15e3
 		};
 		$[7] = t3;
@@ -65511,7 +65369,7 @@ function Ticket() {
 	if ($[8] === Symbol.for("react.memo_cache_sentinel")) {
 		t4 = {
 			queryKey: keys.channel,
-			queryFn: _temp2$5
+			queryFn: _temp2$6
 		};
 		$[8] = t4;
 	} else t4 = $[8];
@@ -65679,10 +65537,10 @@ function _temp4$1() {
 function _temp3$2() {
 	return getApiSupermeshTrigger();
 }
-function _temp2$5() {
+function _temp2$6() {
 	return getApiSupermeshChannel();
 }
-function _temp$9() {
+function _temp$10() {
 	return getApiSupermeshNode();
 }
 // src/client/pages/trigger/model.ts
@@ -65784,6 +65642,159 @@ function recordsOf(source) {
 			}))
 		}];
 	});
+}
+// src/client/pages/trigger/detail/components/answer-box.tsx
+/**
+* 话题详情里的回答区：只在本话题确有 pending 的 ask 时出现。
+* 与概览的「待答问题」共用同一个回答接口，避免两处行为不一致。
+*/
+function AnswerBox(t0) {
+	const $ = (0, import_dist.c)(27);
+	const { threadId } = t0;
+	const client = useQueryClient();
+	let t1;
+	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+		t1 = {
+			queryKey: keys.pending,
+			queryFn: _temp$9,
+			refetchInterval: 15e3
+		};
+		$[0] = t1;
+	} else t1 = $[0];
+	const { data: pending } = useQuery(t1);
+	let t2;
+	if ($[1] !== client) {
+		t2 = {
+			mutationFn: _temp2$5,
+			onSettled: () => client.invalidateQueries({ queryKey: keys.pending })
+		};
+		$[1] = client;
+		$[2] = t2;
+	} else t2 = $[2];
+	const answer = useMutation(t2);
+	const [failure, setFailure] = (0, react.useState)(null);
+	let t3;
+	if ($[3] !== pending || $[4] !== threadId) {
+		t3 = pending?.find((message) => message.kind === "ask" && message.threadId === threadId);
+		$[3] = pending;
+		$[4] = threadId;
+		$[5] = t3;
+	} else t3 = $[5];
+	const ask = t3;
+	if (!ask) return null;
+	let t4;
+	if ($[6] !== answer || $[7] !== ask.id) {
+		t4 = (text) => {
+			setFailure(null);
+			answer.mutateAsync({
+				id: ask.id,
+				answer: text
+			}).then((result) => {
+				if (!result || result.id !== ask.id || result.answeredBy !== "user") throw new Error("答复提交失败，问题可能已处理");
+			}).catch((error) => {
+				setFailure(error instanceof Error ? error.message : "答复提交失败");
+			});
+		};
+		$[6] = answer;
+		$[7] = ask.id;
+		$[8] = t4;
+	} else t4 = $[8];
+	const submit = t4;
+	let t5;
+	if ($[9] === Symbol.for("react.memo_cache_sentinel")) {
+		t5 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
+			className: "m-0 text-sm font-medium",
+			children: "回答待答问题"
+		});
+		$[9] = t5;
+	} else t5 = $[9];
+	let t6;
+	if ($[10] !== ask.message) {
+		t6 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 mt-2 whitespace-pre-wrap text-xs leading-5 text-(--dsw-alias-label-secondary)",
+			children: ask.message
+		});
+		$[10] = ask.message;
+		$[11] = t6;
+	} else t6 = $[11];
+	let t7;
+	if ($[12] !== submit) {
+		t7 = (event) => {
+			event.preventDefault();
+			const form = event.currentTarget;
+			submit(String(new FormData(form).get("answer") ?? ""));
+		};
+		$[12] = submit;
+		$[13] = t7;
+	} else t7 = $[13];
+	let t8;
+	let t9;
+	if ($[14] !== answer.isPending) {
+		t8 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+			name: "answer",
+			required: true,
+			"aria-label": "答复内容",
+			disabled: answer.isPending
+		});
+		t9 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+			type: "submit",
+			size: "sm",
+			variant: "primary",
+			disabled: answer.isPending,
+			children: "提交答复"
+		});
+		$[14] = answer.isPending;
+		$[15] = t8;
+		$[16] = t9;
+	} else {
+		t8 = $[15];
+		t9 = $[16];
+	}
+	let t10;
+	if ($[17] !== t7 || $[18] !== t8 || $[19] !== t9) {
+		t10 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("form", {
+			className: "mt-3 flex flex-col gap-2",
+			onSubmit: t7,
+			children: [t8, t9]
+		});
+		$[17] = t7;
+		$[18] = t8;
+		$[19] = t9;
+		$[20] = t10;
+	} else t10 = $[20];
+	let t11;
+	if ($[21] !== failure) {
+		t11 = failure && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "m-0 mt-2 text-xs text-(--dsw-alias-state-error-primary)",
+			children: failure
+		});
+		$[21] = failure;
+		$[22] = t11;
+	} else t11 = $[22];
+	let t12;
+	if ($[23] !== t10 || $[24] !== t11 || $[25] !== t6) {
+		t12 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+			className: "rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1) p-4",
+			children: [
+				t5,
+				t6,
+				t10,
+				t11
+			]
+		});
+		$[23] = t10;
+		$[24] = t11;
+		$[25] = t6;
+		$[26] = t12;
+	} else t12 = $[26];
+	return t12;
+}
+function _temp2$5(input) {
+	return postApiSupermeshAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer });
+}
+function _temp$9() {
+	return getApiSupermeshPending();
 }
 // src/client/pages/trigger/detail/components/event.tsx
 function Event$1(t0) {
@@ -66170,7 +66181,7 @@ function _temp$8(value) {
 }
 // src/client/pages/trigger/detail/page.tsx
 function TriggerDetail() {
-	const $ = (0, import_dist.c)(159);
+	const $ = (0, import_dist.c)(162);
 	const { t } = useTranslation();
 	const { go, openTicket } = useActions();
 	const id = useStore(_temp$7);
@@ -66740,77 +66751,85 @@ function TriggerDetail() {
 		$[136] = t34;
 	} else t34 = $[136];
 	let t35;
-	if ($[137] !== t) {
-		t35 = t("triggerExternalText");
-		$[137] = t;
+	if ($[137] !== latest.thread.id) {
+		t35 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(AnswerBox, { threadId: latest.thread.id });
+		$[137] = latest.thread.id;
 		$[138] = t35;
 	} else t35 = $[138];
 	let t36;
-	if ($[139] !== t35) {
-		t36 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
-			children: t35
-		});
-		$[139] = t35;
+	if ($[139] !== t) {
+		t36 = t("triggerExternalText");
+		$[139] = t;
 		$[140] = t36;
 	} else t36 = $[140];
 	let t37;
-	if ($[141] !== href || $[142] !== t) {
-		t37 = href && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+	if ($[141] !== t36) {
+		t37 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
+			children: t36
+		});
+		$[141] = t36;
+		$[142] = t37;
+	} else t37 = $[142];
+	let t38;
+	if ($[143] !== href || $[144] !== t) {
+		t38 = href && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 			className: "m-0 text-[11px] leading-5 text-(--dsw-alias-label-tertiary)",
 			children: t("triggerSampleLink")
 		});
-		$[141] = href;
-		$[142] = t;
-		$[143] = t37;
-	} else t37 = $[143];
-	let t38;
-	if ($[144] !== t29 || $[145] !== t34 || $[146] !== t36 || $[147] !== t37) {
-		t38 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("aside", {
+		$[143] = href;
+		$[144] = t;
+		$[145] = t38;
+	} else t38 = $[145];
+	let t39;
+	if ($[146] !== t29 || $[147] !== t34 || $[148] !== t35 || $[149] !== t37 || $[150] !== t38) {
+		t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("aside", {
 			className: "flex min-w-0 flex-col gap-4 self-start @min-[780px]:sticky @min-[780px]:top-4",
 			children: [
 				t29,
 				t34,
-				t36,
-				t37
+				t35,
+				t37,
+				t38
 			]
 		});
-		$[144] = t29;
-		$[145] = t34;
-		$[146] = t36;
-		$[147] = t37;
-		$[148] = t38;
-	} else t38 = $[148];
-	let t39;
-	if ($[149] !== t16 || $[150] !== t38 || $[151] !== t9) {
-		t39 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-			className: t9,
-			children: [t16, t38]
-		});
-		$[149] = t16;
+		$[146] = t29;
+		$[147] = t34;
+		$[148] = t35;
+		$[149] = t37;
 		$[150] = t38;
-		$[151] = t9;
-		$[152] = t39;
-	} else t39 = $[152];
+		$[151] = t39;
+	} else t39 = $[151];
 	let t40;
-	if ($[153] !== t10 || $[154] !== t11 || $[155] !== t12 || $[156] !== t13 || $[157] !== t39) {
-		t40 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
+	if ($[152] !== t16 || $[153] !== t39 || $[154] !== t9) {
+		t40 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: t9,
+			children: [t16, t39]
+		});
+		$[152] = t16;
+		$[153] = t39;
+		$[154] = t9;
+		$[155] = t40;
+	} else t40 = $[155];
+	let t41;
+	if ($[156] !== t10 || $[157] !== t11 || $[158] !== t12 || $[159] !== t13 || $[160] !== t40) {
+		t41 = /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 			className: t10,
 			"aria-label": t11,
 			children: [
 				t12,
 				t13,
-				t39
+				t40
 			]
 		});
-		$[153] = t10;
-		$[154] = t11;
-		$[155] = t12;
-		$[156] = t13;
-		$[157] = t39;
-		$[158] = t40;
-	} else t40 = $[158];
-	return t40;
+		$[156] = t10;
+		$[157] = t11;
+		$[158] = t12;
+		$[159] = t13;
+		$[160] = t40;
+		$[161] = t41;
+	} else t41 = $[161];
+	return t41;
 }
 function _temp8(event_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Event$1, { event: event_0 }, event_0.id);
