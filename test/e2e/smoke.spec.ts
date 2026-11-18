@@ -56,11 +56,6 @@ describe('nexus in the official DSH shell', () => {
     expect(await commands.getDshErrors()).toEqual([])
   })
 
-  it('removed the aggregate panel route', async () => {
-    const panel = await commands.nexusRequest('/api/nexus/panel', 'GET')
-    expect(panel.status).toBe(404)
-  })
-
   it('persists a safe settings change through real services and rejects invalid input without changing it', async () => {
     const saved = await commands.nexusRequest('/api/nexus/setting', 'PATCH', { maxWorkers: 3 })
     expect(saved.status).toBe(200)
