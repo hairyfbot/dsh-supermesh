@@ -96,7 +96,7 @@ main：确认 → attach 或 unlink → 顺手通知你
 
 多一跳，换来**绑定只有一处能改**，不会两个项目各撤一半。
 
-`link_ticket` 与 Supervisor 的 `link_dependency` 写同一张表：同项目内你自己记，
+`link_ticket` 与 Supervisor 的 `link_dependency_ticket` 写同一张表：同项目内你自己记，
 跨项目由 Supervisor 记 —— 那是它唯一的视角。
 
 ## 执行逻辑

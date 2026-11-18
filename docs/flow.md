@@ -141,7 +141,7 @@ stateDiagram-v2
 
 | kind | 影响 | 谁写 |
 | --- | --- | --- |
-| `depends` | `relatedId` 没做完，`ticketId` 停在 `waiting` | 同项目 `project` 的 `link_ticket`；跨项目 `supervisor` 的 `link_dependency` |
+| `depends` | `relatedId` 没做完，`ticketId` 停在 `waiting` | 同项目 `project` 的 `link_ticket`；跨项目 `supervisor` 的 `link_dependency_ticket` |
 | `relates` | 无 | 同上 |
 
 `depends` 的第二个作用：`relatedId` 到终态时**系统自动通知 Supervisor**（见第 7 章）。

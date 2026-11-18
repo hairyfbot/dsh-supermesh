@@ -23,7 +23,7 @@
 不能只信收件箱里那一条消息。
 
 1. list_ticket，看现在谁等到谁了
-2. 判断谁等谁 → link_dependency（记进库，别记脑子里）
+2. 判断谁等谁 → link_dependency_ticket（记进库，别记脑子里）
 3. 有能推进的 → dispatch_ticket
 4. 只是别处的事实要说 → note_ticket（不派活）
 5. 有项目编排问上来的 → 答得了 answer，答不了 ask
@@ -43,7 +43,9 @@
 | `list_ticket` | — | 关联工单的 status / prState / 有无 pending ask |
 | `dispatch_ticket` | `ticketId, message?` | 派活：`Inbox(kind=ticket)`。和主编排同一个工具 |
 | `note_ticket` | `ticketId, text` | 只传信息：`Inbox(kind=notice)`，不改状态、不唤醒 |
-| `link_dependency` | `ticketId, dependsOn` | 建 `TicketLink(kind=depends)`，方向「后来的指向先要做的」 |
+| `link_dependency_ticket` | `ticketId, dependsOn` | 建 `TicketLink(kind=depends)`，方向「后来的指向先要做的」 |
+| `link_ticket` | `ticketId, relatedId` | 建 `TicketLink(kind=relates)`，只记相关，谁都不等谁 |
+| `create_ticket` | `title, projectId, threadIds, description?` | 在管辖项目下开票，票自动挂到自己名下 |
 | `report` | `state, summary` | 报给主编排，不等答复 |
 | `ask` | `question` | 问主编排，这条线停下 |
 | `answer` | `askId, text` | 回答项目编排升上来的 ask |
@@ -69,7 +71,7 @@
 被唤醒
   └─ list_ticket（先看全局）
        ├─ 谁还没动         → dispatch_ticket
-       ├─ 谁等到谁了       → link_dependency（如未记）+ 推进
+       ├─ 谁等到谁了       → link_dependency_ticket（如未记）+ 推进
        ├─ 只是有事实要同步 → note_ticket
        ├─ 有 pending ask   → 是问我的 answer，答不了 ask
        └─ 需要加人加项目   → ask 主编排
@@ -87,14 +89,14 @@ sequenceDiagram
 
     A->>S: ask(supervisorId=S)「接口改成 Y，B 得配合」
     S->>A: answer「收到，我来协调」
-    S->>S: link_dependency(T-105, dependsOn=T-200)
+    S->>S: link_dependency_ticket(T-105, dependsOn=T-200)
     S->>B: dispatch_ticket(T-200, message=「A 接口改为 Y，请跟进」)
     B->>B: send(worker_T-200, queue)
 ```
 
 | | 记什么 | 重启后还在吗 | 少了它 |
 | --- | --- | --- | --- |
-| `link_dependency` | **结构**：谁等谁 | ✅ 在库里 | 你重启后不知道还该盯什么 |
+| `link_dependency_ticket` | **结构**：谁等谁 | ✅ 在库里 | 你重启后不知道还该盯什么 |
 | `dispatch_ticket` | **通知**：现在该动了 | ❌ 是一次投递 | B 不知道要动 |
 
 只是「让 B 知道，不要求它做什么」→ 用 `note_ticket`。票已经 done 时尤其要走它：

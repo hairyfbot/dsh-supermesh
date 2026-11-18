@@ -29,7 +29,8 @@ export const supervisor = definePreset({
     tools.report,
     tools.ask,
 
-    tools.link_dependency,
+    tools.link_dependency_ticket,
+    tools.link_ticket,
 
     tools.create_ticket,
   ],

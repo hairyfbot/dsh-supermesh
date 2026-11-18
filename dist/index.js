@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-CX2zLjqS.js";
+import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-C7pQKon5.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -3526,7 +3526,7 @@ const unlink_thread = defineTool({
 	}
 });
 // src/ai/orchestrator/tools/ticket.ts
-const create_ticket = defineTool({
+const create_ticket$1 = defineTool({
 	name: "create_ticket",
 	description: "开一张票。任务一旦存在，projectId 就必须确定。",
 	parameters: {
@@ -3630,7 +3630,7 @@ const orchestrator = definePreset({
 		attach_tickets_to_supervisor,
 		detach_tickets_from_supervisor,
 		list_ticket$1,
-		create_ticket,
+		create_ticket$1,
 		dispatch_ticket,
 		note_ticket,
 		triage_thread,
@@ -3683,6 +3683,59 @@ const list_ticket = defineTool({
 				attention: (await db.inbox.listByTicket(ticket.id)).some((row) => row.kind === "ask" && row.status === "pending")
 			};
 		})));
+	}
+});
+const create_ticket = defineTool({
+	name: "create_ticket",
+	description: "在某个项目下开一张票。工单会自动挂到你这个 supervisor 下，受你协调。",
+	parameters: {
+		title: {
+			type: "string",
+			required: true,
+			description: "一句话说清要做什么，用发起方的语言。不要加需求、验收标准或实现建议。"
+		},
+		projectId: {
+			type: "string",
+			required: true,
+			description: "这张票归哪个项目。"
+		},
+		threadIds: {
+			type: "array",
+			items: { type: "string" },
+			required: true,
+			description: "触发这张票的话题，至少一条。最早那条是「触发来源」。"
+		},
+		description: {
+			type: "string",
+			description: "需求正文，没有就省略。"
+		}
+	},
+	output: {
+		schema: {
+			type: "string",
+			description: "新票的 id 和状态。"
+		},
+		render: (_args, value) => [{
+			type: "text",
+			text: value
+		}]
+	},
+	execute: async (args, exec) => {
+		const identity = await session.resolve(exec.agent?.session.id ?? "");
+		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
+		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
+		if (!args.threadIds.length) throw new Error("建票至少要有一条来源话题");
+		for (const threadId of args.threadIds) {
+			const thread = await db.thread.findById(threadId);
+			if (!thread) throw new Error("来源话题不存在");
+			if (thread.projectId && thread.projectId !== args.projectId) throw new Error("来源话题不属于该项目");
+		}
+		const ticket = await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description);
+		await db.supervisorTicket.link(identity.supervisorId, ticket.id, (/* @__PURE__ */ new Date()).toISOString());
+		return JSON.stringify({
+			id: ticket.id,
+			status: ticket.status
+		});
 	}
 });
 const link_dependency = defineTool({
@@ -3816,7 +3869,8 @@ const supervisor = definePreset({
 		list_ticket,
 		report$1,
 		ask$1,
-		link_dependency
+		link_dependency,
+		create_ticket
 	],
 	plugins: [
 		agentInstructions,
@@ -4285,6 +4339,7 @@ async function closeFinishedSupervisors() {
 	for (const supervisor of await db.supervisor.listActive()) {
 		const tickets = await Promise.all((await db.supervisorTicket.listBySupervisor(supervisor.id)).map((link) => db.ticket.findById(link.ticketId)));
 		if (!tickets.length || tickets.some((ticket) => !ticket || ticket.status !== "done" && ticket.status !== "cancelled")) continue;
+		if ((await db.inbox.listPending("supervisor", null)).some((message) => message.supervisorId === supervisor.id)) continue;
 		await db.supervisor.close(supervisor.id, (/* @__PURE__ */ new Date()).toISOString());
 		if (supervisor.sessionId) {
 			await session.stop(supervisor.sessionId).catch(() => void 0);

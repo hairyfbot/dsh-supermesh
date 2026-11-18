@@ -45,7 +45,7 @@ cwd 是**笔记区**，不是仓库。仓库在 `Project.directory`，用绝对�
 | `attach_tickets_to_supervisor` `detach_tickets_from_supervisor` | ✅ | ❌ | ❌ | ❌ |
 | `link_ticket` `stop_ticket` `retry_ticket` | ❌ | ✅ | ❌ | ❌ |
 | `create_worker` `send` `view` `cancel` `rename` | ❌ | ✅ | ❌ | ❌ |
-| `link_dependency` | ❌ | ❌ | ❌ | ✅ |
+| `link_dependency_ticket` | ❌ | ❌ | ❌ | ✅ |
 
 四条不显然的：
 
