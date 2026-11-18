@@ -1,4 +1,4 @@
-import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-CeRc4RTt.js";
+import { a as channelAuth, c as session, d as defineService, f as DSH_PLUGIN_HOME, i as worktree, l as channelProxyEnvironment, n as server, o as shell, p as db, r as project, s as inbox, t as channel, u as setting } from "./channel-BarKs7Zk.js";
 import process from "node:process";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { createHash, randomUUID } from "node:crypto";

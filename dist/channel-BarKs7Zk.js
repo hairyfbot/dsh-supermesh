@@ -3826,7 +3826,7 @@ const channel = defineService({
 				createdAt
 			}));
 			const supported = preset.id !== "feishu";
-			const hasCredential = preset.id !== "feishu" && (await credentials().describe(ref(preset.id))).configured;
+			const hasCredential = preset.id !== "feishu" && Boolean((await credentials().resolve(ref(preset.id)))?.value?.trim() || (await credentials().resolve(legacyRef(preset.id)))?.value?.trim());
 			const enabled = supported && Boolean(row?.enabled);
 			const stored = await db.sourceState.find(preset.id, "configuration");
 			const configured = hasCredential || members.length > 0 || Boolean(stored);
@@ -3862,13 +3862,15 @@ const channel = defineService({
 	},
 	async resolveCredential(kind) {
 		if (kind === "feishu") return void 0;
-		return (await credentials().resolve(ref(kind)))?.value;
+		const stored = await credentials().resolve(ref(kind));
+		if (stored?.value?.trim()) return stored.value;
+		return (await credentials().resolve(legacyRef(kind)))?.value;
 	},
 	removeCredentials(kind) {
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-MvpbuYeN.js");
+			const { shell } = await import("./shell-CD0_YwlH.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3877,7 +3879,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-MvpbuYeN.js");
+			const { shell } = await import("./shell-CD0_YwlH.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3888,6 +3890,9 @@ function credentials() {
 }
 function ref(kind) {
 	return credentialRef(kind === "github" ? "SUPERMESH_GITHUB_TOKEN" : "SUPERMESH_GITLAB_TOKEN");
+}
+function legacyRef(kind) {
+	return credentialRef(kind === "github" ? "NEXUS_GITHUB_TOKEN" : "NEXUS_GITLAB_TOKEN");
 }
 function readMetadata(raw, kind) {
 	if (!raw) return {

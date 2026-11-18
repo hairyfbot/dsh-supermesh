@@ -20,7 +20,7 @@ export const channel = defineService({
       const row = rows.find(row => row.id === preset.id)
       const members = accounts.filter(account => account.channelId === preset.id).map(({ id, channelId, role, name, avatar, status, createdAt }) => ({ id, channelId, role, name, avatar, status, createdAt }))
       const supported = preset.id !== 'feishu'
-      const hasCredential = preset.id !== 'feishu' && (await credentials().describe(ref(preset.id))).configured
+      const hasCredential = preset.id !== 'feishu' && Boolean((await credentials().resolve(ref(preset.id as 'github' | 'gitlab')))?.value?.trim() || (await credentials().resolve(legacyRef(preset.id as 'github' | 'gitlab')))?.value?.trim())
       const enabled = supported && Boolean(row?.enabled)
       const stored = await db.sourceState.find(preset.id, 'configuration')
       const configured = hasCredential || members.length > 0 || Boolean(stored)
@@ -53,7 +53,10 @@ export const channel = defineService({
   async resolveCredential(kind: ChannelKind): Promise<string | undefined> {
     if (kind === 'feishu')
       return undefined
-    return (await credentials().resolve(ref(kind)))?.value
+    const stored = await credentials().resolve(ref(kind))
+    if (stored?.value?.trim())
+      return stored.value
+    return (await credentials().resolve(legacyRef(kind)))?.value
   },
   removeCredentials(kind: string): Promise<ChannelView> {
     const operation = writing.then(() => removeCredentials(kind))
@@ -81,6 +84,10 @@ function credentials() {
 
 function ref(kind: 'github' | 'gitlab') {
   return credentialRef(kind === 'github' ? 'SUPERMESH_GITHUB_TOKEN' : 'SUPERMESH_GITLAB_TOKEN')
+}
+
+function legacyRef(kind: 'github' | 'gitlab') {
+  return credentialRef(kind === 'github' ? 'NEXUS_GITHUB_TOKEN' : 'NEXUS_GITLAB_TOKEN')
 }
 
 function readMetadata(raw: string | undefined, kind: ChannelKind): { commitName: string, commitEmail: string, expectedAccount?: string } {

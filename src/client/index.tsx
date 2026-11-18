@@ -11,7 +11,7 @@ import type { ClientContext } from './types/context'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { getApiSupermeshSessionRole } from './apis'
 import { client } from './client'
-import { AgentIcon, GitForkIcon, SupermeshIcon, UserShieldIcon, UsersRoundIcon } from './components/icons'
+import { AgentIcon, GitForkIcon, Layers2Icon, SupermeshIcon, UsersRoundIcon } from './components/icons'
 import { PluginContext } from './config/context'
 import { keys } from './config/query-keys'
 import { dicts } from './locale'
@@ -28,7 +28,7 @@ function SessionRoleIcon({ sessionId }: { sessionId: string }) {
   if (role === 'main')
     return <GitForkIcon />
   if (role === 'project')
-    return <UserShieldIcon />
+    return <Layers2Icon />
   if (role === 'supervisor')
     return <UsersRoundIcon />
   if (role === 'worker')
