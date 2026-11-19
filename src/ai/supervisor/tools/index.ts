@@ -153,14 +153,14 @@ export const link_ticket = defineTool({
   },
 })
 
-/** 票所属项目必须落在这个 supervisor 的管辖范围内（即它已关联票涉及的项目）。 */
+/** 票所属项目必须落在这个 supervisor 的协调范围内（即它已关联票涉及的项目）。 */
 async function requireScope(supervisorId: string, projectIds: string[]): Promise<void> {
   const links = await db.supervisorTicket.listBySupervisor(supervisorId)
   const tickets = await Promise.all(links.map(link => db.ticket.findById(link.ticketId)))
   const scope = new Set(tickets.filter(Boolean).map(ticket => ticket!.projectId))
   for (const projectId of projectIds) {
     if (!scope.has(projectId))
-      throw new Error('该项目不在当前 Supervisor 的协调范围内')
+      throw new Error('该项目还不在你的协调范围内：先用 create_ticket 在那个项目建票，票会自动挂到名下并带上它的项目')
   }
 }
 
