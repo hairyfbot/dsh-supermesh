@@ -42,7 +42,7 @@ describe('supermesh in the official DSH shell', () => {
     expect(project.status).toBe(200)
     expect(project.body).toEqual([])
     expect(ticket.status).toBe(200)
-    expect(ticket.body).toEqual([])
+    expect(ticket.body).toMatchObject({ data: [], total: 0 })
     expect(node.status).toBe(200)
     expect(node.body).toEqual([])
     expect(edge.status).toBe(200)
