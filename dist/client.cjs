@@ -4707,6 +4707,10 @@ async function getApiSupermeshTicket(query, config) {
 	return (await fetch(`/api/supermesh/ticket?${querystr}`, { ...config })).json();
 }
 /** @method get */
+async function getApiSupermeshTicketCount(config) {
+	return (await fetch("/api/supermesh/ticket/count", { ...config })).json();
+}
+/** @method get */
 async function getApiSupermeshTicketId(paths, config) {
 	return (await fetch(`/api/supermesh/ticket/${paths.id}`, { ...config })).json();
 }
@@ -6215,6 +6219,7 @@ const keys = {
 		page,
 		pageSize
 	],
+	ticketCount: ["ticket", "count"],
 	topic: ["topic"],
 	topicPage: (page, pageSize, filters) => [
 		"topic",
@@ -7248,7 +7253,7 @@ function FeishuDetail() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.channel,
-			queryFn: _temp$29,
+			queryFn: _temp$28,
 			staleTime: 0,
 			gcTime: 0,
 			refetchOnMount: "always"
@@ -7332,7 +7337,7 @@ function FeishuDetail() {
 function _temp2$18(channel) {
 	return channel.id === "feishu";
 }
-function _temp$29() {
+function _temp$28() {
 	return getApiSupermeshChannel();
 }
 // src/client/pages/channel/detail/components/section.tsx
@@ -8261,7 +8266,7 @@ function ChannelDetail() {
 	const $ = (0, import_dist.c)(21);
 	const { t } = useTranslation();
 	const { go } = useActions();
-	const kind = useStore(_temp$28);
+	const kind = useStore(_temp$27);
 	let t0;
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ArrowLeftIcon, {
@@ -8364,7 +8369,7 @@ function ChannelDetail() {
 	} else t10 = $[20];
 	return t10;
 }
-function _temp$28(state) {
+function _temp$27(state) {
 	return state.channel.selected;
 }
 // src/client/pages/channel/components/card.tsx
@@ -8377,7 +8382,7 @@ function Card(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.channel,
-			queryFn: _temp$27
+			queryFn: _temp$26
 		};
 		$[0] = t1;
 	} else t1 = $[0];
@@ -8582,7 +8587,7 @@ function Card(t0) {
 	} else t19 = $[59];
 	return t19;
 }
-function _temp$27() {
+function _temp$26() {
 	return getApiSupermeshChannel();
 }
 // src/client/pages/channel/page.tsx
@@ -59220,7 +59225,7 @@ function ActivityCard(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.trigger,
-			queryFn: _temp$26,
+			queryFn: _temp$25,
 			refetchInterval: 3e4
 		};
 		$[0] = t1;
@@ -59367,7 +59372,7 @@ function ActivityCard(t0) {
 function _temp2$17(trigger_0) {
 	return !trigger_0.mentioned;
 }
-function _temp$26() {
+function _temp$25() {
 	return getApiSupermeshTrigger();
 }
 // src/client/pages/overview/components/ask-card.tsx
@@ -59379,7 +59384,7 @@ function AskCard() {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t0 = {
 			queryKey: keys.pending,
-			queryFn: _temp$25,
+			queryFn: _temp$24,
 			refetchInterval: 15e3
 		};
 		$[0] = t0;
@@ -59544,7 +59549,7 @@ function _temp3$10(message) {
 function _temp2$16(input) {
 	return postApiSupermeshAskIdAnswer({ id: encodeURIComponent(input.id) }, { answer: input.answer });
 }
-function _temp$25() {
+function _temp$24() {
 	return getApiSupermeshPending();
 }
 // src/client/pages/overview/components/channel-tile.tsx
@@ -59642,7 +59647,7 @@ function ChannelCard(t0) {
 	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
 		t1 = {
 			queryKey: keys.channel,
-			queryFn: _temp$24
+			queryFn: _temp$23
 		};
 		$[0] = t1;
 	} else t1 = $[0];
@@ -59767,7 +59772,7 @@ function _temp2$15(channel) {
 		connected: channel.status === "online"
 	};
 }
-function _temp$24() {
+function _temp$23() {
 	return getApiSupermeshChannel();
 }
 // src/client/pages/overview/components/task-chart.tsx
@@ -59790,7 +59795,7 @@ function TaskChart(t0) {
 	} else t1 = $[2];
 	let t2;
 	if ($[5] !== segments) {
-		t2 = segments.some(_temp$23) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
+		t2 = segments.some(_temp$22) ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.ResponsiveContainer, {
 			width: "100%",
 			height: "100%",
 			minWidth: 0,
@@ -59848,7 +59853,7 @@ function TaskChart(t0) {
 function _temp2$14(segment_0) {
 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(import_lib.Cell, { fill: segment_0.color }, segment_0.name);
 }
-function _temp$23(segment_1) {
+function _temp$22(segment_1) {
 	return segment_1.value > 0;
 }
 // src/client/pages/overview/components/task-card.tsx
@@ -59866,140 +59871,69 @@ const SEGMENTS = [
 		color: "var(--dsw-alias-state-error-primary)"
 	}
 ];
-function TaskCard(t0) {
-	const $ = (0, import_dist.c)(20);
-	const { onMore } = t0;
+function TaskCard({ onMore }) {
 	const { t } = useTranslation();
-	let t1;
-	if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-		t1 = {
-			queryKey: keys.ticketPage(1, 100),
-			queryFn: _temp$22
-		};
-		$[0] = t1;
-	} else t1 = $[0];
-	const { data: tickets, isLoading, error } = useQuery(t1);
-	let t2;
-	if ($[1] !== tickets?.data) {
-		t2 = tickets?.data ?? [];
-		$[1] = tickets?.data;
-		$[2] = t2;
-	} else t2 = $[2];
-	const list = t2;
-	const now = Date.now();
-	let t3;
-	if ($[3] !== list) {
-		let t4;
-		if ($[5] === Symbol.for("react.memo_cache_sentinel")) {
-			t4 = (ticket) => Date.parse(ticket.createdAt) >= now - 864e5;
-			$[5] = t4;
-		} else t4 = $[5];
-		t3 = list.filter(t4);
-		$[3] = list;
-		$[4] = t3;
-	} else t3 = $[4];
-	const added = t3.length;
-	let t4;
-	if ($[6] !== added || $[7] !== error || $[8] !== isLoading || $[9] !== list || $[10] !== onMore || $[11] !== t) {
-		let t5;
-		if ($[13] !== list) {
-			t5 = (segment) => ({
-				...segment,
-				value: list.filter((ticket_0) => {
-					const closed = ticket_0.status === "done" || ticket_0.status === "cancelled";
-					if (segment.name === "overviewCompleted") return ticket_0.status === "done";
-					if (segment.name === "overviewBlocked") return !closed && Boolean(ticket_0.paused || ticket_0.prepareError);
-					return !closed && !ticket_0.paused && !ticket_0.prepareError && [
-						"running",
-						"queued",
-						"review"
-					].includes(ticket_0.status);
-				}).length
-			});
-			$[13] = list;
-			$[14] = t5;
-		} else t5 = $[14];
-		const segments = SEGMENTS.map(t5);
-		let t6;
-		if ($[15] !== t) {
-			t6 = t("overviewTaskSummary");
-			$[15] = t;
-			$[16] = t6;
-		} else t6 = $[16];
-		let t7;
-		if ($[17] === Symbol.for("react.memo_cache_sentinel")) {
-			t7 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
-				width: 18,
-				height: 18,
-				className: "shrink-0"
-			});
-			$[17] = t7;
-		} else t7 = $[17];
-		let t8;
-		if ($[18] !== t) {
-			t8 = t("overviewMoreTasks");
-			$[18] = t;
-			$[19] = t8;
-		} else t8 = $[19];
-		t4 = /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SummaryCard, {
-			title: t6,
-			icon: t7,
-			actionLabel: t8,
-			onMore,
-			children: error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "alert",
-				className: "mt-auto text-xs leading-5 text-(--dsw-alias-state-error-primary)",
-				children: error instanceof Error ? error.message : "任务列表加载失败"
-			}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
-				role: "status",
-				className: "mt-auto text-xs leading-5 text-(--dsw-alias-label-tertiary)",
-				children: "加载中…"
-			}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-				className: "flex min-h-0 flex-1 items-center justify-between gap-3",
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-					className: "flex h-full min-w-0 flex-col",
-					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
-						className: "flex items-baseline gap-1.5 tabular-nums",
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-[32px] leading-10 font-semibold tracking-tight",
-							children: added
-						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-							className: "text-xs text-(--dsw-alias-label-secondary)",
-							children: t("overviewAdded")
-						})]
-					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dl", {
-						className: "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
-						children: segments.map((segment_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-							className: "col-span-2 grid grid-cols-subgrid items-center whitespace-nowrap",
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dt", {
-								className: "flex items-center gap-2",
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
-									className: "size-1.5 shrink-0 rounded-full",
-									style: { background: segment_0.color }
-								}), t(segment_0.name)]
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
-								className: "m-0 text-right tabular-nums",
-								children: segment_0.value
-							})]
-						}, segment_0.name))
+	const { data: counts, isLoading, error } = useQuery({
+		queryKey: keys.ticketCount,
+		queryFn: () => getApiSupermeshTicketCount(),
+		refetchInterval: 3e4
+	});
+	const segments = SEGMENTS.map((segment) => ({
+		...segment,
+		value: {
+			overviewInProgress: counts?.inProgress,
+			overviewCompleted: counts?.completed,
+			overviewBlocked: counts?.blocked
+		}[segment.name] ?? 0
+	}));
+	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SummaryCard, {
+		title: t("overviewTaskSummary"),
+		icon: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TasksIcon, {
+			width: 18,
+			height: 18,
+			className: "shrink-0"
+		}),
+		actionLabel: t("overviewMoreTasks"),
+		onMore,
+		children: error ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "alert",
+			className: "mt-auto text-xs leading-5 text-(--dsw-alias-state-error-primary)",
+			children: error instanceof Error ? error.message : "任务列表加载失败"
+		}) : isLoading ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+			role: "status",
+			className: "mt-auto text-xs leading-5 text-(--dsw-alias-label-tertiary)",
+			children: "加载中…"
+		}) : /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+			className: "flex min-h-0 flex-1 items-center justify-between gap-3",
+			children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: "flex h-full min-w-0 flex-col",
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
+					className: "flex items-baseline gap-1.5 tabular-nums",
+					children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: "text-[32px] leading-10 font-semibold tracking-tight",
+						children: counts?.added ?? 0
+					}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						className: "text-xs text-(--dsw-alias-label-secondary)",
+						children: t("overviewAdded")
 					})]
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskChart, { segments })]
-			})
-		});
-		$[6] = added;
-		$[7] = error;
-		$[8] = isLoading;
-		$[9] = list;
-		$[10] = onMore;
-		$[11] = t;
-		$[12] = t4;
-	} else t4 = $[12];
-	return t4;
-}
-function _temp$22() {
-	return getApiSupermeshTicket({
-		page: "1",
-		pageSize: "100"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dl", {
+					className: "mt-auto grid grid-cols-[auto_max-content] gap-x-5 gap-y-1 text-xs leading-5 text-(--dsw-alias-label-secondary)",
+					children: segments.map((segment_0) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+						className: "col-span-2 grid grid-cols-subgrid items-center whitespace-nowrap",
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("dt", {
+							className: "flex items-center gap-2",
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: "size-1.5 shrink-0 rounded-full",
+								style: { background: segment_0.color }
+							}), t(segment_0.name)]
+						}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("dd", {
+							className: "m-0 text-right tabular-nums",
+							children: segment_0.value
+						})]
+					}, segment_0.name))
+				})]
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(TaskChart, { segments })]
+		})
 	});
 }
 // src/client/config/constants.ts

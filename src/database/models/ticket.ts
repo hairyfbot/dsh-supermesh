@@ -161,7 +161,15 @@ export class Ticket extends Model<DB, 'ticket'> {
       const threads = await trx.selectFrom('thread').selectAll().where('id', 'in', ids).execute()
       if (threads.length !== ids.length)
         throw new Error('来源话题不存在')
-      const duplicate = await trx.selectFrom('ticket_thread').select('ticketId').where('threadId', 'in', ids).executeTakeFirst()
+      // 去重限同一项目内：同一话题在同一项目里重复建票是噪音，
+      // 但跨项目共用同一话题是正常协调（flow.md：一条话题可以同时被两个项目的票跟着）。
+      const duplicate = await trx
+        .selectFrom('ticket_thread')
+        .innerJoin('ticket', 'ticket.id', 'ticket_thread.ticketId')
+        .select('ticket_thread.ticketId')
+        .where('ticket_thread.threadId', 'in', ids)
+        .where('ticket.projectId', '=', projectId)
+        .executeTakeFirst()
       if (duplicate)
         throw new Error(`来源话题已关联工单：${duplicate.ticketId}`)
       const now = new Date().toISOString()

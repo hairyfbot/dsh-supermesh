@@ -64,12 +64,16 @@ export const create_ticket = defineTool({
     if (!args.threadIds.length)
       throw new Error('建票至少要有一条来源话题')
     for (const threadId of args.threadIds) {
-      const thread = await db.thread.findById(threadId)
-      if (!thread)
+      if (!(await db.thread.findById(threadId)))
         throw new Error('来源话题不存在')
-      if (thread.projectId && thread.projectId !== args.projectId)
-        throw new Error('来源话题不属于该项目')
     }
+    // 话题归属的是分诊关系，不是 Git 身份：一条话题可以同时被两个项目的票跟着。
+    // 上游仓库没有自己的 issue 时，跨项目协调正是靠「拿已有话题去建别的项目的票」。
+    const project = await db.project.findById(args.projectId)
+    if (!project)
+      throw new Error('项目不存在')
+    if (!project.enabled)
+      throw new Error('项目未启用')
     const ticket = await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description)
     await db.supervisorTicket.link(identity.supervisorId, ticket.id, new Date().toISOString())
     return JSON.stringify({ id: ticket.id, status: ticket.status })

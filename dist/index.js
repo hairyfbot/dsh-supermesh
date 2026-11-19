@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-C7pQKon5.js";
+import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-CmGdDdSV.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -3725,11 +3725,10 @@ const create_ticket = defineTool({
 		if (!identity) throw new Error("当前会话没有 Supermesh 身份");
 		if (identity.role !== "supervisor" || !identity.supervisorId) throw new Error("仅 Supervisor 可调用");
 		if (!args.threadIds.length) throw new Error("建票至少要有一条来源话题");
-		for (const threadId of args.threadIds) {
-			const thread = await db.thread.findById(threadId);
-			if (!thread) throw new Error("来源话题不存在");
-			if (thread.projectId && thread.projectId !== args.projectId) throw new Error("来源话题不属于该项目");
-		}
+		for (const threadId of args.threadIds) if (!await db.thread.findById(threadId)) throw new Error("来源话题不存在");
+		const project = await db.project.findById(args.projectId);
+		if (!project) throw new Error("项目不存在");
+		if (!project.enabled) throw new Error("项目未启用");
 		const ticket = await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description);
 		await db.supervisorTicket.link(identity.supervisorId, ticket.id, (/* @__PURE__ */ new Date()).toISOString());
 		return JSON.stringify({

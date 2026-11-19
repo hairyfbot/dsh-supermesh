@@ -1036,6 +1036,10 @@ var Ticket = class Ticket extends Model {
 			total: Number(counted?.count ?? 0)
 		};
 	}
+	/** 全量票，供统计类接口使用；不受分页上限影响。 */
+	async listAll() {
+		return this.findManyQuery().execute();
+	}
 	async listFiltered(filters = {}) {
 		let query = this.db.selectFrom("ticket").selectAll("ticket").select((eb) => eb.exists(eb.selectFrom("inbox").select("id").whereRef("inbox.ticketId", "=", "ticket.id").where("kind", "=", "ask").where("inbox.status", "=", "pending")).as("attention"));
 		if (filters.projectId) query = query.where("ticket.projectId", "=", filters.projectId);
@@ -1052,7 +1056,7 @@ var Ticket = class Ticket extends Model {
 			const ids = [...new Set(threadIds)];
 			const threads = await trx.selectFrom("thread").selectAll().where("id", "in", ids).execute();
 			if (threads.length !== ids.length) throw new Error("来源话题不存在");
-			const duplicate = await trx.selectFrom("ticket_thread").select("ticketId").where("threadId", "in", ids).executeTakeFirst();
+			const duplicate = await trx.selectFrom("ticket_thread").innerJoin("ticket", "ticket.id", "ticket_thread.ticketId").select("ticket_thread.ticketId").where("ticket_thread.threadId", "in", ids).where("ticket.projectId", "=", projectId).executeTakeFirst();
 			if (duplicate) throw new Error(`来源话题已关联工单：${duplicate.ticketId}`);
 			const now = (/* @__PURE__ */ new Date()).toISOString();
 			let sequence = (await trx.selectFrom("ticket").select("id").execute()).reduce((max, row) => {
@@ -3800,7 +3804,7 @@ const worker = defineService({
 			if (ticket.prState === "merged" || ticket.prState === "closed") {
 				const now = (/* @__PURE__ */ new Date()).toISOString();
 				await db.worker.end(worker.id, "stopped", now);
-				await db.ticket.finish(ticket.id, "done", now, now);
+				await finishTicket(ticket.id, "done", now, now);
 				await releaseDependents(ticket.id);
 				continue;
 			}
@@ -3848,7 +3852,7 @@ const worker = defineService({
 			if (ticket.prState === "merged" || ticket.prState === "closed") {
 				const now = (/* @__PURE__ */ new Date()).toISOString();
 				await db.worker.end(worker.id, "stopped", now);
-				await db.ticket.finish(ticket.id, "done", now, now);
+				await finishTicket(ticket.id, "done", now, now);
 				await releaseDependents(ticket.id);
 				continue;
 			}
@@ -3927,7 +3931,7 @@ const worker = defineService({
 					await session.stop(worker.id);
 					await db.worker.end(worker.id, "failed", (/* @__PURE__ */ new Date()).toISOString());
 					const latest = await db.ticket.findById(ticket.id);
-					if (latest && latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
+					if (latest && latest.prState === "merged" && latest.status !== "done") await finishTicket(latest.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
 					else if (!latest || latest.status !== "done" && latest.status !== "cancelled") await db.ticket.update(ticket.id, {
 						status: "waiting",
 						updatedAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -3965,7 +3969,7 @@ const worker = defineService({
 			if (!(await db.project.findById(ticket.projectId))?.enabled) continue;
 			if (ticket.prState === "merged" || ticket.prState === "closed") {
 				const now = (/* @__PURE__ */ new Date()).toISOString();
-				await db.ticket.finish(ticket.id, "done", now, now);
+				await finishTicket(ticket.id, "done", now, now);
 				await releaseDependents(ticket.id);
 				continue;
 			}
@@ -3990,7 +3994,7 @@ const worker = defineService({
 				if (project && !project.enabled) continue;
 				if (ticket.prState === "merged") {
 					await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
-					await db.ticket.finish(ticket.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
+					await finishTicket(ticket.id, "done", (/* @__PURE__ */ new Date()).toISOString(), (/* @__PURE__ */ new Date()).toISOString());
 					await releaseDependents(ticket.id);
 					continue;
 				}
@@ -4017,7 +4021,7 @@ const worker = defineService({
 				const now = (/* @__PURE__ */ new Date()).toISOString();
 				const latest = await db.ticket.findById(ticket.id);
 				if (latest && (latest.status === "done" || latest.status === "cancelled" || latest.prState === "merged")) {
-					if (latest.prState === "merged" && latest.status !== "done") await db.ticket.finish(latest.id, "done", now, now);
+					if (latest.prState === "merged" && latest.status !== "done") await finishTicket(latest.id, "done", now, now);
 					await db.worker.end(worker.id, "stopped", now);
 					continue;
 				}
@@ -4076,8 +4080,8 @@ async function finish(current, reason) {
 	await db.worker.end(current.id, reason ?? (current.reportState === "failed" ? "failed" : "completed"), now);
 	const ticket = await db.ticket.findById(current.ticketId);
 	if (ticket && ticket.status !== "done" && ticket.status !== "cancelled") {
-		if (ticket.prState === "merged" || ticket.prState === "closed") await db.ticket.finish(ticket.id, "done", now, now);
-		else if (!reason && current.reportState === "dropped") await db.ticket.finish(ticket.id, "done", now, now);
+		if (ticket.prState === "merged" || ticket.prState === "closed") await finishTicket(ticket.id, "done", now, now);
+		else if (!reason && current.reportState === "dropped") await finishTicket(ticket.id, "done", now, now);
 		else await db.ticket.update(ticket.id, {
 			status: !reason && current.reportState === "ready" ? "review" : "waiting",
 			updatedAt: now
@@ -4102,6 +4106,11 @@ async function blockedByDependency(ticketId) {
 * 不要求两票之间有 depends —— 跨项目协调里 supervisor 往往靠「这张做完了」才能派下一张，
 * 漏掉这条通知，整条链路就停在原地，票却不报错。
 */
+/** 结单并通知相关方：所有终态路径都必须经过这里，否则 supervisor 收不到「这张做完了」。 */
+async function finishTicket(id, status, endedAt, updatedAt) {
+	await db.ticket.finish(id, status, endedAt, updatedAt);
+	await notifySupervisor(id);
+}
 async function notifySupervisor(ticketId) {
 	const ticket = await db.ticket.findById(ticketId);
 	if (!ticket || ticket.status !== "done" && ticket.status !== "cancelled") return;
@@ -4120,7 +4129,6 @@ async function notifySupervisor(ticketId) {
 	}
 }
 async function releaseDependents(relatedId) {
-	await notifySupervisor(relatedId);
 	for (const link of await db.ticketLink.listDependents(relatedId)) {
 		const ticket = await db.ticket.findById(link.ticketId);
 		if (!ticket || ticket.status !== "waiting" || ticket.paused) continue;
@@ -4139,7 +4147,7 @@ async function deferWhileWaiting(current) {
 	const now = (/* @__PURE__ */ new Date()).toISOString();
 	await db.worker.end(current.id, "completed", now);
 	if (ticket.prState === "merged") {
-		await db.ticket.finish(ticket.id, "done", now, now);
+		await finishTicket(ticket.id, "done", now, now);
 		return;
 	}
 	await db.ticket.update(ticket.id, {
@@ -4212,6 +4220,34 @@ var ticket_get_default = defineHandler(async (event) => {
 		...await db.ticket.findManyPage(page, pageSize),
 		page,
 		pageSize
+	};
+});
+// src/server/routes/ticket.count.get.ts
+/** 任务卡片的统计：全量计数，不受分页与列表取数上限影响。 */
+var ticket_count_get_default = defineHandler(async () => {
+	const rows = await db.ticket.listAll();
+	const since = Date.now() - 864e5;
+	let added = 0;
+	let inProgress = 0;
+	let completed = 0;
+	let blocked = 0;
+	for (const ticket of rows) {
+		if (Date.parse(ticket.createdAt) >= since) added++;
+		const closed = ticket.status === "done" || ticket.status === "cancelled";
+		if (ticket.status === "done") completed++;
+		else if (!closed && (ticket.paused || ticket.prepareError)) blocked++;
+		else if (!closed && !ticket.paused && !ticket.prepareError && [
+			"running",
+			"queued",
+			"review"
+		].includes(ticket.status)) inProgress++;
+	}
+	return {
+		all: rows.length,
+		added,
+		inProgress,
+		completed,
+		blocked
 	};
 });
 // src/service/topic.ts
@@ -4391,6 +4427,7 @@ const server = defineWebServer((app) => {
 	app.post("/api/supermesh/project/:id/opening", project__id__opening_post_default);
 	app.post("/api/supermesh/repository", project_repository_post_default);
 	app.get("/api/supermesh/ticket", ticket_get_default);
+	app.get("/api/supermesh/ticket/count", ticket_count_get_default);
 	app.get("/api/supermesh/ticket/current", ticket_current_get_default);
 	app.get("/api/supermesh/ticket/:id", ticket__id__get_default);
 	app.patch("/api/supermesh/ticket/:id", ticket__id__patch_default);
@@ -4501,7 +4538,7 @@ const channel = defineService({
 		const operation = writing.then(() => removeCredentials(kind));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DA3024-o.js");
+			const { shell } = await import("./shell-D9yQOiti.js");
 			await shell.refresh();
 			return view;
 		});
@@ -4510,7 +4547,7 @@ const channel = defineService({
 		const operation = writing.then(() => save(kind, patch));
 		writing = operation.catch(() => void 0);
 		return operation.then(async (view) => {
-			const { shell } = await import("./shell-DA3024-o.js");
+			const { shell } = await import("./shell-D9yQOiti.js");
 			await shell.refresh();
 			return view;
 		});
