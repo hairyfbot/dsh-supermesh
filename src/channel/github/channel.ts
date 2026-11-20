@@ -69,6 +69,7 @@ export class GitHubChannel implements ChannelAdapter {
       // 仓库改名/转移后旧全名仍被重定向，但项目记录还停在旧名：跟随新名并落库，
       // 否则每个采集周期都在 probe 阶段失败，且作用域解析不出来，什么都不留。
       await db.project.setRemoteUrl(project.id, `https://github.com/${canonical}`, now())
+      await db.sourceState.renameScope('github', repository, canonical, now())
       await courier.record('github', canonical, 'repository_renamed', { from: repository, to: canonical })
     }
     const result = { providerId, login, repositoryId: identity(remote.id), defaultBranch: typeof remote.default_branch === 'string' ? remote.default_branch : null }

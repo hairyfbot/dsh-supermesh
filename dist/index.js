@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as singlet, f as setting, g as db, h as channelProxyEnvironment, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as devops, t as channel, u as session } from "./channel-BEzA0KbX.js";
+import { a as project, c as shell, d as singlet, f as setting, g as db, h as channelProxyEnvironment, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as devops, t as channel, u as session } from "./channel-eDqcOvFj.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1291,6 +1291,7 @@ var GitHubChannel = class {
 		const canonical = resource$1.renamed(repository, text(remote.full_name)) ?? repository;
 		if (canonical !== repository) {
 			await db.project.setRemoteUrl(project.id, `https://github.com/${canonical}`, now());
+			await db.sourceState.renameScope("github", repository, canonical, now());
 			await courier.record("github", canonical, "repository_renamed", {
 				from: repository,
 				to: canonical

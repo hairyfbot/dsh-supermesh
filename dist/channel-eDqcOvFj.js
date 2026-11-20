@@ -860,6 +860,19 @@ var SourceState = class {
 	async remove(channelId, name) {
 		await this.db.deleteFrom("source_state").where("channelId", "=", channelId).where("name", "=", name).execute();
 	}
+	/**
+	* 仓库改名后把旧作用域的游标整体搬到新作用域。
+	* 不搬的话采集会从「此刻」重新开始，改名瞬间未采集的增量就永久丢了。
+	*/
+	async renameScope(channelId, from, to, updatedAt) {
+		for (const row of await this.listByChannel(channelId)) {
+			if (!row.name.startsWith(`${from}:`)) continue;
+			const name = `${to}:${row.name.slice(from.length + 1)}`;
+			if (await this.find(channelId, name)) continue;
+			await this.set(channelId, name, row.value, updatedAt);
+			await this.remove(channelId, row.name);
+		}
+	}
 };
 // src/database/models/supervisor.ts
 var Supervisor = class extends Model {
@@ -2651,14 +2664,14 @@ const devops = defineService({
 	},
 	save(kind, patch) {
 		return channel.serialize(() => save(kind, patch)).then(async (view) => {
-			const { shell } = await import("./shell-BsD17F-d.js");
+			const { shell } = await import("./shell-Bj-vzt4e.js");
 			await shell.refresh();
 			return view;
 		});
 	},
 	removeCredentials(kind) {
 		return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
-			const { shell } = await import("./shell-BsD17F-d.js");
+			const { shell } = await import("./shell-Bj-vzt4e.js");
 			await shell.refresh();
 			return view;
 		});

@@ -51,4 +51,20 @@ export class SourceState {
       .where('name', '=', name)
       .execute()
   }
+
+  /**
+   * 仓库改名后把旧作用域的游标整体搬到新作用域。
+   * 不搬的话采集会从「此刻」重新开始，改名瞬间未采集的增量就永久丢了。
+   */
+  async renameScope(channelId: string, from: string, to: string, updatedAt: string): Promise<void> {
+    for (const row of await this.listByChannel(channelId)) {
+      if (!row.name.startsWith(`${from}:`))
+        continue
+      const name = `${to}:${row.name.slice(from.length + 1)}`
+      if (await this.find(channelId, name))
+        continue
+      await this.set(channelId, name, row.value, updatedAt)
+      await this.remove(channelId, row.name)
+    }
+  }
 }
