@@ -27,5 +27,7 @@ export interface ChannelView {
   status: 'unsupported' | 'unconfigured' | 'disabled' | 'offline' | 'online'
   commitName: string
   commitEmail: string
+  commitEmailSuggestion: string
+  providerId: string
   accounts: { id: string, channelId: string, role: 'bot' | 'admin', name: string, avatar: string | null, status: 'online' | 'offline', createdAt: string }[]
 }

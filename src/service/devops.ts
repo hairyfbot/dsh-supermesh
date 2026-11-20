@@ -18,6 +18,7 @@ import { db } from '@/database'
 import { server } from '@/server'
 import { channel } from '@/service/channel'
 import { shell } from '@/service/shell'
+import { noreplyEmail } from '@/utils/git-identity'
 import { defineService } from '@/utils/service'
 
 interface Authentication {
@@ -129,7 +130,7 @@ async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelV
     throw new TypeError('invalid_channel_host')
   const hostChanged = kind === 'gitlab' && url.origin !== new URL(current.host ?? 'https://gitlab.com').origin
   const token = patch.token?.trim()
-  let account: { name: string, avatar: string | null } | undefined
+  let account: { name: string, avatar: string | null, providerId: string } | undefined
   if (hostChanged && (current.hasCredential || current.accounts.length > 0) && !token)
     throw new TypeError('channel_account_required')
   if (token)
@@ -137,9 +138,20 @@ async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelV
   const enabled = patch.enabled ?? (Boolean(account) || current.enabled)
   if (enabled && !account && !current.accounts.some(account => account.role === 'bot' && account.status === 'online'))
     throw new TypeError('channel_account_required')
+  // 老配置没存账号 id：编辑提交身份时用已存凭据补验一次，才拿得到正确的 noreply 默认值。
+  let identity = account
+  if (!identity && !current.providerId && (patch.commitName !== undefined || patch.commitEmail !== undefined)) {
+    const stored = await channel.resolveCredential(kind)
+    if (stored)
+      identity = await verify(kind, url, stored).catch(() => undefined)
+  }
+  const providerId = identity?.providerId ?? current.providerId
+  const login = identity?.name ?? current.accounts.find(account => account.role === 'bot')?.name ?? ''
+  // 平台按邮箱归属提交：没填邮箱时直接落成账号的 noreply 地址，避免 bot 的提交记到人头上。
+  const commitEmail = patch.commitEmail?.trim() || current.commitEmail || noreplyEmail(kind, login, providerId, url.origin)
   const previous = token ? await channel.storeCredential(kind, token) : undefined
   try {
-    await db.channel.saveConfiguration(kind, current.name, kind === 'gitlab' ? url.origin : null, enabled, { commitName: patch.commitName?.trim() ?? current.commitName, commitEmail: patch.commitEmail?.trim() ?? current.commitEmail }, account, ...(hostChanged ? [true] as const : []))
+    await db.channel.saveConfiguration(kind, current.name, kind === 'gitlab' ? url.origin : null, enabled, { commitName: patch.commitName?.trim() ?? current.commitName, commitEmail, providerId }, account, ...(hostChanged ? [true] as const : []))
   }
   catch {
     if (token) {
@@ -153,7 +165,7 @@ async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelV
   return (await channel.list()).find(item => item.kind === kind)!
 }
 
-async function verify(kind: 'github' | 'gitlab', url: URL, token: string): Promise<{ name: string, avatar: string | null }> {
+async function verify(kind: 'github' | 'gitlab', url: URL, token: string): Promise<{ name: string, avatar: string | null, providerId: string }> {
   const endpoint = kind === 'github' ? 'https://api.github.com/user' : `${url.origin}/api/v4/user`
   const env = await channelProxyEnvironment(new URL(endpoint), process.env)
   const dispatcher = await createRouteDispatcher({ get: name => env[name] === undefined ? undefined : { value: env[name] } }, { allowH2: false })
@@ -182,7 +194,13 @@ async function verify(kind: 'github' | 'gitlab', url: URL, token: string): Promi
     const login = kind === 'github' ? user.login : user.username ?? user.name
     if (typeof login !== 'string' || !login.trim() || login.length > 200 || /[\r\n]/.test(login))
       throw new Error('channel_auth_failed')
-    return { name: login.trim(), avatar: null }
+    const id = user.id
+    if (typeof id !== 'number' && typeof id !== 'string')
+      throw new Error('channel_auth_failed')
+    const providerId = String(id)
+    if (!/^\d+$/.test(providerId))
+      throw new Error('channel_auth_failed')
+    return { name: login.trim(), avatar: null, providerId }
   }
   finally {
     await dispatcher.close()

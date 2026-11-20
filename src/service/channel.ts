@@ -4,6 +4,7 @@ import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { getServerContext } from 'dsh-h3/utils'
 import { db } from '@/database'
 import { server } from '@/server'
+import { noreplyEmail } from '@/utils/git-identity'
 import { defineService } from '@/utils/service'
 
 const presets = [{ id: 'github', name: 'GitHub' }, { id: 'gitlab', name: 'GitLab' }, { id: 'feishu', name: '飞书' }] as const
@@ -21,6 +22,8 @@ export const channel = defineService({
       const stored = await db.sourceState.find(preset.id, 'configuration')
       const configured = hasCredential || members.length > 0 || Boolean(stored)
       const metadata = readMetadata(stored?.value)
+      const bot = members.find(account => account.role === 'bot')
+      const suggestion = bot && (preset.id === 'github' || preset.id === 'gitlab') ? noreplyEmail(preset.id, bot.name, metadata.providerId, row?.host ?? (preset.id === 'gitlab' ? 'https://gitlab.com' : 'https://github.com')) : ''
       return {
         id: preset.id,
         kind: preset.id,
@@ -33,7 +36,10 @@ export const channel = defineService({
         supported,
         hasCredential,
         status: !supported ? 'unsupported' : !configured ? 'unconfigured' : !enabled ? 'disabled' : members.some(account => account.role === 'bot' && account.status === 'online') ? 'online' : 'offline',
-        ...metadata,
+        commitName: metadata.commitName,
+        commitEmail: metadata.commitEmail,
+        commitEmailSuggestion: suggestion,
+        providerId: metadata.providerId,
       }
     }))
   },
@@ -81,11 +87,11 @@ function legacyRef(kind: 'github' | 'gitlab') {
   return credentialRef(kind === 'github' ? 'NEXUS_GITHUB_TOKEN' : 'NEXUS_GITLAB_TOKEN')
 }
 
-function readMetadata(raw: string | undefined): { commitName: string, commitEmail: string } {
+function readMetadata(raw: string | undefined): { commitName: string, commitEmail: string, providerId: string } {
   if (!raw)
-    return { commitName: '', commitEmail: '' }
+    return { commitName: '', commitEmail: '', providerId: '' }
   const value: unknown = JSON.parse(raw)
-  if (!value || typeof value !== 'object' || !('commitName' in value) || !('commitEmail' in value) || typeof value.commitName !== 'string' || typeof value.commitEmail !== 'string')
+  if (!value || typeof value !== 'object' || !('commitName' in value) || !('commitEmail' in value) || typeof value.commitName !== 'string' || typeof value.commitEmail !== 'string' || ('providerId' in value && value.providerId !== undefined && typeof value.providerId !== 'string'))
     throw new Error('invalid_channel_metadata')
-  return { commitName: value.commitName, commitEmail: value.commitEmail }
+  return { commitName: value.commitName, commitEmail: value.commitEmail, providerId: 'providerId' in value && typeof value.providerId === 'string' ? value.providerId : '' }
 }

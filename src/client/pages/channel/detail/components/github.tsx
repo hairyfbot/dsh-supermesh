@@ -32,8 +32,11 @@ export function GithubDetail(): ReactNode {
   const [token, setToken] = useState('')
   const [commitName, setCommitName] = useState<string | null>(null)
   const [commitEmail, setCommitEmail] = useState<string | null>(null)
+  const [confirmingEmail, setConfirmingEmail] = useState(false)
+  const suggestion = channel?.commitEmailSuggestion ?? ''
   const nameValue = commitName ?? channel?.commitName ?? ''
-  const emailValue = commitEmail ?? channel?.commitEmail ?? ''
+  const emailValue = commitEmail ?? channel?.commitEmail ?? suggestion
+  const emailMismatch = Boolean(suggestion) && Boolean(emailValue.trim()) && emailValue.trim().toLowerCase() !== suggestion.toLowerCase()
   const hasCredential = Boolean(channel?.hasCredential)
   const identityDirty = nameValue.trim() !== (channel?.commitName ?? '').trim() || emailValue.trim() !== (channel?.commitEmail ?? '').trim()
   const dirty = token.length > 0 || identityDirty
@@ -147,10 +150,11 @@ export function GithubDetail(): ReactNode {
     setAuthNotice('')
     setCopyNotice('')
     setAuthentication(null)
+    setConfirmingEmail(false)
     authId.current = null
   }
-  const save = async (toggle = false): Promise<void> => {
-    if (!channel || savingRequest.current || authRequest.current || (toggle ? !hasCredential : !canSave))
+  const commit = async (toggle: boolean): Promise<void> => {
+    if (!channel || savingRequest.current || authRequest.current)
       return
     savingRequest.current = true
     setSaving(true)
@@ -173,6 +177,15 @@ export function GithubDetail(): ReactNode {
       savingRequest.current = false
       setSaving(false)
     }
+  }
+  const save = async (toggle = false): Promise<void> => {
+    if (!channel || savingRequest.current || authRequest.current || (toggle ? !hasCredential : !canSave))
+      return
+    if (!toggle && emailMismatch) {
+      setConfirmingEmail(true)
+      return
+    }
+    await commit(toggle)
   }
   const openDelete = (): void => {
     if (!hasCredential || savingRequest.current || authRequest.current)
@@ -243,10 +256,10 @@ export function GithubDetail(): ReactNode {
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${id}-commit-email`} className="text-xs font-medium">{t('channelCommitEmail')}</label>
-                <Input id={`${id}-commit-email`} type="email" placeholder="bot@example.com" value={emailValue} onChange={event => setCommitEmail(event.target.value)} disabled={busy} maxLength={254} autoComplete="off" spellCheck={false} />
+                <Input id={`${id}-commit-email`} type="email" placeholder={suggestion || 'bot@example.com'} value={emailValue} onChange={event => setCommitEmail(event.target.value)} disabled={busy} maxLength={254} autoComplete="off" spellCheck={false} aria-describedby={`${id}-commit-help`} />
               </div>
             </div>
-            <p className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelCommitHelp')}</p>
+            <p id={`${id}-commit-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelCommitHelp')}</p>
             <div className="flex flex-col gap-3 border-t border-(--dsw-alias-border-l3) pt-4">
               <div className="max-w-full overflow-x-auto"><SegmentedTabs value={method} onChange={setMethod} items={tabs} label={t('channelLoginMethod')} size="sm" className="w-fit" /></div>
               <div key={method} id={`${id}-${method}-panel`} role="tabpanel" aria-labelledby={`${id}-${method}`} tabIndex={0} className="flex min-w-0 flex-col items-start gap-3 rounded-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--dsw-alias-state-business-primary)">
@@ -291,6 +304,28 @@ export function GithubDetail(): ReactNode {
         </div>
         <Environment description={t('channelGithubWorkerIdentity')} />
       </div>
+      <Modal
+        open={confirmingEmail}
+        onClose={() => setConfirmingEmail(false)}
+        title={t('channelCommitEmailMismatchTitle')}
+        closeLabel={t('channelCancel')}
+        description={t('channelCommitEmailMismatchDescription', { email: emailValue.trim(), suggestion })}
+        footer={(
+          <>
+            <Button variant="outline" disabled={saving} onClick={() => setConfirmingEmail(false)}>{t('channelCancel')}</Button>
+            <Button
+              variant="primary"
+              disabled={saving}
+              onClick={() => {
+                setConfirmingEmail(false)
+                void commit(false)
+              }}
+            >
+              {t('channelCommitEmailMismatchConfirm')}
+            </Button>
+          </>
+        )}
+      />
       <Modal
         open={deletion !== null}
         onClose={closeDelete}

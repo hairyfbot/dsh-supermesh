@@ -2614,6 +2614,24 @@ async function own(path, content, mode = 384) {
 function quote(value) {
 	return `'${value.replaceAll("'", "'\\''")}'`;
 }
+// src/utils/git-identity.ts
+/**
+* 平台按邮箱归属提交，名字只影响显示。用账号的 noreply 地址才能让 bot 的提交记在 bot 名下。
+* GitHub：`<id>+<login>@users.noreply.github.com`；GitLab：`<username>@users.noreply.<host>`。
+*/
+function noreplyEmail(kind, login, providerId, host) {
+	const name = login.trim();
+	if (!name) return "";
+	if (kind === "github") {
+		const id = providerId.trim();
+		return /^\d+$/.test(id) ? `${id}+${name}@users.noreply.github.com` : "";
+	}
+	try {
+		return `${name}@users.noreply.${new URL(host).host}`;
+	} catch {
+		return "";
+	}
+}
 // src/service/devops.ts
 const authentications = /* @__PURE__ */ new Map();
 const active = /* @__PURE__ */ new Map();
@@ -2664,14 +2682,14 @@ const devops = defineService({
 	},
 	save(kind, patch) {
 		return channel.serialize(() => save(kind, patch)).then(async (view) => {
-			const { shell } = await import("./shell-Bj-vzt4e.js");
+			const { shell } = await import("./shell-DqQ6HtUt.js");
 			await shell.refresh();
 			return view;
 		});
 	},
 	removeCredentials(kind) {
 		return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
-			const { shell } = await import("./shell-Bj-vzt4e.js");
+			const { shell } = await import("./shell-DqQ6HtUt.js");
 			await shell.refresh();
 			return view;
 		});
@@ -2719,11 +2737,20 @@ async function save(kind, patch) {
 	if (token) account = await verify(kind, url, token);
 	const enabled = patch.enabled ?? (Boolean(account) || current.enabled);
 	if (enabled && !account && !current.accounts.some((account) => account.role === "bot" && account.status === "online")) throw new TypeError("channel_account_required");
+	let identity = account;
+	if (!identity && !current.providerId && (patch.commitName !== void 0 || patch.commitEmail !== void 0)) {
+		const stored = await channel.resolveCredential(kind);
+		if (stored) identity = await verify(kind, url, stored).catch(() => void 0);
+	}
+	const providerId = identity?.providerId ?? current.providerId;
+	const login = identity?.name ?? current.accounts.find((account) => account.role === "bot")?.name ?? "";
+	const commitEmail = patch.commitEmail?.trim() || current.commitEmail || noreplyEmail(kind, login, providerId, url.origin);
 	const previous = token ? await channel.storeCredential(kind, token) : void 0;
 	try {
 		await db.channel.saveConfiguration(kind, current.name, kind === "gitlab" ? url.origin : null, enabled, {
 			commitName: patch.commitName?.trim() ?? current.commitName,
-			commitEmail: patch.commitEmail?.trim() ?? current.commitEmail
+			commitEmail,
+			providerId
 		}, account, ...hostChanged ? [true] : []);
 	} catch {
 		if (token) {
@@ -2767,9 +2794,14 @@ async function verify(kind, url, token) {
 		const user = identity;
 		const login = kind === "github" ? user.login : user.username ?? user.name;
 		if (typeof login !== "string" || !login.trim() || login.length > 200 || /[\r\n]/.test(login)) throw new Error("channel_auth_failed");
+		const id = user.id;
+		if (typeof id !== "number" && typeof id !== "string") throw new Error("channel_auth_failed");
+		const providerId = String(id);
+		if (!/^\d+$/.test(providerId)) throw new Error("channel_auth_failed");
 		return {
 			name: login.trim(),
-			avatar: null
+			avatar: null,
+			providerId
 		};
 	} finally {
 		await dispatcher.close();
@@ -4634,6 +4666,8 @@ const channel = defineService({
 			const stored = await db.sourceState.find(preset.id, "configuration");
 			const configured = hasCredential || members.length > 0 || Boolean(stored);
 			const metadata = readMetadata(stored?.value);
+			const bot = members.find((account) => account.role === "bot");
+			const suggestion = bot && (preset.id === "github" || preset.id === "gitlab") ? noreplyEmail(preset.id, bot.name, metadata.providerId, row?.host ?? (preset.id === "gitlab" ? "https://gitlab.com" : "https://github.com")) : "";
 			return {
 				id: preset.id,
 				kind: preset.id,
@@ -4646,7 +4680,10 @@ const channel = defineService({
 				supported,
 				hasCredential,
 				status: !supported ? "unsupported" : !configured ? "unconfigured" : !enabled ? "disabled" : members.some((account) => account.role === "bot" && account.status === "online") ? "online" : "offline",
-				...metadata
+				commitName: metadata.commitName,
+				commitEmail: metadata.commitEmail,
+				commitEmailSuggestion: suggestion,
+				providerId: metadata.providerId
 			};
 		}));
 	},
@@ -4695,13 +4732,15 @@ function legacyRef(kind) {
 function readMetadata(raw) {
 	if (!raw) return {
 		commitName: "",
-		commitEmail: ""
+		commitEmail: "",
+		providerId: ""
 	};
 	const value = JSON.parse(raw);
-	if (!value || typeof value !== "object" || !("commitName" in value) || !("commitEmail" in value) || typeof value.commitName !== "string" || typeof value.commitEmail !== "string") throw new Error("invalid_channel_metadata");
+	if (!value || typeof value !== "object" || !("commitName" in value) || !("commitEmail" in value) || typeof value.commitName !== "string" || typeof value.commitEmail !== "string" || "providerId" in value && value.providerId !== void 0 && typeof value.providerId !== "string") throw new Error("invalid_channel_metadata");
 	return {
 		commitName: value.commitName,
-		commitEmail: value.commitEmail
+		commitEmail: value.commitEmail,
+		providerId: "providerId" in value && typeof value.providerId === "string" ? value.providerId : ""
 	};
 }
 export { project as a, shell as c, singlet as d, setting as f, db as g, channelProxyEnvironment as h, archive as i, inbox as l, DSH_PLUGIN_HOME as m, server as n, worktree as o, defineService as p, worker as r, devops as s, channel as t, session as u };

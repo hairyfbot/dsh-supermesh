@@ -33,6 +33,10 @@ export function GitlabDetail(): ReactNode {
   const [token, setToken] = useState('')
   const [commitName, setCommitName] = useState(channel?.commitName ?? '')
   const [commitEmail, setCommitEmail] = useState(channel?.commitEmail ?? '')
+  const [confirmingEmail, setConfirmingEmail] = useState(false)
+  const suggestion = channel?.commitEmailSuggestion ?? ''
+  const emailValue = commitEmail.trim() || suggestion
+  const emailMismatch = Boolean(suggestion) && Boolean(emailValue.trim()) && emailValue.trim().toLowerCase() !== suggestion.toLowerCase()
   const [host, setHost] = useState(channel?.host ?? 'https://gitlab.com')
   const [hostInvalid, setHostInvalid] = useState(false)
   const lifetime = useRef(new AbortController())
@@ -69,16 +73,14 @@ export function GitlabDetail(): ReactNode {
       throw new Error('channel_reload_failed')
     return saved
   }
-  const save = async (): Promise<void> => {
+  const commit = async (): Promise<void> => {
     if (savingRequest.current)
-      return
-    if (!validateHost())
       return
     savingRequest.current = true
     setSaving(true)
     setNotice('')
     try {
-      const result = await putApiSupermeshChannelIdConfiguration({ id: 'gitlab' }, { host: host.trim(), ...(token.trim() && !channel?.hasCredential ? { enabled: true } : {}), commitName: commitName.trim(), commitEmail: commitEmail.trim(), ...(token.trim() ? { token: token.trim() } : {}) }, { signal: lifetime.current.signal })
+      const result = await putApiSupermeshChannelIdConfiguration({ id: 'gitlab' }, { host: host.trim(), ...(token.trim() && !channel?.hasCredential ? { enabled: true } : {}), commitName: commitName.trim(), commitEmail: emailValue.trim(), ...(token.trim() ? { token: token.trim() } : {}) }, { signal: lifetime.current.signal })
       if (lifetime.current.signal.aborted)
         return
       if (!('channel' in result))
@@ -99,6 +101,17 @@ export function GitlabDetail(): ReactNode {
         setSaving(false)
     }
   }
+  const save = async (): Promise<void> => {
+    if (savingRequest.current)
+      return
+    if (!validateHost())
+      return
+    if (emailMismatch) {
+      setConfirmingEmail(true)
+      return
+    }
+    await commit()
+  }
   function reset(saved = channel): void {
     setHost(saved?.host ?? 'https://gitlab.com')
     setCommitName(saved?.commitName ?? '')
@@ -106,6 +119,7 @@ export function GitlabDetail(): ReactNode {
     setToken('')
     setHostInvalid(false)
     setNotice('')
+    setConfirmingEmail(false)
   }
   const toggle = async (): Promise<void> => {
     if (!channel?.hasCredential || savingRequest.current)
@@ -201,6 +215,28 @@ export function GitlabDetail(): ReactNode {
         )}
       />
       <Modal
+        open={confirmingEmail}
+        onClose={() => setConfirmingEmail(false)}
+        title={t('channelCommitEmailMismatchTitle')}
+        closeLabel={t('channelCancel')}
+        description={t('channelCommitEmailMismatchDescription', { email: emailValue.trim(), suggestion })}
+        footer={(
+          <>
+            <Button variant="outline" disabled={saving} onClick={() => setConfirmingEmail(false)}>{t('channelCancel')}</Button>
+            <Button
+              variant="primary"
+              disabled={saving}
+              onClick={() => {
+                setConfirmingEmail(false)
+                void commit()
+              }}
+            >
+              {t('channelCommitEmailMismatchConfirm')}
+            </Button>
+          </>
+        )}
+      />
+      <Modal
         open={deleteConfirming}
         onClose={closeDelete}
         title={t('channelDeleteTitle')}
@@ -247,10 +283,10 @@ export function GitlabDetail(): ReactNode {
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${id}-commit-email`} className="text-xs font-medium">{t('channelCommitEmail')}</label>
-                <Input id={`${id}-commit-email`} type="email" placeholder="bot@example.com" value={commitEmail} onChange={event => setCommitEmail(event.target.value)} disabled={busy} maxLength={254} autoComplete="off" spellCheck={false} />
+                <Input id={`${id}-commit-email`} type="email" placeholder={suggestion || 'bot@example.com'} value={emailValue} onChange={event => setCommitEmail(event.target.value)} disabled={busy} maxLength={254} autoComplete="off" spellCheck={false} aria-describedby={`${id}-commit-help`} />
               </div>
             </div>
-            <p className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelCommitHelp')}</p>
+            <p id={`${id}-commit-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelCommitHelp')}</p>
             <div className="flex flex-col gap-3 border-t border-(--dsw-alias-border-l3) pt-4">
               <label htmlFor={`${id}-token-value`} className="text-xs font-medium">{t('channelTokenLabel')}</label>
               <Input id={`${id}-token-value`} className="w-full min-w-0" type="password" value={token} onChange={event => setToken(event.target.value)} disabled={busy} autoComplete="new-password" placeholder={t('channelTokenPlaceholder')} aria-describedby={`${id}-token-help`} />

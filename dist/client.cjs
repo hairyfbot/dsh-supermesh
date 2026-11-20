@@ -6416,7 +6416,10 @@ const dicts = {
 		channelAccountDescription: "通过授权登录或 Token 验证账号，保存实际登录身份。",
 		channelCommitName: "Git 提交名称",
 		channelCommitEmail: "Git 提交邮箱",
-		channelCommitHelp: "保存 Git 提交身份；凭据与提交身份分别管理。",
+		channelCommitHelp: "平台按邮箱归属提交，名字只影响显示；留空时使用渠道账号的 noreply 地址。",
+		channelCommitEmailMismatchTitle: "提交邮箱不属于渠道账号",
+		channelCommitEmailMismatchDescription: "{email} 归属另一个账号，提交会记到那个人名下，审计与隐私都会受影响。渠道账号的 noreply 地址是 {suggestion}。确认后仍会保存。",
+		channelCommitEmailMismatchConfirm: "仍然保存",
 		channelLoginMethod: "登录方式",
 		channelAuthorize: "授权登录",
 		channelAuthorizeRecommended: "推荐",
@@ -6833,7 +6836,10 @@ const dicts = {
 		channelAccountDescription: "Specify the expected bot identity. The authenticated account must match.",
 		channelCommitName: "Git commit name",
 		channelCommitEmail: "Git commit email",
-		channelCommitHelp: "Save the Git commit identity. Credentials and commit identity are managed separately.",
+		channelCommitHelp: "Commits are attributed by email; the name only affects display. Leave it empty to use the channel account noreply address.",
+		channelCommitEmailMismatchTitle: "Commit email belongs to another account",
+		channelCommitEmailMismatchDescription: "{email} belongs to another account, so commits are attributed to that person. The channel account noreply address is {suggestion}. Saving continues after you confirm.",
+		channelCommitEmailMismatchConfirm: "Save anyway",
 		channelLoginMethod: "Sign-in method",
 		channelAuthorize: "Authorize",
 		channelAuthorizeRecommended: "Recommended",
@@ -7524,8 +7530,11 @@ function GithubDetail() {
 	const [token, setToken] = (0, react.useState)("");
 	const [commitName, setCommitName] = (0, react.useState)(null);
 	const [commitEmail, setCommitEmail] = (0, react.useState)(null);
+	const [confirmingEmail, setConfirmingEmail] = (0, react.useState)(false);
+	const suggestion = channel_0?.commitEmailSuggestion ?? "";
 	const nameValue = commitName ?? channel_0?.commitName ?? "";
-	const emailValue = commitEmail ?? channel_0?.commitEmail ?? "";
+	const emailValue = commitEmail ?? channel_0?.commitEmail ?? suggestion;
+	const emailMismatch = Boolean(suggestion) && Boolean(emailValue.trim()) && emailValue.trim().toLowerCase() !== suggestion.toLowerCase();
 	const hasCredential = Boolean(channel_0?.hasCredential);
 	const identityDirty = nameValue.trim() !== (channel_0?.commitName ?? "").trim() || emailValue.trim() !== (channel_0?.commitEmail ?? "").trim();
 	const dirty = token.length > 0 || identityDirty;
@@ -7627,10 +7636,11 @@ function GithubDetail() {
 		setAuthNotice("");
 		setCopyNotice("");
 		setAuthentication(null);
+		setConfirmingEmail(false);
 		authId.current = null;
 	};
-	const save = async (toggle = false) => {
-		if (!channel_0 || savingRequest.current || authRequest.current || (toggle ? !hasCredential : !canSave)) return;
+	const commit = async (toggle) => {
+		if (!channel_0 || savingRequest.current || authRequest.current) return;
 		savingRequest.current = true;
 		setSaving(true);
 		setNotice("");
@@ -7652,6 +7662,14 @@ function GithubDetail() {
 			savingRequest.current = false;
 			setSaving(false);
 		}
+	};
+	const save = async (toggle_0 = false) => {
+		if (!channel_0 || savingRequest.current || authRequest.current || (toggle_0 ? !hasCredential : !canSave)) return;
+		if (!toggle_0 && emailMismatch) {
+			setConfirmingEmail(true);
+			return;
+		}
+		await commit(toggle_0);
 	};
 	const openDelete = () => {
 		if (!hasCredential || savingRequest.current || authRequest.current) return;
@@ -7765,17 +7783,19 @@ function GithubDetail() {
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 									id: `${id}-commit-email`,
 									type: "email",
-									placeholder: "bot@example.com",
+									placeholder: suggestion || "bot@example.com",
 									value: emailValue,
 									onChange: (event_0) => setCommitEmail(event_0.target.value),
 									disabled: busy,
 									maxLength: 254,
 									autoComplete: "off",
-									spellCheck: false
+									spellCheck: false,
+									"aria-describedby": `${id}-commit-help`
 								})]
 							})]
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							id: `${id}-commit-help`,
 							className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 							children: t("channelCommitHelp")
 						}),
@@ -7901,6 +7921,30 @@ function GithubDetail() {
 			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Environment, { description: t("channelGithubWorkerIdentity") })]
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+			open: confirmingEmail,
+			onClose: () => setConfirmingEmail(false),
+			title: t("channelCommitEmailMismatchTitle"),
+			closeLabel: t("channelCancel"),
+			description: t("channelCommitEmailMismatchDescription", {
+				email: emailValue.trim(),
+				suggestion
+			}),
+			footer: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				disabled: saving,
+				onClick: () => setConfirmingEmail(false),
+				children: t("channelCancel")
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				disabled: saving,
+				onClick: () => {
+					setConfirmingEmail(false);
+					commit(false);
+				},
+				children: t("channelCommitEmailMismatchConfirm")
+			})] })
+		}),
+		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 			open: deletion !== null,
 			onClose: closeDelete,
 			title: t("channelDeleteTitle"),
@@ -7943,6 +7987,10 @@ function GitlabDetail() {
 	const [token, setToken] = (0, react.useState)("");
 	const [commitName, setCommitName] = (0, react.useState)(channel_0?.commitName ?? "");
 	const [commitEmail, setCommitEmail] = (0, react.useState)(channel_0?.commitEmail ?? "");
+	const [confirmingEmail, setConfirmingEmail] = (0, react.useState)(false);
+	const suggestion = channel_0?.commitEmailSuggestion ?? "";
+	const emailValue = commitEmail.trim() || suggestion;
+	const emailMismatch = Boolean(suggestion) && Boolean(emailValue.trim()) && emailValue.trim().toLowerCase() !== suggestion.toLowerCase();
 	const [host, setHost] = (0, react.useState)(channel_0?.host ?? "https://gitlab.com");
 	const [hostInvalid, setHostInvalid] = (0, react.useState)(false);
 	const lifetime = (0, react.useRef)(new AbortController());
@@ -7971,9 +8019,8 @@ function GitlabDetail() {
 		if (!saved) throw new Error("channel_reload_failed");
 		return saved;
 	}
-	const save = async () => {
+	const commit = async () => {
 		if (savingRequest.current) return;
-		if (!validateHost()) return;
 		savingRequest.current = true;
 		setSaving(true);
 		setNotice("");
@@ -7982,7 +8029,7 @@ function GitlabDetail() {
 				host: host.trim(),
 				...token.trim() && !channel_0?.hasCredential ? { enabled: true } : {},
 				commitName: commitName.trim(),
-				commitEmail: commitEmail.trim(),
+				commitEmail: emailValue.trim(),
 				...token.trim() ? { token: token.trim() } : {}
 			}, { signal: lifetime.current.signal });
 			if (lifetime.current.signal.aborted) return;
@@ -7998,6 +8045,15 @@ function GitlabDetail() {
 			if (!lifetime.current.signal.aborted) setSaving(false);
 		}
 	};
+	const save = async () => {
+		if (savingRequest.current) return;
+		if (!validateHost()) return;
+		if (emailMismatch) {
+			setConfirmingEmail(true);
+			return;
+		}
+		await commit();
+	};
 	function reset(saved_1 = channel_0) {
 		setHost(saved_1?.host ?? "https://gitlab.com");
 		setCommitName(saved_1?.commitName ?? "");
@@ -8005,6 +8061,7 @@ function GitlabDetail() {
 		setToken("");
 		setHostInvalid(false);
 		setNotice("");
+		setConfirmingEmail(false);
 	}
 	const toggle = async () => {
 		if (!channel_0?.hasCredential || savingRequest.current) return;
@@ -8092,6 +8149,30 @@ function GitlabDetail() {
 					children: t(channel_0.enabled ? "channelDisable" : "channelEnable")
 				})
 			] })
+		}),
+		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
+			open: confirmingEmail,
+			onClose: () => setConfirmingEmail(false),
+			title: t("channelCommitEmailMismatchTitle"),
+			closeLabel: t("channelCancel"),
+			description: t("channelCommitEmailMismatchDescription", {
+				email: emailValue.trim(),
+				suggestion
+			}),
+			footer: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(react_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "outline",
+				disabled: saving,
+				onClick: () => setConfirmingEmail(false),
+				children: t("channelCancel")
+			}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+				variant: "primary",
+				disabled: saving,
+				onClick: () => {
+					setConfirmingEmail(false);
+					commit();
+				},
+				children: t("channelCommitEmailMismatchConfirm")
+			})] })
 		}),
 		/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Modal, {
 			open: deleteConfirming,
@@ -8194,17 +8275,19 @@ function GitlabDetail() {
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 									id: `${id}-commit-email`,
 									type: "email",
-									placeholder: "bot@example.com",
-									value: commitEmail,
+									placeholder: suggestion || "bot@example.com",
+									value: emailValue,
 									onChange: (event_1) => setCommitEmail(event_1.target.value),
 									disabled: busy,
 									maxLength: 254,
 									autoComplete: "off",
-									spellCheck: false
+									spellCheck: false,
+									"aria-describedby": `${id}-commit-help`
 								})]
 							})]
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							id: `${id}-commit-help`,
 							className: "m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)",
 							children: t("channelCommitHelp")
 						}),
