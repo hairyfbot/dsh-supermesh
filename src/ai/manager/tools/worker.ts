@@ -34,7 +34,7 @@ export const create_worker = defineTool({
 
 export const send = defineTool({
   name: 'send',
-  description: '直接将完整消息交给活跃 Worker，跳过业务排队；只有需要立刻止损才用 interrupt。Worker 没有收件箱。',
+  description: '直接将完整消息交给活跃 Worker，跳过业务排队；只有需要立刻止损才用 interrupt。Worker 没有收件箱。票已结束不拦，Worker 还活着就能收到。',
   parameters: {
     workerId: {
       type: 'string',
@@ -69,8 +69,6 @@ export const send = defineTool({
       throw new Error('Worker 不属于当前项目')
     if (worker.status === 'ended')
       throw new Error('Worker 已结束')
-    if (ticket.status === 'done' || ticket.status === 'cancelled')
-      throw new Error('工单已结束')
     if (!(await session.lookup(worker.id)))
       throw new Error('Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送')
     if (args.mode === 'reply') {
@@ -120,7 +118,7 @@ export const view = defineTool({
 
 export const cancel = defineTool({
   name: 'cancel',
-  description: '中止 Worker 当前回合。那一次回合一并作废。',
+  description: '中止 Worker 当前回合。那一次回合一并作废。票已结束也能停，只看 Worker 是否还活着。',
   parameters: {
     workerId: {
       type: 'string',

@@ -12,6 +12,10 @@ GitHub 用 `gh pr create`，GitLab 用 `glab mr create` 发布。
 发布前检查当前分支、origin 和已有 PR/MR。**复用当前票分支的已有结果，避免重复发布。**
 不要自动纳入不明文件；仅提交本任务明确暂存的改动，发布前确认本任务改动已全部提交。
 
+**推送前先确认 PR 还开着。** 用 `gh pr view <number> --json state,mergedAt`（GitLab 用 `glab mr view`）确认状态。
+已合并或已关闭说明这张票已经结束、授权已经收回：立刻停手，不要推送、不要改基到新 main、不要另开 PR。
+`report` 报「工单已结束」是同一个信号，收到就停，不要再做任何外部动作。
+
 PR 描述里的正式 issue 链接必须从 `read_channel` 的 `ticket/<当前任务号>` 及关联话题上下文取得，不得猜造。
 
 ## 汇报

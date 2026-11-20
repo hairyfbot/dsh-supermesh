@@ -444,6 +444,20 @@ const cases = {
     assert.equal((await db.inbox.findById('stalled-channel')).status, 'stalled')
     assert.equal((await db.inbox.findById('internal-after-channel')).deliveryAttempts, 0)
   },
+  async workerEnd() {
+    const p = await project('worker-end-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const { worker: workers } = await import('@/service/worker.ts')
+    const ticketId = 'worker-end-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '票已结束的 Worker', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const queued = await db.worker.queue(ticketId, p.id)
+    await db.worker.start(queued.id, now)
+    await db.ticket.update(ticketId, { status: 'done', endedAt: now, updatedAt: now })
+    await workers.reconcile()
+    assert.equal((await db.worker.findById(queued.id)).status, 'ended', '票进终态后它还在 running 的 Worker 必须被结束')
+    assert.equal((await db.worker.findById(queued.id)).endedReason, 'stopped')
+    assert.equal((await db.worker.listRunning()).length, 0)
+  },
 }
 
 try {

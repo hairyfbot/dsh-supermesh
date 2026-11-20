@@ -78,6 +78,7 @@ describe('supermesh services composed with the installed official runtime', () =
     ['resumeMail', 'internal mail resumes cold role sessions without replacing their bindings'],
     ['invalidMail', 'disabled projects are skipped and an invalid mail does not prevent valid delivery'],
     ['channelIsolation', 'a stalled channel mail does not block internal mail for the same recipient'],
+    ['workerEnd', 'a ticket that reached a terminal state ends the worker that was still running'],
   ])('%s: %s', async (name) => {
     const output = await runCase(name)
     expect(output).toContain(`SUPERMESH_RUNTIME_PASS ${name} DSH=`)
