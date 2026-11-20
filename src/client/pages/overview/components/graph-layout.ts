@@ -1,7 +1,7 @@
 import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
-import type { GetApiSupermeshEdgeResponse, GetApiSupermeshGroupResponse, GetApiSupermeshNodeResponse } from '../../../apis/index.type'
-import type { AgentGraphNode, GraphNode } from '../../../types'
-import { AGENT_GRAPH } from '../../../config/constants'
+import type { GetApiSupermeshEdgeResponse, GetApiSupermeshGroupResponse, GetApiSupermeshNodeResponse } from '@/client/apis/index.type'
+import type { AgentGraphNode, GraphNode } from '@/client/types'
+import { AGENT_GRAPH } from '@/client/config/constants'
 
 export type GraphGroup = GetApiSupermeshGroupResponse[number]
 export interface GraphInput { nodes: GetApiSupermeshNodeResponse, edges: GetApiSupermeshEdgeResponse, groups: GetApiSupermeshGroupResponse }

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import type { AgentGraphEdge, AgentGraphNode } from '../../../types'
-import { AGENT_GRAPH, AGENT_GRAPH_EDGE_COLORS } from '../../../config/constants'
-import { useTranslation } from '../../../hooks/use-translation'
+import type { AgentGraphEdge, AgentGraphNode } from '@/client/types'
+import { AGENT_GRAPH, AGENT_GRAPH_EDGE_COLORS } from '@/client/config/constants'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function GraphEdgePath({ edge, nodes, selectedId }: { edge: AgentGraphEdge, nodes: readonly AgentGraphNode[], selectedId: string | null }): ReactNode {
   const { t } = useTranslation()

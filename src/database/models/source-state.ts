@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from 'kysely'
-import type { DB } from '../types'
+import type { DB } from '@/database/types'
 
 /**
  * 渠道读到哪了：每个需要增量读取的目标一行。

@@ -1,14 +1,11 @@
-import type { GhRequest, GhRunner } from './types'
+import type { GhRequest, GhRunner } from '@/channel/github/types'
 import { execFile } from 'node:child_process'
-import { channel } from '../../service/channel'
-import { shell } from '../../service/shell'
-import { channelProxyEnvironment } from '../proxy'
+import { ChannelError } from '@/channel/_shared/error'
+import { channelProxyEnvironment } from '@/channel/_shared/proxy'
+import { channel } from '@/service/channel'
+import { shell } from '@/service/shell'
 
-export class GhError extends Error {
-  constructor(public readonly code: string, public readonly retryAfterSeconds?: number) {
-    super(code)
-  }
-}
+export class GhError extends ChannelError {}
 
 export class ExecFileGhRunner implements GhRunner {
   async request(request: GhRequest): Promise<unknown> {

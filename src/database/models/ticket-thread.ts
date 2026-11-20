@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from 'kysely'
-import type { DB } from '../types'
+import type { DB } from '@/database/types'
 
 export class TicketThread {
   private readonly db: Kysely<DB>

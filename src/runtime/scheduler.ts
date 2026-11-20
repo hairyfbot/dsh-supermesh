@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { Cron } from 'croner'
-import { DSH_PLUGIN_HOME } from '../config/paths'
+import { DSH_PLUGIN_HOME } from '@/config/paths'
 
 type JsonSchedulerStatus = 'running' | 'paused'
 type JsonSchedulerCronSource = 'use' | 'update'

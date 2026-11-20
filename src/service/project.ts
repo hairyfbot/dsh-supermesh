@@ -1,15 +1,15 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Selectable } from 'kysely'
-import type { DB } from '../database/types'
+import type { DB } from '@/database/types'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { getServerContext } from 'dsh-h3/utils'
-import { DSH_PLUGIN_HOME } from '../config/paths'
-import { db } from '../database'
-import { server } from '../server'
-import { parseGitRemote } from '../utils/repository'
-import { defineService } from '../utils/service'
-import { worktree } from './worktree'
+import { DSH_PLUGIN_HOME } from '@/config/paths'
+import { db } from '@/database'
+import { server } from '@/server'
+import { worktree } from '@/service/worktree'
+import { parseGitRemote } from '@/utils/repository'
+import { defineService } from '@/utils/service'
 
 let syncing: Promise<Selectable<DB['project']>[]> | undefined
 let controller = new AbortController()

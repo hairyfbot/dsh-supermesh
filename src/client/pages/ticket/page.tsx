@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getApiSupermeshChannel, getApiSupermeshNode, getApiSupermeshSubscription, getApiSupermeshTicket, getApiSupermeshTrigger } from '../../apis'
-import { Empty } from '../../components/empty'
-import { TasksIcon } from '../../components/icons'
-import { Pagination } from '../../components/pagination'
-import { keys } from '../../config/query-keys'
-import { useTranslation } from '../../hooks/use-translation'
-import { Row } from './components/row'
+import { getApiSupermeshChannel, getApiSupermeshNode, getApiSupermeshSubscription, getApiSupermeshTicket, getApiSupermeshTrigger } from '@/client/apis'
+import { Empty } from '@/client/components/empty'
+import { TasksIcon } from '@/client/components/icons'
+import { Pagination } from '@/client/components/pagination'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { Row } from '@/client/pages/ticket/components/row'
 
 export const TICKET_PAGE_SIZE = 8
 

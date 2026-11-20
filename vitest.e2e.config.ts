@@ -1,8 +1,12 @@
+import { fileURLToPath } from 'node:url'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 import { closeDsh, getDshErrors, launchDsh, openDshPage, openSupermeshMainSession, supermeshRequest } from './test/__setup__/commands'
 
+const srcDirectory = fileURLToPath(new URL('./src', import.meta.url)).replaceAll('\\', '/')
+
 export default defineConfig({
+  resolve: { alias: { '@': srcDirectory } },
   test: {
     name: 'e2e',
     include: [

@@ -1,8 +1,8 @@
 import { defineHandler } from 'h3'
-import { db } from '../../database'
-import { channel } from '../../service/channel'
-import { project } from '../../service/project'
-import { session } from '../../service/session'
+import { db } from '@/database'
+import { channel } from '@/service/channel'
+import { project } from '@/service/project'
+import { session } from '@/service/session'
 
 export default defineHandler(async () => {
   const [projects, runningWorkers, queuedWorkers, openTickets, channelCatalog] = await Promise.all([

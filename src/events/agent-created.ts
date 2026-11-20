@@ -1,9 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { AgentPreset } from '../ai/preset'
-import { agents } from '../ai'
-import { inbox } from '../service/inbox'
-import { session } from '../service/session'
+import type { AgentPreset } from '@/ai/preset'
+import { agents } from '@/ai'
+import { inbox } from '@/service/inbox'
+import { session } from '@/service/session'
 
 export async function handleAgentCreated(ctx: Context, agent: Agent): Promise<undefined> {
   const id = ctx.agentPresets.composedPreset(agent.ctx)

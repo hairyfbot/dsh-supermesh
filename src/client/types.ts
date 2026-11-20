@@ -1,4 +1,4 @@
-import type { DshSupermeshKey } from './locale'
+import type { DshSupermeshKey } from '@/client/locale'
 
 export type OverviewView = 'recent' | 'hierarchy'
 export type OverviewChannelKind = 'github' | 'feishu' | 'gitlab'

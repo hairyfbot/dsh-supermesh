@@ -1,5 +1,5 @@
 import type { Insertable, Kysely, Selectable } from 'kysely'
-import type { DB } from '../types'
+import type { DB } from '@/database/types'
 import { Model } from 'kysely-model'
 
 export class Thread extends Model<DB, 'thread'> {

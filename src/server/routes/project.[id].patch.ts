@@ -1,5 +1,5 @@
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
-import { db } from '../../database'
+import { db } from '@/database'
 
 interface ProjectPatch {
   enabled: boolean

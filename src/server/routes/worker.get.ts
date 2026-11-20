@@ -1,5 +1,5 @@
 import { defineHandler } from 'h3'
-import { db } from '../../database'
+import { db } from '@/database'
 
 export default defineHandler(async () => {
   const [running, queued] = await Promise.all([db.worker.listRunning(), db.worker.listQueued()])

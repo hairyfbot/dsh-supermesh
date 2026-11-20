@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import type { PatchApiSupermeshSettingBody } from '../../../apis/index.type'
-import type { DshSupermeshKey } from '../../../locale'
-import type { RuntimeSettings } from '../../../store/setting'
+import type { PatchApiSupermeshSettingBody } from '@/client/apis/index.type'
+import type { DshSupermeshKey } from '@/client/locale'
+import type { RuntimeSettings } from '@/client/store/setting'
 import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId } from 'react'
-import { useTranslation } from '../../../hooks/use-translation'
-import { GROUPS, LIMITS, validSettings } from '../../../store/setting'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { GROUPS, LIMITS, validSettings } from '@/client/store/setting'
 
 export function Runtime({ section, value, baseline, pending, failed, onChange, onDiscard, onSave }: {
   section: 'execution' | 'delivery'

@@ -1,10 +1,10 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { getServerContext } from 'dsh-h3/utils'
-import { server } from '../server'
-import { defineService } from '../utils/service'
-import { session } from './session'
-import { setting } from './setting'
+import { server } from '@/server'
+import { session } from '@/service/session'
+import { setting } from '@/service/setting'
+import { defineService } from '@/utils/service'
 
 export const archive = defineService({
   async session(id: string): Promise<boolean> {

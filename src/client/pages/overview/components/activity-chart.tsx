@@ -1,6 +1,6 @@
 import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { ReactNode } from 'react'
-import type { GetApiSupermeshTriggerResponse } from '../../../apis/index.type'
+import type { GetApiSupermeshTriggerResponse } from '@/client/apis/index.type'
 import { useId } from 'react'
 import { Area, AreaChart, ResponsiveContainer } from 'recharts'
 

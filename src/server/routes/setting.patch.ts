@@ -1,6 +1,6 @@
-import type { SettingsPatch } from '../../service/setting.types'
+import type { SettingsPatch } from '@/service/setting.types'
 import { defineHandler, HTTPError, readBody } from 'h3'
-import { setting } from '../../service/setting'
+import { setting } from '@/service/setting'
 
 export default defineHandler(async (event) => {
   const body = await readBody<SettingsPatch>(event)

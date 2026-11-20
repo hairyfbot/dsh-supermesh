@@ -1,9 +1,9 @@
 import type { ChatNodeViewProps } from '@deepseek-ai/dsh-client-ui-chat/client'
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types'
-import type {} from '../../../types/mailbox'
+import type {} from '@/types/mailbox'
 import { IconChevronDownOutlineRegular, IconContextInjectionOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId, useState } from 'react'
-import { useTranslation } from '../../hooks/use-translation'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 type NoticeEvent = Extract<SessionEvent, { type: 'user/message' }>
 

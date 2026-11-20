@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { If } from 'react-if-lite'
-import { getApiSupermeshChannel, getApiSupermeshNode, getApiSupermeshSubscription, getApiSupermeshTicket, getApiSupermeshTrigger } from '../../../apis'
-import { Empty } from '../../../components/empty'
-import { TasksIcon } from '../../../components/icons'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
-import { Row } from '../../ticket/components/row'
+import { getApiSupermeshChannel, getApiSupermeshNode, getApiSupermeshSubscription, getApiSupermeshTicket, getApiSupermeshTrigger } from '@/client/apis'
+import { Empty } from '@/client/components/empty'
+import { TasksIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { Row } from '@/client/pages/ticket/components/row'
 
 export function TaskList(): ReactNode {
   const { t } = useTranslation()

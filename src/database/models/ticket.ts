@@ -1,7 +1,7 @@
 import type { Insertable, Kysely, Selectable, SelectQueryBuilder, Updateable } from 'kysely'
-import type { CiState, DB, PullRequestState, TicketStatus } from '../types'
+import type { CiState, DB, PullRequestState, TicketStatus } from '@/database/types'
 import { Model } from 'kysely-model'
-import { Inbox } from './inbox'
+import { Inbox } from '@/database/models/inbox'
 
 const CLOSED_STATUS: readonly TicketStatus[] = ['done', 'cancelled']
 const closedName = (threadId: string): string => `thread_closed:${threadId}`

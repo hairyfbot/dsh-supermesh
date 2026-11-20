@@ -1,7 +1,7 @@
-import type { RoleModel, RoleModels } from './role-model.types'
-import type { Settings, SettingsPatch } from './setting.types'
-import { storage } from '../storage'
-import { defineService } from '../utils/service'
+import type { RoleModel, RoleModels } from '@/service/role-model.types'
+import type { Settings, SettingsPatch } from '@/service/setting.types'
+import { storage } from '@/storage'
+import { defineService } from '@/utils/service'
 
 const defaults: Settings = {
   models: { main: null, manager: null, project: null, worker: null, supervisor: null },

@@ -1,14 +1,14 @@
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { Selectable } from 'kysely'
-import type { DB } from '../database/types'
+import type { DB } from '@/database/types'
 import { randomUUID } from 'node:crypto'
-import { db } from '../database'
-import { singlet } from '../runtime/singlet'
-import { defineService } from '../utils/service'
-import { archive } from './archive'
-import { session } from './session'
-import { setting } from './setting'
-import { worktree } from './worktree'
+import { db } from '@/database'
+import { singlet } from '@/runtime/singlet'
+import { archive } from '@/service/archive'
+import { session } from '@/service/session'
+import { setting } from '@/service/setting'
+import { worktree } from '@/service/worktree'
+import { defineService } from '@/utils/service'
 
 const eventQueues = new Map<string, Promise<void>>()
 let stopped = false

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import type { Topic } from '../model'
+import type { Topic } from '@/client/pages/trigger/model'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { FeishuIcon, GitHubIcon, GitLabIcon } from '../../../components/icons'
-import { useActions } from '../../../hooks/use-store'
-import { useTranslation } from '../../../hooks/use-translation'
-import { deliveryStatus, KINDS, STATUSES } from '../model'
+import { FeishuIcon, GitHubIcon, GitLabIcon } from '@/client/components/icons'
+import { useActions } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { deliveryStatus, KINDS, STATUSES } from '@/client/pages/trigger/model'
 
 export function Row({ topic }: { topic: Topic }): ReactNode {
   const { t } = useTranslation()

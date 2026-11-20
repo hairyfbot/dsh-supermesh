@@ -1,12 +1,12 @@
-import { composePrompt } from '../_shared/compose-prompt'
-import * as plugins from '../_shared/plugins'
-import * as channel from '../_shared/tools/channel'
-import * as inbox from '../_shared/tools/inbox'
-import { definePreset } from '../preset'
-import * as communicateTools from './tools/communicate'
-import * as supervisorTools from './tools/supervisor'
-import * as ticketTools from './tools/ticket'
-import * as workerTools from './tools/worker'
+import { composePrompt } from '@/ai/_shared/compose-prompt'
+import * as plugins from '@/ai/_shared/plugins'
+import * as channel from '@/ai/_shared/tools/channel'
+import * as inbox from '@/ai/_shared/tools/inbox'
+import * as communicateTools from '@/ai/manager/tools/communicate'
+import * as supervisorTools from '@/ai/manager/tools/supervisor'
+import * as ticketTools from '@/ai/manager/tools/ticket'
+import * as workerTools from '@/ai/manager/tools/worker'
+import { definePreset } from '@/ai/preset'
 
 export const manager = definePreset({
   id: 'manager',

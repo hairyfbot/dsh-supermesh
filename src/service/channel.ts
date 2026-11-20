@@ -1,14 +1,10 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { ChannelConfiguration, ChannelConnection, ChannelKind, ChannelView } from './channel.types'
-import process from 'node:process'
+import type { ChannelConnection, ChannelKind, ChannelView } from '@/service/channel.types'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
-import { createRouteDispatcher } from '@deepseek-ai/dsh-http-proxy'
 import { getServerContext } from 'dsh-h3/utils'
-import { fetch } from 'undici'
-import { channelProxyEnvironment } from '../channel/proxy'
-import { db } from '../database'
-import { server } from '../server'
-import { defineService } from '../utils/service'
+import { db } from '@/database'
+import { server } from '@/server'
+import { defineService } from '@/utils/service'
 
 const presets = [{ id: 'github', name: 'GitHub' }, { id: 'gitlab', name: 'GitLab' }, { id: 'feishu', name: '飞书' }] as const
 let writing: Promise<unknown> = Promise.resolve()
@@ -41,14 +37,17 @@ export const channel = defineService({
       }
     }))
   },
-  connection(kind: ChannelKind): Promise<ChannelConnection> {
-    const operation = writing.then(async () => {
-      const row = await db.channel.findById(kind)
-      const token = kind === 'feishu' ? undefined : await this.resolveCredential(kind)
-      return Object.freeze({ host: row?.host ?? (kind === 'gitlab' ? 'https://gitlab.com' : null), token, enabled: kind !== 'feishu' && Boolean(row?.enabled) })
-    })
+  serialize<T>(action: () => Promise<T>): Promise<T> {
+    const operation = writing.then(action)
     writing = operation.then(() => undefined, () => undefined)
     return operation
+  },
+  connection(kind: ChannelKind): Promise<ChannelConnection> {
+    return channel.serialize(async () => {
+      const row = await db.channel.findById(kind)
+      const token = kind === 'feishu' ? undefined : await channel.resolveCredential(kind)
+      return Object.freeze({ host: row?.host ?? (kind === 'gitlab' ? 'https://gitlab.com' : null), token, enabled: kind !== 'feishu' && Boolean(row?.enabled) })
+    })
   },
   async resolveCredential(kind: ChannelKind): Promise<string | undefined> {
     if (kind === 'feishu')
@@ -58,23 +57,15 @@ export const channel = defineService({
       return stored.value
     return (await credentials().resolve(legacyRef(kind)))?.value
   },
-  removeCredentials(kind: string): Promise<ChannelView> {
-    const operation = writing.then(() => removeCredentials(kind))
-    writing = operation.catch(() => undefined)
-    return operation.then(async (view) => {
-      const { shell } = await import('./shell')
-      await shell.refresh()
-      return view
-    })
+  async storeCredential(kind: 'github' | 'gitlab', token: string): Promise<string | undefined> {
+    const previous = await credentials().resolve(ref(kind))
+    await credentials().set(ref(kind), token)
+    return previous?.value
   },
-  save(kind: string, patch: ChannelConfiguration): Promise<ChannelView> {
-    const operation = writing.then(() => save(kind, patch))
-    writing = operation.catch(() => undefined)
-    return operation.then(async (view) => {
-      const { shell } = await import('./shell')
-      await shell.refresh()
-      return view
-    })
+  async clearCredential(kind: 'github' | 'gitlab'): Promise<string | undefined> {
+    const previous = await credentials().resolve(ref(kind))
+    await credentials().unset(ref(kind))
+    return previous?.value
   },
 })
 
@@ -97,100 +88,4 @@ function readMetadata(raw: string | undefined): { commitName: string, commitEmai
   if (!value || typeof value !== 'object' || !('commitName' in value) || !('commitEmail' in value) || typeof value.commitName !== 'string' || typeof value.commitEmail !== 'string')
     throw new Error('invalid_channel_metadata')
   return { commitName: value.commitName, commitEmail: value.commitEmail }
-}
-
-async function removeCredentials(kind: string): Promise<ChannelView> {
-  if (kind !== 'github' && kind !== 'gitlab')
-    throw new TypeError('channel_unsupported')
-  const previous = await credentials().resolve(ref(kind))
-  await credentials().unset(ref(kind))
-  try {
-    await db.channel.removeCredentials(kind)
-  }
-  catch {
-    if (previous)
-      await credentials().set(ref(kind), previous.value)
-    throw new Error('channel_credentials_delete_failed')
-  }
-  return (await channel.list()).find(item => item.kind === kind)!
-}
-
-async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelView> {
-  if (kind !== 'github' && kind !== 'gitlab')
-    throw new TypeError('channel_unsupported')
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch) || Object.keys(patch).some(key => !['host', 'enabled', 'commitName', 'commitEmail', 'token'].includes(key)) || (patch.enabled !== undefined && typeof patch.enabled !== 'boolean') || ['host', 'commitName', 'commitEmail', 'token'].some(key => patch[key as keyof ChannelConfiguration] !== undefined && typeof patch[key as keyof ChannelConfiguration] !== 'string'))
-    throw new TypeError('invalid_channel_config')
-  if (patch.token !== undefined && (!patch.token.trim() || patch.token.length > 8192 || /[\r\n]/.test(patch.token)))
-    throw new TypeError('invalid_channel_token')
-  if ((patch.commitName?.length ?? 0) > 200 || (patch.commitEmail?.length ?? 0) > 254 || /[\r\n]/.test((patch.commitName ?? '') + (patch.commitEmail ?? '')) || (patch.commitEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(patch.commitEmail.trim())))
-    throw new TypeError('invalid_commit_identity')
-  const current = (await channel.list()).find(item => item.kind === kind)!
-  let url: URL
-  try {
-    url = new URL(patch.host ?? current.host ?? (kind === 'github' ? 'https://github.com' : 'https://gitlab.com'))
-  }
-  catch {
-    throw new TypeError('invalid_channel_host')
-  }
-  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/' || (kind === 'github' && url.origin !== 'https://github.com'))
-    throw new TypeError('invalid_channel_host')
-  const hostChanged = kind === 'gitlab' && url.origin !== new URL(current.host ?? 'https://gitlab.com').origin
-  const token = patch.token?.trim()
-  let account: { name: string, avatar: string | null } | undefined
-  if (hostChanged && (current.hasCredential || current.accounts.length > 0) && !token)
-    throw new TypeError('channel_account_required')
-  if (token) {
-    const endpoint = kind === 'github' ? 'https://api.github.com/user' : `${url.origin}/api/v4/user`
-    const env = await channelProxyEnvironment(new URL(endpoint), process.env)
-    const dispatcher = await createRouteDispatcher({ get: name => env[name] === undefined ? undefined : { value: env[name] } }, { allowH2: false })
-    try {
-      let response: Awaited<ReturnType<typeof fetch>>
-      try {
-        response = await fetch(endpoint, { dispatcher, headers: { authorization: `Bearer ${token}`, accept: kind === 'github' ? 'application/vnd.github+json' : 'application/json' }, signal: AbortSignal.timeout(15000), redirect: 'error' })
-      }
-      catch {
-        throw new Error('channel_verification_failed')
-      }
-      if (!response.ok) {
-        await response.body?.cancel()
-        throw new Error('channel_auth_failed')
-      }
-      let identity: unknown
-      try {
-        identity = await response.json()
-      }
-      catch {
-        throw new Error('channel_auth_failed')
-      }
-      if (!identity || typeof identity !== 'object' || Array.isArray(identity))
-        throw new Error('channel_auth_failed')
-      const user = identity as Record<string, unknown>
-      const login = kind === 'github' ? user.login : user.username ?? user.name
-      if (typeof login !== 'string' || !login.trim() || login.length > 200 || /[\r\n]/.test(login))
-        throw new Error('channel_auth_failed')
-      account = { name: login.trim(), avatar: null }
-    }
-    finally {
-      await dispatcher.close()
-    }
-  }
-  const enabled = patch.enabled ?? (Boolean(account) || current.enabled)
-  if (enabled && !account && !current.accounts.some(account => account.role === 'bot' && account.status === 'online'))
-    throw new TypeError('channel_account_required')
-  const previous = token ? await credentials().resolve(ref(kind)) : undefined
-  if (token)
-    await credentials().set(ref(kind), token)
-  try {
-    await db.channel.saveConfiguration(kind, current.name, kind === 'gitlab' ? url.origin : null, enabled, { commitName: patch.commitName?.trim() ?? current.commitName, commitEmail: patch.commitEmail?.trim() ?? current.commitEmail }, account, ...(hostChanged ? [true] as const : []))
-  }
-  catch {
-    if (token) {
-      if (previous)
-        await credentials().set(ref(kind), previous.value)
-      else
-        await credentials().unset(ref(kind))
-    }
-    throw new Error('channel_save_failed')
-  }
-  return (await channel.list()).find(item => item.kind === kind)!
 }

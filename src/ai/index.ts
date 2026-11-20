@@ -1,7 +1,7 @@
-import { manager } from './manager'
-import { orchestrator } from './orchestrator'
-import { supervisor } from './supervisor'
-import { worker } from './worker'
+import { manager } from '@/ai/manager'
+import { orchestrator } from '@/ai/orchestrator'
+import { supervisor } from '@/ai/supervisor'
+import { worker } from '@/ai/worker'
 
 export const agents = {
   manager,

@@ -1,13 +1,13 @@
 import type { SegmentedTab } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactNode } from 'react'
-import type { OverviewView } from '../../../types'
+import type { OverviewView } from '@/client/types'
 import { SegmentedTabs } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId } from 'react'
-import { useActions, useStore } from '../../../hooks/use-store'
-import { useTranslation } from '../../../hooks/use-translation'
-import { Graph } from './graph'
-import { StatusTag } from './status-tag'
-import { TaskList } from './task-list'
+import { useActions, useStore } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { Graph } from '@/client/pages/overview/components/graph'
+import { StatusTag } from '@/client/pages/overview/components/status-tag'
+import { TaskList } from '@/client/pages/overview/components/task-list'
 
 export function TaskViewCard(): ReactNode {
   const { t } = useTranslation()

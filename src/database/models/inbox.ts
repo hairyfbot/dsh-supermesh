@@ -1,5 +1,5 @@
 import type { Insertable, Kysely, Selectable } from 'kysely'
-import type { DB, InboxAnsweredBy, InboxTarget } from '../types'
+import type { DB, InboxAnsweredBy, InboxTarget } from '@/database/types'
 import { randomUUID } from 'node:crypto'
 import { Model } from 'kysely-model'
 

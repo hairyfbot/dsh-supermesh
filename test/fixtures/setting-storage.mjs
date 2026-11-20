@@ -5,9 +5,9 @@ import process from 'node:process'
 import { register } from 'tsx/esm/api'
 
 register()
-const { setting } = await import('../../src/service/setting.ts')
-const { storage } = await import('../../src/storage/index.ts')
-const { acceptsChannelTrigger } = await import('../../src/channel/admission.ts')
+const { setting } = await import('@/service/setting.ts')
+const { storage } = await import('@/storage/index.ts')
+const { acceptsChannelTrigger } = await import('@/channel/_shared/admission.ts')
 
 assert.equal(process.env.DSH_HOME, join(process.cwd(), 'home'))
 try {

@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import type { OverviewChannelKind } from '../../../types'
+import type { OverviewChannelKind } from '@/client/types'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshChannel } from '../../../apis'
-import { FeishuIcon, GitHubIcon, GitLabIcon } from '../../../components/icons'
-import { keys } from '../../../config/query-keys'
-import { useActions } from '../../../hooks/use-store'
-import { useTranslation } from '../../../hooks/use-translation'
+import { getApiSupermeshChannel } from '@/client/apis'
+import { FeishuIcon, GitHubIcon, GitLabIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useActions } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function Card({ kind }: { kind: OverviewChannelKind }): ReactNode {
   const { t } = useTranslation()

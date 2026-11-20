@@ -2,6 +2,7 @@ import type { UserConfig } from 'tsdown'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import pluginBabel from '@rolldown/plugin-babel'
 import { reactCompilerPreset } from '@vitejs/plugin-react'
 import { defineConfig } from 'tsdown'
@@ -27,8 +28,10 @@ export const clientAlwaysBundle = [/^@reause\//, /^@tanstack\//, /^react-compile
 
 const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')) as { name: string }
 const id = JSON.stringify(pkg.name)
+const srcDirectory = fileURLToPath(new URL('./src', import.meta.url)).replaceAll('\\', '/')
 
 const common: UserConfig = {
+  alias: { '@': srcDirectory },
   outDir: 'dist',
   format: 'esm',
   outExtensions: () => ({ js: '.js' }),

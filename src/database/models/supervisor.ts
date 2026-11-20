@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from 'kysely'
-import type { DB, SupervisorStatus } from '../types'
+import type { DB, SupervisorStatus } from '@/database/types'
 import { Model } from 'kysely-model'
 
 export class Supervisor extends Model<DB, 'supervisor'> {

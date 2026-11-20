@@ -1,7 +1,7 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { db } from '../../../database'
-import { session } from '../../../service/session'
-import { worker as workerService } from '../../../service/worker'
+import { db } from '@/database'
+import { session } from '@/service/session'
+import { worker as workerService } from '@/service/worker'
 
 export const list_ticket = defineTool({
   name: 'list_ticket',

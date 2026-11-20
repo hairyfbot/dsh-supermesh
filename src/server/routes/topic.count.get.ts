@@ -1,6 +1,6 @@
-import type { TriggerKind } from '../../database/types'
+import type { TriggerKind } from '@/database/types'
 import { defineHandler, getQuery } from 'h3'
-import { topic } from '../../service/topic'
+import { topic } from '@/service/topic'
 
 export default defineHandler(async (event) => {
   const query = getQuery<{ query?: string, channel?: string, kind?: string, mentionedOnly?: string }>(event)

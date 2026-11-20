@@ -1,10 +1,10 @@
-import type { DB } from '../src/database/types'
+import type { DB } from '@/database/types'
 import { DatabaseSync } from 'node:sqlite'
 import { NodeSqliteDialect } from '@fileshed/kysely-node-sqlite'
 import { Kysely } from 'kysely'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { migrations } from '../src/database/migrations'
-import { Project } from '../src/database/models/project'
+import { migrations } from '@/database/migrations'
+import { Project } from '@/database/models/project'
 
 const now = '2026-11-17T00:00:00.000Z'
 let connection: Kysely<DB>

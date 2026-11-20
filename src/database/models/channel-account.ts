@@ -1,5 +1,5 @@
 import type { Kysely, Selectable } from 'kysely'
-import type { AccountRole, AccountStatus, DB } from '../types'
+import type { AccountRole, AccountStatus, DB } from '@/database/types'
 import { Model } from 'kysely-model'
 
 export class ChannelAccount extends Model<DB, 'channel_account'> {

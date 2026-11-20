@@ -1,7 +1,7 @@
-import type { InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '../../../database/types'
-import type { GetApiSupermeshDeliveryResponse, GetApiSupermeshProjectResponse, GetApiSupermeshSubscriptionResponse, GetApiSupermeshThreadResponse, GetApiSupermeshTriggerResponse } from '../../apis/index.type'
-import type { DshSupermeshKey } from '../../locale'
-import type { OverviewChannelKind } from '../../types'
+import type { GetApiSupermeshDeliveryResponse, GetApiSupermeshProjectResponse, GetApiSupermeshSubscriptionResponse, GetApiSupermeshThreadResponse, GetApiSupermeshTriggerResponse } from '@/client/apis/index.type'
+import type { DshSupermeshKey } from '@/client/locale'
+import type { OverviewChannelKind } from '@/client/types'
+import type { InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '@/database/types'
 
 export interface EventRecord {
   id: string

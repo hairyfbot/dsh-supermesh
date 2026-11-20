@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useTranslation } from '../../../../hooks/use-translation'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function DetailHeader({ name, icon, supported = true, actions }: { name: string, icon: ReactNode, supported?: boolean, actions?: ReactNode }): ReactNode {
   const { t } = useTranslation()

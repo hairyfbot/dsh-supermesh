@@ -1,11 +1,11 @@
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { ReactNode } from 'react'
-import type { GetApiSupermeshChannelResponse, GetApiSupermeshNodeResponse, GetApiSupermeshSubscriptionResponse, GetApiSupermeshTicketidResponse, GetApiSupermeshTriggerResponse } from '../../../apis/index.type'
+import type { GetApiSupermeshChannelResponse, GetApiSupermeshNodeResponse, GetApiSupermeshSubscriptionResponse, GetApiSupermeshTicketidResponse, GetApiSupermeshTriggerResponse } from '@/client/apis/index.type'
 import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { TasksIcon } from '../../../components/icons'
-import { useDshContext } from '../../../hooks/use-dsh-context'
-import { useActions } from '../../../hooks/use-store'
-import { useTranslation } from '../../../hooks/use-translation'
+import { TasksIcon } from '@/client/components/icons'
+import { useDshContext } from '@/client/hooks/use-dsh-context'
+import { useActions } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function Row({ task, nodes, channels, triggers, subscriptions, refreshedAt }: {
   task: GetApiSupermeshTicketidResponse['ticket']

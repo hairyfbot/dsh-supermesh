@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import type { GetApiSupermeshTicketidResponse } from '../../../../apis/index.type'
+import type { GetApiSupermeshTicketidResponse } from '@/client/apis/index.type'
 import { Button, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshTicket } from '../../../../apis'
-import { Empty } from '../../../../components/empty'
-import { keys } from '../../../../config/query-keys'
-import { useActions } from '../../../../hooks/use-store'
-import { useTranslation } from '../../../../hooks/use-translation'
+import { getApiSupermeshTicket } from '@/client/apis'
+import { Empty } from '@/client/components/empty'
+import { keys } from '@/client/config/query-keys'
+import { useActions } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function Relations({ links, ticketId, empty, clear }: { clear?: boolean, links: GetApiSupermeshTicketidResponse['dependencies'], ticketId: string, empty: string }): ReactNode {
   const { openTicket } = useActions()

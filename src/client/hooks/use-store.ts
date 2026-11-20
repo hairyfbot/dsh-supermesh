@@ -1,6 +1,6 @@
-import type { AppStore, AppStoreState } from '../config/context'
+import type { AppStore, AppStoreState } from '@/client/config/context'
 import { useContext } from 'react'
-import { PluginContext } from '../config/context'
+import { PluginContext } from '@/client/config/context'
 
 export function useStore<S>(select: (state: AppStoreState) => S): S {
   return useContext(PluginContext).useStore!(select)

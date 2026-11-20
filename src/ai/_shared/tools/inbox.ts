@@ -1,5 +1,5 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { inbox } from '../../../service/inbox'
+import { inbox } from '@/service/inbox'
 
 export const inbox_list = defineTool({
   name: 'inbox_list',

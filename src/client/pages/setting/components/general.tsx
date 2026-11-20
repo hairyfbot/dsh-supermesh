@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import type { PatchApiSupermeshSettingBody } from '../../../apis/index.type'
-import type { RuntimeSettings } from '../../../store/setting'
+import type { PatchApiSupermeshSettingBody } from '@/client/apis/index.type'
+import type { RuntimeSettings } from '@/client/store/setting'
 import { Button, Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId } from 'react'
-import { useTranslation } from '../../../hooks/use-translation'
-import { administratorSignature } from '../../../store/setting'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { administratorSignature } from '@/client/store/setting'
 
 export function General({ value, baseline, pending, failed, onChange, onDiscard, onSave }: {
   value: RuntimeSettings

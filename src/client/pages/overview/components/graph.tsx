@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
-import type { AgentGraphEdge } from '../../../types'
+import type { AgentGraphEdge } from '@/client/types'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshEdge, getApiSupermeshGroup, getApiSupermeshNode } from '../../../apis'
-import { Empty } from '../../../components/empty'
-import { AgentIcon } from '../../../components/icons'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
-import { GraphCanvas } from './graph-canvas'
-import { layoutGraph } from './graph-layout'
+import { getApiSupermeshEdge, getApiSupermeshGroup, getApiSupermeshNode } from '@/client/apis'
+import { Empty } from '@/client/components/empty'
+import { AgentIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { GraphCanvas } from '@/client/pages/overview/components/graph-canvas'
+import { layoutGraph } from '@/client/pages/overview/components/graph-layout'
 
 export function Graph(): ReactNode {
   const { t } = useTranslation()

@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react'
-import type { SettingNotice } from '../page'
+import type { SettingNotice } from '@/client/pages/setting/page'
 import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useState } from 'react'
-import { parseRepositoryRemote } from '../../../../utils/repository'
-import { getApiSupermeshChannel, getApiSupermeshProject, patchApiSupermeshProjectId, postApiSupermeshProject } from '../../../apis'
-import { Empty } from '../../../components/empty'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
-import { AddRepository } from './add-repository'
+import { getApiSupermeshChannel, getApiSupermeshProject, patchApiSupermeshProjectId, postApiSupermeshProject } from '@/client/apis'
+import { Empty } from '@/client/components/empty'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { AddRepository } from '@/client/pages/setting/components/add-repository'
+import { parseRepositoryRemote } from '@/utils/repository'
 
 export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null) => void }): ReactNode {
   const { t } = useTranslation()

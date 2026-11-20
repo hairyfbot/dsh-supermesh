@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { worktree } from '../src/service/worktree'
+import { worktree } from '@/service/worktree'
 
 const execute = promisify(execFile)
 const root = resolve('.temp')

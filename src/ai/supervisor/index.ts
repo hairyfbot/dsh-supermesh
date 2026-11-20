@@ -1,11 +1,11 @@
-import { composePrompt } from '../_shared/compose-prompt'
-import * as plugins from '../_shared/plugins'
-import * as channel from '../_shared/tools/channel'
-import * as sharedCommunicate from '../_shared/tools/communicate'
-import * as inbox from '../_shared/tools/inbox'
-import * as sharedTicket from '../_shared/tools/ticket'
-import { definePreset } from '../preset'
-import * as tools from './tools'
+import { composePrompt } from '@/ai/_shared/compose-prompt'
+import * as plugins from '@/ai/_shared/plugins'
+import * as channel from '@/ai/_shared/tools/channel'
+import * as sharedCommunicate from '@/ai/_shared/tools/communicate'
+import * as inbox from '@/ai/_shared/tools/inbox'
+import * as sharedTicket from '@/ai/_shared/tools/ticket'
+import { definePreset } from '@/ai/preset'
+import * as tools from '@/ai/supervisor/tools'
 
 export const supervisor = definePreset({
   id: 'supervisor',

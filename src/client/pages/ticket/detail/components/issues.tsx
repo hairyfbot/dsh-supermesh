@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import type { GetApiSupermeshTicketidResponse } from '../../../../apis/index.type'
-import { Empty } from '../../../../components/empty'
-import { IssueOpenIcon } from '../../../../components/icons'
-import { useActions } from '../../../../hooks/use-store'
-import { useTranslation } from '../../../../hooks/use-translation'
-import { Section } from './section'
+import type { GetApiSupermeshTicketidResponse } from '@/client/apis/index.type'
+import { Empty } from '@/client/components/empty'
+import { IssueOpenIcon } from '@/client/components/icons'
+import { useActions } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { Section } from '@/client/pages/ticket/detail/components/section'
 
 export function Issues({ issues }: { issues: GetApiSupermeshTicketidResponse['topics'] }): ReactNode {
   const { t } = useTranslation()

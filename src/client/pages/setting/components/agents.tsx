@@ -1,13 +1,13 @@
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactNode } from 'react'
-import type { GetApiSupermeshAgentModelCatalogResponse, GetApiSupermeshAgentModelResponse, PatchApiSupermeshAgentModelBody } from '../../../apis/index.type'
-import type { DshSupermeshKey } from '../../../locale'
+import type { GetApiSupermeshAgentModelCatalogResponse, GetApiSupermeshAgentModelResponse, PatchApiSupermeshAgentModelBody } from '@/client/apis/index.type'
+import type { DshSupermeshKey } from '@/client/locale'
 import { Button, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getApiSupermeshAgentModel, getApiSupermeshAgentModelCatalog, patchApiSupermeshAgentModel } from '../../../apis'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
+import { getApiSupermeshAgentModel, getApiSupermeshAgentModelCatalog, patchApiSupermeshAgentModel } from '@/client/apis'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 type Role = PatchApiSupermeshAgentModelBody['role']
 type Catalog = GetApiSupermeshAgentModelCatalogResponse

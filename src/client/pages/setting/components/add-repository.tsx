@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import type { PostApiSupermeshRepositoryBody } from '../../../apis/index.type'
+import type { PostApiSupermeshRepositoryBody } from '@/client/apis/index.type'
 import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useId, useRef, useState } from 'react'
-import { parseRepositoryRemote } from '../../../../utils/repository'
-import { getApiSupermeshChannel, postApiSupermeshRepository } from '../../../apis'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
+import { getApiSupermeshChannel, postApiSupermeshRepository } from '@/client/apis'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { parseRepositoryRemote } from '@/utils/repository'
 
 export function AddRepository(): ReactNode {
   const { t } = useTranslation()

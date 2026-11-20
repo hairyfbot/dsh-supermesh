@@ -1,6 +1,6 @@
-import type { ChannelAuthentication, ChannelAuthenticationRequest } from '../../service/channel-auth.types'
+import type { ChannelAuthentication, ChannelAuthenticationRequest } from '@/service/devops.types'
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
-import { channelAuth } from '../../service/channel-auth'
+import { devops } from '@/service/devops'
 
 export default defineHandler(async (event): Promise<ChannelAuthentication> => {
   const id = getRouterParam(event, 'id')
@@ -10,7 +10,7 @@ export default defineHandler(async (event): Promise<ChannelAuthentication> => {
   if (body !== undefined && (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(key => key !== 'host') || (body.host !== undefined && typeof body.host !== 'string')))
     throw new HTTPError({ status: 400, message: 'invalid_authentication' })
   try {
-    return await channelAuth.start(id, body?.host)
+    return await devops.start(id, body?.host)
   }
   catch (error) {
     const message = error instanceof Error ? error.message : ''

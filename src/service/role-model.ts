@@ -1,11 +1,11 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, ModelSelection } from '@deepseek-ai/dsh-agent'
 import type { } from '@deepseek-ai/dsh-session-persistence'
-import type { RoleModel } from './role-model.types'
+import type { RoleModel } from '@/service/role-model.types'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { getServerContext } from 'dsh-h3/utils'
-import { server } from '../server'
-import { defineService } from '../utils/service'
+import { server } from '@/server'
+import { defineService } from '@/utils/service'
 
 export const roleModel = defineService({
   async resolve(model: RoleModel): Promise<ModelSelection> {

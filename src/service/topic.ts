@@ -1,7 +1,7 @@
 import type { Selectable } from 'kysely'
-import type { DB, InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '../database/types'
-import { db } from '../database'
-import { defineService } from '../utils/service'
+import type { DB, InboxStatus, InboxTarget, ThreadKind, ThreadTriage, TriggerKind } from '@/database/types'
+import { db } from '@/database'
+import { defineService } from '@/utils/service'
 
 export type DeliveryStatus = InboxStatus | 'not-delivered'
 

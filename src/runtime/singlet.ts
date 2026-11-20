@@ -56,6 +56,15 @@ export function singlet<T extends (...args: any[]) => Promise<any>>(
   }) as (...args: Parameters<T>) => ReturnType<T>
 }
 
+/** 立即执行一次，等价于 `singlet(key, fn)(...args)`，省掉尾随的调用括号。 */
+singlet.immediate = function immediate<T extends (...args: any[]) => Promise<any>>(
+  keyOrGen: KeyGenerator<T>,
+  fn: T,
+  ...args: Parameters<T>
+): ReturnType<T> {
+  return singlet(keyOrGen, fn)(...args) as ReturnType<T>
+}
+
 singlet.busy = function busy(key?: string): boolean {
   return key === undefined ? pending.size > 0 : pending.has(key)
 }

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import { useActions } from '../../hooks/use-store'
-import { ActivityCard } from './components/activity-card'
-import { AskCard } from './components/ask-card'
-import { ChannelCard } from './components/channel-card'
-import { TaskCard } from './components/task-card'
-import { TaskViewCard } from './components/task-view-card'
+import { useActions } from '@/client/hooks/use-store'
+import { ActivityCard } from '@/client/pages/overview/components/activity-card'
+import { AskCard } from '@/client/pages/overview/components/ask-card'
+import { ChannelCard } from '@/client/pages/overview/components/channel-card'
+import { TaskCard } from '@/client/pages/overview/components/task-card'
+import { TaskViewCard } from '@/client/pages/overview/components/task-view-card'
 
 export function Overview(): ReactNode {
   const { go: navigate } = useActions()

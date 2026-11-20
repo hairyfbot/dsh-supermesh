@@ -2,9 +2,9 @@ import type { ReactNode } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getApiSupermeshPending, postApiSupermeshAskIdAnswer } from '../../../apis'
-import { keys } from '../../../config/query-keys'
-import { useActions } from '../../../hooks/use-store'
+import { getApiSupermeshPending, postApiSupermeshAskIdAnswer } from '@/client/apis'
+import { keys } from '@/client/config/query-keys'
+import { useActions } from '@/client/hooks/use-store'
 
 export function AskCard(): ReactNode {
   const client = useQueryClient()

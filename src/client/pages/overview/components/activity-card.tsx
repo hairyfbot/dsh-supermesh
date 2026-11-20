@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshTrigger } from '../../../apis'
-import { ActivityIcon } from '../../../components/icons'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
-import { ActivityChart } from './activity-chart'
-import { SummaryCard } from './summary-card'
+import { getApiSupermeshTrigger } from '@/client/apis'
+import { ActivityIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { ActivityChart } from '@/client/pages/overview/components/activity-chart'
+import { SummaryCard } from '@/client/pages/overview/components/summary-card'
 
 export function ActivityCard({ onMore }: { onMore: () => void }): ReactNode {
   const { t } = useTranslation()

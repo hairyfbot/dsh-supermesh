@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { db } from '../../../database'
-import { archive } from '../../../service/archive'
-import { session } from '../../../service/session'
+import { db } from '@/database'
+import { archive } from '@/service/archive'
+import { session } from '@/service/session'
 
 export const supervisor_list = defineTool({
   name: 'supervisor_list',

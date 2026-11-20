@@ -3,13 +3,13 @@ import { Button, Input, Modal, SegmentedTabs, Tag } from '@deepseek-ai/dsh-clien
 import { useAsync, useTimeoutPoll } from '@reause/core'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
-import { deleteApiSupermeshChannelIdCredential, getApiSupermeshChannel, getApiSupermeshChannelIdAuthenticationAuthenticationId, postApiSupermeshChannelIdAuthentication, putApiSupermeshChannelIdConfiguration } from '../../../../apis'
-import { GitHubIcon } from '../../../../components/icons'
-import { keys } from '../../../../config/query-keys'
-import { useTranslation } from '../../../../hooks/use-translation'
-import { Environment } from './environment'
-import { DetailHeader } from './header'
-import { Section } from './section'
+import { deleteApiSupermeshChannelIdCredential, getApiSupermeshChannel, getApiSupermeshChannelIdAuthenticationAuthenticationId, postApiSupermeshChannelIdAuthentication, putApiSupermeshChannelIdConfiguration } from '@/client/apis'
+import { GitHubIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { Environment } from '@/client/pages/channel/detail/components/environment'
+import { DetailHeader } from '@/client/pages/channel/detail/components/header'
+import { Section } from '@/client/pages/channel/detail/components/section'
 
 export function GithubDetail(): ReactNode {
   const { t } = useTranslation()

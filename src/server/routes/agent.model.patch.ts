@@ -1,7 +1,7 @@
-import type { RoleModel, RoleModels, RoleName } from '../../service/role-model.types'
+import type { RoleModel, RoleModels, RoleName } from '@/service/role-model.types'
 import { defineHandler, HTTPError, readBody } from 'h3'
-import { roleModel } from '../../service/role-model'
-import { setting } from '../../service/setting'
+import { roleModel } from '@/service/role-model'
+import { setting } from '@/service/setting'
 
 interface RoleModelPatch {
   role: RoleName

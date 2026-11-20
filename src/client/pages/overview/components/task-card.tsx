@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshTicketCount } from '../../../apis'
-import { TasksIcon } from '../../../components/icons'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
-import { SummaryCard } from './summary-card'
-import { TaskChart } from './task-chart'
+import { getApiSupermeshTicketCount } from '@/client/apis'
+import { TasksIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { SummaryCard } from '@/client/pages/overview/components/summary-card'
+import { TaskChart } from '@/client/pages/overview/components/task-chart'
 
 const SEGMENTS = [
   { name: 'overviewInProgress', color: 'var(--dsw-alias-state-business-primary)' },

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { useTranslation } from '../../hooks/use-translation'
-import { Card } from './components/card'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { Card } from '@/client/pages/channel/components/card'
 
 export function Channel(): ReactNode {
   const { t } = useTranslation()

@@ -61916,47 +61916,6 @@ function Overview() {
 	} else t6 = $[13];
 	return t6;
 }
-// src/client/store/setting.ts
-const GROUPS = {
-	execution: [
-		"maxWorkers",
-		"backgroundLimitMinutes",
-		"autoMerge",
-		"autoMergeMaxLines"
-	],
-	delivery: ["deliveryMaxAttempts", "deliveryRetryCeilingSeconds"]
-};
-const LIMITS = {
-	maxWorkers: {
-		min: 1,
-		max: 16
-	},
-	backgroundLimitMinutes: {
-		min: 1,
-		max: 1440
-	},
-	autoMergeMaxLines: {
-		min: 1,
-		max: 1e4
-	},
-	deliveryMaxAttempts: {
-		min: 1,
-		max: 20
-	},
-	deliveryRetryCeilingSeconds: {
-		min: 2,
-		max: 3600
-	}
-};
-function administratorSignature(administrators) {
-	return [...new Set(administrators.join(",").split(/[,\s]+/).filter(Boolean).map((name) => name.toLowerCase()))].sort().join(",");
-}
-function validSettings(settings) {
-	return Array.isArray(settings.administrators) && settings.administrators.length <= 100 && settings.administrators.every((name) => typeof name === "string" && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim())) && typeof settings.autoMerge === "boolean" && typeof settings.autoArchiveWorkers === "boolean" && Object.entries(LIMITS).every(([key, limits]) => {
-		const value = settings[key];
-		return Number.isInteger(value) && value >= limits.min && value <= limits.max;
-	});
-}
 // src/client/pages/setting/components/agents.tsx
 const roles = [
 	{
@@ -62195,6 +62154,47 @@ function effortChoices(reasoning, t) {
 		id: `effort:${effort.id}`,
 		label: effort.name
 	}))];
+}
+// src/client/store/setting.ts
+const GROUPS = {
+	execution: [
+		"maxWorkers",
+		"backgroundLimitMinutes",
+		"autoMerge",
+		"autoMergeMaxLines"
+	],
+	delivery: ["deliveryMaxAttempts", "deliveryRetryCeilingSeconds"]
+};
+const LIMITS = {
+	maxWorkers: {
+		min: 1,
+		max: 16
+	},
+	backgroundLimitMinutes: {
+		min: 1,
+		max: 1440
+	},
+	autoMergeMaxLines: {
+		min: 1,
+		max: 1e4
+	},
+	deliveryMaxAttempts: {
+		min: 1,
+		max: 20
+	},
+	deliveryRetryCeilingSeconds: {
+		min: 2,
+		max: 3600
+	}
+};
+function administratorSignature(administrators) {
+	return [...new Set(administrators.join(",").split(/[,\s]+/).filter(Boolean).map((name) => name.toLowerCase()))].sort().join(",");
+}
+function validSettings(settings) {
+	return Array.isArray(settings.administrators) && settings.administrators.length <= 100 && settings.administrators.every((name) => typeof name === "string" && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim())) && typeof settings.autoMerge === "boolean" && typeof settings.autoArchiveWorkers === "boolean" && Object.entries(LIMITS).every(([key, limits]) => {
+		const value = settings[key];
+		return Number.isInteger(value) && value >= limits.min && value <= limits.max;
+	});
 }
 // src/client/pages/setting/components/general.tsx
 function General(t0) {
@@ -65477,106 +65477,6 @@ function _temp2$6() {
 function _temp$10() {
 	return getApiSupermeshNode();
 }
-// src/client/pages/trigger/model.ts
-const KINDS = {
-	comment: "triggerKindComment",
-	open: "triggerKindOpen",
-	close: "triggerKindClose",
-	ci: "triggerKindCi",
-	push: "triggerKindPush"
-};
-const STATUSES = {
-	"pending": {
-		label: "triggerPending",
-		tone: "info"
-	},
-	"done": {
-		label: "triggerDone",
-		tone: "success"
-	},
-	"stalled": {
-		label: "triggerStalled",
-		tone: "danger"
-	},
-	"not-delivered": {
-		label: "triggerNotDelivered",
-		tone: "quiet"
-	}
-};
-function sourceHref(channel, url) {
-	if (channel === "feishu" || !url || !URL.canParse(url)) return void 0;
-	const parsed = new URL(url);
-	return ["http:", "https:"].includes(parsed.protocol) && !parsed.username && !parsed.password ? parsed.href : void 0;
-}
-function deliveryStatus(record) {
-	if (record.deliveries.some((delivery) => delivery.status === "stalled")) return "stalled";
-	if (record.deliveries.some((delivery) => delivery.status === "pending")) return "pending";
-	return record.deliveries.length ? "done" : "not-delivered";
-}
-function groupTopics(records) {
-	const grouped = /* @__PURE__ */ new Map();
-	for (const record of records) {
-		const events = grouped.get(record.thread.id) ?? [];
-		events.push(record);
-		grouped.set(record.thread.id, events);
-	}
-	return [...grouped.values()].map((events) => {
-		events.sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id));
-		return {
-			latest: events[0],
-			events
-		};
-	}).sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id));
-}
-const TRIAGE = {
-	pending: "triggerTriagePending",
-	claimed: "triggerTriageClaimed",
-	ignored: "triggerTriageIgnored"
-};
-const THREAD_KINDS = {
-	issue: "triggerTopicIssue",
-	pull: "triggerTopicPull",
-	chat: "triggerTopicChat",
-	ci: "triggerTopicCi"
-};
-function recordsOf(source) {
-	const { project, trigger, thread, subscription, delivery } = source;
-	if (!project || !trigger || !thread || !subscription || !delivery) return [];
-	return trigger.flatMap((item) => {
-		const topic = thread.find((row) => row.id === item.threadId);
-		if (!topic) return [];
-		return [{
-			id: item.id,
-			channel: item.channelId,
-			kind: item.kind,
-			actor: item.actorName ?? "",
-			human: Boolean(item.human),
-			mentioned: Boolean(item.mentioned),
-			text: item.text,
-			at: item.at,
-			ref: item.ref ?? void 0,
-			url: item.url ?? void 0,
-			thread: {
-				id: topic.id,
-				kind: topic.kind,
-				ref: topic.refId,
-				title: topic.title,
-				triage: topic.triage,
-				project: project.find((row) => row.id === topic.projectId)?.name,
-				url: topic.url ?? void 0
-			},
-			tickets: subscription.filter((link) => link.threadId === topic.id).map((link) => link.ticketId),
-			deliveries: delivery.filter((message) => message.triggerId === item.id).map((message) => ({
-				target: message.type,
-				project: project.find((row) => row.id === message.projectId)?.name,
-				status: message.status,
-				read: Boolean(message.readAt),
-				attempts: message.deliveryAttempts,
-				error: message.deliveryError ?? void 0
-			}))
-		}];
-	});
-}
 // src/client/pages/trigger/detail/components/answer-box.tsx
 /**
 * 话题详情里的回答区：只在本话题确有 pending 的 ask 时出现。
@@ -65729,6 +65629,106 @@ function _temp2$5(input) {
 }
 function _temp$9() {
 	return getApiSupermeshPending();
+}
+// src/client/pages/trigger/model.ts
+const KINDS = {
+	comment: "triggerKindComment",
+	open: "triggerKindOpen",
+	close: "triggerKindClose",
+	ci: "triggerKindCi",
+	push: "triggerKindPush"
+};
+const STATUSES = {
+	"pending": {
+		label: "triggerPending",
+		tone: "info"
+	},
+	"done": {
+		label: "triggerDone",
+		tone: "success"
+	},
+	"stalled": {
+		label: "triggerStalled",
+		tone: "danger"
+	},
+	"not-delivered": {
+		label: "triggerNotDelivered",
+		tone: "quiet"
+	}
+};
+function sourceHref(channel, url) {
+	if (channel === "feishu" || !url || !URL.canParse(url)) return void 0;
+	const parsed = new URL(url);
+	return ["http:", "https:"].includes(parsed.protocol) && !parsed.username && !parsed.password ? parsed.href : void 0;
+}
+function deliveryStatus(record) {
+	if (record.deliveries.some((delivery) => delivery.status === "stalled")) return "stalled";
+	if (record.deliveries.some((delivery) => delivery.status === "pending")) return "pending";
+	return record.deliveries.length ? "done" : "not-delivered";
+}
+function groupTopics(records) {
+	const grouped = /* @__PURE__ */ new Map();
+	for (const record of records) {
+		const events = grouped.get(record.thread.id) ?? [];
+		events.push(record);
+		grouped.set(record.thread.id, events);
+	}
+	return [...grouped.values()].map((events) => {
+		events.sort((a, b) => Date.parse(b.at) - Date.parse(a.at) || b.id.localeCompare(a.id));
+		return {
+			latest: events[0],
+			events
+		};
+	}).sort((a, b) => Date.parse(b.latest.at) - Date.parse(a.latest.at) || b.latest.id.localeCompare(a.latest.id));
+}
+const TRIAGE = {
+	pending: "triggerTriagePending",
+	claimed: "triggerTriageClaimed",
+	ignored: "triggerTriageIgnored"
+};
+const THREAD_KINDS = {
+	issue: "triggerTopicIssue",
+	pull: "triggerTopicPull",
+	chat: "triggerTopicChat",
+	ci: "triggerTopicCi"
+};
+function recordsOf(source) {
+	const { project, trigger, thread, subscription, delivery } = source;
+	if (!project || !trigger || !thread || !subscription || !delivery) return [];
+	return trigger.flatMap((item) => {
+		const topic = thread.find((row) => row.id === item.threadId);
+		if (!topic) return [];
+		return [{
+			id: item.id,
+			channel: item.channelId,
+			kind: item.kind,
+			actor: item.actorName ?? "",
+			human: Boolean(item.human),
+			mentioned: Boolean(item.mentioned),
+			text: item.text,
+			at: item.at,
+			ref: item.ref ?? void 0,
+			url: item.url ?? void 0,
+			thread: {
+				id: topic.id,
+				kind: topic.kind,
+				ref: topic.refId,
+				title: topic.title,
+				triage: topic.triage,
+				project: project.find((row) => row.id === topic.projectId)?.name,
+				url: topic.url ?? void 0
+			},
+			tickets: subscription.filter((link) => link.threadId === topic.id).map((link) => link.ticketId),
+			deliveries: delivery.filter((message) => message.triggerId === item.id).map((message) => ({
+				target: message.type,
+				project: project.find((row) => row.id === message.projectId)?.name,
+				status: message.status,
+				read: Boolean(message.readAt),
+				attempts: message.deliveryAttempts,
+				error: message.deliveryError ?? void 0
+			}))
+		}];
+	});
 }
 // src/client/pages/trigger/detail/components/event.tsx
 function Event$1(t0) {

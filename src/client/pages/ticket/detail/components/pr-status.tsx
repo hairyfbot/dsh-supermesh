@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import type { GetApiSupermeshTicketidResponse } from '../../../../apis/index.type'
-import { PullRequestClosedIcon, PullRequestIcon, PullRequestMergedIcon } from '../../../../components/icons'
-import { useTranslation } from '../../../../hooks/use-translation'
+import type { GetApiSupermeshTicketidResponse } from '@/client/apis/index.type'
+import { PullRequestClosedIcon, PullRequestIcon, PullRequestMergedIcon } from '@/client/components/icons'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function PrStatus({ ticket }: { ticket: Pick<GetApiSupermeshTicketidResponse['ticket'], 'prUrl' | 'prState' | 'ciState'> }): ReactNode {
   const { t } = useTranslation()

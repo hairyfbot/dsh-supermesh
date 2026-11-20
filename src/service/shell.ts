@@ -1,10 +1,10 @@
 import { access, mkdir, rename, writeFile } from 'node:fs/promises'
 import { delimiter, join, resolve } from 'node:path'
 import process from 'node:process'
-import { DSH_PLUGIN_HOME } from '../config/paths'
-import { db } from '../database'
-import { defineService } from '../utils/service'
-import { channel } from './channel'
+import { DSH_PLUGIN_HOME } from '@/config/paths'
+import { db } from '@/database'
+import { channel } from '@/service/channel'
+import { defineService } from '@/utils/service'
 
 const directory = join(DSH_PLUGIN_HOME, 'cli')
 const bin = join(directory, 'bin')

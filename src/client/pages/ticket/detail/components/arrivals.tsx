@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import type { GetApiSupermeshTicketidResponse } from '../../../../apis/index.type'
+import type { GetApiSupermeshTicketidResponse } from '@/client/apis/index.type'
 import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
-import { Empty } from '../../../../components/empty'
-import { useTranslation } from '../../../../hooks/use-translation'
+import { Empty } from '@/client/components/empty'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function Arrivals({ triggers, inbox }: { triggers: GetApiSupermeshTicketidResponse['triggers'], inbox: GetApiSupermeshTicketidResponse['inbox'] }): ReactNode {
   const { t } = useTranslation()

@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshChannel } from '../../../../apis'
-import { Empty } from '../../../../components/empty'
-import { FeishuIcon } from '../../../../components/icons'
-import { keys } from '../../../../config/query-keys'
-import { useTranslation } from '../../../../hooks/use-translation'
-import { DetailHeader } from './header'
+import { getApiSupermeshChannel } from '@/client/apis'
+import { Empty } from '@/client/components/empty'
+import { FeishuIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { DetailHeader } from '@/client/pages/channel/detail/components/header'
 
 export function FeishuDetail(): ReactNode {
   const { t } = useTranslation()

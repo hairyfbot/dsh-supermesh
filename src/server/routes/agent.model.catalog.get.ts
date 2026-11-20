@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { getServerContext } from 'dsh-h3/utils'
 import { defineHandler } from 'h3'
-import { server } from '../index'
+import { server } from '@/server/index'
 
 export default defineHandler(async () => {
   const ctx = getServerContext<Context>(server)

@@ -1,5 +1,5 @@
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
-import { inbox } from '../../service/inbox'
+import { inbox } from '@/service/inbox'
 
 export default defineHandler(async (event) => {
   const body = await readBody<{ status: 'done' }>(event)

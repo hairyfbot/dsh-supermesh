@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import type { GraphNode } from '../../../types'
+import type { GraphNode } from '@/client/types'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { AgentIcon, ChannelsIcon, SupermeshIcon, TasksIcon } from '../../../components/icons'
-import { useTranslation } from '../../../hooks/use-translation'
+import { AgentIcon, ChannelsIcon, SupermeshIcon, TasksIcon } from '@/client/components/icons'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function GraphNodeCard({ node, selected, onSelect }: { node: GraphNode, selected: boolean, onSelect: () => void }): ReactNode {
   const { t } = useTranslation()

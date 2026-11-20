@@ -1,5 +1,5 @@
 import { defineHandler } from 'h3'
-import { db } from '../../database'
+import { db } from '@/database'
 
 /** 任务卡片的统计：全量计数，不受分页与列表取数上限影响。 */
 export default defineHandler(async (): Promise<{ all: number, added: number, inProgress: number, completed: number, blocked: number }> => {

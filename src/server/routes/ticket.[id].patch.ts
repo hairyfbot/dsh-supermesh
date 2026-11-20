@@ -1,6 +1,6 @@
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
-import { db } from '../../database'
-import { worker } from '../../service/worker'
+import { db } from '@/database'
+import { worker } from '@/service/worker'
 
 interface TicketPatch {
   paused?: boolean

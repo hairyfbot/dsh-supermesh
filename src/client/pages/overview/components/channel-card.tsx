@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshChannel } from '../../../apis'
-import { Empty } from '../../../components/empty'
-import { ChannelsIcon } from '../../../components/icons'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
-import { ChannelTile } from './channel-tile'
-import { SummaryCard } from './summary-card'
+import { getApiSupermeshChannel } from '@/client/apis'
+import { Empty } from '@/client/components/empty'
+import { ChannelsIcon } from '@/client/components/icons'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { ChannelTile } from '@/client/pages/overview/components/channel-tile'
+import { SummaryCard } from '@/client/pages/overview/components/summary-card'
 
 export function ChannelCard({ onMore }: { onMore: () => void }): ReactNode {
   const { t } = useTranslation()

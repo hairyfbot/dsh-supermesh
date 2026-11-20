@@ -1,8 +1,8 @@
-import { composePrompt } from '../_shared/compose-prompt'
-import * as plugins from '../_shared/plugins'
-import * as channel from '../_shared/tools/channel'
-import { definePreset } from '../preset'
-import * as tools from './tools'
+import { composePrompt } from '@/ai/_shared/compose-prompt'
+import * as plugins from '@/ai/_shared/plugins'
+import * as channel from '@/ai/_shared/tools/channel'
+import { definePreset } from '@/ai/preset'
+import * as tools from '@/ai/worker/tools'
 
 export const worker = definePreset({
   id: 'worker',

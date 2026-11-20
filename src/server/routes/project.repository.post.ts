@@ -1,5 +1,5 @@
 import { defineHandler, HTTPError, readBody } from 'h3'
-import { project } from '../../service/project'
+import { project } from '@/service/project'
 
 export default defineHandler(async (event) => {
   const body = await readBody<{ remoteUrl: string, name?: string }>(event)

@@ -1,6 +1,6 @@
 import { defineHandler } from 'h3'
-import { db } from '../../database'
-import { storage } from '../../storage'
+import { db } from '@/database'
+import { storage } from '@/storage'
 
 export default defineHandler(async () => {
   const [mainSessionId, projects, supervisors, workers] = await Promise.all([

@@ -1,14 +1,14 @@
-import { a as project, c as shell, d as channelProxyEnvironment, f as setting, g as db, h as singlet, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as channelAuth, t as channel, u as session } from "./channel-CmGdDdSV.js";
+import { a as project, c as shell, d as singlet, f as setting, g as db, h as channelProxyEnvironment, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as devops, t as channel, u as session } from "./channel-C_93wtiQ.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
-import { createHash, randomUUID } from "node:crypto";
 import { defineTool } from "@deepseek-ai/dsh-tools";
+import { createHash, randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { createRouteDispatcher } from "@deepseek-ai/dsh-http-proxy";
-import { fetch } from "undici";
 import { mkdir, readFile, rename as rename$1, writeFile } from "node:fs/promises";
+import { fetch } from "undici";
 import { Cron } from "croner";
 // src/ai/_shared/prompt-file.ts
 let cached;
@@ -225,8 +225,50 @@ const toolPresent = {
 	id: "present",
 	name: "@deepseek-ai/dsh-tool-present"
 };
-// src/channel/github/runner.ts
-var GhError = class extends Error {
+// src/ai/_shared/tools/channel.utils.ts
+const observed = /* @__PURE__ */ new WeakMap();
+function owner(exec) {
+	return exec.agent?.session;
+}
+/** 同一条触发 + 同一正文只入队一次，与官方 `key('reply', triggerId, text)` 同义。 */
+function replyKey(triggerId, body) {
+	return `reply:${createHash("sha256").update(JSON.stringify([triggerId, body])).digest("hex").slice(0, 32)}`;
+}
+async function isThreadId(value) {
+	if (!/^[\w-]+:[\w./-]+$/.test(value)) return false;
+	return Boolean(await db.thread.findById(value));
+}
+function observe(exec, threadId, version) {
+	const holder = owner(exec);
+	if (!holder) return;
+	let byTarget = observed.get(holder);
+	if (!byTarget) {
+		byTarget = /* @__PURE__ */ new Map();
+		observed.set(holder, byTarget);
+	}
+	byTarget.set(threadId, { version });
+}
+/** 与官方 `requirePresent` 同义：没读过就抛出带错误码的拒绝。 */
+function requireObserved(exec, threadId, verb) {
+	const holder = owner(exec);
+	const prior = holder ? observed.get(holder)?.get(threadId) : void 0;
+	if (!prior) {
+		const error = /* @__PURE__ */ new Error(`${verb} 需要先读过这个话题：调用 read_channel，resource 用 thread/<id> 或 trigger/<triggerId>`);
+		error.name = "ChannelNotObserved";
+		throw error;
+	}
+	return prior;
+}
+/** 话题的最新消息 id，用于判定「读的是哪一版」。 */
+async function latestVersion(threadId) {
+	return (await db.trigger.listRecent(1e3)).filter((item) => item.threadId === threadId).sort((a, b) => b.at.localeCompare(a.at))[0]?.id ?? "empty";
+}
+/** 记下「这个会话读过这个话题」，并把读到的那一版留下来。 */
+async function markThread(exec, threadId) {
+	observe(exec, threadId, await latestVersion(threadId));
+}
+// src/channel/_shared/error.ts
+var ChannelError = class extends Error {
 	code;
 	retryAfterSeconds;
 	constructor(code, retryAfterSeconds) {
@@ -235,6 +277,75 @@ var GhError = class extends Error {
 		this.retryAfterSeconds = retryAfterSeconds;
 	}
 };
+// src/channel/_shared/primitives.ts
+function record(value) {
+	if (!value || typeof value !== "object" || Array.isArray(value)) throw new ChannelError("invalid_response");
+	return value;
+}
+function array(value) {
+	if (!Array.isArray(value)) throw new ChannelError("invalid_response");
+	return value;
+}
+function text(value) {
+	if (typeof value !== "string" || !value) throw new ChannelError("invalid_response");
+	return value;
+}
+function number(value) {
+	if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) throw new ChannelError("invalid_response");
+	return value;
+}
+function identity(value) {
+	if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return String(value);
+	if (typeof value === "string" && value) return value;
+	throw new ChannelError("invalid_response");
+}
+function timestamp(value) {
+	const date = new Date(text(value));
+	if (!Number.isFinite(date.getTime())) throw new ChannelError("invalid_response");
+	return date.toISOString();
+}
+function now() {
+	return (/* @__PURE__ */ new Date()).toISOString();
+}
+function digest(value) {
+	return createHash("sha256").update(JSON.stringify(value)).digest("hex");
+}
+function escapeRegex(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+/** 游标回退 5 秒，靠确定性 id 去重，避免远程迟到的事件被漏掉（官方 cursorAt）。 */
+function cursorAt(started) {
+	return (/* @__PURE__ */ new Date(Date.parse(started) - 5e3)).toISOString();
+}
+// src/channel/_shared/thread.ts
+async function recordThread(input) {
+	const existing = await db.thread.findByRef(input.channel, input.refId);
+	return db.thread.record({
+		id: existing?.id ?? `${input.channel}:${input.refId}`,
+		channelId: input.channel,
+		refId: input.refId,
+		kind: input.kind,
+		title: input.title,
+		url: input.url,
+		createdAt: input.createdAt,
+		updatedAt: input.updatedAt,
+		projectId: null,
+		triage: "pending",
+		triagedAt: null
+	});
+}
+/** 结单话题；合并时顺带关闭同一项目下已结单票关联的 issue。 */
+async function closeThread(input) {
+	const ended = await db.ticket.closeThread(input.thread.id, input.outcome, input.at, input.branch);
+	if (input.outcome !== "merged" || !ended.length) return;
+	for (const source of await db.thread.listByChannel(input.channel)) {
+		if (source.kind !== "issue" || source.projectId !== input.projectId || !source.url) continue;
+		if (!(await db.ticketThread.listTicketIds(source.id)).some((id) => ended.includes(id))) continue;
+		await input.closeIssue(source.url).catch(() => void 0);
+	}
+}
+// src/channel/github/runner.ts
+var GhError = class extends ChannelError {};
 var ExecFileGhRunner = class {
 	async request(request) {
 		if (request.signal?.aborted) throw new GhError("interrupted");
@@ -292,283 +403,236 @@ var ExecFileGhRunner = class {
 		});
 	}
 };
-// src/channel/github/channel.ts
-/** 已结束的 PR 只在这么久之内继续轮询；更早的彻底不碰，避免历史堆积拖慢采集。 */
-const POLL_HORIZON_MS$1 = 12096e5;
-/**
-* 是否该轮询这个 PR：有活票就必须轮询；否则仅在近 `POLL_HORIZON_MS` 有活动时才轮询。
-* 与官方 `sources/poll.ts` 的 `polled` 同一策略。
-*/
-async function polled$1(ticketIds, updatedAt) {
-	const tickets = await Promise.all(ticketIds.map((id) => db.ticket.findById(id)));
-	if (tickets.some((ticket) => !!ticket && !["done", "cancelled"].includes(ticket.status))) return true;
-	const times = [updatedAt ?? "", ...tickets.map((ticket) => ticket?.endedAt ?? "")].map(Date.parse).filter(Number.isFinite);
-	return times.length > 0 && Date.now() - Math.max(...times) < POLL_HORIZON_MS$1;
+// src/channel/_shared/answers.ts
+/** 逐行产出回答候选，跳过围栏代码块里的内容。 */
+function* answerLines(body) {
+	let fenced = false;
+	for (const line of body.split(/\r?\n/)) {
+		if (/^\s*~{3}|^\s*```/.test(line)) {
+			fenced = !fenced;
+			continue;
+		}
+		if (fenced) continue;
+		yield line;
+	}
 }
-var GitHubChannel = class {
-	runner;
-	publishing = /* @__PURE__ */ new Map();
-	constructor(runner = new ExecFileGhRunner()) {
-		this.runner = runner;
-	}
-	exclusive(key, action) {
-		return singlet(`github:exclusive:${key}`, action)();
-	}
-	async request(path, signal, method = "GET", body, headers) {
-		signal?.throwIfAborted();
-		return this.runner.request({
-			site: "github.com",
-			path,
-			method,
-			body,
-			headers,
-			signal
-		});
-	}
-	async state(repository, name) {
-		const row = await db.sourceState.find("github", `${repository}:${name}`);
-		return row ? JSON.parse(row.value) : void 0;
-	}
-	async save(repository, name, value) {
-		await db.sourceState.set("github", `${repository}:${name}`, JSON.stringify(value), now$1());
-	}
-	async project(projectId) {
-		const project = await db.project.findById(projectId);
-		if (!project || !repositoryOf(project.remoteUrl)) throw new GhError("unknown_repository");
-		if (!project.enabled) throw new GhError("project_disabled");
-		return project;
-	}
-	async projectForRepository(repository) {
-		const projects = (await db.project.listAll()).filter((project) => repositoryOf(project.remoteUrl) === repository);
-		if (projects.length !== 1) throw new GhError(projects.length ? "ambiguous_repository" : "unknown_repository");
-		return projects[0];
-	}
-	async verifyEnvironment(projectId, signal) {
-		const project = await this.project(projectId);
-		if (!(await db.channel.findById("github"))?.enabled) throw new GhError("channel_disabled");
-		const bots = (await db.channelAccount.findByRole("github", "bot")).filter((account) => account.status === "online");
-		const account = record$1(await this.request("user", signal));
-		const providerId = identity$1(account.id);
-		const login = text$1(account.login);
-		if (!bots.some((bot) => bot.name.toLowerCase() === login.toLowerCase())) throw new GhError("account_mismatch");
-		const repository = repositoryOf(project.remoteUrl);
-		const remote = record$1(await this.request(`repos/${repository}`, signal));
-		if (text$1(remote.full_name).toLowerCase() !== repository) throw new GhError("repository_mismatch");
-		const result = {
-			providerId,
-			login,
-			repositoryId: identity$1(remote.id),
-			defaultBranch: typeof remote.default_branch === "string" ? remote.default_branch : null
+// src/channel/_shared/ci.ts
+/** 分支 CI 变更落成 ciWatch、ci 话题、触发与项目通知。silent 为真时首轮不打扰。 */
+async function notifyBranchCi(input) {
+	const { row: watch } = await db.ciWatch.recordRevision({
+		id: `${input.channel}:${input.ref}`,
+		channelId: input.channel,
+		kind: "branch",
+		ref: input.ref,
+		fingerprint: input.fingerprint,
+		head: input.head,
+		updatedAt: now()
+	});
+	if (input.silent && watch.revision === 0) return;
+	const threadId = `${input.channel}:${input.ref}`;
+	await db.thread.record({
+		id: threadId,
+		channelId: input.channel,
+		refId: input.ref,
+		kind: "ci",
+		title: input.title,
+		url: null,
+		projectId: input.projectId,
+		triage: "claimed",
+		triagedAt: now(),
+		createdAt: now(),
+		updatedAt: now()
+	});
+	const triggerId = `${watch.id}:revision:${watch.revision}`;
+	await db.trigger.ingest({
+		id: triggerId,
+		channelId: input.channel,
+		threadId,
+		kind: "ci",
+		actorName: null,
+		human: 0,
+		mentioned: 0,
+		text: input.message,
+		url: input.url,
+		at: now(),
+		ref: input.head
+	});
+	await db.inbox.enqueue({
+		id: `${triggerId}:project:${input.projectId}`,
+		type: "project",
+		origin: "system",
+		kind: "notice",
+		projectId: input.projectId,
+		triggerId,
+		threadId,
+		title: input.message,
+		message: input.message
+	});
+}
+// src/channel/github/service/resource.ts
+const resource$1 = defineService({
+	of(remoteUrl) {
+		if (!remoteUrl) return null;
+		const ssh = /^git@github\.com:([\w.-]+\/[\w.-]+?)(?:\.git)?$/i.exec(remoteUrl);
+		if (ssh) return ssh[1].toLowerCase();
+		try {
+			const url = new URL(remoteUrl);
+			if (!["https:", "ssh:"].includes(url.protocol) || url.hostname !== "github.com" || url.password || url.search || url.hash || url.port) return null;
+			return /^\/([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/i.exec(url.pathname)?.[1]?.toLowerCase() ?? null;
+		} catch {
+			return null;
+		}
+	},
+	parse(value) {
+		const short = /^github:([^/:]+\/[^/:]+):(issue|pull):([1-9]\d*)$/.exec(value);
+		if (short) return {
+			repository: short[1].toLowerCase(),
+			kind: short[2],
+			number: Number(short[3])
 		};
-		const previous = await this.state(repository, "verified_environment");
-		if (previous && (previous.providerId !== providerId || previous.repositoryId !== result.repositoryId)) throw new GhError("environment_identity_changed");
-		await this.save(repository, "verified_environment", result);
-		return result;
+		let url;
+		try {
+			url = new URL(value);
+		} catch {
+			throw new GhError("invalid_resource");
+		}
+		const match = /^\/([\w.-]+\/[\w.-]+)\/(issues|pull)\/([1-9]\d*)\/?$/i.exec(url.pathname);
+		if (url.protocol !== "https:" || url.hostname !== "github.com" || url.username || url.password || url.port || !match) throw new GhError("invalid_resource");
+		return {
+			repository: match[1].toLowerCase(),
+			kind: match[2] === "pull" ? "pull" : "issue",
+			number: Number(match[3])
+		};
+	},
+	validate(row, target) {
+		const url = resource$1.parse(text(row.html_url));
+		if (number(row.number) !== target.number || url.repository !== target.repository || url.kind !== target.kind) throw new GhError("source_repository_mismatch");
+	},
+	item(row, kind) {
+		return {
+			id: identity(row.id),
+			kind,
+			actor: text(record(row.user).login),
+			body: typeof row.body === "string" ? row.body : typeof row.state === "string" ? row.state : "",
+			url: text(row.html_url),
+			createdAt: timestamp(row.created_at ?? row.submitted_at),
+			updatedAt: timestamp(row.updated_at ?? row.submitted_at ?? row.created_at)
+		};
 	}
-	async pages(path, signal) {
-		const result = [];
+});
+// src/channel/_shared/admission.ts
+function acceptsChannelTrigger(input) {
+	if (!input.human || input.historical && !input.subscribed) return false;
+	return input.subscribed || input.admin && (input.kind === "open" || input.mentioned) && (!input.ignored || input.mentioned);
+}
+// src/service/courier.ts
+/** 没有活票的话题，最后一次活动超过这个时长就不再轮询（官方 POLL_HORIZON_MS）。 */
+const POLL_HORIZON_MS = 12096e5;
+/** 同话题投递串行化：同一时刻只允许一条在途，避免重复发言。 */
+const publishing = /* @__PURE__ */ new Map();
+const courier = defineService({
+	async state(channel, scope, name) {
+		const row = await db.sourceState.find(channel, `${scope}:${name}`);
+		return row ? JSON.parse(row.value) : void 0;
+	},
+	async record(channel, scope, name, value) {
+		await db.sourceState.set(channel, `${scope}:${name}`, JSON.stringify(value), now());
+	},
+	async pages(fetchPage) {
+		const rows = [];
+		let etag = null;
 		for (let page = 1;; page++) {
-			const batch = array$1(await this.request(`${path + (path.includes("?") ? "&" : "?")}per_page=100&page=${page}`, signal)).map(record$1);
-			result.push(...batch);
-			if (batch.length < 100) return result;
+			const value = await fetchPage(page);
+			if (page === 1) {
+				if (value.notModified) return {
+					rows: [],
+					notModified: true,
+					etag: value.etag ?? null
+				};
+				etag = value.etag ?? null;
+			}
+			rows.push(...value.rows);
+			if (value.rows.length < 100) return {
+				rows,
+				notModified: false,
+				etag
+			};
 		}
-	}
-	async read(resource, offset = 0, limit = 50, signal) {
-		if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new GhError("invalid_pagination");
-		const target = parseResource$1(resource);
-		const project = await this.projectForRepository(target.repository);
-		if (!project) throw new GhError("unknown_repository");
-		await this.verifyEnvironment(project.id, signal);
-		const root = `repos/${target.repository}`;
-		const main = record$1(await this.request(root + (target.kind === "pull" ? "/pulls/" : "/issues/") + target.number, signal));
-		validateTopic$1(main, target);
-		const items = [item$1(main, target.kind)];
-		for (const row of await this.pages(`${root}/issues/${target.number}/comments`, signal)) items.push(item$1(row, "comment"));
-		if (target.kind === "pull") {
-			for (const row of await this.pages(`${root}/pulls/${target.number}/reviews`, signal)) items.push(item$1(row, "review"));
-			for (const row of await this.pages(`${root}/pulls/${target.number}/comments`, signal)) items.push(item$1(row, "review_comment"));
-		}
-		items.splice(1, items.length - 1, ...items.slice(1).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)));
+	},
+	page(items, offset, limit) {
+		if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new ChannelError("invalid_pagination");
 		return {
 			items: items.slice(offset, offset + limit),
-			next_offset: offset + limit < items.length ? offset + limit : null,
-			next_resource: null
+			next_offset: offset + limit < items.length ? offset + limit : null
 		};
-	}
-	async collectAll(signal) {
-		signal?.throwIfAborted();
-		if (!(await db.channel.findById("github"))?.enabled) return [];
-		const result = [];
-		for (const project of await db.project.listAll()) {
-			signal?.throwIfAborted();
-			if (!project.enabled || !repositoryOf(project.remoteUrl)) continue;
-			result.push({
-				projectId: project.id,
-				...await this.collect(project.id, signal)
-			});
-		}
-		return result;
-	}
-	async collect(projectId, signal) {
-		return this.exclusive(`collect:${projectId}`, async () => {
-			const errors = [];
-			let repository;
-			const attempt = async (operation) => {
-				try {
-					await operation();
-				} catch (error) {
-					if (signal?.aborted) throw error;
-					errors.push(failure$1(error));
-				}
-			};
-			try {
-				const project = await this.project(projectId);
-				const environment = await this.verifyEnvironment(projectId, signal);
-				const repo = repositoryOf(project.remoteUrl);
-				repository = repo;
-				const baseline = await this.state(repo, "baseline") ?? now$1();
-				await this.save(repo, "baseline", baseline);
-				await attempt(() => this.stream(repo, "topics", `repos/${repo}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
-					const target = {
-						repository: repo,
-						number: number$1(row.number),
-						kind: row.pull_request ? "pull" : "issue"
-					};
-					validateTopic$1(row, target);
-					const thread = await this.ensureThread(target, row);
-					await this.ingest(thread, row, target.kind === "issue" && row.state === "closed" ? "close" : "open", baseline);
-					if (target.kind === "pull") {
-						const result = await this.collectPullRequest(projectId, thread.id, signal);
-						if (!result.ok) throw new GhError(result.reason);
-					}
-				}, signal));
-				await attempt(() => this.stream(repo, "comments", `repos/${repo}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
-					const match = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/issues\/(\d+)$/.exec(text$1(row.issue_url));
-					if (!match || match[1].toLowerCase() !== repo) throw new GhError("source_repository_mismatch");
-					const thread = await db.thread.findByRef("github", `${repo}:${match[2]}`);
-					if (thread) {
-						await this.acceptAnswers(thread, row);
-						await this.ingest(thread, row, "comment", baseline);
-					}
-				}, signal));
-				for (const thread of await db.thread.listByChannel("github")) {
-					if (thread.kind !== "pull" || !thread.url) continue;
-					const ticketIds = await db.ticketThread.listTicketIds(thread.id);
-					if (!ticketIds.length) continue;
-					if (!await polled$1(ticketIds, thread.updatedAt)) continue;
-					if ((await Promise.all(ticketIds.map((id) => db.ticket.findById(id)))).every((ticket) => !!ticket && ["done", "cancelled"].includes(ticket.status) && !!ticket.prState && ["merged", "closed"].includes(ticket.prState))) continue;
-					await attempt(async () => {
-						const target = parseResource$1(thread.url);
-						if (target.repository !== repo) return;
-						const root = `repos/${repo}/pulls/${target.number}`;
-						for (const [path, kind] of [["reviews", "review"], ["comments", "review_comment"]]) await attempt(async () => {
-							await this.stream(repo, `pull:${target.number}:${path}`, `${root}/${path}?sort=updated&direction=asc`, baseline, async (row) => {
-								await this.acceptAnswers(thread, row);
-								await this.ingest(thread, row, "comment", baseline, kind);
-							}, signal);
-						});
-						const result = await this.collectPullRequest(projectId, thread.id, signal);
-						if (!result.ok) throw new GhError(result.reason);
-					});
-				}
-				if (environment.defaultBranch) await attempt(() => this.collectBranch(projectId, environment.defaultBranch, signal));
-			} catch (error) {
-				if (signal?.aborted) throw error;
-				errors.push(failure$1(error));
-			}
-			if (repository) await this.save(repository, "collection_status", {
-				ok: !errors.length,
-				reasons: [...new Set(errors)],
-				collectedAt: now$1()
-			});
-			return errors.length ? {
-				ok: false,
-				reason: [...new Set(errors)].join(",")
-			} : { ok: true };
-		});
-	}
-	async stream(repository, name, path, baseline, accept, signal) {
-		const cursor = await this.state(repository, `cursor:${name}`) ?? { since: baseline };
-		const startedAt = now$1();
-		const since = cursor.since;
-		const conditional = cursor.etag && cursor.etagSince === since ? { "If-None-Match": cursor.etag } : void 0;
-		const value = await this.request(`${path}&since=${encodeURIComponent(since)}&per_page=100`, signal, "GET", void 0, conditional);
-		if (value && typeof value === "object" && value.notModified) return;
-		const rows = array$1(value).map(record$1);
+	},
+	async stream(input) {
+		const cursor = await courier.state(input.channel, input.scope, `cursor:${input.name}`) ?? input.initial;
+		const startedAt = now();
+		const value = await input.read(cursor);
+		if (value.notModified) return;
 		const revisions = [];
 		let firstError;
-		for (const row of rows) {
-			signal?.throwIfAborted();
+		for (const row of value.rows) {
+			input.signal?.throwIfAborted();
 			try {
-				await accept(row);
+				await input.accept(row);
 			} catch (error) {
-				if (signal?.aborted) throw error;
+				if (input.signal?.aborted) throw error;
 				firstError ??= error;
 			}
-			revisions.push(digest$1(row));
+			revisions.push(digest(row));
 		}
 		if (firstError) throw firstError;
-		const signature = digest$1(revisions.sort());
-		const newest = Math.max(...rows.map((row) => Date.parse(timestamp$1(row.updated_at))).filter(Number.isFinite));
-		const moved = Number.isFinite(newest) ? (/* @__PURE__ */ new Date(newest - 5e3)).toISOString() : since;
-		await this.save(repository, `cursor:${name}`, {
-			since: moved > since ? moved : since,
+		const signature = digest(revisions.sort());
+		const next = {
+			...input.advance(cursor, value.rows, startedAt),
 			signature,
 			through: startedAt
-		});
-	}
-	async ensureThread(target, row) {
-		const refId = `${target.repository}:${target.number}`;
-		const value = {
-			id: (await db.thread.findByRef("github", refId))?.id ?? `github:${refId}`,
-			channelId: "github",
-			refId,
-			kind: target.kind,
-			title: text$1(row.title),
-			url: text$1(row.html_url),
-			createdAt: timestamp$1(row.created_at),
-			updatedAt: timestamp$1(row.updated_at),
-			projectId: null,
-			triage: "pending",
-			triagedAt: null
 		};
-		return db.thread.record(value);
-	}
-	async ingest(thread, row, kind, baseline, sourceKind = kind) {
-		const author = record$1(row.user);
-		const actorName = text$1(author.login);
-		const bots = (await db.channelAccount.findByChannel("github")).filter((account) => account.role === "bot");
-		const human = author.type !== "Bot" && !actorName.endsWith("[bot]") && !bots.some((bot) => bot.name.toLowerCase() === actorName.toLowerCase());
-		const body = typeof row.body === "string" ? row.body : typeof row.state === "string" ? row.state : "";
-		const mentioned = bots.some((bot) => new RegExp(`@${escapeRegex$1(bot.name)}(?![a-z0-9-])`, "i").test(body));
-		const at = timestamp$1(row.updated_at ?? row.submitted_at ?? row.created_at);
-		const id = `${thread.id}:${sourceKind}:${identity$1(row.id)}`;
-		const trigger = {
+		if (value.etag !== void 0) next.etag = value.etag;
+		await courier.record(input.channel, input.scope, `cursor:${input.name}`, next);
+	},
+	async ingest(port, thread, row, kind, baseline, sourceKind) {
+		const bots = await port.bots();
+		const actorName = port.actor(row);
+		const human = port.human(row, bots);
+		const body = port.body(row);
+		const mentioned = port.mentioned(body, bots);
+		const at = port.at(row);
+		const id = `${thread.id}:${sourceKind}:${identity(row.id)}`;
+		await db.trigger.ingest({
 			id,
-			channelId: "github",
+			channelId: port.channel,
 			threadId: thread.id,
 			kind,
 			actorName,
 			human: Number(human),
 			mentioned: Number(mentioned),
 			text: body,
-			url: text$1(row.html_url),
+			url: port.url(row, sourceKind, thread),
 			at,
-			ref: row.head ? text$1(record$1(row.head).ref) : null
-		};
-		await db.trigger.ingest(trigger);
+			ref: port.ref(row)
+		});
 		const subscriptions = await db.ticketThread.listTicketIds(thread.id);
-		const historical = timestamp$1(row.created_at ?? row.submitted_at) < baseline;
+		const historical = port.createdAt(row) < baseline;
 		const admin = (await setting.load()).administrators.some((name) => name.toLowerCase() === actorName.toLowerCase());
-		if (!human || historical && !subscriptions.length) return;
-		if (!subscriptions.length && (!admin || kind !== "open" && !mentioned || thread.triage === "ignored" && !mentioned)) return;
+		if (!acceptsChannelTrigger({
+			human,
+			historical,
+			subscribed: subscriptions.length > 0,
+			admin,
+			mentioned,
+			kind,
+			ignored: thread.triage === "ignored"
+		})) return;
 		const targets = /* @__PURE__ */ new Map();
 		for (const ticketId of subscriptions) {
 			const ticket = await db.ticket.findById(ticketId);
 			if (!ticket) continue;
 			if (["done", "cancelled"].includes(ticket.status)) {
 				if (!mentioned) continue;
-				if (await db.ticket.reopen(ticketId, trigger.at)) {
+				if (await db.ticket.reopen(ticketId, at)) {
 					await db.worker.queue(ticketId, ticket.projectId);
 					targets.set(ticket.projectId, {
 						projectId: ticket.projectId,
@@ -577,13 +641,7 @@ var GitHubChannel = class {
 				}
 				continue;
 			}
-			if (ticket.status === "review" && !ticket.paused && human) {
-				await db.ticket.update(ticketId, {
-					status: "waiting",
-					updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-				});
-				await db.worker.queue(ticketId, ticket.projectId).catch(() => void 0);
-			}
+			await port.onSubscribedTicket?.(ticket);
 			targets.set(ticket.projectId, {
 				projectId: ticket.projectId,
 				ticketId
@@ -593,43 +651,312 @@ var GitHubChannel = class {
 			projectId: thread.triage === "claimed" ? thread.projectId : null,
 			ticketId: null
 		});
-		for (const [key, target] of targets) {
-			const inboxId = `${id}:inbox:${key}`;
-			await db.inbox.enqueue({
-				id: inboxId,
-				type: target.projectId ? "project" : "main",
-				origin: "channel",
-				kind: "trigger",
-				message: body,
-				title: thread.title,
-				projectId: target.projectId,
-				ticketId: target.ticketId,
-				triggerId: id,
-				threadId: thread.id
+		for (const [key, target] of targets) await db.inbox.enqueue({
+			id: `${id}:inbox:${key}`,
+			type: target.projectId ? "project" : "main",
+			origin: "channel",
+			kind: "trigger",
+			message: body,
+			title: thread.title,
+			projectId: target.projectId,
+			ticketId: target.ticketId,
+			triggerId: id,
+			threadId: thread.id
+		});
+	},
+	async answers(port, thread, row) {
+		if (!await port.admin(row)) return;
+		const body = typeof row.body === "string" ? row.body : "";
+		const { answers: found, conflicts } = await port.parse(body, thread);
+		const scope = await port.scope(thread);
+		for (const [id, answer] of found) {
+			if (conflicts.has(id)) continue;
+			const ask = await db.inbox.findById(id);
+			if (!ask || ask.kind !== "ask" || ask.type !== "user" || ask.status !== "pending" || timestamp(row.created_at ?? row.submitted_at) < ask.createdAt) continue;
+			const trigger = ask.triggerId && await db.trigger.findById(ask.triggerId);
+			if (!trigger || trigger.threadId !== thread.id || ask.threadId && ask.threadId !== thread.id) continue;
+			if (!await courier.state(port.channel, scope, `comment:${id}`)) continue;
+			if (ask.ticketId) {
+				const ticket = await db.ticket.findById(ask.ticketId);
+				if (!ticket || ["done", "cancelled"].includes(ticket.status)) continue;
+			}
+			await db.inbox.answerByUser(id, answer, now());
+		}
+	},
+	async publish(port, inboxId, signal) {
+		const destination = async (row) => {
+			if (row.type !== "user" || !["notice", "ask"].includes(row.kind) || !row.triggerId) throw new ChannelError("invalid_delivery");
+			const trigger = await db.trigger.findById(row.triggerId);
+			const thread = trigger && await db.thread.findById(trigger.threadId);
+			if (!thread?.url || thread.channelId !== port.channel || !["issue", "pull"].includes(thread.kind) || row.threadId && row.threadId !== thread.id) throw new ChannelError("no_reply_address");
+			const target = await port.parse(thread.url);
+			const project = await port.projectFor(target);
+			if (!project) throw new ChannelError("unknown_repository");
+			if (row.ticketId) {
+				const ticket = await db.ticket.findById(row.ticketId);
+				if (row.kind === "ask" && ticket && ["done", "cancelled"].includes(ticket.status)) throw new ChannelError("delivery_superseded");
+				if (!ticket || ticket.projectId !== project.id) throw new ChannelError("scope_denied");
+				if (ticket.paused) throw new ChannelError("human_paused");
+				if (!(await db.ticketThread.listTicketIds(thread.id)).includes(ticket.id)) throw new ChannelError("unsubscribed_thread");
+			}
+			return {
+				thread,
+				target
+			};
+		};
+		const deliver = async () => {
+			let row = await db.inbox.findById(inboxId);
+			if (!row) return {
+				ok: false,
+				reason: "unknown_delivery"
+			};
+			if (row.status === "done") return { ok: true };
+			let posting = false;
+			try {
+				const { thread, target } = await destination(row);
+				const project = await port.projectFor(target);
+				const environment = await port.probe(project.id, signal);
+				const scope = port.scope(target);
+				const marker = `<!-- supermesh:${row.id} -->`;
+				const receipt = await courier.state(port.channel, scope, `comment:${row.id}`);
+				if (receipt) {
+					if (receipt.providerId !== environment.providerId || receipt.marker !== marker) throw new ChannelError("managed_comment_mismatch");
+					if (row.kind === "notice") await db.inbox.markDone(row.id, now());
+					return {
+						ok: true,
+						remoteId: receipt.remoteId
+					};
+				}
+				if (row.nextRetryAt && row.nextRetryAt > now()) return {
+					ok: false,
+					reason: "retry_pending"
+				};
+				for (const previous of await db.inbox.listOutgoing()) {
+					if (previous.id === row.id || previous.seq >= row.seq || previous.ticketId !== row.ticketId || previous.status === "done") continue;
+					if ((previous.threadId ?? (previous.triggerId ? (await db.trigger.findById(previous.triggerId))?.threadId : void 0)) === thread.id && !await courier.state(port.channel, scope, `comment:${previous.id}`)) return {
+						ok: false,
+						reason: "earlier_delivery_pending"
+					};
+				}
+				const existing = (await port.comments(target, signal)).filter((comment) => port.authorId(comment) === environment.providerId && port.body(comment).includes(marker));
+				if (existing.length > 1) throw new ChannelError("ambiguous_delivery");
+				let remote = existing[0];
+				if (!remote) {
+					if (row.status === "stalled" || row.deliveryError === "publishing") {
+						await db.inbox.markStalled(row.id, "transport_unknown");
+						return {
+							ok: false,
+							reason: "transport_unknown"
+						};
+					}
+					const current = await db.inbox.findById(row.id);
+					if (!current || current.status !== "pending" || current.type !== row.type || current.kind !== row.kind) return {
+						ok: false,
+						reason: "delivery_superseded"
+					};
+					await destination(current);
+					await db.inbox.recordDeliveryFailure(row.id, "publishing", now());
+					posting = true;
+					const body = row.kind === "ask" ? port.askPrompt(row) : row.message;
+					remote = await port.post(target, `${body}\n\n${marker}`, signal);
+				}
+				if (port.authorId(remote) !== environment.providerId || !port.body(remote).includes(marker)) throw new ChannelError("managed_comment_mismatch");
+				const result = {
+					remoteId: identity(remote.id),
+					providerId: environment.providerId,
+					marker,
+					url: port.commentUrl(remote, target)
+				};
+				await courier.record(port.channel, scope, `comment:${row.id}`, result);
+				await db.inbox.resetDelivery(row.id);
+				if (row.kind === "notice") await db.inbox.markDone(row.id, now());
+				return {
+					ok: true,
+					remoteId: result.remoteId
+				};
+			} catch (error) {
+				const reason = courier.failure(error, port.detail);
+				if (posting && ![
+					"rate_limited",
+					"forbidden",
+					"not_found",
+					"not_logged_in",
+					"remote_rejected"
+				].includes(reason)) await db.inbox.markStalled(row.id, "transport_unknown");
+				else if (![
+					"human_paused",
+					"project_disabled",
+					"channel_disabled",
+					"retry_pending",
+					...port.skipReasons
+				].includes(reason)) {
+					row = await db.inbox.findById(row.id);
+					const settings = await setting.load();
+					const attempts = row.deliveryAttempts + (posting ? 0 : 1);
+					if (attempts >= settings.deliveryMaxAttempts) await db.inbox.markStalled(row.id, reason);
+					else {
+						const seconds = courier.retryDelay(error, attempts, settings.deliveryRetryCeilingSeconds);
+						const nextRetryAt = new Date(Date.now() + seconds * 1e3).toISOString();
+						if (posting) await db.inbox.update(row.id, {
+							deliveryError: reason,
+							nextRetryAt
+						});
+						else await db.inbox.recordDeliveryFailure(row.id, reason, nextRetryAt);
+					}
+				}
+				if (signal?.aborted) throw error;
+				return {
+					ok: false,
+					reason: posting && reason === "interrupted" ? "transport_unknown" : reason
+				};
+			}
+		};
+		return singlet.immediate(`${port.channel}:exclusive:publish:${inboxId}`, async () => {
+			const row = await db.inbox.findById(inboxId);
+			const trigger = row?.triggerId ? await db.trigger.findById(row.triggerId) : void 0;
+			const key = `${port.channel}:${trigger ? trigger.threadId : inboxId}`;
+			const task = (publishing.get(key) ?? Promise.resolve()).then(deliver);
+			const barrier = task.then(() => void 0, () => void 0);
+			publishing.set(key, barrier);
+			try {
+				return await task;
+			} finally {
+				if (publishing.get(key) === barrier) publishing.delete(key);
+			}
+		});
+	},
+	async flush(port, signal) {
+		signal?.throwIfAborted();
+		if (!(await db.channel.findById(port.channel))?.enabled) return [];
+		const results = [];
+		for (const row of await db.inbox.listOutgoing()) {
+			signal?.throwIfAborted();
+			if (row.status !== "pending") continue;
+			const trigger = row.triggerId && await db.trigger.findById(row.triggerId);
+			if (trigger && trigger.channelId === port.channel) results.push({
+				id: row.id,
+				...await courier.publish(port, row.id, signal)
 			});
 		}
+		return results;
+	},
+	async harvest(port, signal) {
+		signal?.throwIfAborted();
+		if (!(await db.channel.findById(port.channel))?.enabled) return [];
+		const results = [];
+		for (const project of await db.project.listAll()) {
+			signal?.throwIfAborted();
+			if (!project.enabled || !await port.scope(project)) continue;
+			const outcome = await courier.collect(port, project.id, void 0, signal);
+			if (!outcome.ok) port.onFailure?.(project, outcome.reason ?? "channel_operation_failed");
+			results.push(outcome);
+		}
+		return results;
+	},
+	async collect(port, projectId, branch, signal) {
+		if (branch) {
+			await port.collectBranch(projectId, branch, signal);
+			return {
+				projectId,
+				ok: true
+			};
+		}
+		return singlet.immediate(`${port.channel}:exclusive:collect:${projectId}`, async () => {
+			const errors = [];
+			let scope;
+			const context = {
+				channel: port.channel,
+				projectId,
+				scope: "",
+				baseline: "",
+				environment: {
+					providerId: "",
+					login: "",
+					repositoryId: ""
+				},
+				attempt: async (operation) => {
+					try {
+						await operation();
+					} catch (error) {
+						if (signal?.aborted) throw error;
+						errors.push(courier.failure(error, port.detail));
+					}
+				},
+				fail: (error) => {
+					if (signal?.aborted) throw error;
+					errors.push(courier.failure(error, port.detail));
+				}
+			};
+			try {
+				const project = await port.project(projectId);
+				const environment = await port.probe(projectId, signal);
+				const resolved = await port.scope(project);
+				if (!resolved) throw new ChannelError("unknown_repository");
+				scope = resolved;
+				const baseline = await courier.state(port.channel, scope, "baseline") ?? now();
+				await courier.record(port.channel, scope, "baseline", baseline);
+				context.scope = scope;
+				context.baseline = baseline;
+				context.environment = environment;
+				await port.collect(context, signal);
+			} catch (error) {
+				if (signal?.aborted) throw error;
+				errors.push(courier.failure(error, port.detail));
+			}
+			if (port.status && scope) await courier.record(port.channel, scope, "collection_status", {
+				ok: !errors.length,
+				reasons: [...new Set(errors)],
+				collectedAt: now()
+			});
+			return errors.length ? {
+				projectId,
+				ok: false,
+				reason: [...new Set(errors)].join(",")
+			} : {
+				projectId,
+				ok: true
+			};
+		});
+	},
+	async polled(ticketIds, updatedAt, at = Date.now()) {
+		if (!ticketIds.length) return true;
+		const tickets = await Promise.all(ticketIds.map((id) => db.ticket.findById(id)));
+		if (tickets.some((ticket) => !!ticket && !["done", "cancelled"].includes(ticket.status))) return true;
+		const times = [updatedAt ?? "", ...tickets.map((ticket) => ticket?.endedAt ?? "")].map((value) => Date.parse(value)).filter(Number.isFinite);
+		return times.length > 0 && at - Math.max(...times) < POLL_HORIZON_MS;
+	},
+	failure(error, detail) {
+		if (error instanceof ChannelError) return error.code;
+		if (error instanceof Error) return error.name === "AbortError" ? "interrupted" : detail ? `transport_unknown(${error.message.slice(0, 120)})` : "transport_unknown";
+		return "transport_unknown";
+	},
+	retryDelay(error, attempts, ceiling) {
+		return Math.max(error instanceof ChannelError ? error.retryAfterSeconds ?? 0 : 0, Math.min(ceiling, 2 ** Math.max(1, attempts)));
 	}
-	async ci(root, head, signal) {
-		const previous = await this.state(root.slice(6), `ci_runs:${head}`);
+});
+// src/channel/github/service/ci.ts
+const ci$1 = defineService({
+	async snapshot(remote, root, head, signal) {
+		const previous = await courier.state("github", root.slice(6), `ci_runs:${head}`);
 		const checks = /* @__PURE__ */ new Map();
 		const statuses = /* @__PURE__ */ new Map();
 		const acceptCheck = (check) => {
 			if (check.head_sha !== head) return;
-			const key = `${identity$1(record$1(check.app).id)}:${text$1(check.name)}`;
+			const key = `${identity(record(check.app).id)}:${text(check.name)}`;
 			const prior = checks.get(key);
-			if (!prior || number$1(check.id) > number$1(prior.id) || check.id === prior.id && !(prior.status === "completed" && check.status !== "completed") && timestamp$1(check.completed_at ?? check.started_at ?? check.created_at) >= timestamp$1(prior.completed_at ?? prior.started_at ?? prior.created_at)) checks.set(key, check);
+			if (!prior || number(check.id) > number(prior.id) || check.id === prior.id && !(prior.status === "completed" && check.status !== "completed") && timestamp(check.completed_at ?? check.started_at ?? check.created_at) >= timestamp(prior.completed_at ?? prior.started_at ?? prior.created_at)) checks.set(key, check);
 		};
 		const acceptStatus = (status) => {
-			const key = text$1(status.context);
+			const key = text(status.context);
 			const prior = statuses.get(key);
-			if (!prior || timestamp$1(status.updated_at ?? status.created_at) > timestamp$1(prior.updated_at ?? prior.created_at) || timestamp$1(status.updated_at ?? status.created_at) === timestamp$1(prior.updated_at ?? prior.created_at) && number$1(status.id) > number$1(prior.id)) statuses.set(key, status);
+			if (!prior || timestamp(status.updated_at ?? status.created_at) > timestamp(prior.updated_at ?? prior.created_at) || timestamp(status.updated_at ?? status.created_at) === timestamp(prior.updated_at ?? prior.created_at) && number(status.id) > number(prior.id)) statuses.set(key, status);
 		};
 		for (const check of previous?.checks ?? []) acceptCheck(check);
 		for (const status of previous?.statuses ?? []) acceptStatus(status);
 		for (const kind of ["check-runs", "status"]) for (let page = 1;; page++) {
-			const response = record$1(await this.request(`${root}/commits/${encodeURIComponent(head)}/${kind}?per_page=100&page=${page}`, signal));
+			const response = record(await remote.request(`${root}/commits/${encodeURIComponent(head)}/${kind}?per_page=100&page=${page}`, signal));
 			if (kind === "status" && response.sha !== head) throw new GhError("ci_head_mismatch");
-			const rows = array$1(response[kind === "check-runs" ? "check_runs" : "statuses"]).map(record$1);
+			const rows = array(response[kind === "check-runs" ? "check_runs" : "statuses"]).map(record);
 			for (const row of rows) (kind === "check-runs" ? acceptCheck : acceptStatus)(row);
 			if (rows.length < 100) break;
 		}
@@ -644,27 +971,156 @@ var GitHubChannel = class {
 			checks: [...checks.values()],
 			statuses: [...statuses.values()]
 		};
-		await this.save(root.slice(6), `ci_runs:${head}`, result);
+		await courier.record("github", root.slice(6), `ci_runs:${head}`, result);
 		return result;
+	},
+	async branch(remote, projectId, branch, signal) {
+		const project = await remote.project(projectId);
+		await remote.probe(projectId, signal);
+		const repository = resource$1.of(project.remoteUrl);
+		const head = text(record(await remote.request(`repos/${repository}/commits/${encodeURIComponent(branch)}`, signal)).sha);
+		const snapshot = await ci$1.snapshot(remote, `repos/${repository}`, head, signal);
+		const failing = snapshot.checks.filter((check) => check.status === "completed" && ![
+			"success",
+			"neutral",
+			"skipped"
+		].includes(String(check.conclusion))).map((check) => text(check.name));
+		failing.push(...snapshot.statuses.filter((status) => !["success", "pending"].includes(String(status.state))).map((status) => text(status.context)));
+		await notifyBranchCi({
+			channel: "github",
+			projectId,
+			ref: `${repository}:branch:${branch}`,
+			fingerprint: digest({
+				state: snapshot.state,
+				failing: failing.sort()
+			}),
+			head,
+			title: `CI ${branch}`,
+			message: `${branch} CI ${snapshot.state}${failing.length ? `: ${failing.join(", ")}` : ""}`,
+			url: `https://github.com/${repository}/commit/${head}`,
+			silent: !failing.length
+		});
 	}
-	async collectPullRequest(projectId, threadId, signal) {
-		return this.exclusive(`pull:${threadId}`, async () => {
-			const project = await this.project(projectId);
-			await this.verifyEnvironment(projectId, signal);
+});
+// src/channel/github/service/binding.ts
+const binding$1 = defineService({ of(channel) {
+	return {
+		delivery: {
+			channel: "github",
+			detail: false,
+			parse: async (value) => resource$1.parse(value),
+			scope: (target) => target.repository,
+			projectFor: (target) => channel.projectForRepository(target.repository),
+			probe: (projectId, signal) => channel.probe(projectId, signal),
+			comments: (target, signal) => channel.pages(`repos/${target.repository}/issues/${target.number}/comments`, signal),
+			authorId: (row) => record(row.user).id != null ? identity(record(row.user).id) : null,
+			body: (row) => typeof row.body === "string" ? row.body : "",
+			post: async (target, body, signal) => record(await channel.request(`repos/${target.repository}/issues/${target.number}/comments`, signal, "POST", { body })),
+			commentUrl: (row, target) => {
+				const url = text(row.html_url);
+				const remote = resource$1.parse(url);
+				if (remote.repository !== target.repository || remote.number !== target.number) throw new GhError("managed_comment_mismatch");
+				return url;
+			},
+			askPrompt: (row) => `${row.message}\n\n回复格式：\`answer: 你的回答\``,
+			skipReasons: []
+		},
+		collector: {
+			channel: "github",
+			detail: false,
+			status: true,
+			scope: async (project) => resource$1.of(project.remoteUrl),
+			project: (projectId) => channel.project(projectId),
+			probe: (projectId, signal) => channel.probe(projectId, signal),
+			collect: (context, signal) => channel.collectProject(context, signal),
+			collectBranch: (projectId, branch, signal) => ci$1.branch(channel, projectId, branch, signal)
+		},
+		ingestor: {
+			channel: "github",
+			bots: async () => (await db.channelAccount.findByChannel("github")).filter((account) => account.role === "bot"),
+			actor: (row) => text(record(row.user).login),
+			human: (row, bots) => {
+				const author = record(row.user);
+				const name = text(author.login);
+				return author.type !== "Bot" && !name.endsWith("[bot]") && !bots.some((bot) => bot.name.toLowerCase() === name.toLowerCase());
+			},
+			body: (row) => typeof row.body === "string" ? row.body : typeof row.state === "string" ? row.state : "",
+			url: (row) => text(row.html_url),
+			ref: (row) => row.head ? text(record(row.head).ref) : null,
+			at: (row) => timestamp(row.updated_at ?? row.submitted_at ?? row.created_at),
+			createdAt: (row) => timestamp(row.created_at ?? row.submitted_at),
+			mentioned: (body, bots) => bots.some((bot) => new RegExp(`@${escapeRegex(bot.name)}(?![a-z0-9-])`, "i").test(body)),
+			onSubscribedTicket: async (ticket) => {
+				if (ticket.status !== "review" || ticket.paused) return;
+				await db.ticket.update(ticket.id, {
+					status: "waiting",
+					updatedAt: now()
+				});
+				await db.worker.queue(ticket.id, ticket.projectId).catch(() => void 0);
+			}
+		},
+		answerer: {
+			channel: "github",
+			admin: async (row) => {
+				const author = record(row.user);
+				const login = text(author.login);
+				const accounts = await db.channelAccount.findByChannel("github");
+				if (author.type !== "User" || login.endsWith("[bot]") || accounts.some((account) => account.role === "bot" && account.name.toLowerCase() === login.toLowerCase())) return false;
+				return (await setting.load()).administrators.some((name) => name.toLowerCase() === login.toLowerCase());
+			},
+			parse: async (body, thread) => {
+				const answers = /* @__PURE__ */ new Map();
+				const conflicts = /* @__PURE__ */ new Set();
+				let anonymous;
+				for (const line of answerLines(body)) {
+					if (!/^answer(?:[ \t:：]|$)/i.test(line)) continue;
+					const content = line.slice(6).trim().replace(/^[:：]\s*/, "").trim();
+					if (!content) continue;
+					const separator = content.indexOf(": ");
+					const candidate = separator > 0 ? content.slice(0, separator).trim() : "";
+					if (candidate && /^[0-9a-f][\w:-]{7,}$/i.test(candidate) && content.slice(separator + 2).trim()) {
+						const answer = content.slice(separator + 2).trim();
+						if (answers.has(candidate) && answers.get(candidate) !== answer) conflicts.add(candidate);
+						answers.set(candidate, answer);
+						continue;
+					}
+					anonymous ??= content;
+				}
+				if (anonymous !== void 0) {
+					const pending = (await db.inbox.listPendingAsk()).filter((ask) => ask.type === "user");
+					const scoped = pending.filter((ask) => ask.threadId === thread.id);
+					const only = scoped.length === 1 ? scoped[0] : scoped.length === 0 && pending.length === 1 ? pending[0] : void 0;
+					if (only) answers.set(only.id, anonymous);
+				}
+				return {
+					answers,
+					conflicts
+				};
+			},
+			scope: async (thread) => resource$1.parse(thread.url).repository
+		}
+	};
+} });
+// src/channel/github/service/pull.ts
+const pull = defineService({
+	async collect(remote, projectId, threadId, signal) {
+		return singlet.immediate(`github:exclusive:pull:${threadId}`, async () => {
+			const project = await remote.project(projectId);
+			await remote.probe(projectId, signal);
 			const thread = await db.thread.findById(threadId);
 			if (!thread?.url || thread.kind !== "pull") throw new GhError("invalid_pull_request");
-			const target = parseResource$1(thread.url);
-			if (target.repository !== repositoryOf(project.remoteUrl)) throw new GhError("source_repository_mismatch");
+			const target = resource$1.parse(thread.url);
+			if (target.repository !== resource$1.of(project.remoteUrl)) throw new GhError("source_repository_mismatch");
 			const root = `repos/${target.repository}`;
-			const remote = record$1(await this.request(`${root}/pulls/${target.number}`, signal));
-			validateTopic$1(remote, target);
-			const head = text$1(record$1(remote.head).sha);
-			const base = record$1(remote.base);
-			if (text$1(record$1(base.repo).full_name).toLowerCase() !== target.repository) throw new GhError("pull_request_mismatch");
-			const state = remote.merged === true ? "merged" : remote.state === "open" ? "open" : remote.state === "closed" ? "closed" : null;
+			const detail = record(await remote.request(`${root}/pulls/${target.number}`, signal));
+			resource$1.validate(detail, target);
+			const head = text(record(detail.head).sha);
+			const base = record(detail.base);
+			if (text(record(base.repo).full_name).toLowerCase() !== target.repository) throw new GhError("pull_request_mismatch");
+			const state = detail.merged === true ? "merged" : detail.state === "open" ? "open" : detail.state === "closed" ? "closed" : null;
 			if (!state) throw new GhError("invalid_response");
-			const previous = await this.state(target.repository, `pr_fact:${target.number}`);
-			const updatedAt = timestamp$1(remote.updated_at);
+			const previous = await courier.state("github", target.repository, `pr_fact:${target.number}`);
+			const updatedAt = timestamp(detail.updated_at);
 			if (previous && (previous.updatedAt > updatedAt || previous.state === "merged" && state !== "merged")) return {
 				ok: false,
 				reason: "stale_pr_snapshot"
@@ -673,28 +1129,28 @@ var GitHubChannel = class {
 			let ciError;
 			let snapshot;
 			try {
-				snapshot = await this.ci(root, head, signal);
+				snapshot = await ci$1.snapshot(remote, root, head, signal);
 				ciState = snapshot.state;
 			} catch (error) {
 				if (signal?.aborted) throw error;
-				ciError = failure$1(error);
+				ciError = courier.failure(error, false);
 			}
 			const fact = {
 				head,
-				base: text$1(base.ref),
+				base: text(base.ref),
 				state,
 				ciState,
-				collectedAt: now$1(),
+				collectedAt: now(),
 				updatedAt,
 				ciError,
-				url: text$1(remote.html_url)
+				url: text(detail.html_url)
 			};
-			await this.save(target.repository, `pr_fact:${target.number}`, fact);
-			const branch = typeof record$1(remote.head).ref === "string" ? text$1(record$1(remote.head).ref) : null;
+			await courier.record("github", target.repository, `pr_fact:${target.number}`, fact);
+			const branch = typeof record(detail.head).ref === "string" ? text(record(detail.head).ref) : null;
 			const worker = branch ? await db.worker.findByBranch(branch) : void 0;
 			const owned = worker && await db.ticket.findById(worker.ticketId);
 			if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
-				await db.ticketThread.link(owned.id, thread.id, now$1());
+				await db.ticketThread.link(owned.id, thread.id, now());
 				await db.ticket.setPullRequest(owned.id, thread.url, state, ciState);
 			}
 			const subscriptions = await db.ticketThread.listTicketIds(thread.id);
@@ -702,8 +1158,8 @@ var GitHubChannel = class {
 				const ticket = await db.ticket.findById(ticketId);
 				if (ticket?.projectId === projectId && ticket.prUrl === thread.url) await db.ticket.setPullRequest(ticketId, thread.url, state, ciState);
 			}
-			if (state === "merged" || state === "closed") await this.threadClosed(projectId, thread, state, remote.merged === true ? timestamp$1(remote.merged_at ?? remote.closed_at ?? remote.updated_at) : timestamp$1(remote.closed_at ?? remote.updated_at), branch);
-			const fingerprint = digest$1({
+			if (state === "merged" || state === "closed") await pull.closed(remote, projectId, thread, state, detail.merged === true ? timestamp(detail.merged_at ?? detail.closed_at ?? detail.updated_at) : timestamp(detail.closed_at ?? detail.updated_at), branch);
+			const fingerprint = digest({
 				head,
 				state,
 				ciState,
@@ -719,7 +1175,7 @@ var GitHubChannel = class {
 				ref,
 				fingerprint,
 				head,
-				updatedAt: now$1()
+				updatedAt: now()
 			});
 			const triggerId = `${watch.id}:revision:${watch.revision}`;
 			const message = `PR #${target.number}: ${state}, CI ${ciState}${ciError ? ` (${ciError})` : ""}`;
@@ -733,7 +1189,7 @@ var GitHubChannel = class {
 				mentioned: 0,
 				text: message,
 				url: thread.url,
-				at: now$1(),
+				at: now(),
 				ref: head
 			});
 			for (const ticketId of subscriptions) {
@@ -756,396 +1212,222 @@ var GitHubChannel = class {
 				...ciError ? { reason: ciError } : {}
 			};
 		});
-	}
-	async threadClosed(projectId, thread, outcome, at, branch) {
-		const ended = await db.ticket.closeThread(thread.id, outcome, at, branch);
-		if (outcome !== "merged" || !ended.length) return;
-		for (const source of await db.thread.listByChannel("github")) {
-			if (source.kind !== "issue" || source.projectId !== projectId || !source.url) continue;
-			if (!(await db.ticketThread.listTicketIds(source.id)).some((id) => ended.includes(id))) continue;
-			let resource;
-			try {
-				resource = parseResource$1(source.url);
-			} catch {
-				continue;
-			}
-			if (resource.kind !== "issue") continue;
-			await this.request(`repos/${resource.repository}/issues/${resource.number}`, void 0, "PATCH", { state: "closed" }).catch(() => void 0);
-		}
-	}
-	async collectBranch(projectId, branch, signal) {
-		const project = await this.project(projectId);
-		await this.verifyEnvironment(projectId, signal);
-		const repository = repositoryOf(project.remoteUrl);
-		const head = text$1(record$1(await this.request(`repos/${repository}/commits/${encodeURIComponent(branch)}`, signal)).sha);
-		const snapshot = await this.ci(`repos/${repository}`, head, signal);
-		const failing = snapshot.checks.filter((check) => check.status === "completed" && ![
-			"success",
-			"neutral",
-			"skipped"
-		].includes(String(check.conclusion))).map((check) => text$1(check.name));
-		failing.push(...snapshot.statuses.filter((status) => !["success", "pending"].includes(String(status.state))).map((status) => text$1(status.context)));
-		const ref = `${repository}:branch:${branch}`;
-		const { row: watch } = await db.ciWatch.recordRevision({
-			id: `github:${ref}`,
-			channelId: "github",
-			kind: "branch",
-			ref,
-			fingerprint: digest$1({
-				state: snapshot.state,
-				failing: failing.sort()
-			}),
-			head,
-			updatedAt: now$1()
-		});
-		if (watch.revision === 0 && !failing.length) return;
-		const threadId = `github:${ref}`;
-		await db.thread.record({
-			id: threadId,
-			channelId: "github",
-			refId: ref,
-			kind: "ci",
-			title: `CI ${branch}`,
-			url: null,
+	},
+	async closed(remote, projectId, thread, outcome, at, branch) {
+		await closeThread({
+			channel: "github",
 			projectId,
-			triage: "claimed",
-			triagedAt: now$1(),
-			createdAt: now$1(),
-			updatedAt: now$1()
-		});
-		const triggerId = `${watch.id}:revision:${watch.revision}`;
-		const message = `${branch} CI ${snapshot.state}${failing.length ? `: ${failing.join(", ")}` : ""}`;
-		await db.trigger.ingest({
-			id: triggerId,
-			channelId: "github",
-			threadId,
-			kind: "ci",
-			actorName: null,
-			human: 0,
-			mentioned: 0,
-			text: message,
-			url: `https://github.com/${repository}/commit/${head}`,
-			at: now$1(),
-			ref: head
-		});
-		await db.inbox.enqueue({
-			id: `${triggerId}:project:${projectId}`,
-			type: "project",
-			origin: "system",
-			kind: "notice",
-			projectId,
-			triggerId,
-			threadId,
-			title: message,
-			message
-		});
-	}
-	async acceptAnswers(thread, row) {
-		const author = record$1(row.user);
-		const login = text$1(author.login);
-		const accounts = await db.channelAccount.findByChannel("github");
-		if (author.type !== "User" || login.endsWith("[bot]") || accounts.some((account) => account.role === "bot" && account.name.toLowerCase() === login.toLowerCase()) || !(await setting.load()).administrators.some((name) => name.toLowerCase() === login.toLowerCase())) return;
-		const body = typeof row.body === "string" ? row.body : "";
-		const answers = /* @__PURE__ */ new Map();
-		const conflicts = /* @__PURE__ */ new Set();
-		let anonymous;
-		let fenced = false;
-		for (const line of body.split(/\r?\n/)) {
-			if (/^\s*~{3}|^\s*```/.test(line)) {
-				fenced = !fenced;
-				continue;
-			}
-			if (fenced) continue;
-			if (!/^answer(?:[ \t:：]|$)/i.test(line)) continue;
-			const content = line.slice(6).trim().replace(/^[:：]\s*/, "").trim();
-			if (!content) continue;
-			const separator = content.indexOf(": ");
-			const candidate = separator > 0 ? content.slice(0, separator).trim() : "";
-			if (candidate && /^[0-9a-f][\w:-]{7,}$/i.test(candidate) && content.slice(separator + 2).trim()) {
-				const answer = content.slice(separator + 2).trim();
-				if (answers.has(candidate) && answers.get(candidate) !== answer) conflicts.add(candidate);
-				answers.set(candidate, answer);
-				continue;
-			}
-			anonymous ??= content;
-		}
-		if (anonymous !== void 0) {
-			const pending = (await db.inbox.listPendingAsk()).filter((ask) => ask.type === "user");
-			const scoped = pending.filter((ask) => ask.threadId === thread.id);
-			const only = scoped.length === 1 ? scoped[0] : scoped.length === 0 && pending.length === 1 ? pending[0] : void 0;
-			if (only) answers.set(only.id, anonymous);
-		}
-		for (const [id, answer] of answers) {
-			if (conflicts.has(id)) continue;
-			const ask = await db.inbox.findById(id);
-			if (!ask || ask.kind !== "ask" || ask.type !== "user" || ask.status !== "pending" || timestamp$1(row.created_at ?? row.submitted_at) < ask.createdAt) continue;
-			const trigger = ask.triggerId && await db.trigger.findById(ask.triggerId);
-			if (!trigger || trigger.threadId !== thread.id || ask.threadId && ask.threadId !== thread.id) continue;
-			const target = parseResource$1(thread.url);
-			if (!await this.state(target.repository, `comment:${id}`)) continue;
-			if (ask.ticketId) {
-				const ticket = await db.ticket.findById(ask.ticketId);
-				if (!ticket || ["done", "cancelled"].includes(ticket.status)) continue;
-			}
-			await db.inbox.answerByUser(id, answer, now$1());
-		}
-	}
-	async publish(inboxId, signal) {
-		return this.exclusive(`publish:${inboxId}`, async () => {
-			const row = await db.inbox.findById(inboxId);
-			const trigger = row?.triggerId ? await db.trigger.findById(row.triggerId) : void 0;
-			const key = trigger ? trigger.threadId : inboxId;
-			const task = (this.publishing.get(key) ?? Promise.resolve()).then(() => this.publishOne(inboxId, signal));
-			const barrier = task.then(() => void 0, () => void 0);
-			this.publishing.set(key, barrier);
-			try {
-				return await task;
-			} finally {
-				if (this.publishing.get(key) === barrier) this.publishing.delete(key);
-			}
-		});
-	}
-	async destination(row) {
-		if (row.type !== "user" || !["notice", "ask"].includes(row.kind) || !row.triggerId) throw new GhError("invalid_delivery");
-		const trigger = await db.trigger.findById(row.triggerId);
-		const thread = trigger && await db.thread.findById(trigger.threadId);
-		if (!thread?.url || thread.channelId !== "github" || !["issue", "pull"].includes(thread.kind) || row.threadId && row.threadId !== thread.id) throw new GhError("no_reply_address");
-		const target = parseResource$1(thread.url);
-		const project = await this.projectForRepository(target.repository);
-		if (!project) throw new GhError("unknown_repository");
-		if (row.ticketId) {
-			const ticket = await db.ticket.findById(row.ticketId);
-			if (row.kind === "ask" && ticket && ["done", "cancelled"].includes(ticket.status)) throw new GhError("delivery_superseded");
-			if (!ticket || ticket.projectId !== project.id) throw new GhError("scope_denied");
-			if (ticket.paused) throw new GhError("human_paused");
-			if (!(await db.ticketThread.listTicketIds(thread.id)).includes(ticket.id)) throw new GhError("unsubscribed_thread");
-		}
-		return {
 			thread,
-			target
+			outcome,
+			at,
+			branch,
+			closeIssue: async (url) => {
+				const target = resource$1.parse(url);
+				if (target.kind !== "issue") return;
+				await remote.request(`repos/${target.repository}/issues/${target.number}`, void 0, "PATCH", { state: "closed" });
+			}
+		});
+	}
+});
+// src/channel/github/channel.ts
+var GitHubChannel = class {
+	runner;
+	delivery;
+	collector;
+	ingestor;
+	answerer;
+	constructor(runner = new ExecFileGhRunner()) {
+		this.runner = runner;
+		const ports = binding$1.of(this);
+		this.delivery = ports.delivery;
+		this.collector = ports.collector;
+		this.ingestor = ports.ingestor;
+		this.answerer = ports.answerer;
+	}
+	async request(path, signal, method = "GET", body, headers) {
+		signal?.throwIfAborted();
+		return this.runner.request({
+			site: "github.com",
+			path,
+			method,
+			body,
+			headers,
+			signal
+		});
+	}
+	async project(projectId) {
+		const project = await db.project.findById(projectId);
+		if (!project || !resource$1.of(project.remoteUrl)) throw new GhError("unknown_repository");
+		if (!project.enabled) throw new GhError("project_disabled");
+		return project;
+	}
+	async projectForRepository(repository) {
+		const projects = (await db.project.listAll()).filter((project) => resource$1.of(project.remoteUrl) === repository);
+		if (projects.length !== 1) throw new GhError(projects.length ? "ambiguous_repository" : "unknown_repository");
+		return projects[0];
+	}
+	async probe(projectId, signal) {
+		const project = await this.project(projectId);
+		if (!(await db.channel.findById("github"))?.enabled) throw new GhError("channel_disabled");
+		const bots = (await db.channelAccount.findByRole("github", "bot")).filter((account) => account.status === "online");
+		const account = record(await this.request("user", signal));
+		const providerId = identity(account.id);
+		const login = text(account.login);
+		if (!bots.some((bot) => bot.name.toLowerCase() === login.toLowerCase())) throw new GhError("account_mismatch");
+		const repository = resource$1.of(project.remoteUrl);
+		const remote = record(await this.request(`repos/${repository}`, signal));
+		if (text(remote.full_name).toLowerCase() !== repository) throw new GhError("repository_mismatch");
+		const result = {
+			providerId,
+			login,
+			repositoryId: identity(remote.id),
+			defaultBranch: typeof remote.default_branch === "string" ? remote.default_branch : null
+		};
+		const previous = await courier.state("github", repository, "verified_environment");
+		if (previous && (previous.providerId !== providerId || previous.repositoryId !== result.repositoryId)) throw new GhError("environment_identity_changed");
+		await courier.record("github", repository, "verified_environment", result);
+		return result;
+	}
+	async pages(path, signal) {
+		return (await courier.pages(async (page) => ({ rows: array(await this.request(`${path + (path.includes("?") ? "&" : "?")}per_page=100&page=${page}`, signal)).map(record) }))).rows;
+	}
+	async read(value, offset = 0, limit = 50, signal) {
+		const target = resource$1.parse(value);
+		const project = await this.projectForRepository(target.repository);
+		await this.probe(project.id, signal);
+		const root = `repos/${target.repository}`;
+		const main = record(await this.request(root + (target.kind === "pull" ? "/pulls/" : "/issues/") + target.number, signal));
+		resource$1.validate(main, target);
+		const items = [resource$1.item(main, target.kind)];
+		for (const row of await this.pages(`${root}/issues/${target.number}/comments`, signal)) items.push(resource$1.item(row, "comment"));
+		if (target.kind === "pull") {
+			for (const row of await this.pages(`${root}/pulls/${target.number}/reviews`, signal)) items.push(resource$1.item(row, "review"));
+			for (const row of await this.pages(`${root}/pulls/${target.number}/comments`, signal)) items.push(resource$1.item(row, "review_comment"));
+		}
+		items.splice(1, items.length - 1, ...items.slice(1).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)));
+		return {
+			...courier.page(items, offset, limit),
+			next_resource: null
 		};
 	}
-	async publishOne(inboxId, signal) {
-		let row = await db.inbox.findById(inboxId);
-		if (!row) return {
-			ok: false,
-			reason: "unknown_delivery"
-		};
-		if (row.status === "done") return { ok: true };
-		let posting = false;
+	async normalize(value) {
+		const target = resource$1.parse(value);
+		return `https://github.com/${target.repository}/${target.kind === "pull" ? "pull" : "issues"}/${target.number}`;
+	}
+	async readable(value) {
 		try {
-			const { thread, target } = await this.destination(row);
-			const project = await this.projectForRepository(target.repository);
-			const environment = await this.verifyEnvironment(project.id, signal);
-			const marker = `<!-- supermesh:${row.id} -->`;
-			const receipt = await this.state(target.repository, `comment:${row.id}`);
-			if (receipt) {
-				if (receipt.providerId !== environment.providerId || receipt.marker !== marker) throw new GhError("managed_comment_mismatch");
-				if (row.kind === "notice") await db.inbox.markDone(row.id, now$1());
-				return {
-					ok: true,
-					remoteId: receipt.remoteId
-				};
-			}
-			if (row.nextRetryAt && row.nextRetryAt > now$1()) return {
-				ok: false,
-				reason: "retry_pending"
-			};
-			for (const previous of await db.inbox.listOutgoing()) {
-				if (previous.id === row.id || previous.seq >= row.seq || previous.ticketId !== row.ticketId || previous.status === "done") continue;
-				if ((previous.threadId ?? (previous.triggerId ? (await db.trigger.findById(previous.triggerId))?.threadId : void 0)) === thread.id && !await this.state(target.repository, `comment:${previous.id}`)) return {
-					ok: false,
-					reason: "earlier_delivery_pending"
-				};
-			}
-			const root = `repos/${target.repository}/issues/${target.number}/comments`;
-			const existing = (await this.pages(root, signal)).filter((comment) => record$1(comment.user).id != null && identity$1(record$1(comment.user).id) === environment.providerId && typeof comment.body === "string" && comment.body.includes(marker));
-			if (existing.length > 1) throw new GhError("ambiguous_delivery");
-			let remote = existing[0];
-			if (!remote) {
-				if (row.status === "stalled" || row.deliveryError === "publishing") {
-					await db.inbox.markStalled(row.id, "transport_unknown");
-					return {
-						ok: false,
-						reason: "transport_unknown"
-					};
-				}
-				const current = await db.inbox.findById(row.id);
-				if (!current || current.status !== "pending" || current.type !== row.type || current.kind !== row.kind) return {
-					ok: false,
-					reason: "delivery_superseded"
-				};
-				await this.destination(current);
-				await db.inbox.recordDeliveryFailure(row.id, "publishing", now$1());
-				posting = true;
-				const body = row.kind === "ask" ? `${row.message}\n\n回复格式：\`answer: 你的回答\`` : row.message;
-				remote = record$1(await this.request(root, signal, "POST", { body: `${body}\n\n${marker}` }));
-			}
-			if (identity$1(record$1(remote.user).id) !== environment.providerId || !text$1(remote.body).includes(marker)) throw new GhError("managed_comment_mismatch");
-			const remoteTarget = parseResource$1(text$1(remote.html_url));
-			if (remoteTarget.repository !== target.repository || remoteTarget.number !== target.number) throw new GhError("managed_comment_mismatch");
-			const result = {
-				remoteId: identity$1(remote.id),
-				providerId: environment.providerId,
-				marker,
-				url: text$1(remote.html_url)
-			};
-			await this.save(target.repository, `comment:${row.id}`, result);
-			await db.inbox.resetDelivery(row.id);
-			if (row.kind === "notice") await db.inbox.markDone(row.id, now$1());
-			return {
-				ok: true,
-				remoteId: result.remoteId
-			};
-		} catch (error) {
-			const reason = failure$1(error);
-			if (posting && ![
-				"rate_limited",
-				"forbidden",
-				"not_found",
-				"not_logged_in",
-				"remote_rejected"
-			].includes(reason)) await db.inbox.markStalled(row.id, "transport_unknown");
-			else if (![
-				"human_paused",
-				"project_disabled",
-				"channel_disabled",
-				"retry_pending"
-			].includes(reason)) {
-				row = await db.inbox.findById(row.id);
-				const settings = await setting.load();
-				const attempts = row.deliveryAttempts + (posting ? 0 : 1);
-				if (attempts >= settings.deliveryMaxAttempts) await db.inbox.markStalled(row.id, reason);
-				else {
-					const seconds = Math.max(error instanceof GhError ? error.retryAfterSeconds ?? 0 : 0, Math.min(settings.deliveryRetryCeilingSeconds, 2 ** Math.max(1, attempts)));
-					const nextRetryAt = new Date(Date.now() + seconds * 1e3).toISOString();
-					if (posting) await db.inbox.update(row.id, {
-						deliveryError: reason,
-						nextRetryAt
-					});
-					else await db.inbox.recordDeliveryFailure(row.id, reason, nextRetryAt);
-				}
-			}
-			if (signal?.aborted) throw error;
-			return {
-				ok: false,
-				reason: posting && reason === "interrupted" ? "transport_unknown" : reason
-			};
+			await this.normalize(value);
+			return true;
+		} catch {
+			return false;
 		}
 	}
-	async flush(signal) {
-		signal?.throwIfAborted();
-		if (!(await db.channel.findById("github"))?.enabled) return [];
-		const results = [];
-		for (const row of await db.inbox.listOutgoing()) {
-			signal?.throwIfAborted();
-			if (row.status !== "pending") continue;
-			const trigger = row.triggerId && await db.trigger.findById(row.triggerId);
-			if (trigger && trigger.channelId === "github") results.push({
-				id: row.id,
-				...await this.publish(row.id, signal)
+	async harvest(signal) {
+		return courier.harvest(this.collector, signal);
+	}
+	async collect(projectId, branch, signal) {
+		return courier.collect(this.collector, projectId, branch, signal);
+	}
+	async collectProject(context, signal) {
+		const repo = context.scope;
+		const { attempt, baseline, environment } = context;
+		await attempt(() => this.stream(repo, "topics", `repos/${repo}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
+			const target = {
+				repository: repo,
+				number: number(row.number),
+				kind: row.pull_request ? "pull" : "issue"
+			};
+			resource$1.validate(row, target);
+			const thread = await this.ensureThread(target, row);
+			const kind = target.kind === "issue" && row.state === "closed" ? "close" : "open";
+			await courier.ingest(this.ingestor, thread, row, kind, baseline, kind);
+			if (target.kind === "pull") {
+				const result = await this.collectPullRequest(context.projectId, thread.id, signal);
+				if (!result.ok) throw new GhError(result.reason);
+			}
+		}, signal));
+		await attempt(() => this.stream(repo, "comments", `repos/${repo}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
+			const match = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/issues\/(\d+)$/.exec(text(row.issue_url));
+			if (!match || match[1].toLowerCase() !== repo) throw new GhError("source_repository_mismatch");
+			const thread = await db.thread.findByRef("github", `${repo}:${match[2]}`);
+			if (thread) {
+				await courier.answers(this.answerer, thread, row);
+				await courier.ingest(this.ingestor, thread, row, "comment", baseline, "comment");
+			}
+		}, signal));
+		for (const thread of await db.thread.listByChannel("github")) {
+			if (thread.kind !== "pull" || !thread.url) continue;
+			const ticketIds = await db.ticketThread.listTicketIds(thread.id);
+			if (!ticketIds.length) continue;
+			if (!await courier.polled(ticketIds, thread.updatedAt)) continue;
+			if ((await Promise.all(ticketIds.map((id) => db.ticket.findById(id)))).every((ticket) => !!ticket && ["done", "cancelled"].includes(ticket.status) && !!ticket.prState && ["merged", "closed"].includes(ticket.prState))) continue;
+			await attempt(async () => {
+				const target = resource$1.parse(thread.url);
+				if (target.repository !== repo) return;
+				const root = `repos/${repo}/pulls/${target.number}`;
+				for (const [path, kind] of [["reviews", "review"], ["comments", "review_comment"]]) await attempt(async () => {
+					await this.stream(repo, `pull:${target.number}:${path}`, `${root}/${path}?sort=updated&direction=asc`, baseline, async (row) => {
+						await courier.answers(this.answerer, thread, row);
+						await courier.ingest(this.ingestor, thread, row, "comment", baseline, kind);
+					}, signal);
+				});
+				const result = await this.collectPullRequest(context.projectId, thread.id, signal);
+				if (!result.ok) throw new GhError(result.reason);
 			});
 		}
-		return results;
+		if (environment.defaultBranch) await attempt(() => ci$1.branch(this, context.projectId, environment.defaultBranch, signal));
+	}
+	async stream(repository, name, path, baseline, accept, signal) {
+		await courier.stream({
+			channel: "github",
+			scope: repository,
+			name,
+			initial: { since: baseline },
+			read: async (cursor) => {
+				const conditional = cursor.etag && cursor.etagSince === cursor.since ? { "If-None-Match": cursor.etag } : void 0;
+				const value = await this.request(`${path}&since=${encodeURIComponent(cursor.since)}&per_page=100`, signal, "GET", void 0, conditional);
+				if (value && typeof value === "object" && value.notModified) return {
+					rows: [],
+					notModified: true
+				};
+				return {
+					rows: array(value).map(record),
+					notModified: false
+				};
+			},
+			advance: (cursor, rows) => {
+				const newest = Math.max(...rows.map((row) => Date.parse(timestamp(row.updated_at))).filter(Number.isFinite));
+				const moved = Number.isFinite(newest) ? (/* @__PURE__ */ new Date(newest - 5e3)).toISOString() : cursor.since;
+				return { since: moved > cursor.since ? moved : cursor.since };
+			},
+			accept,
+			signal
+		});
+	}
+	async ensureThread(target, row) {
+		return recordThread({
+			channel: "github",
+			refId: `${target.repository}:${target.number}`,
+			kind: target.kind,
+			title: text(row.title),
+			url: text(row.html_url),
+			createdAt: timestamp(row.created_at),
+			updatedAt: timestamp(row.updated_at)
+		});
+	}
+	async collectPullRequest(projectId, threadId, signal) {
+		return pull.collect(this, projectId, threadId, signal);
+	}
+	async publish(inboxId, signal) {
+		return courier.publish(this.delivery, inboxId, signal);
+	}
+	async flush(signal) {
+		return courier.flush(this.delivery, signal);
 	}
 };
 const github = new GitHubChannel();
-function repositoryOf(remoteUrl) {
-	if (!remoteUrl) return null;
-	const ssh = /^git@github\.com:([\w.-]+\/[\w.-]+?)(?:\.git)?$/i.exec(remoteUrl);
-	if (ssh) return ssh[1].toLowerCase();
-	try {
-		const url = new URL(remoteUrl);
-		if (!["https:", "ssh:"].includes(url.protocol) || url.hostname !== "github.com" || url.password || url.search || url.hash || url.port) return null;
-		return /^\/([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/i.exec(url.pathname)?.[1]?.toLowerCase() ?? null;
-	} catch {
-		return null;
-	}
-}
-function parseResource$1(resource) {
-	const short = /^github:([^/:]+\/[^/:]+):(issue|pull):([1-9]\d*)$/.exec(resource);
-	if (short) return {
-		repository: short[1].toLowerCase(),
-		kind: short[2],
-		number: Number(short[3])
-	};
-	let url;
-	try {
-		url = new URL(resource);
-	} catch {
-		throw new GhError("invalid_resource");
-	}
-	const match = /^\/([\w.-]+\/[\w.-]+)\/(issues|pull)\/([1-9]\d*)\/?$/i.exec(url.pathname);
-	if (url.protocol !== "https:" || url.hostname !== "github.com" || url.username || url.password || url.port || !match) throw new GhError("invalid_resource");
-	return {
-		repository: match[1].toLowerCase(),
-		kind: match[2] === "pull" ? "pull" : "issue",
-		number: Number(match[3])
-	};
-}
-function validateTopic$1(row, target) {
-	const url = parseResource$1(text$1(row.html_url));
-	if (number$1(row.number) !== target.number || url.repository !== target.repository || url.kind !== target.kind) throw new GhError("source_repository_mismatch");
-}
-function item$1(row, kind) {
-	return {
-		id: identity$1(row.id),
-		kind,
-		actor: text$1(record$1(row.user).login),
-		body: typeof row.body === "string" ? row.body : typeof row.state === "string" ? row.state : "",
-		url: text$1(row.html_url),
-		createdAt: timestamp$1(row.created_at ?? row.submitted_at),
-		updatedAt: timestamp$1(row.updated_at ?? row.submitted_at ?? row.created_at)
-	};
-}
-function record$1(value) {
-	if (!value || typeof value !== "object" || Array.isArray(value)) throw new GhError("invalid_response");
-	return value;
-}
-function array$1(value) {
-	if (!Array.isArray(value)) throw new GhError("invalid_response");
-	return value;
-}
-function text$1(value) {
-	if (typeof value !== "string" || !value) throw new GhError("invalid_response");
-	return value;
-}
-function number$1(value) {
-	if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) throw new GhError("invalid_response");
-	return value;
-}
-function identity$1(value) {
-	if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return String(value);
-	if (typeof value === "string" && value) return value;
-	throw new GhError("invalid_response");
-}
-function timestamp$1(value) {
-	const date = new Date(text$1(value));
-	if (!Number.isFinite(date.getTime())) throw new GhError("invalid_response");
-	return date.toISOString();
-}
-function now$1() {
-	return (/* @__PURE__ */ new Date()).toISOString();
-}
-function digest$1(value) {
-	return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
-function failure$1(error) {
-	return error instanceof GhError ? error.code : error instanceof Error && error.name === "AbortError" ? "interrupted" : "transport_unknown";
-}
-function escapeRegex$1(value) {
-	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 // src/channel/gitlab/runner.ts
-var GitLabError = class extends Error {
-	code;
-	retryAfterSeconds;
-	constructor(code, retryAfterSeconds) {
-		super(code);
-		this.code = code;
-		this.retryAfterSeconds = retryAfterSeconds;
-	}
-};
+var GitLabError = class extends ChannelError {};
 var FetchGitLabRunner = class {
 	async request(request) {
 		if (request.signal?.aborted) throw new GitLabError("interrupted");
@@ -1224,25 +1506,276 @@ function gitlabSite(host) {
 	if (url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash) throw new GitLabError("invalid_channel_host");
 	return url.origin;
 }
+// src/channel/gitlab/service/resource.ts
+const resource = defineService({
+	remote(remoteUrl, host) {
+		if (!remoteUrl) return null;
+		const site = gitlabSite(host);
+		const configured = new URL(site);
+		const scp = /^git@([^/:]+):(.+)$/.exec(remoteUrl);
+		if (scp) {
+			if (scp[1].toLowerCase() !== configured.hostname || configured.port) return null;
+			const repository = resource.path(scp[2].replace(/\.git$/, ""));
+			return repository ? {
+				site,
+				repository
+			} : null;
+		}
+		try {
+			const url = new URL(remoteUrl);
+			if (!["https:", "ssh:"].includes(url.protocol) || url.hostname !== configured.hostname || url.password || url.search || url.hash || (url.protocol === "https:" ? url.origin !== site || Boolean(url.username) : Boolean(url.port) || Boolean(url.username && url.username !== "git"))) return null;
+			const repository = resource.path(url.pathname.replace(/^\//, "").replace(/\/$/, "").replace(/\.git$/, ""));
+			return repository ? {
+				site,
+				repository
+			} : null;
+		} catch {
+			return null;
+		}
+	},
+	path(value) {
+		const segments = value.split("/");
+		return segments.length >= 2 && segments.every((segment) => /^\w[\w.-]*$/.test(segment) && segment !== "." && segment !== "..") ? value : null;
+	},
+	parse(value, site) {
+		const short = /^gitlab:([^:]+):(issue|pull|mr):([1-9]\d*)$/.exec(value);
+		if (short) {
+			const repository = resource.path(short[1]);
+			const number = Number(short[3]);
+			if (repository && Number.isSafeInteger(number)) return {
+				site,
+				repository,
+				kind: short[2] === "issue" ? "issue" : "pull",
+				number
+			};
+			throw new GitLabError("invalid_resource");
+		}
+		let url;
+		try {
+			url = new URL(value.startsWith("gitlab/") ? `${site}/${value.slice(7)}` : value);
+		} catch {
+			throw new GitLabError("invalid_resource");
+		}
+		const match = /^\/(.+?)(?:\/-\/(issues|work_items|merge_requests)|\/(issues|merge_requests))\/([1-9]\d*)\/?$/.exec(url.pathname);
+		const repository = match && resource.path(match[1]);
+		const number = Number(match?.[4]);
+		if (url.origin !== site || url.protocol !== "https:" || url.username || url.password || url.search || url.hash && !/^#note_[1-9]\d*$/.test(url.hash) || !repository || !Number.isSafeInteger(number)) throw new GitLabError("invalid_resource");
+		return {
+			site,
+			repository,
+			kind: (match[2] ?? match[3]) === "merge_requests" ? "pull" : "issue",
+			number
+		};
+	},
+	source(target) {
+		return `${target.site}/${target.repository}`;
+	},
+	url(target) {
+		return `${resource.source(target)}/${target.kind === "issue" ? "issues" : "merge_requests"}/${target.number}`;
+	},
+	apiRoot(target) {
+		return `projects/${encodeURIComponent(target.repository)}/${target.kind === "issue" ? "issues" : "merge_requests"}/${target.number}`;
+	},
+	validateTopic(row, target) {
+		const remote = resource.parse(text(row.web_url), target.site);
+		if (number(row.iid) !== target.number || resource.url(remote) !== resource.url(target)) throw new GitLabError("source_repository_mismatch");
+	},
+	validateNote(row, target) {
+		identity(row.id);
+		if (row.noteable_iid !== void 0 && number(row.noteable_iid) !== target.number) throw new GitLabError("source_repository_mismatch");
+		if (row.noteable_type !== void 0 && row.noteable_type !== (target.kind === "issue" ? "Issue" : "MergeRequest")) throw new GitLabError("source_repository_mismatch");
+		if (row.web_url !== void 0 && resource.url(resource.parse(text(row.web_url), target.site)) !== resource.url(target)) throw new GitLabError("source_repository_mismatch");
+	},
+	item(row, kind, target) {
+		if (kind === "comment") resource.validateNote(row, target);
+		return {
+			id: identity(row.id),
+			kind,
+			actor: text(record(row.author).username),
+			body: typeof row.body === "string" ? row.body : typeof row.description === "string" ? row.description : typeof row.state === "string" ? row.state : "",
+			url: kind === "comment" ? `${resource.url(target)}#note_${identity(row.id)}` : text(row.web_url),
+			createdAt: timestamp(row.created_at),
+			updatedAt: timestamp(row.updated_at ?? row.created_at)
+		};
+	},
+	answers(body) {
+		const answers = /* @__PURE__ */ new Map();
+		const conflicts = /* @__PURE__ */ new Set();
+		for (const line of answerLines(body)) {
+			if (!/^answer[ \t]/i.test(line)) continue;
+			const content = line.slice(7).trim();
+			const separator = content.indexOf(": ");
+			if (separator < 1) continue;
+			const id = content.slice(0, separator).trim();
+			const answer = content.slice(separator + 2).trim();
+			if (!answer || /\s/.test(id)) continue;
+			if (answers.has(id) && answers.get(id) !== answer) conflicts.add(id);
+			answers.set(id, answer);
+		}
+		return {
+			answers,
+			conflicts
+		};
+	}
+});
+// src/channel/gitlab/service/ci.ts
+const ci = defineService({
+	async branch(remote, projectId, branch, signal) {
+		const project = await remote.project(projectId);
+		const site = await remote.site();
+		const target = resource.remote(project.remoteUrl, site);
+		if (!target) return;
+		const path = `projects/${encodeURIComponent(target.repository)}/pipelines?ref=${encodeURIComponent(branch)}&per_page=1`;
+		const latest = array(await remote.request(site, path, signal)).map(record)[0];
+		if (!latest) return;
+		const state = text(latest.status);
+		const head = text(latest.sha);
+		await notifyBranchCi({
+			channel: "gitlab",
+			projectId,
+			ref: `${target.repository}:branch:${branch}`,
+			fingerprint: digest({
+				state,
+				head
+			}),
+			head,
+			title: `CI ${branch}`,
+			message: `${branch} CI ${state}`,
+			url: text(latest.web_url),
+			silent: [
+				"success",
+				"skipped",
+				"manual"
+			].includes(state)
+		});
+	},
+	async activeBranches(remote, site, repository, signal) {
+		const path = `projects/${encodeURIComponent(repository)}/merge_requests?state=opened&per_page=100`;
+		const rows = array(await remote.request(site, path, signal)).map(record);
+		return [...new Set(rows.map((row) => text(row.source_branch)).filter(Boolean))];
+	},
+	async defaultBranch(remote, site, repository, signal) {
+		const row = record(await remote.request(site, `projects/${encodeURIComponent(repository)}`, signal));
+		return (typeof row.default_branch === "string" ? row.default_branch.trim() : "") || null;
+	}
+});
+// src/channel/gitlab/service/binding.ts
+const binding = defineService({ of(channel) {
+	return {
+		collect: collectPort(channel),
+		delivery: deliveryPort(channel),
+		ingest: ingestPort(),
+		answer: answerPort(channel)
+	};
+} });
+function collectPort(channel) {
+	return {
+		channel: "gitlab",
+		detail: true,
+		status: false,
+		scope: (project) => channel.scopeOf(project),
+		project: (projectId) => channel.project(projectId),
+		probe: (projectId, signal) => channel.probe(projectId, signal),
+		collect: (context, signal) => channel.collectProject(context, signal),
+		collectBranch: (projectId, branch, signal) => ci.branch(channel, projectId, branch, signal),
+		onFailure: (project, reason) => console.error(`[gitlab:collect] ${project.name} ${project.remoteUrl} -> ${reason}`)
+	};
+}
+function deliveryPort(channel) {
+	return {
+		channel: "gitlab",
+		detail: true,
+		parse: async (value) => resource.parse(value, await channel.site()),
+		scope: (target) => resource.source(target),
+		projectFor: (target) => channel.projectForRepository(resource.source(target)),
+		probe: (projectId, signal) => channel.probe(projectId, signal),
+		comments: async (target, signal) => (await channel.pages(target.site, `${resource.apiRoot(target)}/notes`, signal)).rows,
+		authorId: (row) => {
+			const author = record(row.author);
+			return author.id != null ? identity(author.id) : null;
+		},
+		body: (row) => typeof row.body === "string" ? row.body : "",
+		post: async (target, body, signal) => record(await channel.request(target.site, `${resource.apiRoot(target)}/notes`, signal, "POST", { body })),
+		commentUrl: (row, target) => {
+			resource.validateNote(row, target);
+			return `${resource.url(target)}#note_${identity(row.id)}`;
+		},
+		askPrompt: (row) => `${row.message}\n\n问题编号：${row.id}\n请回复：answer ${row.id}: 你的回答`,
+		skipReasons: ["project_unavailable"]
+	};
+}
+function ingestPort() {
+	return {
+		channel: "gitlab",
+		bots: async () => (await db.channelAccount.findByChannel("gitlab")).filter((account) => account.role === "bot"),
+		actor: (row) => text(record(row.author).username),
+		human: (row, bots) => {
+			const author = record(row.author);
+			const login = text(author.username);
+			return author.bot !== true && row.system !== true && !bots.some((bot) => bot.name.toLowerCase() === login.toLowerCase());
+		},
+		body: (row) => typeof row.body === "string" ? row.body : typeof row.description === "string" ? row.description : typeof row.state === "string" ? row.state : "",
+		url: (row, sourceKind, thread) => sourceKind === "note" ? `${thread.url}#note_${identity(row.id)}` : text(row.web_url),
+		ref: (row) => typeof row.source_branch === "string" ? row.source_branch : null,
+		at: (row) => timestamp(row.updated_at ?? row.created_at),
+		createdAt: (row) => timestamp(row.created_at),
+		mentioned: (body, bots) => bots.some((bot) => new RegExp(`(?:^|[^a-z0-9_@])@${escapeRegex(bot.name)}(?![a-z0-9_.-])`, "i").test(body))
+	};
+}
+function answerPort(channel) {
+	return {
+		channel: "gitlab",
+		admin: async (row) => {
+			const author = record(row.author);
+			const login = text(author.username);
+			const accounts = await db.channelAccount.findByChannel("gitlab");
+			if (author.bot === true || row.system === true || accounts.some((account) => account.role === "bot" && account.name.toLowerCase() === login.toLowerCase())) return false;
+			return (await setting.load()).administrators.some((name) => name.toLowerCase() === login.toLowerCase());
+		},
+		parse: async (body) => resource.answers(body),
+		scope: async (thread) => resource.source(resource.parse(thread.url, await channel.site()))
+	};
+}
+// src/channel/gitlab/service/merge-request.ts
+const mergeRequest = defineService({ async observe(remote, projectId, thread, row) {
+	const target = resource.parse(thread.url, await remote.site());
+	if (target.kind !== "pull") return;
+	resource.validateTopic(row, target);
+	const state = row.state === "merged" ? "merged" : row.state === "closed" ? "closed" : row.state === "opened" ? "open" : null;
+	if (!state) throw new GitLabError("invalid_response");
+	const branch = typeof row.source_branch === "string" ? text(row.source_branch) : null;
+	const worker = branch ? await db.worker.findByBranch(branch) : void 0;
+	const owned = worker && await db.ticket.findById(worker.ticketId);
+	if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
+		await db.ticketThread.link(owned.id, thread.id, now());
+		await db.ticket.setPullRequest(owned.id, thread.url, state, owned.ciState);
+	}
+	for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
+		const ticket = await db.ticket.findById(ticketId);
+		if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ["done", "cancelled"].includes(ticket.status)) continue;
+		await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState);
+	}
+	if (state === "open") return;
+	await remote.threadClosed(projectId, thread, state, timestamp(row.merged_at ?? row.closed_at ?? row.updated_at), branch);
+} });
 // src/channel/gitlab/channel.ts
+const INITIAL_CURSOR = { since: "1970-01-01T00:00:00.000Z" };
 var GitLabChannel = class {
 	runner;
-	publishing = /* @__PURE__ */ new Map();
+	ports;
 	constructor(runner = new FetchGitLabRunner()) {
 		this.runner = runner;
-	}
-	exclusive(key, action) {
-		return singlet(`gitlab:exclusive:${key}`, action)();
+		this.ports = binding.of(this);
 	}
 	async site() {
 		return gitlabSite((await db.channel.findById("gitlab"))?.host ?? null);
 	}
-	async canonicalResource(resource) {
-		return resourceUrl(parseResource(resource, await this.site()));
+	async normalize(value) {
+		return resource.url(resource.parse(value, await this.site()));
 	}
-	async canRead(resource) {
+	async readable(value) {
 		try {
-			await this.canonicalResource(resource);
+			await this.normalize(value);
 			return true;
 		} catch {
 			return false;
@@ -1258,16 +1791,9 @@ var GitLabChannel = class {
 			signal
 		});
 	}
-	async state(repository, name) {
-		const row = await db.sourceState.find("gitlab", `${repository}:${name}`);
-		return row ? JSON.parse(row.value) : void 0;
-	}
-	async save(repository, name, value) {
-		await db.sourceState.set("gitlab", `${repository}:${name}`, JSON.stringify(value), now());
-	}
 	async project(projectId) {
 		const project$1 = (await project.list()).find((project) => project.id === projectId);
-		if (!project$1 || !remoteGitlab(project$1.remoteUrl, await this.site())) throw new GitLabError("unknown_repository");
+		if (!project$1 || !resource.remote(project$1.remoteUrl, await this.site())) throw new GitLabError("unknown_repository");
 		if (!project$1.enabled) throw new GitLabError("project_disabled");
 		if (project$1.available === false) throw new GitLabError("project_unavailable");
 		return project$1;
@@ -1275,36 +1801,42 @@ var GitLabChannel = class {
 	async projectForRepository(repository) {
 		const site = await this.site();
 		const matches = (await project.list()).filter((project) => {
-			const remote = remoteGitlab(project.remoteUrl, site);
-			return remote && source(remote) === repository && project.available !== false;
+			const remote = resource.remote(project.remoteUrl, site);
+			return remote && resource.source(remote) === repository && project.available !== false;
 		});
 		if (matches.length !== 1) throw new GitLabError(matches.length ? "ambiguous_repository" : "unknown_repository");
 		return matches[0];
 	}
-	async verifyEnvironment(projectId, signal) {
+	async scopeOf(project$2) {
+		const current = "available" in project$2 ? project$2 : (await project.list()).find((row) => row.id === project$2.id);
+		if (!current || current.available === false) return null;
+		const target = resource.remote(current.remoteUrl, await this.site());
+		return target ? resource.source(target) : null;
+	}
+	async probe(projectId, signal) {
 		const project = await this.project(projectId);
 		const channel = await db.channel.findById("gitlab");
 		if (!channel?.enabled) throw new GitLabError("channel_disabled");
 		const site = gitlabSite(channel.host);
-		const target = remoteGitlab(project.remoteUrl, site);
+		const target = resource.remote(project.remoteUrl, site);
 		const bots = (await db.channelAccount.findByRole("gitlab", "bot")).filter((account) => account.status === "online");
 		const account = record(await this.request(site, "user", signal));
 		const providerId = identity(account.id);
 		const login = text(account.username);
 		if (!bots.some((bot) => bot.name.toLowerCase() === login.toLowerCase()) || account.state !== void 0 && account.state !== "active") throw new GitLabError("account_mismatch");
 		const remote = record(await this.request(site, `projects/${encodeURIComponent(target.repository)}`, signal));
-		if (text(remote.path_with_namespace) !== target.repository || source(remoteGitlab(text(remote.web_url), site) ?? {
+		if (text(remote.path_with_namespace) !== target.repository || resource.source(resource.remote(text(remote.web_url), site) ?? {
 			site: "",
 			repository: ""
-		}) !== source(target)) throw new GitLabError("repository_mismatch");
+		}) !== resource.source(target)) throw new GitLabError("repository_mismatch");
 		const result = {
 			providerId,
 			login,
 			repositoryId: identity(remote.id)
 		};
-		const previous = await this.state(source(target), "verified_environment");
+		const previous = await courier.state("gitlab", resource.source(target), "verified_environment");
 		if (previous && (previous.providerId !== providerId || previous.repositoryId !== result.repositoryId)) throw new GitLabError("environment_identity_changed");
-		await this.save(source(target), "verified_environment", result);
+		await courier.record("gitlab", resource.source(target), "verified_environment", result);
 		return result;
 	}
 	async requestValue(site, path, signal, headers) {
@@ -1323,733 +1855,139 @@ var GitLabChannel = class {
 		};
 	}
 	async pages(site, path, signal, since, etag) {
-		const result = [];
 		const stamp = since && /\/projects\/[^/]+\/(?:issues|merge_requests)(?:\?|$)/.test(path) ? `&updated_after=${encodeURIComponent(since)}` : "";
-		let latest = null;
-		for (let page = 1;; page++) {
+		return courier.pages(async (page) => {
 			const url = `${path + (path.includes("?") ? "&" : "?")}per_page=100&page=${page}${stamp}`;
 			const headers = page === 1 && etag ? { "if-none-match": etag } : void 0;
 			const value = await this.requestValue(site, url, signal, headers);
-			if (page === 1 && value.notModified) return {
-				rows: [],
-				etag: value.etag ?? etag ?? null,
-				notModified: true
+			return {
+				rows: array(value.body).map(record),
+				notModified: value.notModified,
+				etag: value.etag
 			};
-			if (page === 1) latest = value.etag;
-			const batch = array(value.body).map(record);
-			result.push(...batch);
-			if (batch.length < 100) return {
-				rows: result,
-				etag: latest,
-				notModified: false
-			};
-		}
+		});
 	}
-	async read(resource, offset = 0, limit = 50, signal) {
-		if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new GitLabError("invalid_pagination");
-		const target = parseResource(resource, await this.site());
-		const project = await this.projectForRepository(source(target));
-		await this.verifyEnvironment(project.id, signal);
-		const main = record(await this.request(target.site, apiRoot(target), signal));
-		validateTopic(main, target);
-		const notes = (await this.pages(target.site, `${apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal)).rows;
-		const items = [item(main, target.kind, target), ...notes.map((row) => item(row, "comment", target)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))];
+	async read(value, offset = 0, limit = 50, signal) {
+		const target = resource.parse(value, await this.site());
+		const project = await this.projectForRepository(resource.source(target));
+		await this.probe(project.id, signal);
+		const main = record(await this.request(target.site, resource.apiRoot(target), signal));
+		resource.validateTopic(main, target);
+		const notes = (await this.pages(target.site, `${resource.apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal)).rows;
+		const items = [resource.item(main, target.kind, target), ...notes.map((row) => resource.item(row, "comment", target)).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))];
 		return {
-			items: items.slice(offset, offset + limit),
-			next_offset: offset + limit < items.length ? offset + limit : null,
+			...courier.page(items, offset, limit),
 			next_resource: null
 		};
 	}
-	async collectAll(signal) {
-		signal?.throwIfAborted();
-		if (!(await db.channel.findById("gitlab"))?.enabled) return [];
+	async harvest(signal) {
+		return courier.harvest(this.ports.collect, signal);
+	}
+	async collect(projectId, branch, signal) {
+		return courier.collect(this.ports.collect, projectId, branch, signal);
+	}
+	async publish(inboxId, signal) {
+		return courier.publish(this.ports.delivery, inboxId, signal);
+	}
+	async flush(signal) {
+		return courier.flush(this.ports.delivery, signal);
+	}
+	advance(_cursor, _rows, startedAt) {
+		return { since: cursorAt(startedAt) };
+	}
+	async collectProject(context, signal) {
 		const site = await this.site();
-		const results = [];
-		for (const project$2 of await project.list()) {
-			signal?.throwIfAborted();
-			if (!project$2.enabled || project$2.available === false || !remoteGitlab(project$2.remoteUrl, site)) continue;
-			results.push({
-				projectId: project$2.id,
-				...await this.collect(project$2.id, signal).then((result) => {
-					if (!result.ok) console.error(`[gitlab:collect] ${project$2.name} ${project$2.remoteUrl} -> ${result.reason}`);
-					return result;
-				})
+		const repository = context.scope;
+		for (const kind of ["issue", "pull"]) await context.attempt(async () => {
+			await courier.stream({
+				channel: "gitlab",
+				scope: repository,
+				name: kind,
+				initial: INITIAL_CURSOR,
+				read: (cursor) => this.pages(site, `projects/${encodeURIComponent(repository)}/${kind === "issue" ? "issues" : "merge_requests"}?state=all&scope=all&order_by=updated_at&sort=asc`, signal, cursor.since, cursor.etag ?? void 0),
+				advance: (cursor, rows, startedAt) => this.advance(cursor, rows, startedAt),
+				accept: async (row) => {
+					const target = {
+						site,
+						repository,
+						kind,
+						number: number(row.iid)
+					};
+					resource.validateTopic(row, target);
+					const thread = await this.ensureThread(target, row);
+					await courier.ingest(this.ports.ingest, thread, row, row.state === "closed" || row.state === "merged" ? "close" : "open", context.baseline, kind);
+					if (kind === "pull") await mergeRequest.observe(this, context.projectId, thread, row);
+				},
+				signal
+			});
+		});
+		for (const thread of await db.thread.listByChannel("gitlab")) {
+			const url = thread.url;
+			if (!url || !["issue", "pull"].includes(thread.kind)) continue;
+			if (!await courier.polled(await db.ticketThread.listTicketIds(thread.id), thread.updatedAt)) continue;
+			await context.attempt(async () => {
+				const target = resource.parse(url, site);
+				if (resource.source(target) !== repository) return;
+				await courier.stream({
+					channel: "gitlab",
+					scope: repository,
+					name: `notes:${target.kind}:${target.number}`,
+					initial: INITIAL_CURSOR,
+					read: (cursor) => this.pages(site, `${resource.apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal, cursor.since, cursor.etag ?? void 0),
+					advance: (cursor, rows, startedAt) => this.advance(cursor, rows, startedAt),
+					accept: async (row) => {
+						resource.validateNote(row, target);
+						await courier.answers(this.ports.answer, thread, row);
+						await courier.ingest(this.ports.ingest, thread, row, "comment", context.baseline, "note");
+					},
+					signal
+				});
 			});
 		}
-		return results;
-	}
-	async collect(projectId, signal) {
-		return this.exclusive(`collect:${projectId}`, async () => {
-			const errors = [];
-			try {
-				const project = await this.project(projectId);
-				await this.verifyEnvironment(projectId, signal);
-				const target = remoteGitlab(project.remoteUrl, await this.site());
-				const repository = source(target);
-				const baseline = await this.state(repository, "baseline") ?? now();
-				await this.save(repository, "baseline", baseline);
-				for (const kind of ["issue", "pull"]) try {
-					await this.stream(repository, kind, target.site, `projects/${encodeURIComponent(target.repository)}/${kind === "issue" ? "issues" : "merge_requests"}?state=all&scope=all&order_by=updated_at&sort=asc`, async (row) => {
-						const resource = {
-							...target,
-							kind,
-							number: number(row.iid)
-						};
-						validateTopic(row, resource);
-						const thread = await this.ensureThread(resource, row);
-						await this.ingest(thread, row, row.state === "closed" || row.state === "merged" ? "close" : "open", baseline, kind);
-						if (kind === "pull") await this.observeMergeRequest(projectId, thread, row);
-					}, signal);
-				} catch (error) {
-					if (signal?.aborted) throw error;
-					errors.push(failure(error));
-				}
-				for (const thread of await db.thread.listByChannel("gitlab")) {
-					if (!thread.url || !["issue", "pull"].includes(thread.kind)) continue;
-					if (!await polled(thread)) continue;
-					try {
-						const resource = parseResource(thread.url, target.site);
-						if (source(resource) !== repository) continue;
-						await this.stream(repository, `notes:${resource.kind}:${resource.number}`, target.site, `${apiRoot(resource)}/notes?sort=asc&order_by=updated_at`, async (row) => {
-							validateNote(row, resource);
-							await this.acceptAnswers(thread, row);
-							await this.ingest(thread, row, "comment", baseline, "note");
-						}, signal);
-					} catch (error) {
-						if (signal?.aborted) throw error;
-						errors.push(failure(error));
-					}
-				}
-				const branch = await this.defaultBranch(target.site, target.repository, signal);
-				if (branch) await this.collectBranch(projectId, branch, signal).catch((error) => {
-					errors.push(`ci:${failure(error)}`);
-				});
-				for (const ref of await this.activeBranches(target.site, target.repository, signal)) {
-					if (ref === branch) continue;
-					await this.collectBranch(projectId, ref, signal).catch((error) => {
-						errors.push(`ci:${failure(error)}`);
-					});
-				}
-			} catch (error) {
-				if (signal?.aborted) throw error;
-				errors.push(failure(error));
-			}
-			return errors.length ? {
-				ok: false,
-				reason: [...new Set(errors)].join(",")
-			} : { ok: true };
-		});
-	}
-	async stream(repository, name, site, path, accept, signal) {
-		const cursor = await this.state(repository, `cursor:${name}`) ?? { since: "1970-01-01T00:00:00.000Z" };
-		const startedAt = now();
-		const page = await this.pages(site, path, signal, cursor.since, cursor.etag ?? void 0);
-		if (page.notModified) return;
-		const rows = page.rows;
-		const revisions = [];
-		let firstError;
-		for (const row of rows) {
-			signal?.throwIfAborted();
-			try {
-				await accept(row);
-			} catch (error) {
-				if (signal?.aborted) throw error;
-				firstError ??= error;
-			}
-			revisions.push(digest(row));
+		const branch = await ci.defaultBranch(this, site, repository, signal);
+		if (branch) await this.ciBranch(context, branch, signal);
+		for (const ref of await ci.activeBranches(this, site, repository, signal)) {
+			if (ref === branch) continue;
+			await this.ciBranch(context, ref, signal);
 		}
-		if (firstError) throw firstError;
-		const signature = digest(revisions.sort());
-		await this.save(repository, `cursor:${name}`, {
-			since: cursorAt(startedAt),
-			signature,
-			through: startedAt,
-			etag: page.etag
-		});
 	}
-	/** 活跃 MR 的源分支。只取 opened，已关的不再采 CI。 */
-	async activeBranches(site, repository, signal) {
-		const path = `projects/${encodeURIComponent(repository)}/merge_requests?state=opened&per_page=100`;
-		const rows = array(await this.request(site, path, signal)).map(record);
-		return [...new Set(rows.map((row) => text(row.source_branch)).filter(Boolean))];
-	}
-	/** 取项目默认分支，用于 CI 采集。 */
-	async defaultBranch(site, repository, signal) {
-		const row = record(await this.request(site, `projects/${encodeURIComponent(repository)}`, signal));
-		return (typeof row.default_branch === "string" ? row.default_branch.trim() : "") || null;
-	}
-	/** 采默认分支的 pipeline 状态，变化时给项目编排发触发（对应 GitHub 的 collectBranch）。 */
-	async collectBranch(projectId, branch, signal) {
-		const project = await this.project(projectId);
-		const site = await this.site();
-		const target = remoteGitlab(project.remoteUrl, site);
-		if (!target) return;
-		const path = `projects/${encodeURIComponent(target.repository)}/pipelines?ref=${encodeURIComponent(branch)}&per_page=1`;
-		const latest = array(await this.request(site, path, signal)).map(record)[0];
-		if (!latest) return;
-		const state = text(latest.status);
-		const head = text(latest.sha);
-		const ref = `${target.repository}:branch:${branch}`;
-		const { row: watch } = await db.ciWatch.recordRevision({
-			id: `gitlab:${ref}`,
-			channelId: "gitlab",
-			kind: "branch",
-			ref,
-			fingerprint: digest({
-				state,
-				head
-			}),
-			head,
-			updatedAt: now()
-		});
-		if (watch.revision === 0 && [
-			"success",
-			"skipped",
-			"manual"
-		].includes(state)) return;
-		const threadId = `gitlab:${ref}`;
-		await db.thread.record({
-			id: threadId,
-			channelId: "gitlab",
-			refId: ref,
-			kind: "ci",
-			title: `CI ${branch}`,
-			url: null,
-			projectId,
-			triage: "claimed",
-			triagedAt: now(),
-			createdAt: now(),
-			updatedAt: now()
-		});
-		const triggerId = `${watch.id}:revision:${watch.revision}`;
-		const message = `${branch} CI ${state}`;
-		await db.trigger.ingest({
-			id: triggerId,
-			channelId: "gitlab",
-			threadId,
-			kind: "ci",
-			actorName: null,
-			human: 0,
-			mentioned: 0,
-			text: message,
-			url: text(latest.web_url),
-			at: now(),
-			ref: head
-		});
-		await db.inbox.enqueue({
-			id: `${triggerId}:project:${projectId}`,
-			type: "project",
-			origin: "system",
-			kind: "notice",
-			projectId,
-			triggerId,
-			threadId,
-			title: message,
-			message
-		});
+	async ciBranch(context, branch, signal) {
+		try {
+			await ci.branch(this, context.projectId, branch, signal);
+		} catch (error) {
+			if (signal?.aborted) return;
+			context.fail(new GitLabError(`ci:${courier.failure(error, true)}`));
+		}
 	}
 	async ensureThread(target, row) {
-		const refId = `${source(target)}:${target.kind}:${target.number}`;
-		const existing = await db.thread.findByRef("gitlab", refId);
-		return db.thread.record({
-			id: existing?.id ?? `gitlab:${refId}`,
-			channelId: "gitlab",
-			refId,
+		return recordThread({
+			channel: "gitlab",
+			refId: `${resource.source(target)}:${target.kind}:${target.number}`,
 			kind: target.kind,
 			title: text(row.title),
 			url: text(row.web_url),
 			createdAt: timestamp(row.created_at),
-			updatedAt: timestamp(row.updated_at),
-			projectId: null,
-			triage: "pending",
-			triagedAt: null
+			updatedAt: timestamp(row.updated_at)
 		});
-	}
-	async ingest(thread, row, kind, baseline, sourceKind) {
-		const author = record(row.author);
-		const actorName = text(author.username);
-		const bots = (await db.channelAccount.findByChannel("gitlab")).filter((account) => account.role === "bot");
-		const human = author.bot !== true && row.system !== true && !bots.some((bot) => bot.name.toLowerCase() === actorName.toLowerCase());
-		const body = typeof row.body === "string" ? row.body : typeof row.description === "string" ? row.description : typeof row.state === "string" ? row.state : "";
-		const mentioned = bots.some((bot) => new RegExp(`(?:^|[^a-z0-9_@])@${escapeRegex(bot.name)}(?![a-z0-9_.-])`, "i").test(body));
-		const at = timestamp(row.updated_at ?? row.created_at);
-		const id = `${thread.id}:${sourceKind}:${identity(row.id)}`;
-		const url = sourceKind === "note" ? `${thread.url}#note_${identity(row.id)}` : text(row.web_url);
-		await db.trigger.ingest({
-			id,
-			channelId: "gitlab",
-			threadId: thread.id,
-			kind,
-			actorName,
-			human: Number(human),
-			mentioned: Number(mentioned),
-			text: body,
-			url,
-			at,
-			ref: typeof row.source_branch === "string" ? row.source_branch : null
-		});
-		const subscriptions = await db.ticketThread.listTicketIds(thread.id);
-		const historical = timestamp(row.created_at) < baseline;
-		const admin = (await setting.load()).administrators.some((name) => name.toLowerCase() === actorName.toLowerCase());
-		if (!human || historical && !subscriptions.length) return;
-		if (!subscriptions.length && (!admin || kind !== "open" && !mentioned || thread.triage === "ignored" && !mentioned)) return;
-		const targets = /* @__PURE__ */ new Map();
-		for (const ticketId of subscriptions) {
-			const ticket = await db.ticket.findById(ticketId);
-			if (!ticket) continue;
-			if (["done", "cancelled"].includes(ticket.status)) {
-				if (!mentioned) continue;
-				if (await db.ticket.reopen(ticketId, at)) {
-					await db.worker.queue(ticketId, ticket.projectId);
-					targets.set(ticket.projectId, {
-						projectId: ticket.projectId,
-						ticketId
-					});
-				}
-				continue;
-			}
-			targets.set(ticket.projectId, {
-				projectId: ticket.projectId,
-				ticketId
-			});
-		}
-		if (!subscriptions.length) targets.set(thread.projectId ?? "main", {
-			projectId: thread.triage === "claimed" ? thread.projectId : null,
-			ticketId: null
-		});
-		for (const [key, target] of targets) await db.inbox.enqueue({
-			id: `${id}:inbox:${key}`,
-			type: target.projectId ? "project" : "main",
-			origin: "channel",
-			kind: "trigger",
-			message: body,
-			title: thread.title,
-			projectId: target.projectId,
-			ticketId: target.ticketId,
-			triggerId: id,
-			threadId: thread.id
-		});
-	}
-	async observeMergeRequest(projectId, thread, row) {
-		const target = parseResource(thread.url, await this.site());
-		if (target.kind !== "pull") return;
-		validateTopic(row, target);
-		const state = row.state === "merged" ? "merged" : row.state === "closed" ? "closed" : row.state === "opened" ? "open" : null;
-		if (!state) throw new GitLabError("invalid_response");
-		const branch = typeof row.source_branch === "string" ? text(row.source_branch) : null;
-		const worker = branch ? await db.worker.findByBranch(branch) : void 0;
-		const owned = worker && await db.ticket.findById(worker.ticketId);
-		if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
-			await db.ticketThread.link(owned.id, thread.id, now());
-			await db.ticket.setPullRequest(owned.id, thread.url, state, owned.ciState);
-		}
-		for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
-			const ticket = await db.ticket.findById(ticketId);
-			if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ["done", "cancelled"].includes(ticket.status)) continue;
-			await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState);
-		}
-		if (state === "open") return;
-		await this.threadClosed(projectId, thread, state, timestamp(row.merged_at ?? row.closed_at ?? row.updated_at), branch);
 	}
 	async threadClosed(projectId, thread, outcome, at, branch) {
-		const ended = await db.ticket.closeThread(thread.id, outcome, at, branch);
-		if (outcome !== "merged" || !ended.length) return;
-		for (const source of await db.thread.listByChannel("gitlab")) {
-			if (source.kind !== "issue" || source.projectId !== projectId || !source.url) continue;
-			if (!(await db.ticketThread.listTicketIds(source.id)).some((id) => ended.includes(id))) continue;
-			let target;
-			try {
-				target = parseResource(source.url, await this.site());
-			} catch {
-				continue;
-			}
-			if (target.kind !== "issue") continue;
-			await this.request(target.site, apiRoot(target), void 0, "PUT", { state_event: "close" }).catch(() => void 0);
-		}
-	}
-	async acceptAnswers(thread, row) {
-		const author = record(row.author);
-		const login = text(author.username);
-		const accounts = await db.channelAccount.findByChannel("gitlab");
-		if (author.bot === true || row.system === true || accounts.some((account) => account.role === "bot" && account.name.toLowerCase() === login.toLowerCase()) || !(await setting.load()).administrators.some((name) => name.toLowerCase() === login.toLowerCase())) return;
-		const body = typeof row.body === "string" ? row.body : "";
-		const answers = /* @__PURE__ */ new Map();
-		const conflicts = /* @__PURE__ */ new Set();
-		let fenced = false;
-		for (const line of body.split(/\r?\n/)) {
-			if (/^\s*~{3}|^\s*```/.test(line)) {
-				fenced = !fenced;
-				continue;
-			}
-			if (fenced) continue;
-			if (!/^answer[ \t]/i.test(line)) continue;
-			const content = line.slice(7).trim();
-			const separator = content.indexOf(": ");
-			if (separator < 1) continue;
-			const id = content.slice(0, separator).trim();
-			const answer = content.slice(separator + 2).trim();
-			if (!answer || /\s/.test(id)) continue;
-			if (answers.has(id) && answers.get(id) !== answer) conflicts.add(id);
-			answers.set(id, answer);
-		}
-		for (const [id, answer] of answers) {
-			if (conflicts.has(id)) continue;
-			const ask = await db.inbox.findById(id);
-			if (!ask || ask.kind !== "ask" || ask.type !== "user" || ask.status !== "pending" || timestamp(row.created_at ?? row.submitted_at) < ask.createdAt) continue;
-			const trigger = ask.triggerId && await db.trigger.findById(ask.triggerId);
-			if (!trigger || trigger.threadId !== thread.id || ask.threadId && ask.threadId !== thread.id) continue;
-			const target = parseResource(thread.url, await this.site());
-			if (!await this.state(source(target), `comment:${id}`)) continue;
-			if (ask.ticketId) {
-				const ticket = await db.ticket.findById(ask.ticketId);
-				if (!ticket || ["done", "cancelled"].includes(ticket.status)) continue;
-			}
-			await db.inbox.answerByUser(id, answer, now());
-		}
-	}
-	async publish(inboxId, signal) {
-		return this.exclusive(`publish:${inboxId}`, async () => {
-			const row = await db.inbox.findById(inboxId);
-			const trigger = row?.triggerId ? await db.trigger.findById(row.triggerId) : void 0;
-			const key = trigger ? trigger.threadId : inboxId;
-			const task = (this.publishing.get(key) ?? Promise.resolve()).then(() => this.publishOne(inboxId, signal));
-			const barrier = task.then(() => void 0, () => void 0);
-			this.publishing.set(key, barrier);
-			try {
-				return await task;
-			} finally {
-				if (this.publishing.get(key) === barrier) this.publishing.delete(key);
+		await closeThread({
+			channel: "gitlab",
+			projectId,
+			thread,
+			outcome,
+			at,
+			branch,
+			closeIssue: async (url) => {
+				const target = resource.parse(url, await this.site());
+				if (target.kind !== "issue") return;
+				await this.request(target.site, resource.apiRoot(target), void 0, "PUT", { state_event: "close" });
 			}
 		});
 	}
-	async destination(row) {
-		if (row.type !== "user" || !["notice", "ask"].includes(row.kind) || !row.triggerId) throw new GitLabError("invalid_delivery");
-		const trigger = await db.trigger.findById(row.triggerId);
-		const thread = trigger && await db.thread.findById(trigger.threadId);
-		if (!thread?.url || thread.channelId !== "gitlab" || !["issue", "pull"].includes(thread.kind) || row.threadId && row.threadId !== thread.id) throw new GitLabError("no_reply_address");
-		const target = parseResource(thread.url, await this.site());
-		const project = await this.projectForRepository(source(target));
-		if (!project) throw new GitLabError("unknown_repository");
-		if (row.ticketId) {
-			const ticket = await db.ticket.findById(row.ticketId);
-			if (row.kind === "ask" && ticket && ["done", "cancelled"].includes(ticket.status)) throw new GitLabError("delivery_superseded");
-			if (!ticket || ticket.projectId !== project.id) throw new GitLabError("scope_denied");
-			if (ticket.paused) throw new GitLabError("human_paused");
-			if (!(await db.ticketThread.listTicketIds(thread.id)).includes(ticket.id)) throw new GitLabError("unsubscribed_thread");
-		}
-		return {
-			thread,
-			target
-		};
-	}
-	async publishOne(inboxId, signal) {
-		let row = await db.inbox.findById(inboxId);
-		if (!row) return {
-			ok: false,
-			reason: "unknown_delivery"
-		};
-		if (row.status === "done") return { ok: true };
-		let posting = false;
-		try {
-			const { thread, target } = await this.destination(row);
-			const project = await this.projectForRepository(source(target));
-			const environment = await this.verifyEnvironment(project.id, signal);
-			const marker = `<!-- supermesh:${row.id} -->`;
-			const receipt = await this.state(source(target), `comment:${row.id}`);
-			if (receipt) {
-				if (receipt.providerId !== environment.providerId || receipt.marker !== marker) throw new GitLabError("managed_comment_mismatch");
-				if (row.kind === "notice") await db.inbox.markDone(row.id, now());
-				return {
-					ok: true,
-					remoteId: receipt.remoteId
-				};
-			}
-			if (row.nextRetryAt && row.nextRetryAt > now()) return {
-				ok: false,
-				reason: "retry_pending"
-			};
-			for (const previous of await db.inbox.listOutgoing()) {
-				if (previous.id === row.id || previous.seq >= row.seq || previous.ticketId !== row.ticketId || previous.status === "done") continue;
-				if ((previous.threadId ?? (previous.triggerId ? (await db.trigger.findById(previous.triggerId))?.threadId : void 0)) === thread.id && !await this.state(source(target), `comment:${previous.id}`)) return {
-					ok: false,
-					reason: "earlier_delivery_pending"
-				};
-			}
-			const root = `${apiRoot(target)}/notes`;
-			const existing = (await this.pages(target.site, root, signal)).rows.filter((comment) => record(comment.author).id != null && identity(record(comment.author).id) === environment.providerId && typeof comment.body === "string" && comment.body.includes(marker));
-			if (existing.length > 1) throw new GitLabError("ambiguous_delivery");
-			let remote = existing[0];
-			if (!remote) {
-				if (row.status === "stalled" || row.deliveryError === "publishing") {
-					await db.inbox.markStalled(row.id, "transport_unknown");
-					return {
-						ok: false,
-						reason: "transport_unknown"
-					};
-				}
-				const current = await db.inbox.findById(row.id);
-				if (!current || current.status !== "pending" || current.type !== row.type || current.kind !== row.kind) return {
-					ok: false,
-					reason: "delivery_superseded"
-				};
-				await this.destination(current);
-				await db.inbox.recordDeliveryFailure(row.id, "publishing", now());
-				posting = true;
-				const body = row.kind === "ask" ? `${row.message}\n\n问题编号：${row.id}\n请回复：answer ${row.id}: 你的回答` : row.message;
-				remote = record(await this.request(target.site, root, signal, "POST", { body: `${body}\n\n${marker}` }));
-			}
-			if (identity(record(remote.author).id) !== environment.providerId || !text(remote.body).includes(marker)) throw new GitLabError("managed_comment_mismatch");
-			validateNote(remote, target);
-			const result = {
-				remoteId: identity(remote.id),
-				providerId: environment.providerId,
-				marker,
-				url: `${resourceUrl(target)}#note_${identity(remote.id)}`
-			};
-			await this.save(source(target), `comment:${row.id}`, result);
-			await db.inbox.resetDelivery(row.id);
-			if (row.kind === "notice") await db.inbox.markDone(row.id, now());
-			return {
-				ok: true,
-				remoteId: result.remoteId
-			};
-		} catch (error) {
-			const reason = failure(error);
-			if (posting && ![
-				"rate_limited",
-				"forbidden",
-				"not_found",
-				"not_logged_in",
-				"remote_rejected"
-			].includes(reason)) await db.inbox.markStalled(row.id, "transport_unknown");
-			else if (![
-				"human_paused",
-				"project_disabled",
-				"project_unavailable",
-				"channel_disabled",
-				"retry_pending"
-			].includes(reason)) {
-				row = await db.inbox.findById(row.id);
-				const settings = await setting.load();
-				const attempts = row.deliveryAttempts + (posting ? 0 : 1);
-				if (attempts >= settings.deliveryMaxAttempts) await db.inbox.markStalled(row.id, reason);
-				else {
-					const seconds = Math.max(error instanceof GitLabError ? error.retryAfterSeconds ?? 0 : 0, Math.min(settings.deliveryRetryCeilingSeconds, 2 ** Math.max(1, attempts)));
-					const nextRetryAt = new Date(Date.now() + seconds * 1e3).toISOString();
-					if (posting) await db.inbox.update(row.id, {
-						deliveryError: reason,
-						nextRetryAt
-					});
-					else await db.inbox.recordDeliveryFailure(row.id, reason, nextRetryAt);
-				}
-			}
-			if (signal?.aborted) throw error;
-			return {
-				ok: false,
-				reason: posting && reason === "interrupted" ? "transport_unknown" : reason
-			};
-		}
-	}
-	async flush(signal) {
-		signal?.throwIfAborted();
-		if (!(await db.channel.findById("gitlab"))?.enabled) return [];
-		const results = [];
-		for (const row of await db.inbox.listOutgoing()) {
-			signal?.throwIfAborted();
-			if (row.status !== "pending") continue;
-			const trigger = row.triggerId && await db.trigger.findById(row.triggerId);
-			if (trigger && trigger.channelId === "gitlab") results.push({
-				id: row.id,
-				...await this.publish(row.id, signal)
-			});
-		}
-		return results;
-	}
 };
-/** 没有活票的话题，最后一次活动超过这个时长就不再轮询（官方 POLL_HORIZON_MS）。 */
-const POLL_HORIZON_MS = 12096e5;
-/**
-* 是否该轮询这个话题（照官方 `poll.ts` 的 `polled`）：
-* 有活票必轮询；否则只在最后一次触发/结单后的 14 天内轮询。
-* 否则每轮都把所有历史话题翻一遍，话题一多就变成 O(n) 阻塞。
-*/
-async function polled(thread, at = Date.now()) {
-	const ticketIds = await db.ticketThread.listTicketIds(thread.id);
-	if (!ticketIds.length) return true;
-	const tickets = await Promise.all(ticketIds.map((id) => db.ticket.findById(id)));
-	if (tickets.some((ticket) => ticket && !["done", "cancelled"].includes(ticket.status))) return true;
-	const times = [thread.updatedAt, ...tickets.map((ticket) => ticket?.endedAt ?? "")].map((value) => Date.parse(value)).filter(Number.isFinite);
-	return at - Math.max(...times) < POLL_HORIZON_MS;
-}
-/** 游标回退 5 秒，靠确定性 id 去重，避免远程迟到的事件被漏掉（官方 `cursorAt`）。 */
-function cursorAt(started) {
-	return (/* @__PURE__ */ new Date(Date.parse(started) - 5e3)).toISOString();
-}
 const gitlab = new GitLabChannel();
-function remoteGitlab(remoteUrl, host) {
-	if (!remoteUrl) return null;
-	const site = gitlabSite(host);
-	const configured = new URL(site);
-	const scp = /^git@([^/:]+):(.+)$/.exec(remoteUrl);
-	if (scp) {
-		if (scp[1].toLowerCase() !== configured.hostname || configured.port) return null;
-		const repository = repositoryPath(scp[2].replace(/\.git$/, ""));
-		return repository ? {
-			site,
-			repository
-		} : null;
-	}
-	try {
-		const url = new URL(remoteUrl);
-		if (!["https:", "ssh:"].includes(url.protocol) || url.hostname !== configured.hostname || url.password || url.search || url.hash || (url.protocol === "https:" ? url.origin !== site || Boolean(url.username) : Boolean(url.port) || Boolean(url.username && url.username !== "git"))) return null;
-		const repository = repositoryPath(url.pathname.replace(/^\//, "").replace(/\/$/, "").replace(/\.git$/, ""));
-		return repository ? {
-			site,
-			repository
-		} : null;
-	} catch {
-		return null;
-	}
-}
-function repositoryPath(value) {
-	const segments = value.split("/");
-	return segments.length >= 2 && segments.every((segment) => /^\w[\w.-]*$/.test(segment) && segment !== "." && segment !== "..") ? value : null;
-}
-function parseResource(resource, site) {
-	const short = /^gitlab:([^:]+):(issue|pull|mr):([1-9]\d*)$/.exec(resource);
-	if (short) {
-		const repository = repositoryPath(short[1]);
-		const number = Number(short[3]);
-		if (repository && Number.isSafeInteger(number)) return {
-			site,
-			repository,
-			kind: short[2] === "issue" ? "issue" : "pull",
-			number
-		};
-		throw new GitLabError("invalid_resource");
-	}
-	let url;
-	try {
-		url = new URL(resource.startsWith("gitlab/") ? `${site}/${resource.slice(7)}` : resource);
-	} catch {
-		throw new GitLabError("invalid_resource");
-	}
-	const match = /^\/(.+?)(?:\/-\/(issues|work_items|merge_requests)|\/(issues|merge_requests))\/([1-9]\d*)\/?$/.exec(url.pathname);
-	const repository = match && repositoryPath(match[1]);
-	const number = Number(match?.[4]);
-	if (url.origin !== site || url.protocol !== "https:" || url.username || url.password || url.search || url.hash && !/^#note_[1-9]\d*$/.test(url.hash) || !repository || !Number.isSafeInteger(number)) throw new GitLabError("invalid_resource");
-	return {
-		site,
-		repository,
-		kind: (match[2] ?? match[3]) === "merge_requests" ? "pull" : "issue",
-		number
-	};
-}
-function source(target) {
-	return `${target.site}/${target.repository}`;
-}
-function resourceUrl(target) {
-	return `${source(target)}/${target.kind === "issue" ? "issues" : "merge_requests"}/${target.number}`;
-}
-function apiRoot(target) {
-	return `projects/${encodeURIComponent(target.repository)}/${target.kind === "issue" ? "issues" : "merge_requests"}/${target.number}`;
-}
-function validateTopic(row, target) {
-	const remote = parseResource(text(row.web_url), target.site);
-	if (number(row.iid) !== target.number || resourceUrl(remote) !== resourceUrl(target)) throw new GitLabError("source_repository_mismatch");
-}
-function validateNote(row, target) {
-	identity(row.id);
-	if (row.noteable_iid !== void 0 && number(row.noteable_iid) !== target.number) throw new GitLabError("source_repository_mismatch");
-	if (row.noteable_type !== void 0 && row.noteable_type !== (target.kind === "issue" ? "Issue" : "MergeRequest")) throw new GitLabError("source_repository_mismatch");
-	if (row.web_url !== void 0 && resourceUrl(parseResource(text(row.web_url), target.site)) !== resourceUrl(target)) throw new GitLabError("source_repository_mismatch");
-}
-function item(row, kind, target) {
-	if (kind === "comment") validateNote(row, target);
-	return {
-		id: identity(row.id),
-		kind,
-		actor: text(record(row.author).username),
-		body: typeof row.body === "string" ? row.body : typeof row.description === "string" ? row.description : typeof row.state === "string" ? row.state : "",
-		url: kind === "comment" ? `${resourceUrl(target)}#note_${identity(row.id)}` : text(row.web_url),
-		createdAt: timestamp(row.created_at),
-		updatedAt: timestamp(row.updated_at ?? row.created_at)
-	};
-}
-function record(value) {
-	if (!value || typeof value !== "object" || Array.isArray(value)) throw new GitLabError("invalid_response");
-	return value;
-}
-function array(value) {
-	if (!Array.isArray(value)) throw new GitLabError("invalid_response");
-	return value;
-}
-function text(value) {
-	if (typeof value !== "string" || !value) throw new GitLabError("invalid_response");
-	return value;
-}
-function number(value) {
-	if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1) throw new GitLabError("invalid_response");
-	return value;
-}
-function identity(value) {
-	if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return String(value);
-	if (typeof value === "string" && value) return value;
-	throw new GitLabError("invalid_response");
-}
-function timestamp(value) {
-	const date = new Date(text(value));
-	if (!Number.isFinite(date.getTime())) throw new GitLabError("invalid_response");
-	return date.toISOString();
-}
-function now() {
-	return (/* @__PURE__ */ new Date()).toISOString();
-}
-function digest(value) {
-	return createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
-function failure(error) {
-	if (error instanceof GitLabError) return error.code;
-	if (error instanceof Error) return error.name === "AbortError" ? "interrupted" : `transport_unknown(${error.message.slice(0, 120)})`;
-	return "transport_unknown";
-}
-function escapeRegex(value) {
-	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 // src/ai/_shared/tools/channel.ts
-const observed = /* @__PURE__ */ new WeakMap();
-function owner(exec) {
-	return exec.agent?.session;
-}
-function observe(exec, threadId, version) {
-	const holder = owner(exec);
-	if (!holder) return;
-	let byTarget = observed.get(holder);
-	if (!byTarget) {
-		byTarget = /* @__PURE__ */ new Map();
-		observed.set(holder, byTarget);
-	}
-	byTarget.set(threadId, { version });
-}
-/** 与官方 `requirePresent` 同义：没读过就抛出带错误码的拒绝。 */
-function requireObserved(exec, threadId, verb) {
-	const holder = owner(exec);
-	const prior = holder ? observed.get(holder)?.get(threadId) : void 0;
-	if (!prior) {
-		const error = /* @__PURE__ */ new Error(`${verb} 需要先读过这个话题：调用 read_channel，resource 用 thread/<id> 或 trigger/<triggerId>`);
-		error.name = "ChannelNotObserved";
-		throw error;
-	}
-	return prior;
-}
-/** 话题的最新消息 id，用于判定「读的是哪一版」。 */
-async function latestVersion(threadId) {
-	return (await db.trigger.listRecent(1e3)).filter((item) => item.threadId === threadId).sort((a, b) => b.at.localeCompare(a.at))[0]?.id ?? "empty";
-}
-/** 记下「这个会话读过这个话题」，并把读到的那一版留下来。 */
-async function markThread(exec, threadId) {
-	observe(exec, threadId, await latestVersion(threadId));
-}
 const read_channel = defineTool({
 	name: "read_channel",
 	description: "读渠道原文，靠 resource 路径前缀分发。返回 { items, next_offset, next_resource }，两条翻页轴都要跟完。",
@@ -2124,17 +2062,16 @@ const read_channel = defineTool({
 					return false;
 				}
 			})();
-			const isGitLab = !isGitHub && await gitlab.canRead(resource);
+			const isGitLab = !isGitHub && await gitlab.readable(resource);
 			if (!isGitHub && !isGitLab) throw new Error("不支持的渠道资源");
-			const target = isGitLab ? await gitlab.canonicalResource(resource) : resource;
+			const adapter = isGitLab ? gitlab : github;
+			const target = await adapter.normalize(resource);
 			if (identity.role === "worker") {
 				const threads = await Promise.all(links.map((link) => db.thread.findById(link.threadId)));
 				let allowed = false;
 				for (const thread of threads) {
 					if (!thread?.url || thread.channelId !== (isGitLab ? "gitlab" : "github") || identity.projectId && thread.projectId && thread.projectId !== identity.projectId) continue;
-					if (isGitLab) {
-						if (await gitlab.canRead(thread.url) && await gitlab.canonicalResource(thread.url) === target) allowed = true;
-					} else if (canonicalGitHub(thread.url) === canonicalGitHub(resource)) allowed = true;
+					if (await adapter.readable(thread.url) && await adapter.normalize(thread.url) === target) allowed = true;
 				}
 				if (!allowed) throw new Error("Worker 只能读取本任务来源");
 			}
@@ -2142,7 +2079,7 @@ const read_channel = defineTool({
 				const matched = await db.thread.findByRef(isGitLab ? "gitlab" : "github", resource.replace(/^https?:\/\/[^/]+\//, "").replace(/\/pull\//, ":").replace(/\/issues\//, ":"));
 				if (matched) await markThread(exec, matched.id);
 			} catch {}
-			return JSON.stringify(isGitLab ? await gitlab.read(target, offset, limit) : await github.read(resource, offset, limit));
+			return JSON.stringify(await adapter.read(target, offset, limit));
 		}
 		const page = items.slice(offset, offset + limit);
 		return JSON.stringify({
@@ -2216,20 +2153,6 @@ const reply_channel = defineTool({
 		});
 	}
 });
-/** 同一条触发 + 同一正文只入队一次，与官方 `key('reply', triggerId, text)` 同义。 */
-function replyKey(triggerId, body) {
-	return `reply:${createHash("sha256").update(JSON.stringify([triggerId, body])).digest("hex").slice(0, 32)}`;
-}
-async function isThreadId(value) {
-	if (!/^[\w-]+:[\w./-]+$/.test(value)) return false;
-	return Boolean(await db.thread.findById(value));
-}
-function canonicalGitHub(value) {
-	const match = /^github:([^:]+):(issue|pull):([1-9]\d*)$/.exec(value);
-	if (match) return `https://github.com/${match[1]}/${match[2] === "issue" ? "issues" : "pull"}/${match[3]}`;
-	const url = new URL(value);
-	return url.origin + url.pathname.replace(/\/$/, "");
-}
 // src/ai/_shared/tools/inbox.ts
 const inbox_list = defineTool({
 	name: "inbox_list",
@@ -2298,21 +2221,6 @@ const inbox_kill = defineTool({
 	},
 	execute: async (args, exec) => String(await inbox.complete(exec.agent?.session.id ?? "", args.ids, true))
 });
-// src/ai/preset.ts
-function definePreset(definition) {
-	const { tools, ...preset } = definition;
-	return {
-		tools: tools ?? [],
-		preset: {
-			...preset,
-			plugins: [preset.instruction && {
-				id: "persona",
-				name: "@deepseek-ai/dsh-persona",
-				config: { prefix: preset.instruction }
-			}, ...preset.plugins ?? []].filter(Boolean)
-		}
-	};
-}
 // src/ai/manager/tools/communicate.ts
 const report$2 = defineTool({
 	name: "report",
@@ -2878,6 +2786,21 @@ const rename = defineTool({
 		});
 	}
 });
+// src/ai/preset.ts
+function definePreset(definition) {
+	const { tools, ...preset } = definition;
+	return {
+		tools: tools ?? [],
+		preset: {
+			...preset,
+			plugins: [preset.instruction && {
+				id: "persona",
+				name: "@deepseek-ai/dsh-persona",
+				config: { prefix: preset.instruction }
+			}, ...preset.plugins ?? []].filter(Boolean)
+		}
+	};
+}
 // src/ai/manager/index.ts
 const manager = definePreset({
 	id: "manager",
@@ -3815,12 +3738,12 @@ const link_ticket = defineTool({
 		});
 	}
 });
-/** 票所属项目必须落在这个 supervisor 的管辖范围内（即它已关联票涉及的项目）。 */
+/** 票所属项目必须落在这个 supervisor 的协调范围内（即它已关联票涉及的项目）。 */
 async function requireScope(supervisorId, projectIds) {
 	const links = await db.supervisorTicket.listBySupervisor(supervisorId);
 	const tickets = await Promise.all(links.map((link) => db.ticket.findById(link.ticketId)));
 	const scope = new Set(tickets.filter(Boolean).map((ticket) => ticket.projectId));
-	for (const projectId of projectIds) if (!scope.has(projectId)) throw new Error("该项目不在当前 Supervisor 的协调范围内");
+	for (const projectId of projectIds) if (!scope.has(projectId)) throw new Error("该项目还不在你的协调范围内：先用 create_ticket 在那个项目建票，票会自动挂到名下并带上它的项目");
 }
 const report$1 = defineTool({
 	name: "report",
@@ -4420,7 +4343,7 @@ async function activate() {
 		return task;
 	}
 	try {
-		stops.push(() => channelAuth.cleanup());
+		stops.push(() => devops.cleanup());
 		stops.push(session.start(), worktree.start(), project.start(), inbox.start(), worker$1.start());
 		await scheduler.ready();
 		await session.workspace();
@@ -4451,7 +4374,7 @@ async function activate() {
 			cron: "*/30 * * * * *"
 		}, () => track(async () => {
 			await project.sync();
-			const failures = (await github.collectAll(controller.signal)).filter((result) => !result.ok);
+			const failures = (await github.harvest?.(controller.signal) ?? []).filter((result) => !result.ok);
 			if (failures.length) throw new Error(failures.map((result) => result.reason ?? "channel_operation_failed").join(", "));
 		})));
 		unregister.push(scheduler.use({
@@ -4465,7 +4388,7 @@ async function activate() {
 			id: "supermesh:gitlab",
 			cron: "*/30 * * * * *"
 		}, () => track(async () => {
-			const failures = (await gitlab.collectAll(controller.signal)).filter((result) => !result.ok);
+			const failures = (await gitlab.harvest?.(controller.signal) ?? []).filter((result) => !result.ok);
 			if (failures.length) throw new Error(failures.map((result) => result.reason ?? "channel_operation_failed").join(", "));
 		})));
 		unregister.push(scheduler.use({

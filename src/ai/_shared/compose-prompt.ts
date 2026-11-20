@@ -1,4 +1,4 @@
-import { promptFile } from './prompt-file'
+import { promptFile } from '@/ai/_shared/prompt-file'
 
 export type AgentRole = 'orchestrator' | 'manager' | 'worker' | 'supervisor'
 

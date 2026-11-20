@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import type * as Types from '../../../apis/index.type'
-import type { DeliveryStatus } from '../model'
+import type * as Types from '@/client/apis/index.type'
+import type { DeliveryStatus } from '@/client/pages/trigger/model'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshTopicCount } from '../../../apis'
-import { useActions, useStore } from '../../../hooks/use-store'
-import { useTranslation } from '../../../hooks/use-translation'
-import { STATUSES } from '../model'
+import { getApiSupermeshTopicCount } from '@/client/apis'
+import { useActions, useStore } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { STATUSES } from '@/client/pages/trigger/model'
 
 export interface TriggerFiltersForCount {
   query?: string

@@ -1,5 +1,5 @@
 import { defineHandler, HTTPError } from 'h3'
-import { session } from '../../service/session'
+import { session } from '@/service/session'
 
 export default defineHandler(async () => {
   try {

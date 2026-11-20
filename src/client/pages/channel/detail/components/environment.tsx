@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { useTranslation } from '../../../../hooks/use-translation'
-import { Section } from './section'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { Section } from '@/client/pages/channel/detail/components/section'
 
 export function Environment({ description }: { description: string }): ReactNode {
   const { t } = useTranslation()

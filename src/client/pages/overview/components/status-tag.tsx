@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useQuery } from '@tanstack/react-query'
-import { getApiSupermeshStatus } from '../../../apis'
-import { keys } from '../../../config/query-keys'
-import { useTranslation } from '../../../hooks/use-translation'
+import { getApiSupermeshStatus } from '@/client/apis'
+import { keys } from '@/client/config/query-keys'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function StatusTag(): ReactNode {
   const { t } = useTranslation()

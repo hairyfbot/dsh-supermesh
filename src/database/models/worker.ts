@@ -1,9 +1,9 @@
 import type { Kysely, Selectable } from 'kysely'
-import type { DB, ReportState, WorkerEndReason } from '../types'
+import type { DB, ReportState, WorkerEndReason } from '@/database/types'
 import { randomUUID } from 'node:crypto'
 import { Model } from 'kysely-model'
-import { Inbox } from './inbox'
-import { Ticket } from './ticket'
+import { Inbox } from '@/database/models/inbox'
+import { Ticket } from '@/database/models/ticket'
 
 export class Worker extends Model<DB, 'worker'> {
   constructor(db: Kysely<DB>) {

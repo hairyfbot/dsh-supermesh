@@ -1,15 +1,12 @@
-import type { GitLabRequest, GitLabRunner } from './types'
+import type { GitLabRequest, GitLabRunner } from '@/channel/gitlab/types'
 import process from 'node:process'
 import { createRouteDispatcher } from '@deepseek-ai/dsh-http-proxy'
 import { fetch } from 'undici'
-import { channel } from '../../service/channel'
-import { channelProxyEnvironment } from '../proxy'
+import { ChannelError } from '@/channel/_shared/error'
+import { channelProxyEnvironment } from '@/channel/_shared/proxy'
+import { channel } from '@/service/channel'
 
-export class GitLabError extends Error {
-  constructor(public readonly code: string, public readonly retryAfterSeconds?: number) {
-    super(code)
-  }
-}
+export class GitLabError extends ChannelError {}
 
 export class FetchGitLabRunner implements GitLabRunner {
   async request(request: GitLabRequest): Promise<unknown> {

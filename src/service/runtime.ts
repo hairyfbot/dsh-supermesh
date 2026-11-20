@@ -1,16 +1,16 @@
-import { github } from '../channel/github/channel'
-import { gitlab } from '../channel/gitlab/channel'
-import { db } from '../database'
-import { scheduler } from '../runtime/scheduler'
-import { defineService } from '../utils/service'
-import { archive } from './archive'
-import { channelAuth } from './channel-auth'
-import { inbox } from './inbox'
-import { project } from './project'
-import { session } from './session'
-import { shell } from './shell'
-import { worker } from './worker'
-import { worktree } from './worktree'
+import { github } from '@/channel/github/channel'
+import { gitlab } from '@/channel/gitlab/channel'
+import { db } from '@/database'
+import { scheduler } from '@/runtime/scheduler'
+import { archive } from '@/service/archive'
+import { devops } from '@/service/devops'
+import { inbox } from '@/service/inbox'
+import { project } from '@/service/project'
+import { session } from '@/service/session'
+import { shell } from '@/service/shell'
+import { worker } from '@/service/worker'
+import { worktree } from '@/service/worktree'
+import { defineService } from '@/utils/service'
 
 let starting: Promise<() => Promise<void>> | null = null
 let dispose: (() => Promise<void>) | null = null
@@ -75,7 +75,7 @@ async function activate(): Promise<() => Promise<void>> {
     return task
   }
   try {
-    stops.push(() => channelAuth.cleanup())
+    stops.push(() => devops.cleanup())
     stops.push(session.start(), worktree.start(), project.start(), inbox.start(), worker.start())
     await scheduler.ready()
     await session.workspace()
@@ -98,7 +98,7 @@ async function activate(): Promise<() => Promise<void>> {
     })))
     unregister.push(scheduler.use({ id: 'supermesh:github', cron: '*/30 * * * * *' }, () => track(async () => {
       await project.sync()
-      const collected = await github.collectAll(controller.signal)
+      const collected = await github.harvest?.(controller.signal) ?? []
       const failures = collected.filter(result => !result.ok)
       if (failures.length)
         throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
@@ -112,7 +112,7 @@ async function activate(): Promise<() => Promise<void>> {
         throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))
     })))
     unregister.push(scheduler.use({ id: 'supermesh:gitlab', cron: '*/30 * * * * *' }, () => track(async () => {
-      const collected = await gitlab.collectAll(controller.signal)
+      const collected = await gitlab.harvest?.(controller.signal) ?? []
       const failures = collected.filter(result => !result.ok)
       if (failures.length)
         throw new Error(failures.map(result => result.reason ?? 'channel_operation_failed').join(', '))

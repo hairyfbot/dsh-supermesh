@@ -1,6 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { db } from '../../../database'
-import { session } from '../../../service/session'
+import { db } from '@/database'
+import { session } from '@/service/session'
 
 export const dispatch_ticket = defineTool({
   name: 'dispatch_ticket',

@@ -1,6 +1,6 @@
 import { defineHandler } from 'h3'
-import { project } from '../../service/project'
-import { session } from '../../service/session'
+import { project } from '@/service/project'
+import { session } from '@/service/session'
 
 export default defineHandler(async () => {
   const projects = await project.list()

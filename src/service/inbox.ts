@@ -1,14 +1,14 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { Selectable } from 'kysely'
-import type { InboxScope } from '../database/models/inbox'
-import type { DB } from '../database/types'
-import type {} from '../types/mailbox'
+import type { InboxScope } from '@/database/models/inbox'
+import type { DB } from '@/database/types'
+import type {} from '@/types/mailbox'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import { db } from '../database'
-import { singlet } from '../runtime/singlet'
-import { defineService } from '../utils/service'
-import { session } from './session'
-import { setting } from './setting'
+import { db } from '@/database'
+import { singlet } from '@/runtime/singlet'
+import { session } from '@/service/session'
+import { setting } from '@/service/setting'
+import { defineService } from '@/utils/service'
 
 type Message = Selectable<DB['inbox']>
 const deliveredAnswers = new Set<string>()

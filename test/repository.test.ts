@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseRepositoryRemote } from '../src/utils/repository'
+import { parseRepositoryRemote } from '@/utils/repository'
 
 describe('repository remote parsing at the trusted boundary', () => {
   it.each(['https://github.com/Owner/Repository.git', 'git@github.com:Owner/Repository.git', 'ssh://git@github.com/Owner/Repository.git'])('normalizes %s to one webpage identity and workspace default', (remote) => {

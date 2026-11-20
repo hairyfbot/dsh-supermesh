@@ -1,5 +1,5 @@
 import { defineHandler, getRouterParam, HTTPError } from 'h3'
-import { session } from '../../service/session'
+import { session } from '@/service/session'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id', { decode: true })

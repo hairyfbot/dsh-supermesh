@@ -1,11 +1,11 @@
 import type { MarkdownLabels } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactNode } from 'react'
-import type { EventRecord } from '../../model'
+import type { EventRecord } from '@/client/pages/trigger/model'
 import { Button, MarkdownText, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId, useMemo, useState } from 'react'
-import { useDshContext } from '../../../../hooks/use-dsh-context'
-import { useTranslation } from '../../../../hooks/use-translation'
-import { KINDS, sourceHref, STATUSES } from '../../model'
+import { useDshContext } from '@/client/hooks/use-dsh-context'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { KINDS, sourceHref, STATUSES } from '@/client/pages/trigger/model'
 
 export function Event({ event }: { event: EventRecord }): ReactNode {
   const ctx = useDshContext()

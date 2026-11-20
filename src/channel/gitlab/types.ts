@@ -12,25 +12,3 @@ export interface GitLabRequest {
 export interface GitLabRunner {
   request: (request: GitLabRequest) => Promise<unknown>
 }
-
-export interface ChannelItem {
-  id: string
-  kind: 'issue' | 'pull' | 'comment'
-  actor: string
-  body: string
-  url: string
-  createdAt: string
-  updatedAt: string
-}
-
-export interface ReadResult {
-  items: ChannelItem[]
-  next_offset: number | null
-  next_resource: string | null
-}
-
-export interface DeliveryResult {
-  ok: boolean
-  reason?: string
-  remoteId?: string
-}

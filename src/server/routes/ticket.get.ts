@@ -1,7 +1,7 @@
 import type { Selectable } from 'kysely'
-import type { DB } from '../../database/types'
+import type { DB } from '@/database/types'
 import { defineHandler, getQuery } from 'h3'
-import { db } from '../../database'
+import { db } from '@/database'
 
 export default defineHandler(async (event): Promise<{ data: Selectable<DB['ticket']>[], total: number, page: number, pageSize: number }> => {
   const query = getQuery<{ page?: string, pageSize?: string }>(event)

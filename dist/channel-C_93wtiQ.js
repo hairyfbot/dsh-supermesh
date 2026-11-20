@@ -6,22 +6,22 @@ import { NodeSqliteDialect } from "@fileshed/kysely-node-sqlite";
 import { Kysely } from "kysely";
 import { Migrator } from "kysely/migration";
 import { Model } from "kysely-model";
+import { execFile, spawn } from "node:child_process";
+import { createRouteDispatcher, proxyEnvironmentForChild } from "@deepseek-ai/dsh-http-proxy";
+import { credentialRef } from "@deepseek-ai/dsh-credentials";
+import { getServerContext, getServerOptions } from "dsh-h3/utils";
+import { defineWebServer } from "dsh-h3";
+import { HTTPError, defineHandler, getQuery, getRouterParam, readBody } from "h3";
 import { createStorage } from "unstorage";
 import fs from "unstorage/drivers/fs";
 import { homedir } from "node:os";
-import { execFile, spawn } from "node:child_process";
-import { credentialRef } from "@deepseek-ai/dsh-credentials";
-import { createRouteDispatcher, proxyEnvironmentForChild } from "@deepseek-ai/dsh-http-proxy";
-import { getServerContext, getServerOptions } from "dsh-h3/utils";
-import { fetch } from "undici";
-import { defineWebServer } from "dsh-h3";
-import { HTTPError, defineHandler, getQuery, getRouterParam, readBody } from "h3";
 import { ReasoningEffortId, createUserMessage } from "@deepseek-ai/dsh-llm";
 import { access, lstat, mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { Session, SessionId } from "@deepseek-ai/dsh-session";
 import { realpathNormalize } from "@deepseek-ai/dsh-workspace";
 import { StringDecoder } from "node:string_decoder";
 import { promisify, stripVTControlCharacters } from "node:util";
+import { fetch } from "undici";
 // src/database/migrations.ts
 /**
 * 由 `pnpm run prisma:migrate` 从 `prisma/migrations` 搬运，不要手改。
@@ -1527,69 +1527,47 @@ const { error } = await new Migrator({
 	provider: new MigrationProvider(database, migrations)
 }).migrateToLatest();
 if (error) throw error;
-// src/runtime/singlet.ts
-const pending = /* @__PURE__ */ new Map();
-/** 超过这个时长还占着 key 的，视为卡死：不再复用它的 Promise，改为重新执行。 */
-const STALE_MS = 12e4;
-function resolveKey(keyOrGen, args) {
-	return typeof keyOrGen === "function" ? keyOrGen(...args) : keyOrGen;
-}
-/**
-* 【单飞原语】同一 key 正在执行时复用同一个 Promise，不排队、不阻塞调用方。
-*
-* 超过 `STALE_MS` 仍未结束的记录判定为卡死并让位：新调用重新执行，
-* 而不是继续等一个可能永不 settle 的 Promise。原任务之后才结束时，
-* 它的 settle 不会误删新记录（按记录身份比对）。
-*
-* @param keyOrGen 静态 key 或按入参生成 key 的函数
-* @param fn 需要单飞保护的异步函数
-*
-* @example
-* export const worker = defineService({
-*   reconcile: singlet('worker:slots', async () => {
-*     await db.worker.listRunning()
-*   }),
-*   process: singlet(id => `worker:process:${id}`, async (id: string) => {
-*     await runFor(id)
-*   }),
-* })
-*/
-function singlet(keyOrGen, fn) {
-	return ((...args) => {
-		const key = resolveKey(keyOrGen, args);
-		const current = pending.get(key);
-		if (current && Date.now() - current.startedAt < 12e4) return current.promise;
-		const task = Promise.resolve().then(() => fn(...args));
-		const record = {
-			promise: task,
-			startedAt: Date.now(),
-			key
-		};
-		pending.set(key, record);
-		const settle = () => {
-			if (pending.get(key) === record) pending.delete(key);
-		};
-		task.then(settle, settle);
-		return task;
+// src/channel/_shared/proxy.ts
+async function channelProxyEnvironment(url, inherited) {
+	const env = { ...inherited };
+	const overlay = proxyEnvironmentForChild();
+	const explicit = Object.entries(inherited).some(([name, value]) => /^(?:https?|all)_proxy$/i.test(name) && Boolean(value?.trim()));
+	for (const [name, value] of Object.entries(overlay)) if (value === void 0) delete env[name];
+	else env[name] = value;
+	if (process.platform !== "win32" || explicit || Object.keys(overlay).length) return env;
+	const settings = await new Promise((resolve) => {
+		execFile("reg.exe", ["query", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings"], {
+			windowsHide: true,
+			timeout: 3e3,
+			maxBuffer: 65536
+		}, (error, stdout) => resolve(error ? "" : stdout));
 	});
+	if (!/^\s*ProxyEnable\s+REG_DWORD\s+0x0*1\s*$/im.test(settings)) return env;
+	if ((/^\s*ProxyOverride\s+REG_SZ\s+(\S.*)$/im.exec(settings)?.[1].trim())?.split(";").some((pattern) => bypasses(url.hostname, pattern.trim()))) return env;
+	const raw = /^\s*ProxyServer\s+REG_SZ\s+(\S.*)$/im.exec(settings)?.[1].trim();
+	if (!raw) return env;
+	const selected = raw.includes("=") ? raw.split(";").map((part) => part.trim()).find((part) => part.toLowerCase().startsWith(`${url.protocol.slice(0, -1)}=`))?.slice(url.protocol.length) : raw;
+	if (!selected) return env;
+	try {
+		const proxy = new URL(selected.includes("://") ? selected : `http://${selected}`);
+		if (!["http:", "https:"].includes(proxy.protocol) || !proxy.hostname || proxy.pathname !== "/" || proxy.search || proxy.hash) return env;
+		env.HTTP_PROXY = proxy.href;
+		env.HTTPS_PROXY = proxy.href;
+		delete env.http_proxy;
+		delete env.https_proxy;
+	} catch {}
+	return env;
 }
-singlet.busy = function busy(key) {
-	return key === void 0 ? pending.size > 0 : pending.has(key);
-};
-singlet.keys = function keys() {
-	return [...pending.keys()];
-};
-/** 卡住超过 `STALE_MS` 的 key 与已运行时长，用于排查采集或投递停摆。 */
-singlet.stale = function stale() {
-	const now = Date.now();
-	return [...pending.values()].map((record) => ({
-		key: record.key,
-		runningMs: now - record.startedAt
-	})).filter((record) => record.runningMs >= STALE_MS);
-};
-singlet.drain = async function drain() {
-	while (pending.size) await Promise.allSettled([...pending.values()].map((record) => record.promise));
-};
+function bypasses(hostname, pattern) {
+	if (!pattern) return false;
+	if (pattern.toLowerCase() === "<local>") return !hostname.includes(".") && !hostname.includes(":");
+	const escaped = pattern.replace(/[|\\{}()[\]^$+?.]/g, "\\$&").replaceAll("*", ".*");
+	return new RegExp(`^${escaped}$`, "i").test(hostname);
+}
+// src/server/routes/agent.model.catalog.get.ts
+var agent_model_catalog_get_default = defineHandler(async () => {
+	return getServerContext(server).sessionController.modelCatalog();
+});
 const DSH_PLUGIN_HOME = `${process.env.DSH_HOME ?? join(homedir(), ".dsh")}/.supermesh`;
 // src/storage/index.ts
 const storage = createStorage({ driver: fs({
@@ -1715,47 +1693,6 @@ function normalizeAdministrators(names) {
 	}
 	return [...unique.values()];
 }
-// src/channel/proxy.ts
-async function channelProxyEnvironment(url, inherited) {
-	const env = { ...inherited };
-	const overlay = proxyEnvironmentForChild();
-	const explicit = Object.entries(inherited).some(([name, value]) => /^(?:https?|all)_proxy$/i.test(name) && Boolean(value?.trim()));
-	for (const [name, value] of Object.entries(overlay)) if (value === void 0) delete env[name];
-	else env[name] = value;
-	if (process.platform !== "win32" || explicit || Object.keys(overlay).length) return env;
-	const settings = await new Promise((resolve) => {
-		execFile("reg.exe", ["query", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings"], {
-			windowsHide: true,
-			timeout: 3e3,
-			maxBuffer: 65536
-		}, (error, stdout) => resolve(error ? "" : stdout));
-	});
-	if (!/^\s*ProxyEnable\s+REG_DWORD\s+0x0*1\s*$/im.test(settings)) return env;
-	if ((/^\s*ProxyOverride\s+REG_SZ\s+(\S.*)$/im.exec(settings)?.[1].trim())?.split(";").some((pattern) => bypasses(url.hostname, pattern.trim()))) return env;
-	const raw = /^\s*ProxyServer\s+REG_SZ\s+(\S.*)$/im.exec(settings)?.[1].trim();
-	if (!raw) return env;
-	const selected = raw.includes("=") ? raw.split(";").map((part) => part.trim()).find((part) => part.toLowerCase().startsWith(`${url.protocol.slice(0, -1)}=`))?.slice(url.protocol.length) : raw;
-	if (!selected) return env;
-	try {
-		const proxy = new URL(selected.includes("://") ? selected : `http://${selected}`);
-		if (!["http:", "https:"].includes(proxy.protocol) || !proxy.hostname || proxy.pathname !== "/" || proxy.search || proxy.hash) return env;
-		env.HTTP_PROXY = proxy.href;
-		env.HTTPS_PROXY = proxy.href;
-		delete env.http_proxy;
-		delete env.https_proxy;
-	} catch {}
-	return env;
-}
-function bypasses(hostname, pattern) {
-	if (!pattern) return false;
-	if (pattern.toLowerCase() === "<local>") return !hostname.includes(".") && !hostname.includes(":");
-	const escaped = pattern.replace(/[|\\{}()[\]^$+?.]/g, "\\$&").replaceAll("*", ".*");
-	return new RegExp(`^${escaped}$`, "i").test(hostname);
-}
-// src/server/routes/agent.model.catalog.get.ts
-var agent_model_catalog_get_default = defineHandler(async () => {
-	return getServerContext(server).sessionController.modelCatalog();
-});
 // src/server/routes/agent.model.get.ts
 var agent_model_get_default = defineHandler(async () => (await setting.load()).models);
 // src/service/role-model.ts
@@ -1858,6 +1795,73 @@ var agent_model_patch_default = defineHandler(async (event) => {
 	};
 	return (await setting.save({ models })).models;
 });
+// src/runtime/singlet.ts
+const pending = /* @__PURE__ */ new Map();
+/** 超过这个时长还占着 key 的，视为卡死：不再复用它的 Promise，改为重新执行。 */
+const STALE_MS = 12e4;
+function resolveKey(keyOrGen, args) {
+	return typeof keyOrGen === "function" ? keyOrGen(...args) : keyOrGen;
+}
+/**
+* 【单飞原语】同一 key 正在执行时复用同一个 Promise，不排队、不阻塞调用方。
+*
+* 超过 `STALE_MS` 仍未结束的记录判定为卡死并让位：新调用重新执行，
+* 而不是继续等一个可能永不 settle 的 Promise。原任务之后才结束时，
+* 它的 settle 不会误删新记录（按记录身份比对）。
+*
+* @param keyOrGen 静态 key 或按入参生成 key 的函数
+* @param fn 需要单飞保护的异步函数
+*
+* @example
+* export const worker = defineService({
+*   reconcile: singlet('worker:slots', async () => {
+*     await db.worker.listRunning()
+*   }),
+*   process: singlet(id => `worker:process:${id}`, async (id: string) => {
+*     await runFor(id)
+*   }),
+* })
+*/
+function singlet(keyOrGen, fn) {
+	return ((...args) => {
+		const key = resolveKey(keyOrGen, args);
+		const current = pending.get(key);
+		if (current && Date.now() - current.startedAt < 12e4) return current.promise;
+		const task = Promise.resolve().then(() => fn(...args));
+		const record = {
+			promise: task,
+			startedAt: Date.now(),
+			key
+		};
+		pending.set(key, record);
+		const settle = () => {
+			if (pending.get(key) === record) pending.delete(key);
+		};
+		task.then(settle, settle);
+		return task;
+	});
+}
+/** 立即执行一次，等价于 `singlet(key, fn)(...args)`，省掉尾随的调用括号。 */
+singlet.immediate = function immediate(keyOrGen, fn, ...args) {
+	return singlet(keyOrGen, fn)(...args);
+};
+singlet.busy = function busy(key) {
+	return key === void 0 ? pending.size > 0 : pending.has(key);
+};
+singlet.keys = function keys() {
+	return [...pending.keys()];
+};
+/** 卡住超过 `STALE_MS` 的 key 与已运行时长，用于排查采集或投递停摆。 */
+singlet.stale = function stale() {
+	const now = Date.now();
+	return [...pending.values()].map((record) => ({
+		key: record.key,
+		runningMs: now - record.startedAt
+	})).filter((record) => record.runningMs >= STALE_MS);
+};
+singlet.drain = async function drain() {
+	while (pending.size) await Promise.allSettled([...pending.values()].map((record) => record.promise));
+};
 // src/service/session.ts
 const presets$1 = {
 	main: "orchestrator",
@@ -2591,11 +2595,11 @@ async function own(path, content, mode = 384) {
 function quote(value) {
 	return `'${value.replaceAll("'", "'\\''")}'`;
 }
-// src/service/channel-auth.ts
+// src/service/devops.ts
 const authentications = /* @__PURE__ */ new Map();
 const active = /* @__PURE__ */ new Map();
 const lifetime = 6e5;
-const channelAuth = defineService({
+const devops = defineService({
 	async start(channelId, host) {
 		if (channelId !== "github" && channelId !== "gitlab") throw new TypeError("channel_unsupported");
 		const origin = host !== void 0 ? site(channelId, host) : channelId === "github" ? "https://github.com" : void 0;
@@ -2616,7 +2620,7 @@ const channelAuth = defineService({
 			controller: new AbortController(),
 			done: Promise.resolve()
 		};
-		const dispose = getServerContext(server).effect(() => () => cancel(task), "supermesh:channel-auth");
+		const dispose = getServerContext(server).effect(() => () => cancel(task), "supermesh:devops");
 		authentications.set(task.view.id, task);
 		active.set(channelId, task);
 		task.done = Promise.resolve().then(() => authenticate(task)).finally(() => {
@@ -2638,8 +2642,120 @@ const channelAuth = defineService({
 	},
 	async cleanup() {
 		await Promise.all([...active.values()].map(cancel));
+	},
+	save(kind, patch) {
+		return channel.serialize(() => save(kind, patch)).then(async (view) => {
+			const { shell } = await import("./shell-6EeRyaxQ.js");
+			await shell.refresh();
+			return view;
+		});
+	},
+	removeCredentials(kind) {
+		return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
+			const { shell } = await import("./shell-6EeRyaxQ.js");
+			await shell.refresh();
+			return view;
+		});
 	}
 });
+async function removeCredentials(kind) {
+	if (kind !== "github" && kind !== "gitlab") throw new TypeError("channel_unsupported");
+	const previous = await channel.clearCredential(kind);
+	try {
+		await db.channel.removeCredentials(kind);
+	} catch {
+		if (previous) await channel.storeCredential(kind, previous);
+		throw new Error("channel_credentials_delete_failed");
+	}
+	return (await channel.list()).find((item) => item.kind === kind);
+}
+async function save(kind, patch) {
+	if (kind !== "github" && kind !== "gitlab") throw new TypeError("channel_unsupported");
+	if (!patch || typeof patch !== "object" || Array.isArray(patch) || Object.keys(patch).some((key) => ![
+		"host",
+		"enabled",
+		"commitName",
+		"commitEmail",
+		"token"
+	].includes(key)) || patch.enabled !== void 0 && typeof patch.enabled !== "boolean" || [
+		"host",
+		"commitName",
+		"commitEmail",
+		"token"
+	].some((key) => patch[key] !== void 0 && typeof patch[key] !== "string")) throw new TypeError("invalid_channel_config");
+	if (patch.token !== void 0 && (!patch.token.trim() || patch.token.length > 8192 || /[\r\n]/.test(patch.token))) throw new TypeError("invalid_channel_token");
+	if ((patch.commitName?.length ?? 0) > 200 || (patch.commitEmail?.length ?? 0) > 254 || /[\r\n]/.test((patch.commitName ?? "") + (patch.commitEmail ?? "")) || patch.commitEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(patch.commitEmail.trim())) throw new TypeError("invalid_commit_identity");
+	const current = (await channel.list()).find((item) => item.kind === kind);
+	let url;
+	try {
+		url = new URL(patch.host ?? current.host ?? (kind === "github" ? "https://github.com" : "https://gitlab.com"));
+	} catch {
+		throw new TypeError("invalid_channel_host");
+	}
+	if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.pathname !== "/" || kind === "github" && url.origin !== "https://github.com") throw new TypeError("invalid_channel_host");
+	const hostChanged = kind === "gitlab" && url.origin !== new URL(current.host ?? "https://gitlab.com").origin;
+	const token = patch.token?.trim();
+	let account;
+	if (hostChanged && (current.hasCredential || current.accounts.length > 0) && !token) throw new TypeError("channel_account_required");
+	if (token) account = await verify(kind, url, token);
+	const enabled = patch.enabled ?? (Boolean(account) || current.enabled);
+	if (enabled && !account && !current.accounts.some((account) => account.role === "bot" && account.status === "online")) throw new TypeError("channel_account_required");
+	const previous = token ? await channel.storeCredential(kind, token) : void 0;
+	try {
+		await db.channel.saveConfiguration(kind, current.name, kind === "gitlab" ? url.origin : null, enabled, {
+			commitName: patch.commitName?.trim() ?? current.commitName,
+			commitEmail: patch.commitEmail?.trim() ?? current.commitEmail
+		}, account, ...hostChanged ? [true] : []);
+	} catch {
+		if (token) {
+			if (previous) await channel.storeCredential(kind, previous);
+			else await channel.clearCredential(kind);
+		}
+		throw new Error("channel_save_failed");
+	}
+	return (await channel.list()).find((item) => item.kind === kind);
+}
+async function verify(kind, url, token) {
+	const endpoint = kind === "github" ? "https://api.github.com/user" : `${url.origin}/api/v4/user`;
+	const env = await channelProxyEnvironment(new URL(endpoint), process.env);
+	const dispatcher = await createRouteDispatcher({ get: (name) => env[name] === void 0 ? void 0 : { value: env[name] } }, { allowH2: false });
+	try {
+		let response;
+		try {
+			response = await fetch(endpoint, {
+				dispatcher,
+				headers: {
+					authorization: `Bearer ${token}`,
+					accept: kind === "github" ? "application/vnd.github+json" : "application/json"
+				},
+				signal: AbortSignal.timeout(15e3),
+				redirect: "error"
+			});
+		} catch {
+			throw new Error("channel_verification_failed");
+		}
+		if (!response.ok) {
+			await response.body?.cancel();
+			throw new Error("channel_auth_failed");
+		}
+		let identity;
+		try {
+			identity = await response.json();
+		} catch {
+			throw new Error("channel_auth_failed");
+		}
+		if (!identity || typeof identity !== "object" || Array.isArray(identity)) throw new Error("channel_auth_failed");
+		const user = identity;
+		const login = kind === "github" ? user.login : user.username ?? user.name;
+		if (typeof login !== "string" || !login.trim() || login.length > 200 || /[\r\n]/.test(login)) throw new Error("channel_auth_failed");
+		return {
+			name: login.trim(),
+			avatar: null
+		};
+	} finally {
+		await dispatcher.close();
+	}
+}
 function snapshot(task) {
 	return {
 		...task.view,
@@ -2717,7 +2833,7 @@ async function authenticate(task) {
 		], env, false)).trim();
 		if (!token || token.length > 8192 || /[\r\n]/.test(token)) throw new Error("channel_auth_token_failed");
 		task.controller.signal.throwIfAborted();
-		const account = (await channel.save(task.view.channelId, {
+		const account = (await devops.save(task.view.channelId, {
 			token,
 			...task.view.channelId === "gitlab" ? { host: task.origin } : {}
 		})).accounts.find((account) => account.role === "bot");
@@ -2874,7 +2990,7 @@ var channel__id__authentication__authenticationId__get_default = defineHandler((
 		status: 400,
 		message: "invalid_authentication"
 	});
-	const authentication = channelAuth.lookup(id, authenticationId);
+	const authentication = devops.lookup(id, authenticationId);
 	if (!authentication) throw new HTTPError({
 		status: 404,
 		message: "channel_auth_not_found"
@@ -2894,7 +3010,7 @@ var channel__id__authentication_post_default = defineHandler(async (event) => {
 		message: "invalid_authentication"
 	});
 	try {
-		return await channelAuth.start(id, body?.host);
+		return await devops.start(id, body?.host);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "";
 		if (message === "channel_unsupported" || message === "invalid_channel_host") throw new HTTPError({
@@ -2920,7 +3036,7 @@ var channel__id__configuration_put_default = defineHandler(async (event) => {
 		message: "invalid_channel_config"
 	});
 	try {
-		return { channel: await channel.save(id, body) };
+		return { channel: await devops.save(id, body) };
 	} catch (error) {
 		const message = error instanceof Error && [
 			"channel_unsupported",
@@ -2948,8 +3064,8 @@ var channel__id__credential_delete_default = defineHandler(async (event) => {
 		message: "channel_unsupported"
 	});
 	try {
-		await channelAuth.cancel(id);
-		return { channel: await channel.removeCredentials(id) };
+		await devops.cancel(id);
+		return { channel: await devops.removeCredentials(id) };
 	} catch (error) {
 		const unsupported = error instanceof TypeError && error.message === "channel_unsupported";
 		throw new HTTPError({
@@ -4194,34 +4310,6 @@ var ticket__id__patch_default = defineHandler(async (event) => {
 	});
 	return updated;
 });
-// src/server/routes/ticket.current.get.ts
-var ticket_current_get_default = defineHandler(async () => {
-	const [runningWorkers, queuedWorkers, openTickets] = await Promise.all([
-		db.worker.listRunning(),
-		db.worker.listQueued(),
-		db.ticket.listOpen()
-	]);
-	const runningTicketIds = new Set(runningWorkers.map((worker) => worker.ticketId));
-	const activeWorkers = [...new Map([...queuedWorkers, ...runningWorkers].map((worker) => [worker.id, worker])).values()];
-	const ticketMap = new Map(openTickets.map((ticket) => [ticket.id, ticket]));
-	for (const ticket of await Promise.all([...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id)).map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
-	return [...ticketMap.values()].filter((ticket) => ![
-		"closed",
-		"done",
-		"cancelled"
-	].includes(ticket.status) || runningTicketIds.has(ticket.id));
-});
-// src/server/routes/ticket.get.ts
-var ticket_get_default = defineHandler(async (event) => {
-	const query = getQuery(event);
-	const page = Math.max(1, Number(query.page) || 1);
-	const pageSize = Math.max(1, Math.min(100, Number(query.pageSize) || 8));
-	return {
-		...await db.ticket.findManyPage(page, pageSize),
-		page,
-		pageSize
-	};
-});
 // src/server/routes/ticket.count.get.ts
 /** 任务卡片的统计：全量计数，不受分页与列表取数上限影响。 */
 var ticket_count_get_default = defineHandler(async () => {
@@ -4248,6 +4336,34 @@ var ticket_count_get_default = defineHandler(async () => {
 		inProgress,
 		completed,
 		blocked
+	};
+});
+// src/server/routes/ticket.current.get.ts
+var ticket_current_get_default = defineHandler(async () => {
+	const [runningWorkers, queuedWorkers, openTickets] = await Promise.all([
+		db.worker.listRunning(),
+		db.worker.listQueued(),
+		db.ticket.listOpen()
+	]);
+	const runningTicketIds = new Set(runningWorkers.map((worker) => worker.ticketId));
+	const activeWorkers = [...new Map([...queuedWorkers, ...runningWorkers].map((worker) => [worker.id, worker])).values()];
+	const ticketMap = new Map(openTickets.map((ticket) => [ticket.id, ticket]));
+	for (const ticket of await Promise.all([...new Set(activeWorkers.map((worker) => worker.ticketId))].filter((id) => !ticketMap.has(id)).map((id) => db.ticket.findById(id)))) if (ticket) ticketMap.set(ticket.id, ticket);
+	return [...ticketMap.values()].filter((ticket) => ![
+		"closed",
+		"done",
+		"cancelled"
+	].includes(ticket.status) || runningTicketIds.has(ticket.id));
+});
+// src/server/routes/ticket.get.ts
+var ticket_get_default = defineHandler(async (event) => {
+	const query = getQuery(event);
+	const page = Math.max(1, Number(query.page) || 1);
+	const pageSize = Math.max(1, Math.min(100, Number(query.pageSize) || 8));
+	return {
+		...await db.ticket.findManyPage(page, pageSize),
+		page,
+		pageSize
 	};
 });
 // src/service/topic.ts
@@ -4515,18 +4631,21 @@ const channel = defineService({
 			};
 		}));
 	},
+	serialize(action) {
+		const operation = writing.then(action);
+		writing = operation.then(() => void 0, () => void 0);
+		return operation;
+	},
 	connection(kind) {
-		const operation = writing.then(async () => {
+		return channel.serialize(async () => {
 			const row = await db.channel.findById(kind);
-			const token = kind === "feishu" ? void 0 : await this.resolveCredential(kind);
+			const token = kind === "feishu" ? void 0 : await channel.resolveCredential(kind);
 			return Object.freeze({
 				host: row?.host ?? (kind === "gitlab" ? "https://gitlab.com" : null),
 				token,
 				enabled: kind !== "feishu" && Boolean(row?.enabled)
 			});
 		});
-		writing = operation.then(() => void 0, () => void 0);
-		return operation;
 	},
 	async resolveCredential(kind) {
 		if (kind === "feishu") return void 0;
@@ -4534,23 +4653,15 @@ const channel = defineService({
 		if (stored?.value?.trim()) return stored.value;
 		return (await credentials().resolve(legacyRef(kind)))?.value;
 	},
-	removeCredentials(kind) {
-		const operation = writing.then(() => removeCredentials(kind));
-		writing = operation.catch(() => void 0);
-		return operation.then(async (view) => {
-			const { shell } = await import("./shell-D9yQOiti.js");
-			await shell.refresh();
-			return view;
-		});
+	async storeCredential(kind, token) {
+		const previous = await credentials().resolve(ref(kind));
+		await credentials().set(ref(kind), token);
+		return previous?.value;
 	},
-	save(kind, patch) {
-		const operation = writing.then(() => save(kind, patch));
-		writing = operation.catch(() => void 0);
-		return operation.then(async (view) => {
-			const { shell } = await import("./shell-D9yQOiti.js");
-			await shell.refresh();
-			return view;
-		});
+	async clearCredential(kind) {
+		const previous = await credentials().resolve(ref(kind));
+		await credentials().unset(ref(kind));
+		return previous?.value;
 	}
 });
 function credentials() {
@@ -4574,103 +4685,4 @@ function readMetadata(raw) {
 		commitEmail: value.commitEmail
 	};
 }
-async function removeCredentials(kind) {
-	if (kind !== "github" && kind !== "gitlab") throw new TypeError("channel_unsupported");
-	const previous = await credentials().resolve(ref(kind));
-	await credentials().unset(ref(kind));
-	try {
-		await db.channel.removeCredentials(kind);
-	} catch {
-		if (previous) await credentials().set(ref(kind), previous.value);
-		throw new Error("channel_credentials_delete_failed");
-	}
-	return (await channel.list()).find((item) => item.kind === kind);
-}
-async function save(kind, patch) {
-	if (kind !== "github" && kind !== "gitlab") throw new TypeError("channel_unsupported");
-	if (!patch || typeof patch !== "object" || Array.isArray(patch) || Object.keys(patch).some((key) => ![
-		"host",
-		"enabled",
-		"commitName",
-		"commitEmail",
-		"token"
-	].includes(key)) || patch.enabled !== void 0 && typeof patch.enabled !== "boolean" || [
-		"host",
-		"commitName",
-		"commitEmail",
-		"token"
-	].some((key) => patch[key] !== void 0 && typeof patch[key] !== "string")) throw new TypeError("invalid_channel_config");
-	if (patch.token !== void 0 && (!patch.token.trim() || patch.token.length > 8192 || /[\r\n]/.test(patch.token))) throw new TypeError("invalid_channel_token");
-	if ((patch.commitName?.length ?? 0) > 200 || (patch.commitEmail?.length ?? 0) > 254 || /[\r\n]/.test((patch.commitName ?? "") + (patch.commitEmail ?? "")) || patch.commitEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(patch.commitEmail.trim())) throw new TypeError("invalid_commit_identity");
-	const current = (await channel.list()).find((item) => item.kind === kind);
-	let url;
-	try {
-		url = new URL(patch.host ?? current.host ?? (kind === "github" ? "https://github.com" : "https://gitlab.com"));
-	} catch {
-		throw new TypeError("invalid_channel_host");
-	}
-	if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || url.pathname !== "/" || kind === "github" && url.origin !== "https://github.com") throw new TypeError("invalid_channel_host");
-	const hostChanged = kind === "gitlab" && url.origin !== new URL(current.host ?? "https://gitlab.com").origin;
-	const token = patch.token?.trim();
-	let account;
-	if (hostChanged && (current.hasCredential || current.accounts.length > 0) && !token) throw new TypeError("channel_account_required");
-	if (token) {
-		const endpoint = kind === "github" ? "https://api.github.com/user" : `${url.origin}/api/v4/user`;
-		const env = await channelProxyEnvironment(new URL(endpoint), process.env);
-		const dispatcher = await createRouteDispatcher({ get: (name) => env[name] === void 0 ? void 0 : { value: env[name] } }, { allowH2: false });
-		try {
-			let response;
-			try {
-				response = await fetch(endpoint, {
-					dispatcher,
-					headers: {
-						authorization: `Bearer ${token}`,
-						accept: kind === "github" ? "application/vnd.github+json" : "application/json"
-					},
-					signal: AbortSignal.timeout(15e3),
-					redirect: "error"
-				});
-			} catch {
-				throw new Error("channel_verification_failed");
-			}
-			if (!response.ok) {
-				await response.body?.cancel();
-				throw new Error("channel_auth_failed");
-			}
-			let identity;
-			try {
-				identity = await response.json();
-			} catch {
-				throw new Error("channel_auth_failed");
-			}
-			if (!identity || typeof identity !== "object" || Array.isArray(identity)) throw new Error("channel_auth_failed");
-			const user = identity;
-			const login = kind === "github" ? user.login : user.username ?? user.name;
-			if (typeof login !== "string" || !login.trim() || login.length > 200 || /[\r\n]/.test(login)) throw new Error("channel_auth_failed");
-			account = {
-				name: login.trim(),
-				avatar: null
-			};
-		} finally {
-			await dispatcher.close();
-		}
-	}
-	const enabled = patch.enabled ?? (Boolean(account) || current.enabled);
-	if (enabled && !account && !current.accounts.some((account) => account.role === "bot" && account.status === "online")) throw new TypeError("channel_account_required");
-	const previous = token ? await credentials().resolve(ref(kind)) : void 0;
-	if (token) await credentials().set(ref(kind), token);
-	try {
-		await db.channel.saveConfiguration(kind, current.name, kind === "gitlab" ? url.origin : null, enabled, {
-			commitName: patch.commitName?.trim() ?? current.commitName,
-			commitEmail: patch.commitEmail?.trim() ?? current.commitEmail
-		}, account, ...hostChanged ? [true] : []);
-	} catch {
-		if (token) {
-			if (previous) await credentials().set(ref(kind), previous.value);
-			else await credentials().unset(ref(kind));
-		}
-		throw new Error("channel_save_failed");
-	}
-	return (await channel.list()).find((item) => item.kind === kind);
-}
-export { project as a, shell as c, channelProxyEnvironment as d, setting as f, db as g, singlet as h, archive as i, inbox as l, DSH_PLUGIN_HOME as m, server as n, worktree as o, defineService as p, worker as r, channelAuth as s, channel as t, session as u };
+export { project as a, shell as c, singlet as d, setting as f, db as g, channelProxyEnvironment as h, archive as i, inbox as l, DSH_PLUGIN_HOME as m, server as n, worktree as o, defineService as p, worker as r, devops as s, channel as t, session as u };

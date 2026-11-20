@@ -1,4 +1,4 @@
-import type { RoleModels } from './role-model.types'
+import type { RoleModels } from '@/service/role-model.types'
 
 export interface Settings {
   models: RoleModels

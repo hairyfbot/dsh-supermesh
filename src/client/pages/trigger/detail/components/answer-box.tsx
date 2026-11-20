@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getApiSupermeshPending, postApiSupermeshAskIdAnswer } from '../../../../apis'
-import { keys } from '../../../../config/query-keys'
+import { getApiSupermeshPending, postApiSupermeshAskIdAnswer } from '@/client/apis'
+import { keys } from '@/client/config/query-keys'
 
 /**
  * 话题详情里的回答区：只在本话题确有 pending 的 ask 时出现。

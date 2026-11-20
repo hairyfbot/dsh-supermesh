@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { afterEach, describe, expect, it } from 'vitest'
-import { migrations } from '../src/database/migrations'
-import { MigrationProvider } from '../src/database/utils/migration'
+import { migrations } from '@/database/migrations'
+import { MigrationProvider } from '@/database/utils/migration'
 
 const databases: DatabaseSync[] = []
 

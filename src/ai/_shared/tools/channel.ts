@@ -1,63 +1,9 @@
-import { createHash } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { github } from '../../../channel/github/channel'
-import { gitlab } from '../../../channel/gitlab/channel'
-import { db } from '../../../database'
-import { session } from '../../../service/session'
-
-/**
- * 渠道观测策略：回复前必须先读过那条话题。
- *
- * 照官方 `dsh-fs-observation-policy` 的结构：按 owner（这里是会话对象，弱引用，
- * 会话回收时状态自动释放）持有每个话题的观测记录；写入前校验，未见即拒绝并给出错误码。
- * 目的是让 Agent 先看清渠道现状再决定要不要说话，避免重复发言。
- */
-interface Observation {
-  /** 读到的最后一条消息 id，用作「读的是哪一版」的依据。 */
-  version: string
-}
-
-const observed = new WeakMap<object, Map<string, Observation>>()
-
-function owner(exec: { agent?: { session?: object } }): object | undefined {
-  return exec.agent?.session
-}
-
-function observe(exec: { agent?: { session?: object } }, threadId: string, version: string): void {
-  const holder = owner(exec)
-  if (!holder)
-    return
-  let byTarget = observed.get(holder)
-  if (!byTarget) {
-    byTarget = new Map()
-    observed.set(holder, byTarget)
-  }
-  byTarget.set(threadId, { version })
-}
-
-/** 与官方 `requirePresent` 同义：没读过就抛出带错误码的拒绝。 */
-function requireObserved(exec: { agent?: { session?: object } }, threadId: string, verb: string): Observation {
-  const holder = owner(exec)
-  const prior = holder ? observed.get(holder)?.get(threadId) : undefined
-  if (!prior) {
-    const error = new Error(`${verb} 需要先读过这个话题：调用 read_channel，resource 用 thread/<id> 或 trigger/<triggerId>`)
-    error.name = 'ChannelNotObserved'
-    throw error
-  }
-  return prior
-}
-
-/** 话题的最新消息 id，用于判定「读的是哪一版」。 */
-async function latestVersion(threadId: string): Promise<string> {
-  const triggers = await db.trigger.listRecent(1000)
-  const latest = triggers.filter(item => item.threadId === threadId).sort((a, b) => b.at.localeCompare(a.at))[0]
-  return latest?.id ?? 'empty'
-}
-
-/** 记下「这个会话读过这个话题」，并把读到的那一版留下来。 */
-async function markThread(exec: { agent?: { session?: object } }, threadId: string): Promise<void> {
-  observe(exec, threadId, await latestVersion(threadId))
-}
+import { isThreadId, markThread, replyKey, requireObserved } from '@/ai/_shared/tools/channel.utils'
+import { github } from '@/channel/github/channel'
+import { gitlab } from '@/channel/gitlab/channel'
+import { db } from '@/database'
+import { session } from '@/service/session'
 
 export const read_channel = defineTool({
   name: 'read_channel',
@@ -139,23 +85,19 @@ export const read_channel = defineTool({
         }
         catch { return false }
       })()
-      const isGitLab = !isGitHub && await gitlab.canRead(resource)
+      const isGitLab = !isGitHub && await gitlab.readable(resource)
       if (!isGitHub && !isGitLab)
         throw new Error('不支持的渠道资源')
-      const target = isGitLab ? await gitlab.canonicalResource(resource) : resource
+      const adapter = isGitLab ? gitlab : github
+      const target = await adapter.normalize(resource)
       if (identity.role === 'worker') {
         const threads = await Promise.all(links.map(link => db.thread.findById(link.threadId)))
         let allowed = false
         for (const thread of threads) {
           if (!thread?.url || thread.channelId !== (isGitLab ? 'gitlab' : 'github') || (identity.projectId && thread.projectId && thread.projectId !== identity.projectId))
             continue
-          if (isGitLab) {
-            if (await gitlab.canRead(thread.url) && await gitlab.canonicalResource(thread.url) === target)
-              allowed = true
-          }
-          else if (canonicalGitHub(thread.url) === canonicalGitHub(resource)) {
+          if (await adapter.readable(thread.url) && await adapter.normalize(thread.url) === target)
             allowed = true
-          }
         }
         if (!allowed)
           throw new Error('Worker 只能读取本任务来源')
@@ -167,7 +109,7 @@ export const read_channel = defineTool({
           await markThread(exec, matched.id)
       }
       catch {}
-      return JSON.stringify(isGitLab ? await gitlab.read(target, offset, limit) : await github.read(resource, offset, limit))
+      return JSON.stringify(await adapter.read(target, offset, limit))
     }
     const page = items.slice(offset, offset + limit)
     return JSON.stringify({ items: page, next_offset: offset + page.length < items.length ? offset + page.length : null, next_resource: nextResource })
@@ -222,26 +164,21 @@ export const reply_channel = defineTool({
     if (said.some(message => message.triggerId === trigger.id && message.origin !== identity.role))
       return JSON.stringify({ status: 'suppressed', reason: 'another_role_already_replied' })
     const ticketId = identity.ticketId ?? null
-    const row = await db.inbox.enqueue({ id: replyKey(trigger.id, args.text), type: 'user', origin: identity.role, kind: 'notice', projectId: identity.projectId ?? thread.projectId, supervisorId: identity.supervisorId ?? null, workerId: identity.workerId ?? null, triggerId: trigger.id, threadId: thread.id, ticketId, message: args.text })
+
+    const row = await db.inbox.enqueue({
+      id: replyKey(trigger.id, args.text),
+      type: 'user',
+      origin: identity.role,
+      kind: 'notice',
+      projectId: identity.projectId ?? thread.projectId,
+      supervisorId: identity.supervisorId ?? null,
+      workerId: identity.workerId ?? null,
+      triggerId: trigger.id,
+      threadId: thread.id,
+      ticketId,
+      message: args.text,
+    })
+
     return JSON.stringify({ id: row.id, status: 'queued' })
   },
 })
-
-/** 同一条触发 + 同一正文只入队一次，与官方 `key('reply', triggerId, text)` 同义。 */
-function replyKey(triggerId: string, body: string): string {
-  return `reply:${createHash('sha256').update(JSON.stringify([triggerId, body])).digest('hex').slice(0, 32)}`
-}
-
-async function isThreadId(value: string): Promise<boolean> {
-  if (!/^[\w-]+:[\w./-]+$/.test(value))
-    return false
-  return Boolean(await db.thread.findById(value))
-}
-
-function canonicalGitHub(value: string): string {
-  const match = /^github:([^:]+):(issue|pull):([1-9]\d*)$/.exec(value)
-  if (match)
-    return `https://github.com/${match[1]}/${match[2] === 'issue' ? 'issues' : 'pull'}/${match[3]}`
-  const url = new URL(value)
-  return url.origin + url.pathname.replace(/\/$/, '')
-}

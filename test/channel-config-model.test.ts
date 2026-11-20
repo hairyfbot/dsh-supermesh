@@ -1,12 +1,12 @@
-import type { DB } from '../src/database/types'
+import type { DB } from '@/database/types'
 import { DatabaseSync } from 'node:sqlite'
 import { NodeSqliteDialect } from '@fileshed/kysely-node-sqlite'
 import { Kysely } from 'kysely'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { migrations } from '../src/database/migrations'
-import { Channel } from '../src/database/models/channel'
-import { ChannelAccount } from '../src/database/models/channel-account'
-import { SourceState } from '../src/database/models/source-state'
+import { migrations } from '@/database/migrations'
+import { Channel } from '@/database/models/channel'
+import { ChannelAccount } from '@/database/models/channel-account'
+import { SourceState } from '@/database/models/source-state'
 
 let native: DatabaseSync
 let connection: Kysely<DB>

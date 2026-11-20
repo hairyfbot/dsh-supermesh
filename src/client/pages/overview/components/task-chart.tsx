@@ -1,8 +1,8 @@
 import type { } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { ReactNode } from 'react'
-import type { OverviewTaskSegment } from '../../../types'
+import type { OverviewTaskSegment } from '@/client/types'
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts'
-import { useTranslation } from '../../../hooks/use-translation'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export function TaskChart({ segments }: { segments: OverviewTaskSegment[] }): ReactNode {
   const { t } = useTranslation()

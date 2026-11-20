@@ -1,5 +1,5 @@
 import { defineHandler, getRouterParam, HTTPError } from 'h3'
-import { db } from '../../database'
+import { db } from '@/database'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id', { decode: true })

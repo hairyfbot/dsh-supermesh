@@ -7,13 +7,13 @@ import type { } from '@deepseek-ai/dsh-session'
 import type { } from '@deepseek-ai/dsh-session-query'
 import type { } from '@deepseek-ai/dsh-workspace'
 
-import { agents } from './ai'
-import { handleAgentCreated } from './events/agent-created'
-import { handleSessionEvent } from './events/session-event'
-import { server } from './server'
-import { runtime } from './service/runtime'
-import { session } from './service/session'
-import { skill } from './service/skill'
+import { agents } from '@/ai'
+import { handleAgentCreated } from '@/events/agent-created'
+import { handleSessionEvent } from '@/events/session-event'
+import { server } from '@/server'
+import { runtime } from '@/service/runtime'
+import { session } from '@/service/session'
+import { skill } from '@/service/skill'
 
 export const inject = ['agents', 'agentPresets', 'sessionController', 'workspaceRegistry', 'sessionQuery', 'credentials', 'connection', 'webServer', 'worktrees']
 

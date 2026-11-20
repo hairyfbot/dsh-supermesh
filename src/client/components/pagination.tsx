@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useTranslation } from '../hooks/use-translation'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 export interface PaginationProps {
   page: number

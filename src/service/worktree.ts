@@ -6,10 +6,10 @@ import { dirname, isAbsolute, join, resolve } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 import { getServerContext } from 'dsh-h3/utils'
-import { singlet } from '../runtime/singlet'
-import { server } from '../server'
-import { parseRepositoryRemote } from '../utils/repository'
-import { defineService } from '../utils/service'
+import { singlet } from '@/runtime/singlet'
+import { server } from '@/server'
+import { parseRepositoryRemote } from '@/utils/repository'
+import { defineService } from '@/utils/service'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

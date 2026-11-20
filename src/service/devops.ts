@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Buffer } from 'node:buffer'
-import type { ChannelAuthentication } from './channel-auth.types'
+import type { ChannelConfiguration, ChannelView } from '@/service/channel.types'
+import type { ChannelAuthentication } from '@/service/devops.types'
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
@@ -8,13 +9,16 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { StringDecoder } from 'node:string_decoder'
 import { stripVTControlCharacters } from 'node:util'
+import { createRouteDispatcher } from '@deepseek-ai/dsh-http-proxy'
 import { getServerContext } from 'dsh-h3/utils'
-import { channelProxyEnvironment } from '../channel/proxy'
-import { DSH_PLUGIN_HOME } from '../config/paths'
-import { server } from '../server'
-import { defineService } from '../utils/service'
-import { channel } from './channel'
-import { shell } from './shell'
+import { fetch } from 'undici'
+import { channelProxyEnvironment } from '@/channel/_shared/proxy'
+import { DSH_PLUGIN_HOME } from '@/config/paths'
+import { db } from '@/database'
+import { server } from '@/server'
+import { channel } from '@/service/channel'
+import { shell } from '@/service/shell'
+import { defineService } from '@/utils/service'
 
 interface Authentication {
   view: ChannelAuthentication
@@ -29,7 +33,7 @@ const authentications = new Map<string, Authentication>()
 const active = new Map<string, Authentication>()
 const lifetime = 10 * 60 * 1000
 
-export const channelAuth = defineService({
+export const devops = defineService({
   async start(channelId: string, host?: string): Promise<ChannelAuthentication> {
     if (channelId !== 'github' && channelId !== 'gitlab')
       throw new TypeError('channel_unsupported')
@@ -48,7 +52,7 @@ export const channelAuth = defineService({
       done: Promise.resolve(),
     }
     const ctx = getServerContext<Context>(server)
-    const dispose = ctx.effect(() => () => cancel(task), 'supermesh:channel-auth')
+    const dispose = ctx.effect(() => () => cancel(task), 'supermesh:devops')
     authentications.set(task.view.id, task)
     active.set(channelId, task)
     task.done = Promise.resolve().then(() => authenticate(task)).finally(() => {
@@ -73,7 +77,117 @@ export const channelAuth = defineService({
   async cleanup(): Promise<void> {
     await Promise.all([...active.values()].map(cancel))
   },
+  save(kind: string, patch: ChannelConfiguration): Promise<ChannelView> {
+    return channel.serialize(() => save(kind, patch)).then(async (view) => {
+      const { shell } = await import('@/service/shell')
+      await shell.refresh()
+      return view
+    })
+  },
+  removeCredentials(kind: string): Promise<ChannelView> {
+    return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
+      const { shell } = await import('@/service/shell')
+      await shell.refresh()
+      return view
+    })
+  },
 })
+
+async function removeCredentials(kind: string): Promise<ChannelView> {
+  if (kind !== 'github' && kind !== 'gitlab')
+    throw new TypeError('channel_unsupported')
+  const previous = await channel.clearCredential(kind)
+  try {
+    await db.channel.removeCredentials(kind)
+  }
+  catch {
+    if (previous)
+      await channel.storeCredential(kind, previous)
+    throw new Error('channel_credentials_delete_failed')
+  }
+  return (await channel.list()).find(item => item.kind === kind)!
+}
+
+async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelView> {
+  if (kind !== 'github' && kind !== 'gitlab')
+    throw new TypeError('channel_unsupported')
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch) || Object.keys(patch).some(key => !['host', 'enabled', 'commitName', 'commitEmail', 'token'].includes(key)) || (patch.enabled !== undefined && typeof patch.enabled !== 'boolean') || ['host', 'commitName', 'commitEmail', 'token'].some(key => patch[key as keyof ChannelConfiguration] !== undefined && typeof patch[key as keyof ChannelConfiguration] !== 'string'))
+    throw new TypeError('invalid_channel_config')
+  if (patch.token !== undefined && (!patch.token.trim() || patch.token.length > 8192 || /[\r\n]/.test(patch.token)))
+    throw new TypeError('invalid_channel_token')
+  if ((patch.commitName?.length ?? 0) > 200 || (patch.commitEmail?.length ?? 0) > 254 || /[\r\n]/.test((patch.commitName ?? '') + (patch.commitEmail ?? '')) || (patch.commitEmail && !/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(patch.commitEmail.trim())))
+    throw new TypeError('invalid_commit_identity')
+  const current = (await channel.list()).find(item => item.kind === kind)!
+  let url: URL
+  try {
+    url = new URL(patch.host ?? current.host ?? (kind === 'github' ? 'https://github.com' : 'https://gitlab.com'))
+  }
+  catch {
+    throw new TypeError('invalid_channel_host')
+  }
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/' || (kind === 'github' && url.origin !== 'https://github.com'))
+    throw new TypeError('invalid_channel_host')
+  const hostChanged = kind === 'gitlab' && url.origin !== new URL(current.host ?? 'https://gitlab.com').origin
+  const token = patch.token?.trim()
+  let account: { name: string, avatar: string | null } | undefined
+  if (hostChanged && (current.hasCredential || current.accounts.length > 0) && !token)
+    throw new TypeError('channel_account_required')
+  if (token)
+    account = await verify(kind, url, token)
+  const enabled = patch.enabled ?? (Boolean(account) || current.enabled)
+  if (enabled && !account && !current.accounts.some(account => account.role === 'bot' && account.status === 'online'))
+    throw new TypeError('channel_account_required')
+  const previous = token ? await channel.storeCredential(kind, token) : undefined
+  try {
+    await db.channel.saveConfiguration(kind, current.name, kind === 'gitlab' ? url.origin : null, enabled, { commitName: patch.commitName?.trim() ?? current.commitName, commitEmail: patch.commitEmail?.trim() ?? current.commitEmail }, account, ...(hostChanged ? [true] as const : []))
+  }
+  catch {
+    if (token) {
+      if (previous)
+        await channel.storeCredential(kind, previous)
+      else
+        await channel.clearCredential(kind)
+    }
+    throw new Error('channel_save_failed')
+  }
+  return (await channel.list()).find(item => item.kind === kind)!
+}
+
+async function verify(kind: 'github' | 'gitlab', url: URL, token: string): Promise<{ name: string, avatar: string | null }> {
+  const endpoint = kind === 'github' ? 'https://api.github.com/user' : `${url.origin}/api/v4/user`
+  const env = await channelProxyEnvironment(new URL(endpoint), process.env)
+  const dispatcher = await createRouteDispatcher({ get: name => env[name] === undefined ? undefined : { value: env[name] } }, { allowH2: false })
+  try {
+    let response: Awaited<ReturnType<typeof fetch>>
+    try {
+      response = await fetch(endpoint, { dispatcher, headers: { authorization: `Bearer ${token}`, accept: kind === 'github' ? 'application/vnd.github+json' : 'application/json' }, signal: AbortSignal.timeout(15000), redirect: 'error' })
+    }
+    catch {
+      throw new Error('channel_verification_failed')
+    }
+    if (!response.ok) {
+      await response.body?.cancel()
+      throw new Error('channel_auth_failed')
+    }
+    let identity: unknown
+    try {
+      identity = await response.json()
+    }
+    catch {
+      throw new Error('channel_auth_failed')
+    }
+    if (!identity || typeof identity !== 'object' || Array.isArray(identity))
+      throw new Error('channel_auth_failed')
+    const user = identity as Record<string, unknown>
+    const login = kind === 'github' ? user.login : user.username ?? user.name
+    if (typeof login !== 'string' || !login.trim() || login.length > 200 || /[\r\n]/.test(login))
+      throw new Error('channel_auth_failed')
+    return { name: login.trim(), avatar: null }
+  }
+  finally {
+    await dispatcher.close()
+  }
+}
 
 function snapshot(task: Authentication): ChannelAuthentication {
   return { ...task.view, ...(task.view.account ? { account: { ...task.view.account } } : {}) }
@@ -133,7 +247,7 @@ async function authenticate(task: Authentication): Promise<void> {
     if (!token || token.length > 8192 || /[\r\n]/.test(token))
       throw new Error('channel_auth_token_failed')
     task.controller.signal.throwIfAborted()
-    const saved = await channel.save(task.view.channelId, { token, ...(task.view.channelId === 'gitlab' ? { host: task.origin } : {}) })
+    const saved = await devops.save(task.view.channelId, { token, ...(task.view.channelId === 'gitlab' ? { host: task.origin } : {}) })
     const account = saved.accounts.find(account => account.role === 'bot')
     if (!account)
       throw new Error('channel_auth_verification_failed')

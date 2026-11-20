@@ -1,6 +1,6 @@
 import { defineHandler, getRouterParam, HTTPError, readBody } from 'h3'
-import { db } from '../../database'
-import { inbox } from '../../service/inbox'
+import { db } from '@/database'
+import { inbox } from '@/service/inbox'
 
 interface AnswerBody {
   answer: string

@@ -1,7 +1,7 @@
 import type { PropsStore } from '@deepseek-ai/dsh-client-store'
-import type { T } from '../locale'
-import type { store } from '../store'
-import type { ClientContext } from '../types/context'
+import type { T } from '@/client/locale'
+import type { store } from '@/client/store'
+import type { ClientContext } from '@/client/types/context'
 import { noop } from '@reause/core'
 import { createContext } from 'react'
 

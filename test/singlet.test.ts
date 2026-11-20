@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { singlet } from '../src/runtime/singlet'
+import { singlet } from '@/runtime/singlet'
 
 describe('singlet single-flight primitive', () => {
   it('reuses the in-flight promise for the same key instead of running twice', async () => {
@@ -39,6 +39,36 @@ describe('singlet single-flight primitive', () => {
     await expect(task()).resolves.toBe(1)
     await expect(task()).resolves.toBe(2)
     expect(runs).toBe(2)
+  })
+
+  it('runs immediately through singlet.immediate without a trailing call', async () => {
+    let runs = 0
+    await expect(singlet.immediate('test:immediate', async () => ++runs)).resolves.toBe(1)
+    await expect(singlet.immediate('test:immediate', async () => ++runs)).resolves.toBe(2)
+    expect(runs).toBe(2)
+  })
+
+  it('immediate reuses the in-flight promise and forwards arguments', async () => {
+    let runs = 0
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const first = singlet.immediate('test:immediate-shared', async () => {
+      runs++
+      await gate
+      return runs
+    })
+    const second = singlet.immediate('test:immediate-shared', async () => {
+      runs++
+      await gate
+      return runs
+    })
+    await Promise.resolve()
+    expect(runs).toBe(1)
+    release()
+    await expect(Promise.all([first, second])).resolves.toEqual([1, 1])
+    await expect(singlet.immediate((id: string) => `test:immediate:${id}`, async (id: string) => id.toUpperCase(), 'abc')).resolves.toBe('ABC')
   })
 
   it('reports busy keys and drains pending work', async () => {

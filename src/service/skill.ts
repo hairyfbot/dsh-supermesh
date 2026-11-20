@@ -2,7 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineService } from '../utils/service'
+import { defineService } from '@/utils/service'
 
 export const skill = defineService({
   roots(): string[] {

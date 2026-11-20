@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
-import type { Filters as FilterValues } from '../model'
+import type { Filters as FilterValues } from '@/client/pages/trigger/model'
 import { Button, IconChevronDownOutlineRegular, Input, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useActions, useStore } from '../../../hooks/use-store'
-import { useTranslation } from '../../../hooks/use-translation'
-import { KINDS, STATUSES } from '../model'
+import { useActions, useStore } from '@/client/hooks/use-store'
+import { useTranslation } from '@/client/hooks/use-translation'
+import { KINDS, STATUSES } from '@/client/pages/trigger/model'
 
 export function Filters(): ReactNode {
   const { t } = useTranslation()

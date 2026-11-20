@@ -1,11 +1,11 @@
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { GetApiSupermeshSessionidMailboxResponse } from '../../apis/index.type'
+import type { GetApiSupermeshSessionidMailboxResponse } from '@/client/apis/index.type'
 import { useAsyncState } from '@reause/core'
 import { useEffect, useId, useState } from 'react'
-import { getApiSupermeshSessionIdMailbox } from '../../apis'
-import { useDshContext } from '../../hooks/use-dsh-context'
-import { useTranslation } from '../../hooks/use-translation'
+import { getApiSupermeshSessionIdMailbox } from '@/client/apis'
+import { useDshContext } from '@/client/hooks/use-dsh-context'
+import { useTranslation } from '@/client/hooks/use-translation'
 
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
   interface SessionReferenceSourceMap { supermeshMailbox: unknown }
