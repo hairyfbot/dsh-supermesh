@@ -417,7 +417,7 @@ function* answerLines(body) {
 	}
 }
 // src/channel/_shared/ci.ts
-/** 分支 CI 变更落成 ciWatch、ci 话题、触发与项目通知。silent 为真时首轮不打扰。 */
+/** 分支 CI 变更落成 ciWatch、ci 话题与触发；只有订阅了这条话题的票才收到通知。 */
 async function notifyBranchCi(input) {
 	const { row: watch } = await db.ciWatch.recordRevision({
 		id: `${input.channel}:${input.ref}`,
@@ -457,17 +457,22 @@ async function notifyBranchCi(input) {
 		at: now(),
 		ref: input.head
 	});
-	await db.inbox.enqueue({
-		id: `${triggerId}:project:${input.projectId}`,
-		type: "project",
-		origin: "system",
-		kind: "notice",
-		projectId: input.projectId,
-		triggerId,
-		threadId,
-		title: input.message,
-		message: input.message
-	});
+	for (const ticketId of await db.ticketThread.listTicketIds(threadId)) {
+		const ticket = await db.ticket.findById(ticketId);
+		if (!ticket || ["done", "cancelled"].includes(ticket.status)) continue;
+		await db.inbox.enqueue({
+			id: `${triggerId}:ticket:${ticketId}`,
+			type: "project",
+			origin: "system",
+			kind: "notice",
+			projectId: ticket.projectId,
+			ticketId,
+			triggerId,
+			threadId,
+			title: input.message,
+			message: input.message
+		});
+	}
 }
 // src/channel/github/service/resource.ts
 const resource$1 = defineService({
