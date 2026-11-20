@@ -111,6 +111,7 @@ export const binding = defineService({
       probe: (projectId, signal) => channel.probe(projectId, signal),
       collect: (context, signal) => channel.collectProject(context, signal),
       collectBranch: (projectId, branch, signal) => ci.branch(channel, projectId, branch, signal),
+      onFailure: (project, reason) => console.error(`[github:collect] ${project.name} ${project.remoteUrl} -> ${reason}`),
     }
     return { delivery, collector, ingestor, answerer }
   },

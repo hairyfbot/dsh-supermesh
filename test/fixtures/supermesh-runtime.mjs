@@ -202,18 +202,21 @@ const cases = {
     process.env.GH_TOKEN = personalToken
     const before = { ...process.env }
     let stop
-    const run = async (argv, cwd = directory, input, env) => {
-      const handle = runtime.ctx.subprocess.spawn({ argv, cwd, env, signal: AbortSignal.timeout(10000), graceMs: 2000, stdio: { stdin: input === undefined ? 'ignore' : { data: input }, stdout: { maxBytes: 65536 }, stderr: { maxBytes: 65536 } } })
+    const run = async (argv, cwd = directory, input, env, timeout = 15000) => {
+      const handle = runtime.ctx.subprocess.spawn({ argv, cwd, env, signal: AbortSignal.timeout(timeout), graceMs: 2000, stdio: { stdin: input === undefined ? 'ignore' : { data: input }, stdout: { maxBytes: 65536 }, stderr: { maxBytes: 65536 } } })
       const outcome = await handle.done
       return { code: outcome.exitCode, output: handle.collected.stdout.readFrom(0).text, error: handle.collected.stderr.readFrom(0).text }
     }
     const nativeShell = command => process.platform === 'win32' ? ['pwsh', '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', `${command}; exit $LASTEXITCODE`] : ['bash', '-c', command]
+    // 原生 shell 每次要串起 pwsh/bash → cmd → gh，冷启动在 CI 上能到十几秒，10 秒预算会把冷启动当成失败。
+    const native = (command, cwd = directory, env) => run(nativeShell(command), cwd, undefined, env, 30000)
+    const describeRun = result => `exit=${result.code} stdout=${JSON.stringify(result.output)} stderr=${JSON.stringify(result.error)}`
     try {
       assert.equal((await runtime.ctx.credentials.resolve(credentialRef('SUPERMESH_GITHUB_TOKEN'))).value === botToken, true, 'GitHub credential must survive GitLab credential registration')
       stop = await shell.start()
       assert.equal(process.env.GH_TOKEN === undefined, true, 'start must remove ambient personal tokens')
-      const auth = await run(nativeShell('gh auth token'), directory, undefined, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
-      assert.equal(auth.code, 0, 'real native shell must resolve the gh shim')
+      const auth = await native('gh auth token', directory, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
+      assert.equal(auth.code, 0, `real native shell must resolve the gh shim (${describeRun(auth)})`)
       assert.equal(auth.output.trim() === botToken, true, `gh shim must ignore personal env and use the private bot config (personal=${auth.output.trim() === personalToken}, botIncluded=${auth.output.includes(botToken)}, gitlab=${auth.output.trim() === gitlabToken}, chars=${auth.output.trim().length})`)
       const credential = await run(['git', 'credential', 'fill'], directory, 'protocol=https\nhost=github.com\n\n')
       assert.equal(credential.code, 0, 'git must use the configured native gh credential helper')
@@ -231,12 +234,12 @@ const cases = {
         assert.equal(email.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit email`)
         assert.equal(email.output.trim(), metadata.commitEmail)
       }
-      const merging = await run(nativeShell('gh-default auth token'), directory, undefined, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
+      const merging = await native('gh-default auth token', directory, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
       assert.equal(`${merging.output}${merging.error}`.includes(botToken), false, 'the default-login merge entry must never answer with the bot credential')
       assert.notEqual(merging.output.trim(), botToken)
       if (process.env.SUPERMESH_TEST_GLAB_DIR) {
-        const auth = await run(nativeShell(`glab config get token --host ${gitlabHost}`), gitlabDirectory, undefined, { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken, OAUTH_TOKEN: personalToken, CI_JOB_TOKEN: personalToken })
-        assert.equal(auth.code, 0, 'real portable glab must run through the native shell shim')
+        const auth = await native(`glab config get token --host ${gitlabHost}`, gitlabDirectory, { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken, OAUTH_TOKEN: personalToken, CI_JOB_TOKEN: personalToken })
+        assert.equal(auth.code, 0, `real portable glab must run through the native shell shim (${describeRun(auth)})`)
         assert.equal(auth.output.trim() === gitlabToken, true, 'glab shim must select the private bot config rather than ambient tokens/config')
         const credential = await run(['git', 'credential', 'fill'], gitlabDirectory, `protocol=https\nhost=${gitlabHost}\n\n`)
         assert.equal(credential.code, 0, 'GitLab credential helper must execute the real glab')
@@ -248,7 +251,7 @@ const cases = {
         assert.equal(email.output.trim(), gitlabMetadata.commitEmail)
         await db.channel.setEnabled('gitlab', false)
         await shell.refresh()
-        const disabled = await run(nativeShell(`glab config get token --host ${gitlabHost}`), gitlabDirectory, undefined, { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken })
+        const disabled = await native(`glab config get token --host ${gitlabHost}`, gitlabDirectory, { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken })
         assert.equal(disabled.output.trim().length === 0, true, 'disabled GitLab config must not expose any ambient or keyring credential')
         assert.equal(`${disabled.output}${disabled.error}`.includes(gitlabToken), false)
         assert.equal(`${disabled.output}${disabled.error}`.includes(personalToken), false)
@@ -260,7 +263,7 @@ const cases = {
       }
       await db.channel.setEnabled('github', false)
       await shell.refresh()
-      const disabled = await run(nativeShell('gh auth token'), directory, undefined, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
+      const disabled = await native('gh auth token', directory, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
       assert.notEqual(disabled.code, 0, 'disabled channel must not fall back to ambient CLI login or token')
       assert.equal(`${disabled.output}${disabled.error}`.includes(botToken), false)
       assert.equal(`${disabled.output}${disabled.error}`.includes(personalToken), false)

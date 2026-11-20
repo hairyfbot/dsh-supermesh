@@ -26,6 +26,12 @@ describe('gitHub 资源解析', () => {
     for (const value of ['https://gitlab.com/owner/repo/issues/1', 'http://github.com/owner/repo/issues/1', 'https://github.com/owner/repo/issues/0', 'https://github.com/owner/repo'])
       expect(() => githubResource.parse(value)).toThrow('invalid_resource')
   })
+  it('改名或转移时返回新全名，未改名返回 null', () => {
+    expect(githubResource.renamed('owner/old', 'owner/new')).toBe('owner/new')
+    expect(githubResource.renamed('owner/old', 'Other/Old')).toBe('other/old')
+    expect(githubResource.renamed('owner/repo', 'Owner/Repo')).toBeNull()
+    expect(() => githubResource.renamed('owner/repo', 'not a repository')).toThrow('invalid_response')
+  })
 })
 
 describe('gitLab 资源解析', () => {

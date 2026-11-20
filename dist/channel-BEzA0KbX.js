@@ -793,6 +793,12 @@ var Project = class extends Model {
 		if (enabled) query = query.where("remoteUrl", "is not", null).where("remoteUrl", "!=", "");
 		return query.returningAll().executeTakeFirst();
 	}
+	async setRemoteUrl(id, remoteUrl, updatedAt) {
+		await this.db.updateTable("project").set({
+			remoteUrl,
+			updatedAt
+		}).where("id", "=", id).execute();
+	}
 	async disableUnavailable(workspaceIds, updatedAt) {
 		let query = this.db.updateTable("project").set({
 			enabled: 0,
@@ -2645,14 +2651,14 @@ const devops = defineService({
 	},
 	save(kind, patch) {
 		return channel.serialize(() => save(kind, patch)).then(async (view) => {
-			const { shell } = await import("./shell-6EeRyaxQ.js");
+			const { shell } = await import("./shell-BsD17F-d.js");
 			await shell.refresh();
 			return view;
 		});
 	},
 	removeCredentials(kind) {
 		return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
-			const { shell } = await import("./shell-6EeRyaxQ.js");
+			const { shell } = await import("./shell-BsD17F-d.js");
 			await shell.refresh();
 			return view;
 		});

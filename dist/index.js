@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as singlet, f as setting, g as db, h as channelProxyEnvironment, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as devops, t as channel, u as session } from "./channel-C_93wtiQ.js";
+import { a as project, c as shell, d as singlet, f as setting, g as db, h as channelProxyEnvironment, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as devops, t as channel, u as session } from "./channel-BEzA0KbX.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -483,6 +483,15 @@ const resource$1 = defineService({
 			return null;
 		}
 	},
+	/**
+	* 仓库改名或转移后，GitHub 对旧全名仍返回 200，只是 full_name 变成新名。
+	* 返回新全名，未改名时返回 null；调用方必须跟随，否则采集会在 probe 阶段永久失败。
+	*/
+	renamed(configured, fullName) {
+		const canonical = resource$1.of(`https://github.com/${fullName}`);
+		if (!canonical) throw new GhError("invalid_response");
+		return canonical === configured ? null : canonical;
+	},
 	parse(value) {
 		const short = /^github:([^/:]+\/[^/:]+):(issue|pull):([1-9]\d*)$/.exec(value);
 		if (short) return {
@@ -864,6 +873,7 @@ const courier = defineService({
 		return singlet.immediate(`${port.channel}:exclusive:collect:${projectId}`, async () => {
 			const errors = [];
 			let scope;
+			let project;
 			const context = {
 				channel: port.channel,
 				projectId,
@@ -888,9 +898,9 @@ const courier = defineService({
 				}
 			};
 			try {
-				const project = await port.project(projectId);
+				project = await port.project(projectId);
 				const environment = await port.probe(projectId, signal);
-				const resolved = await port.scope(project);
+				const resolved = await port.scope(await port.project(projectId));
 				if (!resolved) throw new ChannelError("unknown_repository");
 				scope = resolved;
 				const baseline = await courier.state(port.channel, scope, "baseline") ?? now();
@@ -903,7 +913,8 @@ const courier = defineService({
 				if (signal?.aborted) throw error;
 				errors.push(courier.failure(error, port.detail));
 			}
-			if (port.status && scope) await courier.record(port.channel, scope, "collection_status", {
+			const status = scope ?? (project ? await port.scope(project).catch(() => null) : null);
+			if (port.status && status) await courier.record(port.channel, status, "collection_status", {
 				ok: !errors.length,
 				reasons: [...new Set(errors)],
 				collectedAt: now()
@@ -1033,7 +1044,8 @@ const binding$1 = defineService({ of(channel) {
 			project: (projectId) => channel.project(projectId),
 			probe: (projectId, signal) => channel.probe(projectId, signal),
 			collect: (context, signal) => channel.collectProject(context, signal),
-			collectBranch: (projectId, branch, signal) => ci$1.branch(channel, projectId, branch, signal)
+			collectBranch: (projectId, branch, signal) => ci$1.branch(channel, projectId, branch, signal),
+			onFailure: (project, reason) => console.error(`[github:collect] ${project.name} ${project.remoteUrl} -> ${reason}`)
 		},
 		ingestor: {
 			channel: "github",
@@ -1276,16 +1288,23 @@ var GitHubChannel = class {
 		if (!bots.some((bot) => bot.name.toLowerCase() === login.toLowerCase())) throw new GhError("account_mismatch");
 		const repository = resource$1.of(project.remoteUrl);
 		const remote = record(await this.request(`repos/${repository}`, signal));
-		if (text(remote.full_name).toLowerCase() !== repository) throw new GhError("repository_mismatch");
+		const canonical = resource$1.renamed(repository, text(remote.full_name)) ?? repository;
+		if (canonical !== repository) {
+			await db.project.setRemoteUrl(project.id, `https://github.com/${canonical}`, now());
+			await courier.record("github", canonical, "repository_renamed", {
+				from: repository,
+				to: canonical
+			});
+		}
 		const result = {
 			providerId,
 			login,
 			repositoryId: identity(remote.id),
 			defaultBranch: typeof remote.default_branch === "string" ? remote.default_branch : null
 		};
-		const previous = await courier.state("github", repository, "verified_environment");
+		const previous = await courier.state("github", canonical, "verified_environment");
 		if (previous && (previous.providerId !== providerId || previous.repositoryId !== result.repositoryId)) throw new GhError("environment_identity_changed");
-		await courier.record("github", repository, "verified_environment", result);
+		await courier.record("github", canonical, "verified_environment", result);
 		return result;
 	}
 	async pages(path, signal) {

@@ -20,6 +20,16 @@ export const resource = defineService({
     }
     catch { return null }
   },
+  /**
+   * 仓库改名或转移后，GitHub 对旧全名仍返回 200，只是 full_name 变成新名。
+   * 返回新全名，未改名时返回 null；调用方必须跟随，否则采集会在 probe 阶段永久失败。
+   */
+  renamed(configured: string, fullName: string): string | null {
+    const canonical = resource.of(`https://github.com/${fullName}`)
+    if (!canonical)
+      throw new GhError('invalid_response')
+    return canonical === configured ? null : canonical
+  },
   parse(value: string): Resource {
     const short = /^github:([^/:]+\/[^/:]+):(issue|pull):([1-9]\d*)$/.exec(value)
     if (short)

@@ -49,6 +49,14 @@ export class Project extends Model<DB, 'project'> {
     return query.returningAll().executeTakeFirst()
   }
 
+  async setRemoteUrl(id: string, remoteUrl: string, updatedAt: string): Promise<void> {
+    await this.db
+      .updateTable('project')
+      .set({ remoteUrl, updatedAt })
+      .where('id', '=', id)
+      .execute()
+  }
+
   async disableUnavailable(workspaceIds: string[], updatedAt: string): Promise<void> {
     let query = this.db.updateTable('project').set({ enabled: 0, updatedAt }).where('enabled', '=', 1)
     if (workspaceIds.length)

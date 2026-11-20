@@ -4,7 +4,7 @@ import type { Resource } from '@/channel/github/service/resource.types'
 import type { GhRunner } from '@/channel/github/types'
 import type { DB } from '@/database/types'
 import type { AnswerPort, CollectContext, CollectPort, Cursor, DeliveryPort, IngestPort } from '@/service/courier.types'
-import { array, identity, number, record, text, timestamp } from '@/channel/_shared/primitives'
+import { array, identity, now, number, record, text, timestamp } from '@/channel/_shared/primitives'
 import { recordThread } from '@/channel/_shared/thread'
 import { ExecFileGhRunner, GhError } from '@/channel/github/runner'
 import { binding } from '@/channel/github/service/binding'
@@ -64,13 +64,18 @@ export class GitHubChannel implements ChannelAdapter {
       throw new GhError('account_mismatch')
     const repository = resource.of(project.remoteUrl)!
     const remote = record(await this.request(`repos/${repository}`, signal))
-    if (text(remote.full_name).toLowerCase() !== repository)
-      throw new GhError('repository_mismatch')
+    const canonical = resource.renamed(repository, text(remote.full_name)) ?? repository
+    if (canonical !== repository) {
+      // 仓库改名/转移后旧全名仍被重定向，但项目记录还停在旧名：跟随新名并落库，
+      // 否则每个采集周期都在 probe 阶段失败，且作用域解析不出来，什么都不留。
+      await db.project.setRemoteUrl(project.id, `https://github.com/${canonical}`, now())
+      await courier.record('github', canonical, 'repository_renamed', { from: repository, to: canonical })
+    }
     const result = { providerId, login, repositoryId: identity(remote.id), defaultBranch: typeof remote.default_branch === 'string' ? remote.default_branch : null }
-    const previous = await courier.state<ChannelIdentity>('github', repository, 'verified_environment')
+    const previous = await courier.state<ChannelIdentity>('github', canonical, 'verified_environment')
     if (previous && (previous.providerId !== providerId || previous.repositoryId !== result.repositoryId))
       throw new GhError('environment_identity_changed')
-    await courier.record('github', repository, 'verified_environment', result)
+    await courier.record('github', canonical, 'verified_environment', result)
     return result
   }
 

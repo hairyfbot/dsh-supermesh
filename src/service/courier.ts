@@ -1,4 +1,6 @@
+import type { Selectable } from 'kysely'
 import type { ChannelId, ChannelRow, CollectOutcome, DeliveryResult } from '@/channel/_shared/types'
+import type { DB } from '@/database/types'
 import type {
   AnswerPort,
   CollectContext,
@@ -310,6 +312,7 @@ export const courier = defineService({
     return singlet.immediate(`${port.channel}:exclusive:collect:${projectId}`, async () => {
       const errors: string[] = []
       let scope: string | undefined
+      let project: Selectable<DB['project']> | undefined
       const context: CollectContext = {
         channel: port.channel,
         projectId,
@@ -333,9 +336,10 @@ export const courier = defineService({
         },
       }
       try {
-        const project = await port.project(projectId)
+        project = await port.project(projectId)
         const environment = await port.probe(projectId, signal)
-        const resolved = await port.scope(project)
+        // probe 可能把改名后的仓库写回项目，作用域必须按最新记录解析。
+        const resolved = await port.scope(await port.project(projectId))
         if (!resolved)
           throw new ChannelError('unknown_repository')
         scope = resolved
@@ -351,8 +355,10 @@ export const courier = defineService({
           throw error
         errors.push(courier.failure(error, port.detail))
       }
-      if (port.status && scope)
-        await courier.record(port.channel, scope, 'collection_status', { ok: !errors.length, reasons: [...new Set(errors)], collectedAt: now() })
+      // probe 失败时作用域解析不出来，仍要按项目远端记录状态，否则整条采集链无声消失。
+      const status = scope ?? (project ? await port.scope(project).catch(() => null) : null)
+      if (port.status && status)
+        await courier.record(port.channel, status, 'collection_status', { ok: !errors.length, reasons: [...new Set(errors)], collectedAt: now() })
       return errors.length ? { projectId, ok: false, reason: [...new Set(errors)].join(',') } : { projectId, ok: true }
     })
   },

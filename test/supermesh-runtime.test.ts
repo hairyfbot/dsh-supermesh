@@ -46,7 +46,7 @@ async function runCase(name: string): Promise<string> {
         },
         windowsHide: true,
         stdio: ['ignore', 'pipe', 'pipe'],
-        timeout: 25000,
+        timeout: 60000,
       })
       let output = ''
       child.stdout.setEncoding('utf8').on('data', (data: string) => {
@@ -83,5 +83,5 @@ describe('supermesh services composed with the installed official runtime', () =
     expect(output).toContain(`SUPERMESH_RUNTIME_PASS ${name} DSH=`)
     if (name === 'shell' && process.env.SUPERMESH_TEST_GLAB_DIR)
       expect(output).toContain('SUPERMESH_GLAB_REAL_PASS')
-  }, 35000)
+  }, 70000)
 })
