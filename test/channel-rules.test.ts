@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { acceptsChannelTrigger } from '@/channel/_shared/admission'
+import { acceptsChannelTrigger, addressedToBot } from '@/channel/_shared/admission'
 
 describe('渠道新任务准入', () => {
   const base = { human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', ignored: false }
@@ -19,5 +19,18 @@ describe('渠道新任务准入', () => {
   it('已有订阅接收人类跟进但仍排除bot', () => {
     expect(acceptsChannelTrigger({ ...base, subscribed: true, historical: true })).toBe(true)
     expect(acceptsChannelTrigger({ ...base, subscribed: true, human: false })).toBe(false)
+  })
+})
+
+describe('是否在跟 bot 说话', () => {
+  it('没 @ 且没有票订阅时不算，@ 或已订阅才算', () => {
+    expect(addressedToBot({ mentioned: false, subscribed: false })).toBe(false)
+    expect(addressedToBot({ mentioned: true, subscribed: false })).toBe(true)
+    expect(addressedToBot({ mentioned: false, subscribed: true })).toBe(true)
+  })
+  it('进流程的准入与是否被点名是两件事', () => {
+    const base = { human: true, historical: false, subscribed: false, admin: true, mentioned: false, kind: 'open', ignored: false }
+    expect(acceptsChannelTrigger(base)).toBe(true)
+    expect(addressedToBot({ mentioned: base.mentioned, subscribed: base.subscribed })).toBe(false)
   })
 })

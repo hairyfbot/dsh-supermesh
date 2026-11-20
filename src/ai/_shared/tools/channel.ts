@@ -1,5 +1,6 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { isThreadId, markThread, replyKey, requireObserved } from '@/ai/_shared/tools/channel.utils'
+import { addressedToBot } from '@/channel/_shared/admission'
 import { github } from '@/channel/github/channel'
 import { gitlab } from '@/channel/gitlab/channel'
 import { db } from '@/database'
@@ -163,6 +164,10 @@ export const reply_channel = defineTool({
     const said = await db.inbox.listByThread(thread.id)
     if (said.some(message => message.triggerId === trigger.id && message.origin !== identity.role))
       return JSON.stringify({ status: 'suppressed', reason: 'another_role_already_replied' })
+    // 没 @ bot、也不是已订阅话题上的跟进：这条消息不是在跟 bot 说话，发言就是自作主张。
+    const subscribed = (await db.ticketThread.listTicketIds(thread.id)).length > 0
+    if (!addressedToBot({ mentioned: Boolean(trigger.mentioned), subscribed }))
+      throw new Error('这条消息没有 @ bot，也不是已订阅话题上的跟进：只做分诊记录，不对外发言')
     const ticketId = identity.ticketId ?? null
 
     const row = await db.inbox.enqueue({

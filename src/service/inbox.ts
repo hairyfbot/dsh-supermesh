@@ -48,7 +48,14 @@ export const inbox = defineService({
     const scope = scopeOf(identity)
     if (!scope)
       return null
-    const messages = await db.inbox.listScoped(scope, includeChannel)
+    const rows = await db.inbox.listScoped(scope, includeChannel)
+    const triggers = new Map<string, { kind: string, actorName: string | null, human: boolean, mentioned: boolean }>()
+    for (const triggerId of new Set(rows.map(message => message.triggerId).filter(Boolean) as string[])) {
+      const trigger = await db.trigger.findById(triggerId)
+      if (trigger)
+        triggers.set(triggerId, { kind: trigger.kind, actorName: trigger.actorName, human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned) })
+    }
+    const messages = rows.map(message => ({ ...message, ...(message.triggerId && triggers.has(message.triggerId) ? { trigger: triggers.get(message.triggerId)! } : {}) }))
     const projects = (await db.project.listAll()).filter(project => project.enabled && (identity.role === 'main' || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({ id, name, directory, remoteUrl }))
     return { sessionId: id, role: scope.type, projects, pendingCount: messages.length, messages }
   },
@@ -137,7 +144,16 @@ export const inbox = defineService({
         }
         if ((await session.activity(id)).running || stopped)
           continue
-        await session.send(id, [message.title ?? '', `[Inbox ${message.id}]`, message.triggerId ? `triggerId: ${message.triggerId}` : '', message.threadId ? `threadId: ${message.threadId}` : '', message.message].filter(Boolean).join(String.fromCharCode(10)), 'queue', requestId)
+        // 把触发事实带给收件人：没 @ bot 的消息只是时间线记录，不能当成开工请求。
+        const trigger = message.triggerId ? await db.trigger.findById(message.triggerId) : undefined
+        await session.send(id, [
+          message.title ?? '',
+          `[Inbox ${message.id}]`,
+          message.triggerId ? `triggerId: ${message.triggerId}` : '',
+          message.threadId ? `threadId: ${message.threadId}` : '',
+          trigger ? `actor: ${trigger.actorName ?? 'unknown'} human: ${trigger.human ? 'yes' : 'no'} mentioned: ${trigger.mentioned ? 'yes' : 'no'}` : '',
+          message.message,
+        ].filter(Boolean).join(String.fromCharCode(10)), 'queue', requestId)
         await db.inbox.resetDelivery(message.id)
         blocked.delete(key)
       }
