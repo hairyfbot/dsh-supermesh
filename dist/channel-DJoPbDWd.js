@@ -1898,6 +1898,12 @@ const session = defineService({
 			registered.delete(id);
 		};
 	},
+	/** 同步判定一个 Agent 是不是插件的四个角色会话：只按预设判断，不读会话历史。 */
+	roleOf(agent) {
+		const preset = getServerContext(server).agentPresets.composedPreset(agent.ctx);
+		if (!preset || !registered.has(preset)) return null;
+		return Object.keys(presets$1).find((role) => presets$1[role] === preset) ?? null;
+	},
 	async attach(agent) {
 		const ctx = getServerContext(server);
 		const preset = ctx.agentPresets.composedPreset(agent.ctx);
@@ -2200,7 +2206,21 @@ const inbox = defineService({
 		if (!identity) return null;
 		const scope = scopeOf(identity);
 		if (!scope) return null;
-		const messages = await db.inbox.listScoped(scope, includeChannel);
+		const rows = await db.inbox.listScoped(scope, includeChannel);
+		const triggers = /* @__PURE__ */ new Map();
+		for (const triggerId of new Set(rows.map((message) => message.triggerId).filter(Boolean))) {
+			const trigger = await db.trigger.findById(triggerId);
+			if (trigger) triggers.set(triggerId, {
+				kind: trigger.kind,
+				actorName: trigger.actorName,
+				human: Boolean(trigger.human),
+				mentioned: Boolean(trigger.mentioned)
+			});
+		}
+		const messages = rows.map((message) => ({
+			...message,
+			...message.triggerId && triggers.has(message.triggerId) ? { trigger: triggers.get(message.triggerId) } : {}
+		}));
 		const projects = (await db.project.listAll()).filter((project) => project.enabled && (identity.role === "main" || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({
 			id,
 			name,
@@ -2291,11 +2311,13 @@ const inbox = defineService({
 					continue;
 				}
 				if ((await session.activity(id)).running || stopped$2) continue;
+				const trigger = message.triggerId ? await db.trigger.findById(message.triggerId) : void 0;
 				await session.send(id, [
 					message.title ?? "",
 					`[Inbox ${message.id}]`,
 					message.triggerId ? `triggerId: ${message.triggerId}` : "",
 					message.threadId ? `threadId: ${message.threadId}` : "",
+					trigger ? `actor: ${trigger.actorName ?? "unknown"} human: ${trigger.human ? "yes" : "no"} mentioned: ${trigger.mentioned ? "yes" : "no"}` : "",
 					message.message
 				].filter(Boolean).join(String.fromCharCode(10)), "queue", requestId);
 				await db.inbox.resetDelivery(message.id);
@@ -2404,7 +2426,7 @@ var ask__id__answer_post_default = defineHandler(async (event) => {
 const directory = join(DSH_PLUGIN_HOME, "cli");
 const bin = join(directory, "bin");
 const gitconfig = join(directory, "gitconfig");
-const removed = [
+const tokens = [
 	"GH_TOKEN",
 	"GITHUB_TOKEN",
 	"GH_ENTERPRISE_TOKEN",
@@ -2412,23 +2434,16 @@ const removed = [
 	"GITLAB_TOKEN",
 	"GLAB_TOKEN",
 	"OAUTH_TOKEN",
-	"CI_JOB_TOKEN",
-	"GIT_DIR",
-	"GIT_WORK_TREE",
-	"GIT_INDEX_FILE",
-	"GIT_PREFIX",
-	"GIT_COMMON_DIR",
-	"GIT_OBJECT_DIRECTORY",
-	"GIT_ALTERNATE_OBJECT_DIRECTORIES",
-	"GIT_NAMESPACE",
-	"GIT_CONFIG_COUNT",
-	"GIT_CONFIG_PARAMETERS",
+	"CI_JOB_TOKEN"
+];
+const identities = [
 	"GIT_AUTHOR_NAME",
 	"GIT_AUTHOR_EMAIL",
 	"GIT_COMMITTER_NAME",
-	"GIT_COMMITTER_EMAIL",
-	"SSH_ASKPASS"
+	"GIT_COMMITTER_EMAIL"
 ];
+/** 角色会话标记：由 `ctx.shellEnv` 按调用会话注入，shim 只在这个变量存在时才切到 bot 身份。 */
+const ROLE_MARKER = "DSH_SUPERMESH_ROLE";
 let restore;
 let writing$1 = Promise.resolve();
 let basePath = "";
@@ -2437,21 +2452,22 @@ const shell = defineService({
 		if (restore) throw new Error("shell_already_started");
 		basePath = (process.env.PATH ?? "").split(delimiter).filter((path) => resolve(path).toLowerCase() !== resolve(bin).toLowerCase()).join(delimiter);
 		await refresh();
-		const values = {
-			...Object.fromEntries(removed.map((key) => [key, void 0])),
-			PATH: [bin, basePath].join(delimiter),
-			GIT_CONFIG_GLOBAL: gitconfig,
-			GIT_CONFIG_NOSYSTEM: "1",
-			GIT_ASKPASS: "",
-			GIT_TERMINAL_PROMPT: "0"
+		const release = getServerContext(server).shellEnv?.register({
+			name: "supermesh-role",
+			variables: { DSH_SUPERMESH_ROLE: { description: "Supermesh 角色会话标记，决定 gh / glab / git 是否使用插件的机器人身份。" } },
+			resolve: (execution) => {
+				const agent = execution.agent;
+				const role = agent ? session.roleOf(agent) : null;
+				return role ? { DSH_SUPERMESH_ROLE: role } : {};
+			}
+		});
+		const previous = process.env.PATH;
+		process.env.PATH = [bin, basePath].join(delimiter);
+		restore = () => {
+			release?.();
+			if (previous === void 0) delete process.env.PATH;
+			else process.env.PATH = previous;
 		};
-		const previous = Object.fromEntries(Object.keys(values).map((key) => [key, process.env[key]]));
-		const apply = (entries) => {
-			for (const [key, value] of Object.entries(entries)) if (value === void 0) delete process.env[key];
-			else process.env[key] = value;
-		};
-		apply(values);
-		restore = () => apply(previous);
 		return async () => {
 			const release = restore;
 			restore = void 0;
@@ -2460,10 +2476,7 @@ const shell = defineService({
 		};
 	},
 	commandEnvironment() {
-		return {
-			...process.env,
-			...restore ? { PATH: basePath } : {}
-		};
+		return { ...process.env };
 	},
 	refresh() {
 		if (!restore) return Promise.resolve();
@@ -2503,32 +2516,43 @@ async function refresh() {
 			git_protocol: "https"
 		} } : {}
 	}));
+	const shellPath = shellPathOf(basePath);
 	for (const cli of ["gh", "glab"]) {
 		const executable = await nativeCli(cli);
 		const configKey = cli === "gh" ? "GH_CONFIG_DIR" : "GLAB_CONFIG_DIR";
 		const hostKey = cli === "gh" ? "GH_HOST" : "GITLAB_HOST";
 		const host = cli === "gh" ? "github.com" : gitlabHost;
-		const shellPath = shellPathOf(basePath);
 		const keyringKeys = cli === "glab" ? ["GLAB_USE_KEYRING"] : [];
-		await own(join(bin, cli), [
-			"#!/bin/sh",
-			`unset ${removed.filter((key) => /TOKEN/.test(key)).join(" ")}`,
+		const botEnv = [
+			...tokens.map((key) => `unset ${key}`),
 			`export PATH=${quote(shellPath)}`,
 			`export ${configKey}=${quote(join(directory, cli).replaceAll("\\", "/"))}`,
 			`export ${hostKey}=${quote(host)}`,
-			...keyringKeys.map((key) => `export ${key}=false`),
+			...keyringKeys.map((key) => `export ${key}=false`)
+		];
+		await own(join(bin, cli), [
+			"#!/bin/sh",
+			`if [ -z "$${ROLE_MARKER}" ]; then exec ${executable ? quote(executable.replaceAll("\\", "/")) : "exit 127"} "$@"; fi`,
+			...botEnv,
 			executable ? `exec ${quote(executable.replaceAll("\\", "/"))} "$@"` : `echo '${cli} is not installed' >&2; exit 127`,
 			""
 		].join("\n"), 448);
 		const cmd = (value) => value.replaceAll("%", "%%");
-		await own(join(bin, `${cli}.cmd`), [
-			"@echo off",
-			"setlocal",
-			...removed.filter((key) => /TOKEN/.test(key)).map((key) => `set "${key}="`),
+		const botCmd = [
+			...tokens.map((key) => `set "${key}="`),
 			`set "PATH=${cmd(basePath)}"`,
 			`set "${configKey}=${cmd(join(directory, cli))}"`,
 			`set "${hostKey}=${host}"`,
-			...keyringKeys.map((key) => `set "${key}=false"`),
+			...keyringKeys.map((key) => `set "${key}=false"`)
+		];
+		await own(join(bin, `${cli}.cmd`), [
+			"@echo off",
+			"setlocal",
+			`if not defined ${ROLE_MARKER} goto plain`,
+			...botCmd,
+			executable ? `"${cmd(executable)}" %*` : `echo ${cli} is not installed 1>&2 & exit /b 127`,
+			"exit /b %errorlevel%",
+			":plain",
 			executable ? `"${cmd(executable)}" %*` : `echo ${cli} is not installed 1>&2 & exit /b 127`,
 			"exit /b %errorlevel%",
 			""
@@ -2538,25 +2562,61 @@ async function refresh() {
 	const escaping = [
 		"GH_CONFIG_DIR",
 		"GH_HOST",
-		...removed.filter((key) => /TOKEN/.test(key))
+		...tokens
 	];
 	await own(join(bin, "gh-default"), [
 		"#!/bin/sh",
-		`unset ${escaping.join(" ")}`,
-		`export PATH=${quote(shellPathOf(basePath))}`,
+		`if [ -z "$${ROLE_MARKER}" ]; then exec ${nativeGh ? quote(nativeGh.replaceAll("\\", "/")) : "exit 127"} "$@"; fi`,
+		...escaping.map((key) => `unset ${key}`),
+		`export PATH=${quote(shellPath)}`,
 		nativeGh ? `exec ${quote(nativeGh.replaceAll("\\", "/"))} "$@"` : "echo gh is not installed >&2; exit 127",
 		""
 	].join("\n"), 448);
 	await own(join(bin, "gh-default.cmd"), [
 		"@echo off",
 		"setlocal",
+		`if not defined ${ROLE_MARKER} goto plain`,
 		...escaping.map((key) => `set "${key}="`),
 		`set "PATH=${basePath.replaceAll("%", "%%")}"`,
 		nativeGh ? `"${nativeGh.replaceAll("%", "%%")}" %*` : "echo gh is not installed 1>&2 & exit /b 127",
 		"exit /b %errorlevel%",
+		":plain",
+		nativeGh ? `"${nativeGh.replaceAll("%", "%%")}" %*` : "echo gh is not installed 1>&2 & exit /b 127",
+		"exit /b %errorlevel%",
 		""
 	].join("\r\n"), 448);
+	const nativeGit = await nativeCli("git");
 	const gitQuote = (value) => JSON.stringify(value);
+	const gitEnv = [
+		...identities.map((key) => `unset ${key}`),
+		`export GIT_CONFIG_GLOBAL=${quote(gitconfig.replaceAll("\\", "/"))}`,
+		"export GIT_CONFIG_NOSYSTEM=1",
+		"export GIT_ASKPASS=",
+		"export GIT_TERMINAL_PROMPT=0"
+	];
+	await own(join(bin, "git"), [
+		"#!/bin/sh",
+		`if [ -z "$${ROLE_MARKER}" ]; then exec ${nativeGit ? quote(nativeGit.replaceAll("\\", "/")) : "exit 127"} "$@"; fi`,
+		...gitEnv,
+		nativeGit ? `exec ${quote(nativeGit.replaceAll("\\", "/"))} "$@"` : "echo git is not installed >&2; exit 127",
+		""
+	].join("\n"), 448);
+	await own(join(bin, "git.cmd"), [
+		"@echo off",
+		"setlocal",
+		`if not defined ${ROLE_MARKER} goto plain`,
+		...identities.map((key) => `set "${key}="`),
+		`set "GIT_CONFIG_GLOBAL=${gitconfig.replaceAll("%", "%%")}"`,
+		"set \"GIT_CONFIG_NOSYSTEM=1\"",
+		"set \"GIT_ASKPASS=\"",
+		"set \"GIT_TERMINAL_PROMPT=0\"",
+		nativeGit ? `"${nativeGit.replaceAll("%", "%%")}" %*` : "echo git is not installed 1>&2 & exit /b 127",
+		"exit /b %errorlevel%",
+		":plain",
+		nativeGit ? `"${nativeGit.replaceAll("%", "%%")}" %*` : "echo git is not installed 1>&2 & exit /b 127",
+		"exit /b %errorlevel%",
+		""
+	].join("\r\n"), 448);
 	const cliPath = (cli) => quote(join(bin, cli).replaceAll("\\", "/"));
 	const lines = [
 		"[user]",
@@ -2682,14 +2742,14 @@ const devops = defineService({
 	},
 	save(kind, patch) {
 		return channel.serialize(() => save(kind, patch)).then(async (view) => {
-			const { shell } = await import("./shell-DzrnBk4C.js");
+			const { shell } = await import("./shell-TPRt1T7i.js");
 			await shell.refresh();
 			return view;
 		});
 	},
 	removeCredentials(kind) {
 		return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
-			const { shell } = await import("./shell-DzrnBk4C.js");
+			const { shell } = await import("./shell-TPRt1T7i.js");
 			await shell.refresh();
 			return view;
 		});
@@ -3967,7 +4027,15 @@ const worker = defineService({
 		for (const worker of await db.worker.listRunning()) {
 			if (stopped) break;
 			const ticket = await db.ticket.findById(worker.ticketId);
-			if (!ticket || ticket.status === "done" || ticket.status === "cancelled") continue;
+			if (!ticket) {
+				await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
+			}
+			if (ticket.status === "done" || ticket.status === "cancelled") {
+				await session.send(worker.id, `票 ${ticket.id} 已${ticket.status === "done" ? "完成" : "取消"}，本次授权已收回：立即停手，不要再提交、推送或开 PR。`, "interrupt").catch(() => void 0);
+				await db.worker.end(worker.id, "stopped", (/* @__PURE__ */ new Date()).toISOString());
+				continue;
+			}
 			if (ticket.prState === "merged" || ticket.prState === "closed") {
 				const now = (/* @__PURE__ */ new Date()).toISOString();
 				await db.worker.end(worker.id, "stopped", now);

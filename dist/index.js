@@ -1,4 +1,4 @@
-import { a as project, c as shell, d as singlet, f as setting, g as db, h as channelProxyEnvironment, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as devops, t as channel, u as session } from "./channel-C1d93AhN.js";
+import { a as project, c as shell, d as singlet, f as setting, g as db, h as channelProxyEnvironment, i as archive, l as inbox, m as DSH_PLUGIN_HOME, n as server, o as worktree, p as defineService, r as worker$1, s as devops, t as channel, u as session } from "./channel-DJoPbDWd.js";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -267,6 +267,18 @@ async function latestVersion(threadId) {
 async function markThread(exec, threadId) {
 	observe(exec, threadId, await latestVersion(threadId));
 }
+// src/channel/_shared/admission.ts
+function acceptsChannelTrigger(input) {
+	if (!input.human || input.historical && !input.subscribed) return false;
+	return input.subscribed || input.admin && (input.kind === "open" || input.mentioned) && (!input.ignored || input.mentioned);
+}
+/**
+* 进流程不等于被点名。没 @ bot 的消息只是时间线记录：可以分诊，但不建票、不派工、也不在渠道上发言。
+* 只有明确 @、或者这条话题已经被票订阅（人在跟进已有任务）才算在跟 bot 说话。
+*/
+function addressedToBot(input) {
+	return input.mentioned || input.subscribed;
+}
 // src/channel/_shared/error.ts
 var ChannelError = class extends Error {
 	code;
@@ -534,11 +546,6 @@ const resource$1 = defineService({
 		};
 	}
 });
-// src/channel/_shared/admission.ts
-function acceptsChannelTrigger(input) {
-	if (!input.human || input.historical && !input.subscribed) return false;
-	return input.subscribed || input.admin && (input.kind === "open" || input.mentioned) && (!input.ignored || input.mentioned);
-}
 // src/service/courier.ts
 /** 没有活票的话题，最后一次活动超过这个时长就不再轮询（官方 POLL_HORIZON_MS）。 */
 const POLL_HORIZON_MS = 12096e5;
@@ -2158,6 +2165,11 @@ const reply_channel = defineTool({
 			status: "suppressed",
 			reason: "another_role_already_replied"
 		});
+		const subscribed = (await db.ticketThread.listTicketIds(thread.id)).length > 0;
+		if (!addressedToBot({
+			mentioned: Boolean(trigger.mentioned),
+			subscribed
+		})) throw new Error("这条消息没有 @ bot，也不是已订阅话题上的跟进：只做分诊记录，不对外发言");
 		const ticketId = identity.ticketId ?? null;
 		const row = await db.inbox.enqueue({
 			id: replyKey(trigger.id, args.text),
@@ -2207,7 +2219,7 @@ const inbox_list = defineTool({
 });
 const read_mailbox = defineTool({
 	name: "read_mailbox",
-	description: "读取当前角色未处理邮件，以及可用项目的 id、仓库地址和本地路径。可传 ids 一次读取指定多条邮件。主编排先用它确定分诊目标；读取标为已读，处理完用 inbox_kill，ask 必须用 answer。",
+	description: "读取当前角色未处理邮件，以及可用项目的 id、仓库地址和本地路径。可传 ids 一次读取指定多条邮件。渠道邮件带 trigger 事实（actor / human / mentioned）：mentioned=no 只是时间线记录，不是开工请求。读取标为已读，处理完用 inbox_kill，ask 必须用 answer。",
 	parameters: { ids: {
 		type: "array",
 		items: { type: "string" },
@@ -2640,7 +2652,7 @@ const create_worker = defineTool({
 });
 const send = defineTool({
 	name: "send",
-	description: "直接将完整消息交给活跃 Worker，跳过业务排队；只有需要立刻止损才用 interrupt。Worker 没有收件箱。",
+	description: "直接将完整消息交给活跃 Worker，跳过业务排队；只有需要立刻止损才用 interrupt。Worker 没有收件箱。票已结束不拦，Worker 还活着就能收到。",
 	parameters: {
 		workerId: {
 			type: "string",
@@ -2681,7 +2693,6 @@ const send = defineTool({
 		const ticket = await db.ticket.findById(worker.ticketId);
 		if (!ticket || ticket.projectId !== identity.projectId) throw new Error("Worker 不属于当前项目");
 		if (worker.status === "ended") throw new Error("Worker 已结束");
-		if (ticket.status === "done" || ticket.status === "cancelled") throw new Error("工单已结束");
 		if (!await session.lookup(worker.id)) throw new Error("Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送");
 		if (args.mode === "reply") {
 			const asks = (await db.inbox.listByTicket(ticket.id)).filter((row) => row.workerId === worker.id && row.kind === "ask" && row.status === "pending");
@@ -2736,7 +2747,7 @@ const view = defineTool({
 });
 const cancel = defineTool({
 	name: "cancel",
-	description: "中止 Worker 当前回合。那一次回合一并作废。",
+	description: "中止 Worker 当前回合。那一次回合一并作废。票已结束也能停，只看 Worker 是否还活着。",
 	parameters: {
 		workerId: {
 			type: "string",
