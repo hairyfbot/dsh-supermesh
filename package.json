@@ -3,16 +3,26 @@
   "type": "module",
   "version": "0.0.1",
   "packageManager": "pnpm@11.15.1",
-  "description": "_description_",
+  "description": "把 GitHub / GitLab 的 issue、PR 与评论变成任务，交给各自 worktree 里的 Worker 改代码、开 PR，再由上级代理验收收尾。",
   "author": "Hairy <wwu710632@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/dsh-tauri-desk/dsh-supermesh#readme",
+  "homepage": "https://github.com/omdsh-dev/dsh-supermesh#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dsh-tauri-desk/dsh-supermesh.git"
+    "url": "git+https://github.com/omdsh-dev/dsh-supermesh.git"
   },
-  "bugs": "https://github.com/dsh-tauri-desk/dsh-supermesh/issues",
-  "keywords": [],
+  "bugs": "https://github.com/omdsh-dev/dsh-supermesh/issues",
+  "keywords": [
+    "dsh",
+    "deepseek",
+    "deepseek-harness",
+    "supermesh",
+    "superagent",
+    "orchestrator",
+    "github",
+    "gitlab",
+    "feishu"
+  ],
   "sideEffects": false,
   "exports": {
     ".": "./dist/index.js",
