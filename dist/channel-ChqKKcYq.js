@@ -1588,6 +1588,8 @@ var agent_model_catalog_get_default = defineHandler(async () => {
 	return getServerContext(server).sessionController.modelCatalog();
 });
 const DSH_PLUGIN_HOME = `${process.env.DSH_HOME ?? join(homedir(), ".dsh")}/.supermesh`;
+/** 代理工作区：角色会话的 cwd 与官方工作区条目都只指向这里，插件状态留在上一层。 */
+const DSH_WORKSPACE_HOME = join(DSH_PLUGIN_HOME, "workspace");
 // src/storage/index.ts
 const storage = createStorage({ driver: fs({
 	atomic: true,
@@ -1717,7 +1719,9 @@ var agent_model_get_default = defineHandler(async () => (await setting.load()).m
 // src/service/role-model.ts
 const roleModel = defineService({
 	async resolve(model) {
-		const value = await getServerContext(server).llm.resolveCallConfig({
+		const llm = getServerContext(server).get("llm");
+		if (!llm) throw new Error("llm_unavailable");
+		const value = await llm.resolveCallConfig({
 			provider: model.provider,
 			model: model.model,
 			...model.reasoningEffort ? { reasoningEffort: ReasoningEffortId(model.reasoningEffort) } : {}
@@ -1766,7 +1770,7 @@ const roleModel = defineService({
 			];
 			return () => disposers.forEach((dispose) => dispose());
 		});
-		await ctx.sessionPersistence.flush();
+		await getServerContext(server).get("sessionPersistence")?.flush();
 	}
 });
 // src/server/routes/agent.model.patch.ts
@@ -2085,8 +2089,10 @@ const session = defineService({
 		};
 	},
 	workspace: singlet("session:workspace", async () => {
-		await mkdir(DSH_PLUGIN_HOME, { recursive: true });
-		return getServerContext(server).workspaceRegistry.create(DSH_PLUGIN_HOME, "代理工作区");
+		const ctx = getServerContext(server);
+		await mkdir(DSH_WORKSPACE_HOME, { recursive: true });
+		await retireLegacyWorkspace(ctx);
+		return ctx.workspaceRegistry.create(DSH_WORKSPACE_HOME, "代理工作区");
 	}),
 	activate: (id) => resolveAgent(id),
 	async lookup(id) {
@@ -2150,6 +2156,15 @@ const session = defineService({
 		if ((await session.activity(id)).background) throw new Error("background_stop_pending");
 	}
 });
+/**
+* 旧版本把「代理工作区」注册在 `.supermesh` 根本身，那里同时存着插件状态。
+* 工作区路径不可改，只能删掉这条注册；目录与会话日志都保留，旧会话退化为未分组。
+*/
+async function retireLegacyWorkspace(ctx) {
+	const legacy = await realpathNormalize(DSH_PLUGIN_HOME).catch(() => void 0);
+	if (!legacy) return;
+	for (const workspace of ctx.workspaceRegistry.list()) if (workspace.path === legacy) await ctx.workspaceRegistry.delete(workspace.id).catch(() => void 0);
+}
 async function bindWorkspace(id, cwd) {
 	const ctx = getServerContext(server);
 	const sid = SessionId(id);
@@ -2157,6 +2172,7 @@ async function bindWorkspace(id, cwd) {
 	if (!directory) return;
 	const actual = await realpathNormalize(directory).catch(() => void 0);
 	if (!actual) return;
+	if (actual === await realpathNormalize(DSH_PLUGIN_HOME).catch(() => void 0)) return;
 	for (const workspace of [await session.workspace(), ...ctx.workspaceRegistry.list()]) {
 		if (workspace.sessionIds.includes(sid)) return;
 		if (workspace.path !== actual) continue;
@@ -2452,7 +2468,7 @@ const shell = defineService({
 		if (restore) throw new Error("shell_already_started");
 		basePath = (process.env.PATH ?? "").split(delimiter).filter((path) => resolve(path).toLowerCase() !== resolve(bin).toLowerCase()).join(delimiter);
 		await refresh();
-		const release = getServerContext(server).shellEnv?.register({
+		const release = getServerContext(server).get("shellEnv")?.register({
 			name: "supermesh-role",
 			variables: { DSH_SUPERMESH_ROLE: { description: "Supermesh 角色会话标记，决定 gh / glab / git 是否使用插件的机器人身份。" } },
 			resolve: (execution) => {
@@ -2742,14 +2758,14 @@ const devops = defineService({
 	},
 	save(kind, patch) {
 		return channel.serialize(() => save(kind, patch)).then(async (view) => {
-			const { shell } = await import("./shell-TPRt1T7i.js");
+			const { shell } = await import("./shell-DqAUjFxq.js");
 			await shell.refresh();
 			return view;
 		});
 	},
 	removeCredentials(kind) {
 		return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
-			const { shell } = await import("./shell-TPRt1T7i.js");
+			const { shell } = await import("./shell-DqAUjFxq.js");
 			await shell.refresh();
 			return view;
 		});
