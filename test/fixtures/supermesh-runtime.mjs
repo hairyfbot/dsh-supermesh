@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { createRequire, registerHooks } from 'node:module'
 import { delimiter, join } from 'node:path'
@@ -42,7 +43,8 @@ const { project: projects } = await import('@/service/project.ts')
 const { worktree } = await import('@/service/worktree.ts')
 const git = promisify(execFile)
 const roles = ['orchestrator', 'manager', 'supervisor', 'worker']
-const agentDirectory = join(process.env.DSH_HOME, '.supermesh')
+const pluginHome = join(process.env.DSH_HOME, '.supermesh')
+const agentDirectory = join(pluginHome, 'workspace')
 const now = new Date().toISOString()
 let runtime
 
@@ -333,7 +335,21 @@ const cases = {
   async workspace() {
     const p = await project('workspace-project')
     await supervisor('workspace-supervisor')
+    // 旧版本把「代理工作区」注册在 `.supermesh` 根，与插件状态共树：升级后这条注册必须被移除，
+    // 否则侧栏会同时出现根目录与 workspace 两条同类条目。
+    await mkdir(pluginHome, { recursive: true })
+    const legacyWorkspace = await runtime.ctx.workspaceRegistry.create(pluginHome, '代理工作区')
     const workspace = await session.workspace()
+    assert.equal(runtime.ctx.workspaceRegistry.list().some(item => item.path === pluginHome), false, 'the workspace registered on the plugin root must be retired')
+    assert.notEqual(workspace.id, legacyWorkspace.id)
+    assert.equal(workspace.title, '代理工作区')
+    assert.equal(workspace.path, agentDirectory)
+    assert.notEqual(workspace.path, pluginHome, 'the agent workspace must not be the plugin home itself')
+    const { setting } = await import('@/service/setting.ts')
+    await setting.save({ maxWorkers: 4 })
+    assert.equal(existsSync(join(pluginHome, 'setting.json')), true, 'plugin settings must stay in the plugin home')
+    assert.equal(existsSync(join(agentDirectory, 'setting.json')), false, 'plugin settings must never land inside the agent workspace')
+    assert.equal(existsSync(join(agentDirectory, 'jobs.json')), false, 'the scheduler journal must never land inside the agent workspace')
     const manual = await runtime.ctx.sessionController.create({ cwd: agentDirectory, agentPreset: 'orchestrator' })
     assert.equal(await session.findMain(), manual.sessionId, 'manual main attach must retain its identity as the canonical main')
     assert.deepEqual(workspace.sessionIds, [manual.sessionId], 'manual main attach must bind its existing official workspace')
@@ -344,8 +360,6 @@ const cases = {
       session.create('supervisor', { supervisorId: 'workspace-supervisor', directory: p.directory }),
     ])
     assert.equal(ids[0], manual.sessionId, 'create must reuse the manually attached main instead of duplicating it')
-    assert.equal(workspace.title, '代理工作区')
-    assert.equal(workspace.path, agentDirectory)
     assert.deepEqual(new Set(workspace.sessionIds), new Set(ids))
     assert.deepEqual(runtime.ctx.workspaceRegistry.get(p.workspaceId).sessionIds, [])
     for (const [index, id] of ids.entries()) {

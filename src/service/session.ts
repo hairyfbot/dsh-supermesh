@@ -10,7 +10,7 @@ import { basename } from 'node:path'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import { realpathNormalize } from '@deepseek-ai/dsh-workspace'
 import { getServerContext } from 'dsh-h3/utils'
-import { DSH_PLUGIN_HOME } from '@/config/paths'
+import { DSH_PLUGIN_HOME, DSH_WORKSPACE_HOME } from '@/config/paths'
 import { db } from '@/database'
 import { singlet } from '@/runtime/singlet'
 import { server } from '@/server'
@@ -242,8 +242,10 @@ export const session = defineService({
     return { text: text.slice(offset, end), next_offset: end < text.length ? end : null }
   },
   workspace: singlet('session:workspace', async () => {
-    await mkdir(DSH_PLUGIN_HOME, { recursive: true })
-    return getServerContext<Context>(server).workspaceRegistry.create(DSH_PLUGIN_HOME, '代理工作区')
+    const ctx = getServerContext<Context>(server)
+    await mkdir(DSH_WORKSPACE_HOME, { recursive: true })
+    await retireLegacyWorkspace(ctx)
+    return ctx.workspaceRegistry.create(DSH_WORKSPACE_HOME, '代理工作区')
   }),
   // 不能用 singlet 缓存：worker 每轮结束后会话是 end-seed，复用同一 worker 时必须重新
   // resolveAgent 才能续上。缓存会把上一轮已结束的 Agent 一直返回，新一轮 prompt 无处可投。
@@ -306,6 +308,20 @@ export const session = defineService({
   },
 })
 
+/**
+ * 旧版本把「代理工作区」注册在 `.supermesh` 根本身，那里同时存着插件状态。
+ * 工作区路径不可改，只能删掉这条注册；目录与会话日志都保留，旧会话退化为未分组。
+ */
+async function retireLegacyWorkspace(ctx: Context): Promise<void> {
+  const legacy = await realpathNormalize(DSH_PLUGIN_HOME).catch(() => undefined)
+  if (!legacy)
+    return
+  for (const workspace of ctx.workspaceRegistry.list()) {
+    if (workspace.path === legacy)
+      await ctx.workspaceRegistry.delete(workspace.id).catch(() => undefined)
+  }
+}
+
 async function bindWorkspace(id: string, cwd?: string): Promise<void> {
   const ctx = getServerContext<Context>(server)
   const sid = SessionId(id)
@@ -314,6 +330,10 @@ async function bindWorkspace(id: string, cwd?: string): Promise<void> {
     return
   const actual = await realpathNormalize(directory).catch(() => undefined)
   if (!actual)
+    return
+  // `.supermesh` 根只放插件状态：旧会话的 cwd 停在这里，自动挂载不能再把它注册成工作区，
+  // 否则侧栏会多出一条与插件数据共树的同类条目。
+  if (actual === await realpathNormalize(DSH_PLUGIN_HOME).catch(() => undefined))
     return
   for (const workspace of [await session.workspace(), ...ctx.workspaceRegistry.list()]) {
     if (workspace.sessionIds.includes(sid))
