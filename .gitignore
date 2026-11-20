@@ -14,6 +14,7 @@ temp
 
 # Ignore generated npm skills, while keeping project-owned skills visible
 .agents/skills
+.agents/worktrees
 .claude/skills
 **/skills/*
 !**/skills/*/
