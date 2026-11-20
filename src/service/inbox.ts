@@ -2,10 +2,12 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { Selectable } from 'kysely'
 import type { InboxScope } from '@/database/models/inbox'
 import type { DB } from '@/database/types'
+import type { TriggerStrength } from '@/types/admission'
 import type {} from '@/types/mailbox'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { db } from '@/database'
 import { singlet } from '@/runtime/singlet'
+import { triggerStrength } from '@/service/admission'
 import { session } from '@/service/session'
 import { setting } from '@/service/setting'
 import { defineService } from '@/utils/service'
@@ -49,11 +51,11 @@ export const inbox = defineService({
     if (!scope)
       return null
     const rows = await db.inbox.listScoped(scope, includeChannel)
-    const triggers = new Map<string, { kind: string, actorName: string | null, human: boolean, mentioned: boolean }>()
+    const triggers = new Map<string, { kind: string, actorName: string | null, human: boolean, mentioned: boolean, strength: TriggerStrength }>()
     for (const triggerId of new Set(rows.map(message => message.triggerId).filter(Boolean) as string[])) {
       const trigger = await db.trigger.findById(triggerId)
       if (trigger)
-        triggers.set(triggerId, { kind: trigger.kind, actorName: trigger.actorName, human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned) })
+        triggers.set(triggerId, { kind: trigger.kind, actorName: trigger.actorName, human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned), strength: await triggerStrength(trigger) })
     }
     const messages = rows.map(message => ({ ...message, ...(message.triggerId && triggers.has(message.triggerId) ? { trigger: triggers.get(message.triggerId)! } : {}) }))
     const projects = (await db.project.listAll()).filter(project => project.enabled && (identity.role === 'main' || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({ id, name, directory, remoteUrl }))
@@ -146,12 +148,13 @@ export const inbox = defineService({
           continue
         // 把触发事实带给收件人：没 @ bot 的消息只是时间线记录，不能当成开工请求。
         const trigger = message.triggerId ? await db.trigger.findById(message.triggerId) : undefined
+        const strength = trigger ? await triggerStrength(trigger) : undefined
         await session.send(id, [
           message.title ?? '',
           `[Inbox ${message.id}]`,
           message.triggerId ? `triggerId: ${message.triggerId}` : '',
           message.threadId ? `threadId: ${message.threadId}` : '',
-          trigger ? `actor: ${trigger.actorName ?? 'unknown'} human: ${trigger.human ? 'yes' : 'no'} mentioned: ${trigger.mentioned ? 'yes' : 'no'}` : '',
+          trigger ? `actor: ${trigger.actorName ?? 'unknown'} human: ${trigger.human ? 'yes' : 'no'} mentioned: ${trigger.mentioned ? 'yes' : 'no'} strength: ${strength}` : '',
           message.message,
         ].filter(Boolean).join(String.fromCharCode(10)), 'queue', requestId)
         await db.inbox.resetDelivery(message.id)

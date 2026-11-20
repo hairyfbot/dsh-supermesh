@@ -7,7 +7,7 @@ import { register } from 'tsx/esm/api'
 register()
 const { setting } = await import('@/service/setting.ts')
 const { storage } = await import('@/storage/index.ts')
-const { acceptsChannelTrigger } = await import('@/channel/_shared/admission.ts')
+const { channelTriggerStrength } = await import('@/channel/_shared/admission.ts')
 
 assert.equal(process.env.DSH_HOME, join(process.cwd(), 'home'))
 try {
@@ -27,17 +27,17 @@ try {
   await Promise.all([setting.save({ maxWorkers: 5 }), setting.save({ administrators: ['Shared.Owner'] })])
   assert.equal((await setting.load()).maxWorkers, 5)
   assert.deepEqual((await setting.load()).administrators, ['Shared.Owner'])
-  const base = { human: true, historical: false, subscribed: false, mentioned: true, kind: 'comment', ignored: false }
+  const base = { human: true, historical: false, subscribed: false, mentioned: true, kind: 'comment', ignored: false, inferred: 'observe' }
   for (const actorName of ['shared.owner', 'SHARED.OWNER']) {
     const admin = (await setting.load()).administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
-    assert.equal(acceptsChannelTrigger({ ...base, admin }), true)
+    assert.equal(channelTriggerStrength({ ...base, admin }), 'explicit')
   }
   await setting.save({ administrators: [] })
   assert.deepEqual((await setting.load()).administrators, [])
   const admin = (await setting.load()).administrators.some(name => name.toLowerCase() === 'legacy-owner')
-  assert.equal(acceptsChannelTrigger({ ...base, admin }), false)
-  assert.equal(acceptsChannelTrigger({ ...base, admin, subscribed: true }), true)
-  assert.equal(acceptsChannelTrigger({ ...base, admin: true, human: false }), false)
+  assert.equal(channelTriggerStrength({ ...base, admin }), null)
+  assert.equal(channelTriggerStrength({ ...base, admin, subscribed: true }), 'inferred')
+  assert.equal(channelTriggerStrength({ ...base, admin: true, human: false }), null)
   for (const administrators of [['@owner'], ['Display Name'], ['https://github.com/owner'], [''], [null], 'owner', Array.from({ length: 101 }).fill('owner')]) {
     await assert.rejects(setting.save({ administrators }), { message: 'invalid_config' })
     assert.deepEqual((await setting.load()).administrators, [])

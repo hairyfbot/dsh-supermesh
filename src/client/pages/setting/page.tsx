@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { PatchApiSupermeshSettingBody } from '@/client/apis/index.type'
 import type { RuntimeSettings } from '@/client/store/setting'
+import type { InferredMode } from '@/types/admission'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Case, Switch } from 'react-if-lite'
@@ -20,13 +21,14 @@ type Failed = 'general' | 'execution' | 'delivery'
 
 const NUMERIC = ['maxWorkers', 'backgroundLimitMinutes', 'autoMerge', 'autoMergeMaxLines', 'autoArchiveWorkers', 'deliveryMaxAttempts', 'deliveryRetryCeilingSeconds'] as const
 
-function toRuntime(value: { administrators: string[], maxWorkers: number, backgroundLimitMinutes: number, autoMerge: boolean, autoMergeMaxLines: number, autoArchiveWorkers: boolean, deliveryMaxAttempts: number, deliveryRetryCeilingSeconds: number }): RuntimeSettings {
-  const { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = value
-  return { administrators, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
+function toRuntime(value: { administrators: string[], inferred: InferredMode, maxWorkers: number, backgroundLimitMinutes: number, autoMerge: boolean, autoMergeMaxLines: number, autoArchiveWorkers: boolean, deliveryMaxAttempts: number, deliveryRetryCeilingSeconds: number }): RuntimeSettings {
+  const { administrators, inferred, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds } = value
+  return { administrators, inferred, maxWorkers, backgroundLimitMinutes, autoMerge, autoMergeMaxLines, autoArchiveWorkers, deliveryMaxAttempts, deliveryRetryCeilingSeconds }
 }
 
 function sameSettings(left: RuntimeSettings, right: RuntimeSettings): boolean {
   return administratorSignature(left.administrators) === administratorSignature(right.administrators)
+    && left.inferred === right.inferred
     && NUMERIC.every(key => left[key] === right[key])
 }
 
@@ -74,7 +76,7 @@ export function Setting(): ReactNode {
     if (!baseline)
       return
     setDraft(current => current && (section === 'general'
-      ? { ...current, administrators: [...baseline.administrators], autoArchiveWorkers: baseline.autoArchiveWorkers }
+      ? { ...current, administrators: [...baseline.administrators], inferred: baseline.inferred, autoArchiveWorkers: baseline.autoArchiveWorkers }
       : { ...current, ...Object.fromEntries(GROUPS[section].map(key => [key, baseline[key]])) }))
     setNotice(null)
     setFailed(null)
@@ -91,7 +93,7 @@ export function Setting(): ReactNode {
     }
   }
   const dirtyOf = (scope: 'execution' | 'delivery'): boolean => draft !== null && baseline !== null && GROUPS[scope].some(key => draft[key] !== baseline[key])
-  const generalDirty = draft !== null && baseline !== null && (administratorSignature(draft.administrators) !== administratorSignature(baseline.administrators) || draft.autoArchiveWorkers !== baseline.autoArchiveWorkers)
+  const generalDirty = draft !== null && baseline !== null && (administratorSignature(draft.administrators) !== administratorSignature(baseline.administrators) || draft.inferred !== baseline.inferred || draft.autoArchiveWorkers !== baseline.autoArchiveWorkers)
   const executionDirty = dirtyOf('execution')
   const deliveryDirty = dirtyOf('delivery')
   const invalid = draft !== null && !numbersValid(draft)
