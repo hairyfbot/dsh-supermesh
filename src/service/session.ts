@@ -33,6 +33,13 @@ export const session = defineService({
       registered.delete(id)
     }
   },
+  /** 同步判定一个 Agent 是不是插件的四个角色会话：只按预设判断，不读会话历史。 */
+  roleOf(agent: Agent): Role | null {
+    const preset = getServerContext<Context>(server).agentPresets.composedPreset(agent.ctx)
+    if (!preset || !registered.has(preset))
+      return null
+    return (Object.keys(presets) as Role[]).find(role => presets[role] === preset) ?? null
+  },
   async attach(agent: Agent): Promise<Role | null> {
     const ctx = getServerContext<Context>(server)
     const preset = ctx.agentPresets.composedPreset(agent.ctx)

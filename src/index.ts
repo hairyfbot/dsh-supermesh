@@ -5,6 +5,7 @@ import type { } from '@deepseek-ai/dsh-client-connection'
 import type { } from '@deepseek-ai/dsh-credentials'
 import type { } from '@deepseek-ai/dsh-session'
 import type { } from '@deepseek-ai/dsh-session-query'
+import type { } from '@deepseek-ai/dsh-shell-env'
 import type { } from '@deepseek-ai/dsh-workspace'
 
 import { agents } from '@/ai'

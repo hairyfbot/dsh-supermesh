@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { createRequire, registerHooks } from 'node:module'
-import { join } from 'node:path'
+import { delimiter, join } from 'node:path'
 import process from 'node:process'
 import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
@@ -70,6 +70,7 @@ async function start() {
     ['dsh-api-gateway', {}],
     ['dsh-session-persistence-jsonl', { root: join(process.env.DSH_HOME, 'sessions') }],
     ['dsh-session-query-sqlite', { path: ':memory:', openAt: 'never' }],
+    ['dsh-shell-env', {}],
     ['dsh-storage', {}],
     ['dsh-storage-json', { root: join(process.env.DSH_HOME, 'storages') }],
     ['dsh-storage-domain', { backend: 'json' }],
@@ -211,51 +212,64 @@ const cases = {
     // 原生 shell 每次要串起 pwsh/bash → cmd → gh，冷启动在 CI 上能到十几秒，10 秒预算会把冷启动当成失败。
     const native = (command, cwd = directory, env) => run(nativeShell(command), cwd, undefined, env, 30000)
     const describeRun = result => `exit=${result.code} stdout=${JSON.stringify(result.output)} stderr=${JSON.stringify(result.error)}`
+    const shellPath = process.env.PATH
+    const ambientGitConfig = process.env.GIT_CONFIG_GLOBAL
     try {
       assert.equal((await runtime.ctx.credentials.resolve(credentialRef('SUPERMESH_GITHUB_TOKEN'))).value === botToken, true, 'GitHub credential must survive GitLab credential registration')
       stop = await shell.start()
-      assert.equal(process.env.GH_TOKEN === undefined, true, 'start must remove ambient personal tokens')
-      const auth = await native('gh auth token', directory, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
+      // 宿主进程环境不再被改写：其它会话的 token、git 配置必须原样保留。
+      assert.equal(process.env.GH_TOKEN, personalToken, 'start must not touch ambient tokens')
+      assert.equal(process.env.GIT_CONFIG_GLOBAL, ambientGitConfig, 'start must not hijack the global git config')
+      assert.equal(process.env.GIT_AUTHOR_NAME, original.GIT_AUTHOR_NAME, 'start must not delete ambient git identity variables')
+      assert.equal(process.env.PATH.split(delimiter)[0].endsWith(join('.supermesh', 'cli', 'bin')), true, 'shim directory must lead PATH')
+      const role = { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken, DSH_SUPERMESH_ROLE: 'worker' }
+      const auth = await native('gh auth token', directory, role)
       assert.equal(auth.code, 0, `real native shell must resolve the gh shim (${describeRun(auth)})`)
-      assert.equal(auth.output.trim() === botToken, true, `gh shim must ignore personal env and use the private bot config (personal=${auth.output.trim() === personalToken}, botIncluded=${auth.output.includes(botToken)}, gitlab=${auth.output.trim() === gitlabToken}, chars=${auth.output.trim().length})`)
-      const credential = await run(['git', 'credential', 'fill'], directory, 'protocol=https\nhost=github.com\n\n')
+      assert.equal(auth.output.trim() === botToken, true, `role sessions must use the private bot config (personal=${auth.output.trim() === personalToken}, botIncluded=${auth.output.includes(botToken)}, gitlab=${auth.output.trim() === gitlabToken}, chars=${auth.output.trim().length})`)
+      const ambient = await native('gh auth token', directory, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
+      assert.equal(ambient.output.trim(), personalToken, 'sessions outside the four roles must keep their own credential')
+      assert.equal(ambient.output.includes(botToken), false)
+      const credential = await run(['git', 'credential', 'fill'], directory, 'protocol=https\nhost=github.com\n\n', { GIT_CONFIG_GLOBAL: join(process.env.DSH_HOME, '.supermesh', 'cli', 'gitconfig'), GIT_CONFIG_NOSYSTEM: '1', DSH_SUPERMESH_ROLE: 'worker' })
       assert.equal(credential.code, 0, 'git must use the configured native gh credential helper')
       assert.equal(credential.output.includes(`password=${botToken}`), true, 'git helper must return only the isolated bot credential')
       assert.equal(credential.output.includes(personalToken), false)
-      const other = await run(['git', 'credential', 'fill'], directory, 'protocol=https\nhost=other.example.invalid\n\n')
+      const other = await run(['git', 'credential', 'fill'], directory, 'protocol=https\nhost=other.example.invalid\n\n', { GIT_CONFIG_GLOBAL: join(process.env.DSH_HOME, '.supermesh', 'cli', 'gitconfig'), GIT_CONFIG_NOSYSTEM: '1', DSH_SUPERMESH_ROLE: 'worker' })
       assert.notEqual(other.code, 0, 'unconfigured credential hosts must fail without prompting')
       assert.equal(`${other.output}${other.error}`.includes(botToken), false)
       assert.equal(`${other.output}${other.error}`.includes(personalToken), false)
       for (const cwd of [directory, linked]) {
-        const name = await run(['git', 'config', 'user.name'], cwd)
-        const email = await run(['git', 'config', 'user.email'], cwd)
-        assert.equal(name.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit name`)
+        const name = await native('git config user.name', cwd, { DSH_SUPERMESH_ROLE: 'worker' })
+        const email = await native('git config user.email', cwd, { DSH_SUPERMESH_ROLE: 'worker' })
+        assert.equal(name.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit name (${describeRun(name)})`)
         assert.equal(name.output.trim(), metadata.commitName)
         assert.equal(email.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit email`)
         assert.equal(email.output.trim(), metadata.commitEmail)
+        const outside = await native('git config user.name', cwd)
+        assert.notEqual(outside.output.trim(), metadata.commitName, 'sessions outside the four roles must keep their own git identity')
       }
-      const merging = await native('gh-default auth token', directory, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
+      const merging = await native('gh-default auth token', directory, role)
       assert.equal(`${merging.output}${merging.error}`.includes(botToken), false, 'the default-login merge entry must never answer with the bot credential')
       assert.notEqual(merging.output.trim(), botToken)
       if (process.env.SUPERMESH_TEST_GLAB_DIR) {
-        const auth = await native(`glab config get token --host ${gitlabHost}`, gitlabDirectory, { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken, OAUTH_TOKEN: personalToken, CI_JOB_TOKEN: personalToken })
+        const glabRole = { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken, OAUTH_TOKEN: personalToken, CI_JOB_TOKEN: personalToken, DSH_SUPERMESH_ROLE: 'worker' }
+        const auth = await native(`glab config get token --host ${gitlabHost}`, gitlabDirectory, glabRole)
         assert.equal(auth.code, 0, `real portable glab must run through the native shell shim (${describeRun(auth)})`)
         assert.equal(auth.output.trim() === gitlabToken, true, 'glab shim must select the private bot config rather than ambient tokens/config')
-        const credential = await run(['git', 'credential', 'fill'], gitlabDirectory, `protocol=https\nhost=${gitlabHost}\n\n`)
+        const credential = await run(['git', 'credential', 'fill'], gitlabDirectory, `protocol=https\nhost=${gitlabHost}\n\n`, { GIT_CONFIG_GLOBAL: join(process.env.DSH_HOME, '.supermesh', 'cli', 'gitconfig'), GIT_CONFIG_NOSYSTEM: '1', DSH_SUPERMESH_ROLE: 'worker' })
         assert.equal(credential.code, 0, 'GitLab credential helper must execute the real glab')
         assert.equal(credential.output.includes(`password=${gitlabToken}`), true)
         assert.equal(credential.output.includes(personalToken), false)
-        const name = await run(['git', 'config', 'user.name'], gitlabDirectory)
-        const email = await run(['git', 'config', 'user.email'], gitlabDirectory)
+        const name = await native('git config user.name', gitlabDirectory, { DSH_SUPERMESH_ROLE: 'worker' })
+        const email = await native('git config user.email', gitlabDirectory, { DSH_SUPERMESH_ROLE: 'worker' })
         assert.equal(name.output.trim(), gitlabMetadata.commitName)
         assert.equal(email.output.trim(), gitlabMetadata.commitEmail)
         await db.channel.setEnabled('gitlab', false)
         await shell.refresh()
-        const disabled = await native(`glab config get token --host ${gitlabHost}`, gitlabDirectory, { GITLAB_TOKEN: personalToken, GLAB_TOKEN: personalToken })
+        const disabled = await native(`glab config get token --host ${gitlabHost}`, gitlabDirectory, glabRole)
         assert.equal(disabled.output.trim().length === 0, true, 'disabled GitLab config must not expose any ambient or keyring credential')
         assert.equal(`${disabled.output}${disabled.error}`.includes(gitlabToken), false)
         assert.equal(`${disabled.output}${disabled.error}`.includes(personalToken), false)
-        const disabledCredential = await run(['git', 'credential', 'fill'], gitlabDirectory, `protocol=https\nhost=${gitlabHost}\n\n`)
+        const disabledCredential = await run(['git', 'credential', 'fill'], gitlabDirectory, `protocol=https\nhost=${gitlabHost}\n\n`, { GIT_CONFIG_GLOBAL: join(process.env.DSH_HOME, '.supermesh', 'cli', 'gitconfig'), GIT_CONFIG_NOSYSTEM: '1', DSH_SUPERMESH_ROLE: 'worker' })
         assert.notEqual(disabledCredential.code, 0, 'disabled GitLab must not answer git credential requests')
         assert.equal(`${disabledCredential.output}${disabledCredential.error}`.includes(gitlabToken), false)
         assert.equal(`${disabledCredential.output}${disabledCredential.error}`.includes(personalToken), false)
@@ -263,7 +277,7 @@ const cases = {
       }
       await db.channel.setEnabled('github', false)
       await shell.refresh()
-      const disabled = await native('gh auth token', directory, { GH_TOKEN: personalToken, GITHUB_TOKEN: personalToken })
+      const disabled = await native('gh auth token', directory, role)
       assert.notEqual(disabled.code, 0, 'disabled channel must not fall back to ambient CLI login or token')
       assert.equal(`${disabled.output}${disabled.error}`.includes(botToken), false)
       assert.equal(`${disabled.output}${disabled.error}`.includes(personalToken), false)
@@ -271,6 +285,7 @@ const cases = {
       stop = undefined
       const keys = new Set([...Object.keys(before), ...Object.keys(process.env)])
       assert.equal([...keys].every(key => process.env[key] === before[key]), true, 'stop must restore every changed process environment entry')
+      assert.equal(process.env.PATH, shellPath, 'stop must restore the original PATH')
     }
     finally {
       if (stop)
@@ -443,6 +458,27 @@ const cases = {
     await expectWake(id, 1)
     assert.equal((await db.inbox.findById('stalled-channel')).status, 'stalled')
     assert.equal((await db.inbox.findById('internal-after-channel')).deliveryAttempts, 0)
+  },
+  async roleMarker() {
+    const { shell } = await import('@/service/shell.ts')
+    const { default: AgentPreset } = await import('@deepseek-ai/dsh-agent-preset')
+    await runtime.ctx.plugin(AgentPreset, { id: 'plain', plugins: [] })
+    const stopShell = await shell.start()
+    try {
+      const p = await project('marker-project')
+      const roleId = await session.create('project', { projectId: p.id })
+      const role = await session.activate(roleId)
+      const plain = await runtime.ctx.sessionController.create({ cwd: agentDirectory, agentPreset: 'plain' })
+      const plainAgent = runtime.ctx.agents.get(SessionId(plain.sessionId)) ?? null
+      assert.equal(plainAgent !== null, true, 'plain session must be live before collecting its environment')
+      assert.equal(runtime.ctx.shellEnv.list().some(item => item.key === 'DSH_SUPERMESH_ROLE' && item.contributor === 'supermesh-role'), true, 'the role marker must be declared by the plugin')
+      assert.equal(runtime.ctx.shellEnv.collect({ agent: role }).DSH_SUPERMESH_ROLE, 'project', 'role sessions must receive the bot marker')
+      assert.equal(runtime.ctx.shellEnv.collect({ agent: plainAgent }).DSH_SUPERMESH_ROLE, undefined, 'sessions outside the four roles must not receive the bot marker')
+      assert.equal(runtime.ctx.shellEnv.collect({}).DSH_SUPERMESH_ROLE, undefined, 'executions without an agent must not receive the bot marker')
+    }
+    finally {
+      await stopShell()
+    }
   },
   async workerEnd() {
     const p = await project('worker-end-project')

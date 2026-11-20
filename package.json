@@ -138,6 +138,7 @@
     "@deepseek-ai/dsh-session-persistence": "catalog:dsh",
     "@deepseek-ai/dsh-session-projection": "catalog:dsh",
     "@deepseek-ai/dsh-session-query": "catalog:dsh",
+    "@deepseek-ai/dsh-shell-env": "catalog:dsh",
     "@deepseek-ai/dsh-skill-filesystem": "catalog:dsh",
     "@deepseek-ai/dsh-tools": "catalog:dsh",
     "@deepseek-ai/dsh-user-approval": "catalog:dsh",
