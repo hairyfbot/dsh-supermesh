@@ -148,7 +148,9 @@ async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelV
   const providerId = identity?.providerId ?? current.providerId
   const login = identity?.name ?? current.accounts.find(account => account.role === 'bot')?.name ?? ''
   // 平台按邮箱归属提交：没填邮箱时直接落成账号的 noreply 地址，避免 bot 的提交记到人头上。
-  const commitEmail = patch.commitEmail?.trim() || current.commitEmail || noreplyEmail(kind, login, providerId, url.origin)
+  // 显式清空也走默认值，否则用户没法把填错的个人邮箱退回默认。
+  const requested = patch.commitEmail?.trim() ?? current.commitEmail
+  const commitEmail = requested || noreplyEmail(kind, login, providerId, url.origin)
   const previous = token ? await channel.storeCredential(kind, token) : undefined
   try {
     await db.channel.saveConfiguration(kind, current.name, kind === 'gitlab' ? url.origin : null, enabled, { commitName: patch.commitName?.trim() ?? current.commitName, commitEmail, providerId }, account, ...(hostChanged ? [true] as const : []))

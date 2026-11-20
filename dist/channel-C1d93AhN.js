@@ -2682,14 +2682,14 @@ const devops = defineService({
 	},
 	save(kind, patch) {
 		return channel.serialize(() => save(kind, patch)).then(async (view) => {
-			const { shell } = await import("./shell-DqQ6HtUt.js");
+			const { shell } = await import("./shell-DzrnBk4C.js");
 			await shell.refresh();
 			return view;
 		});
 	},
 	removeCredentials(kind) {
 		return channel.serialize(() => removeCredentials(kind)).then(async (view) => {
-			const { shell } = await import("./shell-DqQ6HtUt.js");
+			const { shell } = await import("./shell-DzrnBk4C.js");
 			await shell.refresh();
 			return view;
 		});
@@ -2744,7 +2744,7 @@ async function save(kind, patch) {
 	}
 	const providerId = identity?.providerId ?? current.providerId;
 	const login = identity?.name ?? current.accounts.find((account) => account.role === "bot")?.name ?? "";
-	const commitEmail = patch.commitEmail?.trim() || current.commitEmail || noreplyEmail(kind, login, providerId, url.origin);
+	const commitEmail = (patch.commitEmail?.trim() ?? current.commitEmail) || noreplyEmail(kind, login, providerId, url.origin);
 	const previous = token ? await channel.storeCredential(kind, token) : void 0;
 	try {
 		await db.channel.saveConfiguration(kind, current.name, kind === "gitlab" ? url.origin : null, enabled, {
