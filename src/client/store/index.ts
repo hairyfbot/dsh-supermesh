@@ -10,7 +10,7 @@ export type Page = TabKind | 'channel/detail' | 'ticket/detail' | 'trigger/detai
 
 export const store = defineStore({
   init: () => {
-    const saved: RuntimeSettings = { administrators: [], maxWorkers: 10, backgroundLimitMinutes: 30, autoMerge: false, autoMergeMaxLines: 200, autoArchiveWorkers: false, deliveryMaxAttempts: 3, deliveryRetryCeilingSeconds: 60 }
+    const saved: RuntimeSettings = { administrators: [], inferred: 'observe', maxWorkers: 10, backgroundLimitMinutes: 30, autoMerge: false, autoMergeMaxLines: 200, autoArchiveWorkers: false, deliveryMaxAttempts: 3, deliveryRetryCeilingSeconds: 60 }
     return ({
       navigation: { page: 'overview' as Page, ticketId: null as string | null, returnTo: 'overview' as 'overview' | 'ticket' | 'trigger' | 'trigger/detail' },
       channel: { selected: null as OverviewChannelKind | null },

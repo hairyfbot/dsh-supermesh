@@ -164,8 +164,32 @@ export type PutApiSupermeshChannelidConfigurationResponse = { channel: { id: str
 export type DeleteApiSupermeshChannelidCredentialResponse = { channel: { id: string; kind: "github" | "gitlab" | "feishu"; name: string; host: null | string; enabled: false | true; createdAt: string; configured: false | true; supported: false | true; hasCredential: false | true; status: "online" | "offline" | "unsupported" | "unconfigured" | "disabled"; commitName: string; commitEmail: string; commitEmailSuggestion: string; providerId: string; accounts: { id: string; channelId: string; role: "bot" | "admin"; name: string; avatar: null | string; status: "online" | "offline"; createdAt: string }[] } };
 export type PostApiSupermeshChannelidAuthenticationResponse = { id: string; channelId: string; status: "pending" | "failed" | "succeeded"; output: string; verificationUri?: undefined | string; userCode?: undefined | string; error?: undefined | string; account?: undefined | { login: string } };
 export type GetApiSupermeshChannelidAuthenticationauthenticationIdResponse = { id: string; channelId: string; status: "pending" | "failed" | "succeeded"; output: string; verificationUri?: undefined | string; userCode?: undefined | string; error?: undefined | string; account?: undefined | { login: string } };
-export type GetApiSupermeshSettingResponse = { models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } }; administrators: string[]; maxWorkers: number; backgroundLimitMinutes: number; autoMerge: false | true; autoMergeMaxLines: number; autoArchiveWorkers: false | true; deliveryMaxAttempts: number; deliveryRetryCeilingSeconds: number; updatedAt: string };
-export type PatchApiSupermeshSettingResponse = { models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } }; administrators: string[]; maxWorkers: number; backgroundLimitMinutes: number; autoMerge: false | true; autoMergeMaxLines: number; autoArchiveWorkers: false | true; deliveryMaxAttempts: number; deliveryRetryCeilingSeconds: number; updatedAt: string };
+export type GetApiSupermeshSettingResponse = {
+  models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
+  administrators: string[];
+  inferred: "off" | "observe" | "auto";
+  maxWorkers: number;
+  backgroundLimitMinutes: number;
+  autoMerge: false | true;
+  autoMergeMaxLines: number;
+  autoArchiveWorkers: false | true;
+  deliveryMaxAttempts: number;
+  deliveryRetryCeilingSeconds: number;
+  updatedAt: string;
+};
+export type PatchApiSupermeshSettingResponse = {
+  models: { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
+  administrators: string[];
+  inferred: "off" | "observe" | "auto";
+  maxWorkers: number;
+  backgroundLimitMinutes: number;
+  autoMerge: false | true;
+  autoMergeMaxLines: number;
+  autoArchiveWorkers: false | true;
+  deliveryMaxAttempts: number;
+  deliveryRetryCeilingSeconds: number;
+  updatedAt: string;
+};
 export type GetApiSupermeshAgentModelResponse = { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
 export type PatchApiSupermeshAgentModelResponse = { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
 export type GetApiSupermeshAgentModelCatalogResponse = { default: { provider: string; model: string; reasoningEffort?: undefined | string }; routableProviders: string[]; groups: { id: string; name: string; models: { id: string; name: string; description?: undefined | string; reasoning?: undefined | { efforts: { id: string; name: string; description?: undefined | string }[]; defaultEffort?: undefined | string }; badge?: undefined | { text: string | { en: string; [key: string]: string }; tone: "info" | "neutral" | "success" | "warning" } }[] }[]; failures: { id: string; name: string; message: string }[] };
@@ -178,7 +202,34 @@ export type GetApiSupermeshSessionidMailboxResponse = {
     role: "main" | "project" | "supervisor";
     projects: { id: string; name: string; directory: string; remoteUrl: null | string }[];
     pendingCount: number;
-    messages: { status: "pending" | "done" | "stalled"; message: string; id: string; createdAt: string; kind: "trigger" | "ticket" | "ask" | "notice"; seq: number; type: "main" | "project" | "supervisor" | "user"; projectId: null | string; supervisorId: null | string; origin: "main" | "project" | "worker" | "supervisor" | "channel" | "system"; title: null | string; doneAt: null | string; deliveryAttempts: number; deliveryError: null | string; nextRetryAt: null | string; readAt: null | string; escalations: number; lastEscalatedAt: null | string; answer: null | string; answeredBy: null | "main" | "project" | "worker" | "supervisor" | "user"; answeredAt: null | string; triggerId: null | string; threadId: null | string; ticketId: null | string; workerId: null | string }[];
+    messages: {
+      trigger?: undefined | { kind: string; actorName: null | string; human: false | true; mentioned: false | true; strength: "explicit" | "inferred" };
+      status: "pending" | "done" | "stalled";
+      message: string;
+      id: string;
+      createdAt: string;
+      kind: "trigger" | "ticket" | "ask" | "notice";
+      seq: number;
+      type: "main" | "project" | "supervisor" | "user";
+      projectId: null | string;
+      supervisorId: null | string;
+      origin: "main" | "project" | "worker" | "supervisor" | "channel" | "system";
+      title: null | string;
+      doneAt: null | string;
+      deliveryAttempts: number;
+      deliveryError: null | string;
+      nextRetryAt: null | string;
+      readAt: null | string;
+      escalations: number;
+      lastEscalatedAt: null | string;
+      answer: null | string;
+      answeredBy: null | "main" | "project" | "worker" | "supervisor" | "user";
+      answeredAt: null | string;
+      triggerId: null | string;
+      threadId: null | string;
+      ticketId: null | string;
+      workerId: null | string;
+    }[];
   };
 };
 export type PatchApiSupermeshSessionidMailboxmessageIdResponse = { completed: number };
@@ -209,6 +260,7 @@ export interface PostApiSupermeshChannelidAuthenticationBody {
   host?: undefined | string;
 }
 export interface PatchApiSupermeshSettingBody {
+  inferred?: undefined | "off" | "observe" | "auto";
   models?: undefined | { main: null | { provider: string; model: string; reasoningEffort?: undefined | string }; manager: null | { provider: string; model: string; reasoningEffort?: undefined | string }; project: null | { provider: string; model: string; reasoningEffort?: undefined | string }; worker: null | { provider: string; model: string; reasoningEffort?: undefined | string }; supervisor: null | { provider: string; model: string; reasoningEffort?: undefined | string } };
   administrators?: undefined | string[];
   maxWorkers?: undefined | number;

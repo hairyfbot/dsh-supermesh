@@ -6,6 +6,7 @@ import { defineService } from '@/utils/service'
 const defaults: Settings = {
   models: { main: null, manager: null, project: null, worker: null, supervisor: null },
   administrators: [],
+  inferred: 'observe',
   maxWorkers: 10,
   backgroundLimitMinutes: 30,
   autoMerge: false,
@@ -62,6 +63,8 @@ function valid(value: unknown, allowEmpty = false): value is SettingsPatch {
       return Array.isArray(entry) && entry.length <= 100 && entry.every(name => typeof name === 'string' && /^[a-z0-9][\w.-]{0,254}$/i.test(name.trim()))
     if (key === 'autoMerge' || key === 'autoArchiveWorkers')
       return typeof entry === 'boolean'
+    if (key === 'inferred')
+      return entry === 'off' || entry === 'observe' || entry === 'auto'
     if (key === 'models')
       return validModels(entry)
     if (!Object.hasOwn(limits, key))

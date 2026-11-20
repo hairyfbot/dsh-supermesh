@@ -14,7 +14,7 @@ import type {
   StreamInput,
   ThreadRow,
 } from '@/service/courier.types'
-import { acceptsChannelTrigger } from '@/channel/_shared/admission'
+import { channelTriggerStrength } from '@/channel/_shared/admission'
 import { ChannelError } from '@/channel/_shared/error'
 import { digest, identity, now, timestamp } from '@/channel/_shared/primitives'
 import { db } from '@/database'
@@ -95,8 +95,9 @@ export const courier = defineService({
     await db.trigger.ingest({ id, channelId: port.channel, threadId: thread.id, kind, actorName, human: Number(human), mentioned: Number(mentioned), text: body, url: port.url(row, sourceKind, thread), at, ref: port.ref(row) })
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)
     const historical = port.createdAt(row) < baseline
-    const admin = (await setting.load()).administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
-    if (!acceptsChannelTrigger({ human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, ignored: thread.triage === 'ignored' }))
+    const { administrators, inferred } = await setting.load()
+    const admin = administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
+    if (!channelTriggerStrength({ human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, ignored: thread.triage === 'ignored', inferred }))
       return
     const targets = new Map<string, { projectId: string | null, ticketId: string | null }>()
     for (const ticketId of subscriptions) {
