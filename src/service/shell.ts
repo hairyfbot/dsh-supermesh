@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { } from '@deepseek-ai/dsh-shell-env'
+import type { ShellEnvRegistry } from '@deepseek-ai/dsh-shell-env'
 import { access, mkdir, rename, writeFile } from 'node:fs/promises'
 import { delimiter, join, resolve } from 'node:path'
 import process from 'node:process'
@@ -44,8 +44,11 @@ export const shell = defineService({
     await refresh()
     // bot 身份只发给插件的四个角色会话：shim 靠这个标记决定是否切到 bot 凭据与 gitconfig。
     // 宿主里其它会话拿不到标记，gh / git 的行为与没装插件时一致。
-    const ctx = getServerContext<Context>(server)
-    const release = ctx.shellEnv?.register({
+    // 走 `ctx.get` 而不是 `ctx.shellEnv`：后者要求插件把 shellEnv 写进 inject，
+    // 而缺这个服务的 profile 会因此整块停用。没有注册表时退化为「没有角色标记」，
+    // shim 全部原样 exec 真实 CLI。
+    const registry = getServerContext<Context>(server).get('shellEnv') as ShellEnvRegistry | undefined
+    const release = registry?.register({
       name: 'supermesh-role',
       variables: { DSH_SUPERMESH_ROLE: { description: 'Supermesh 角色会话标记，决定 gh / glab / git 是否使用插件的机器人身份。' } },
       resolve: (execution) => {

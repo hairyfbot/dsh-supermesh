@@ -9,8 +9,12 @@ import { defineService } from '@/utils/service'
 
 export const roleModel = defineService({
   async resolve(model: RoleModel): Promise<ModelSelection> {
-    const ctx = getServerContext<Context>(server)
-    const value = await ctx.llm.resolveCallConfig({
+    // 走 `ctx.get` 而不是 `ctx.llm`：后者要求把 llm 写进插件 inject，
+    // 而缺这个服务的 profile 会因此整块停用。
+    const llm = getServerContext<Context>(server).get('llm') as Context['llm'] | undefined
+    if (!llm)
+      throw new Error('llm_unavailable')
+    const value = await llm.resolveCallConfig({
       provider: model.provider,
       model: model.model,
       ...(model.reasoningEffort ? { reasoningEffort: ReasoningEffortId(model.reasoningEffort) } : {}),
@@ -49,6 +53,6 @@ export const roleModel = defineService({
       ]
       return () => disposers.forEach(dispose => dispose())
     })
-    await ctx.sessionPersistence.flush()
+    await getServerContext<Context>(server).get('sessionPersistence')?.flush()
   },
 })
