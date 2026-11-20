@@ -1,7 +1,7 @@
 {
   "name": "dsh-supermesh",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "packageManager": "pnpm@11.15.1",
   "description": "_description_",
   "author": "Hairy <wwu710632@gmail.com>",
