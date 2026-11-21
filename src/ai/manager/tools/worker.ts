@@ -50,7 +50,7 @@ export const send = defineTool({
       type: 'string',
       enum: ['queue', 'interrupt', 'reply'],
       required: true,
-      description: 'queue 也直接 steer 到最近一步；interrupt 中止当前回合再 steer；reply 回答它的 ask 并直接 steer。',
+      description: 'queue 在 Worker 运行中 steer 到最近一步，空闲时开新回合；interrupt 中止当前回合再 steer；reply 回答它的 ask，投递规则同 queue。',
     },
   },
   output: {
@@ -80,7 +80,7 @@ export const send = defineTool({
       messageId = await session.send(worker.id, `[Answer ${asks[0]!.id}] ${args.text}`, 'reply', `supermesh:answer:${asks[0]!.id}`)
     }
     else {
-      messageId = await session.send(worker.id, args.text, args.mode)
+      messageId = await session.send(worker.id, args.text, args.mode === 'interrupt' ? 'interrupt' : 'wake')
     }
     return JSON.stringify({ messageId })
   },
