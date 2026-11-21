@@ -591,12 +591,18 @@ const cases = {
     await workers.reconcile()
     await settle()
     assert.equal((await dispatches()).length, 1, 'the first dispatch must reach the worker session')
-    // 复现线上循环：worker 结束、票回 waiting，下一轮派工必须重新送达。
+    // worker 结束、票回 waiting 之后不能自动重开：拿同一份 prompt 反复重派就是线上那个死循环。
     assert.equal((await db.worker.findById(queued.id)).status, 'ended')
     assert.equal((await db.ticket.findById(ticketId)).status, 'waiting')
+    await workers.rescue()
+    await workers.reconcile()
+    await settle()
+    assert.equal((await dispatches()).length, 1, 'a waiting ticket whose worker already ran must not be re-dispatched automatically')
+    // 编排显式重派（retry_ticket / create_worker 走同一条 queue）必须真的送达，不能被 requestId 去重吞掉。
+    await db.worker.queue(ticketId, p.id)
     await workers.reconcile()
     await waitFor(async () => (await dispatches()).length === 2)
-    assert.equal((await dispatches()).length, 2, 'a re-dispatch must land a second prompt instead of being deduplicated by its request id')
+    assert.equal((await dispatches()).length, 2, 'an explicit re-queue must land a second prompt instead of being deduplicated by its request id')
   },
   async answerRelay() {
     const p = await project('relay-project')

@@ -150,6 +150,9 @@ export const worker = defineService({
         continue
       if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
         continue
+      // 同 rescue：派过工的票不自动重开，避免 waiting/running 死循环。
+      if ((await db.worker.listByTicket(waiting.id)).length)
+        continue
       const queued = await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
       if (queued)
         queueable.set(queued.id, queued)
@@ -298,6 +301,10 @@ export const worker = defineService({
       if (ticket.status !== 'waiting')
         continue
       if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
+        continue
+      // 派过工的票不自动重开：worker 结束后回 waiting 是等新事实（评论、retry_ticket、编排 send），
+      // 拿同一份 prompt 反复重派只会让票在 waiting/running 之间无限循环。
+      if ((await db.worker.listByTicket(ticket.id)).length)
         continue
       const project = await db.project.findById(ticket.projectId)
       if (!project?.enabled)

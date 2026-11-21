@@ -174,6 +174,9 @@ stateDiagram-v2
 **重开必须重新投递**：`waiting → queued → running` 每一轮都用新的 requestId 投 prompt。
 会话控制器按 rpcId 去重，复用同一个 id 会让重派工被静默吞掉 —— worker 置 `running`、会话里却什么都没有。
 
+**`waiting` 不自动重开**：只有从没派过工的票会被自动排队。worker 结束后回 `waiting` 是等新事实
+（评论、`retry_ticket`、编排 `send`），拿同一份 prompt 反复重派只会让票在 `waiting` / `running` 之间空转。
+
 ### 汇报状态
 
 `reportState` 是结构化通道，和会话正文（`view` 读的）是两回事。
