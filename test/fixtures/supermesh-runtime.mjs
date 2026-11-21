@@ -39,7 +39,9 @@ const { inbox } = await import('@/service/inbox.ts')
 const { db } = await import('@/database/index.ts')
 const { storage } = await import('@/storage/index.ts')
 const { handleAgentCreated } = await import('@/events/agent-created.ts')
+const { handleSessionEvent } = await import('@/events/session-event.ts')
 const { project: projects } = await import('@/service/project.ts')
+const { worker: workers } = await import('@/service/worker.ts')
 const { worktree } = await import('@/service/worktree.ts')
 const git = promisify(execFile)
 const roles = ['orchestrator', 'manager', 'supervisor', 'worker']
@@ -114,7 +116,9 @@ async function start() {
     const stopInbox = inbox.start()
     const stopWorktree = worktree.start()
     const stopProjects = projects.start()
+    const stopWorker = workers.start()
     ctx.on('agent/created', ({ agent }) => handleAgentCreated(ctx, agent))
+    ctx.on('session/event', handleSessionEvent)
     return {
       ctx,
       proposals,
@@ -135,6 +139,7 @@ async function start() {
         await stopSession()
         await stopProjects()
         await stopWorktree()
+        await stopWorker()
         await ctx.sessionPersistence.flush()
         await release()
         for (const dispose of unregister) dispose()
@@ -170,6 +175,17 @@ async function enqueue(id, type, refs = {}, extra = {}) {
 async function settle() {
   await Promise.all(runtime.ctx.agents.list().map(agent => agent.whenIdle()))
   await runtime.ctx.sessionPersistence.flush()
+}
+
+async function waitFor(check, timeout = 15000) {
+  const deadline = Date.now() + timeout
+  while (Date.now() < deadline) {
+    const value = await check()
+    if (value)
+      return value
+    await new Promise(resolve => setTimeout(resolve, 50))
+  }
+  throw new Error('timed out waiting for the expected runtime state')
 }
 
 async function expectWake(id, count) {
@@ -555,6 +571,34 @@ const cases = {
     assert.equal((await db.worker.findById(queued.id)).status, 'ended', '票进终态后它还在 running 的 Worker 必须被结束')
     assert.equal((await db.worker.findById(queued.id)).endedReason, 'stopped')
     assert.equal((await db.worker.listRunning()).length, 0)
+  },
+  async workerSettlement() {
+    const p = await project('settlement-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const ticketId = 'settlement-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '结算通知', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const managerId = await session.create('project', { projectId: p.id })
+    const queued = await db.worker.queue(ticketId, p.id)
+    await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
+    await db.worker.start(queued.id, now)
+    await db.ticket.start(ticketId, now, now)
+    await session.send(queued.id, '执行这张票', 'queue', 'settlement:prompt')
+    const notice = await waitFor(() => runtime.proposals
+      .filter(item => item.id === managerId)
+      .flatMap(item => item.messages)
+      .find(message => message.source.kind === 'subagent-settled'))
+    await settle()
+    const durable = (await session.history(managerId)).events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === 'subagent-settled'))
+    assert.equal(durable, true, 'the settlement notice must be durable')
+    assert.equal(notice.source.form, 'notice')
+    assert.equal(notice.source.stopReason, 'completed')
+    assert.equal(notice.source.senderSessionId, queued.id)
+    assert.equal(notice.source.summary.length <= 120, true, 'the notice summary must stay within the context bound')
+    assert.match(notice.content[0].text, /Worker settlement-ticket finished/)
+    assert.equal(notice.content.some(part => part.type === 'text' && part.text === 'It left no closing message.'), true, 'a worker without assistant text must still produce a shaped settlement notice')
+    assert.equal((await db.worker.findById(queued.id)).status, 'ended')
+    assert.equal((await db.worker.findById(queued.id)).endedReason, 'completed')
+    assert.equal((await db.ticket.findById(ticketId)).status, 'waiting')
   },
 }
 

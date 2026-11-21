@@ -68,22 +68,13 @@ describe('ticket and worker transactions', () => {
     await expect(models.worker.queue(ticketId, 'p1', 'dsh/wrong')).rejects.toThrow('分支末段必须是任务号')
   })
 
-  it('worker report and notification roll back together when inbox insertion fails', async () => {
+  it('worker report records facts without writing the project inbox', async () => {
     const worker = await models.worker.queue(ticketId, 'p1')
-    sqlite.exec('CREATE TRIGGER reject_report BEFORE INSERT ON inbox WHEN NEW.kind = \'ticket\' BEGIN SELECT RAISE(ABORT, \'report rejected\'); END')
-    await expect(models.worker.reportProgress(worker.id, 'ready', 'Finished')).rejects.toThrow('report rejected')
-    expect(await models.worker.findById(worker.id)).toMatchObject({ report: null, reportState: null, reportAt: null })
-    expect(await models.inbox.listByTicket(ticketId)).toEqual([])
-  })
-
-  it('worker report records facts atomically and rejects a terminal ticket', async () => {
-    const worker = await models.worker.queue(ticketId, 'p1')
-    const report = await models.worker.reportProgress(worker.id, 'failed', 'Compiler failed')
-    expect(report).toMatchObject({ type: 'project', projectId: 'p1', workerId: worker.id, ticketId, kind: 'ticket', message: 'Compiler failed' })
+    await models.worker.reportProgress(worker.id, 'failed', 'Compiler failed')
     expect(await models.worker.findById(worker.id)).toMatchObject({ reportState: 'failed', report: 'Compiler failed' })
+    expect(await models.inbox.listByTicket(ticketId)).toEqual([])
     await models.ticket.finish(ticketId, 'done', now, now)
     await expect(models.worker.reportProgress(worker.id, 'progress', 'Too late')).rejects.toThrow('工单已结束')
-    expect(await models.inbox.listByTicket(ticketId)).toHaveLength(1)
   })
 })
 

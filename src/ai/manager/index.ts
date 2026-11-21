@@ -37,7 +37,7 @@ export const manager = definePreset({
     workerTools.send,
     workerTools.view,
     workerTools.cancel,
-    workerTools.rename,
+    workerTools.list_worker,
   ],
   plugins: [
     plugins.agentInstructions,

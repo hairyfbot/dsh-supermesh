@@ -57,10 +57,10 @@ send 默认用 queue。只有确定它正在把事情做错、需要立刻止损
 | `stop_ticket` | `ticketId, triggerId, reason?` | 结单为 `cancelled`，必须绑人类触发 |
 | `retry_ticket` | `ticketId` | 只对卡住的 open 票：结束旧 Worker，开新的 |
 | `create_worker` | `ticketId, branch?` | 建 worktree + 分支 + 会话 |
-| `send` | `workerId, text, mode` | `interrupt`=steer；`queue`=排队一轮；`reply`=答它的 ask |
+| `send` | `workerId, text, mode` | `interrupt`=steer；`queue`=排队一轮；`reply`=答它的 ask。返回 `messageId` |
 | `view` | `workerId, offset?` | 读会话正文，分片。**不是 `report`** |
-| `cancel` | `workerId, keepInbox?` | 中止当前回合 |
-| `rename` | `workerId, title` | 改会话标题 |
+| `cancel` | `workerId, keepInbox?` | 只停当前回合，会话留着还能 `send` |
+| `list_worker` | — | 本项目未结束的 Worker 与 `running` / `inactive` |
 | `report` | `state, summary, supervisorId?, ticketId?` | 不等答复 |
 | `ask` | `question, supervisorId?, ticketId?` | 这条线停下，答案到了回来 |
 | `escalate` | `askId` | 原样上交，问题文本不改 |

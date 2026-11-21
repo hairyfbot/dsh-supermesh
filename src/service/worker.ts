@@ -1,9 +1,14 @@
+import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { Selectable } from 'kysely'
 import type { DB } from '@/database/types'
+import type {} from '@/types/settlement'
 import { randomUUID } from 'node:crypto'
+import { boundContextSummary, createUserMessage, joinAssistantStreamText } from '@deepseek-ai/dsh-llm'
+import { getServerContext } from 'dsh-h3/utils'
 import { db } from '@/database'
 import { singlet } from '@/runtime/singlet'
+import { server } from '@/server'
 import { archive } from '@/service/archive'
 import { session } from '@/service/session'
 import { setting } from '@/service/setting'
@@ -13,6 +18,53 @@ import { defineService } from '@/utils/service'
 const eventQueues = new Map<string, Promise<void>>()
 let stopped = false
 let observing = false
+
+const finish = singlet(
+  (current: Selectable<DB['worker']>) => `worker:finish:${current.id}`,
+  async (current: Selectable<DB['worker']>, reason?: 'failed' | 'stopped'): Promise<void> => {
+    // 观察事件与后台回收可能同时到达：已经结束的 Worker 不再重复结单、重复通知。
+    const worker = await db.worker.findById(current.id)
+    if (!worker || worker.status === 'ended')
+      return
+    const asks = (await db.inbox.listByTicket(worker.ticketId)).filter(message => message.kind === 'ask' && message.workerId === worker.id)
+    if (!reason) {
+      if (asks.some(message => message.status === 'pending')) {
+        await deferWhileWaiting(worker)
+        return
+      }
+      const answered = asks.filter(message => message.answer)
+      if (answered.length) {
+        const receipts = await session.receipts(worker.id)
+        if (answered.some(message => !receipts.some(receipt => receipt.requestId === `supermesh:answer:${message.id}`))) {
+          await deferWhileWaiting(worker)
+          return
+        }
+      }
+    }
+    if (stopped)
+      return
+    const now = new Date().toISOString()
+    await db.worker.setBackgroundUntil(worker.id, null)
+    await db.worker.end(worker.id, reason ?? (worker.reportState === 'failed' ? 'failed' : 'completed'), now)
+    const ticket = await db.ticket.findById(worker.ticketId)
+    if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled') {
+      if (ticket.prState === 'merged' || ticket.prState === 'closed')
+        await finishTicket(ticket.id, 'done', now, now)
+      else if (!reason && worker.reportState === 'dropped')
+        await finishTicket(ticket.id, 'done', now, now)
+      else
+        await db.ticket.update(ticket.id, { status: !reason && worker.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
+    }
+    const ended = await db.ticket.findById(worker.ticketId)
+    // 只有票真正终结才归档会话。票还在 review / waiting 时，后续的 review 意见要复用这个 worker，
+    // 会话一旦归档，resolve 就返回 null，下一轮会直接以 unknown_session 失败。
+    if (!reason && worker.reportState !== 'failed' && ended && (ended.status === 'done' || ended.status === 'cancelled'))
+      await archiveWorker(worker.id)
+    if (ended && (ended.status === 'done' || ended.status === 'cancelled'))
+      await releaseDependents(ended.id)
+    await notifyRouter(worker, reason)
+  },
+)
 
 export const worker = defineService({
   start(): () => Promise<void> {
@@ -162,7 +214,7 @@ export const worker = defineService({
           const latest = await db.trigger.findLatestByThread(thread.threadId)
           return latest ? `${thread.threadId}（trigger ${latest.id}）` : thread.threadId
         }))
-        const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', `执行配置：${JSON.stringify({ autoMerge: settings.autoMerge, autoMergeMaxLines: settings.autoMergeMaxLines })}`, '来源话题：', ...sources, worker.recoveryNote ?? ''].filter(Boolean).join(String.fromCharCode(10))
+        const prompt = [`${ticket.id}: ${ticket.title}`, ticket.description ?? '', `执行配置：${JSON.stringify({ autoMerge: settings.autoMerge, autoMergeMaxLines: settings.autoMergeMaxLines })}`, '来源话题：', ...sources, worker.recoveryNote ?? '', '你的最后一条消息会原样转给项目编排。'].filter(Boolean).join(String.fromCharCode(10))
         const now = new Date().toISOString()
         await db.worker.start(worker.id, now)
         await db.ticket.start(ticket.id, now, now)
@@ -325,6 +377,9 @@ export const worker = defineService({
       const action = (): Promise<void> => stopped
         ? Promise.resolve()
         : (async () => {
+            // cancel 只停当前回合：回合作废，Worker 会话留着，后续 send 还能继续。
+            if (event.data.reason.kind === 'aborted' && event.data.reason.reason.kind === 'hook' && event.data.reason.reason.reason === 'supermesh_cancel')
+              return
             const identity = await session.resolve(source.id)
             if (!identity || identity.role !== 'worker' || !identity.workerId)
               return
@@ -351,45 +406,6 @@ export const worker = defineService({
     },
   ),
 })
-
-async function finish(current: Selectable<DB['worker']>, reason?: 'failed' | 'stopped'): Promise<void> {
-  const asks = (await db.inbox.listByTicket(current.ticketId)).filter(message => message.kind === 'ask' && message.workerId === current.id)
-  if (!reason) {
-    if (asks.some(message => message.status === 'pending')) {
-      await deferWhileWaiting(current)
-      return
-    }
-    const answered = asks.filter(message => message.answer)
-    if (answered.length) {
-      const receipts = await session.receipts(current.id)
-      if (answered.some(message => !receipts.some(receipt => receipt.requestId === `supermesh:answer:${message.id}`))) {
-        await deferWhileWaiting(current)
-        return
-      }
-    }
-  }
-  if (stopped)
-    return
-  const now = new Date().toISOString()
-  await db.worker.setBackgroundUntil(current.id, null)
-  await db.worker.end(current.id, reason ?? (current.reportState === 'failed' ? 'failed' : 'completed'), now)
-  const ticket = await db.ticket.findById(current.ticketId)
-  if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled') {
-    if (ticket.prState === 'merged' || ticket.prState === 'closed')
-      await finishTicket(ticket.id, 'done', now, now)
-    else if (!reason && current.reportState === 'dropped')
-      await finishTicket(ticket.id, 'done', now, now)
-    else
-      await db.ticket.update(ticket.id, { status: !reason && current.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
-  }
-  const ended = await db.ticket.findById(current.ticketId)
-  // 只有票真正终结才归档会话。票还在 review / waiting 时，后续的 review 意见要复用这个 worker，
-  // 会话一旦归档，resolve 就返回 null，下一轮会直接以 unknown_session 失败。
-  if (!reason && current.reportState !== 'failed' && ended && (ended.status === 'done' || ended.status === 'cancelled'))
-    await archiveWorker(current.id)
-  if (ended && (ended.status === 'done' || ended.status === 'cancelled'))
-    await releaseDependents(ended.id)
-}
 
 async function blockedByDependency(ticketId: string): Promise<boolean> {
   const links = await db.ticketLink.listDependsOn(ticketId)
@@ -455,11 +471,81 @@ async function deferWhileWaiting(current: Selectable<DB['worker']>): Promise<voi
     return
   const now = new Date().toISOString()
   await db.worker.end(current.id, 'completed', now)
-  if (ticket.prState === 'merged') {
+  if (ticket.prState === 'merged')
     await finishTicket(ticket.id, 'done', now, now)
-    return
+  else
+    await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
+  await notifyRouter(current)
+}
+
+type SettlementStopReason = 'completed' | 'aborted' | 'error'
+
+function settlementSummary(name: string, stopReason: SettlementStopReason): string {
+  const subject = `Worker ${name}`
+  if (stopReason === 'completed')
+    return `${subject} finished. It cannot receive follow-up messages.`
+  if (stopReason === 'aborted')
+    return `${subject} was stopped before it finished.`
+  return `${subject} failed before it finished.`
+}
+
+/** 官方结算只带子级最后一条非空 assistant 消息；没有正文时用流式拼接兜底。 */
+async function closingText(id: string): Promise<string[]> {
+  const { events } = await session.history(id)
+  let message: string[] = []
+  let streamed = ''
+  for (const event of events) {
+    if (event.type === 'assistant/message') {
+      const content = event.data.message.content
+      if (content.length > 0)
+        message = content.flatMap(part => part.type === 'text' && part.text.length > 0 ? [part.text] : [])
+      streamed += joinAssistantStreamText(event.data.stream)
+    }
+    else if (event.type === 'assistant/attempt') {
+      streamed += joinAssistantStreamText(event.data.stream)
+    }
   }
-  await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
+  return message.length ? message : streamed ? [streamed] : []
+}
+
+/**
+ * Worker 是独立根会话，不在官方 subagent 树里，拿不到官方的结算通知。
+ * 这里按官方结算的形状补一条：同一条消息、同一个 source.form，编排在跑就 steer，空闲就 followup。
+ * 编排不在线也投：先激活会话再送，官方是直接丢掉。
+ */
+async function notifyRouter(current: Selectable<DB['worker']>, reason?: 'failed' | 'stopped'): Promise<void> {
+  try {
+    const ticket = await db.ticket.findById(current.ticketId)
+    if (!ticket)
+      return
+    const project = await db.project.findById(ticket.projectId)
+    if (!project?.enabled)
+      return
+    const existing = project.orchestratorSessionId
+    const id = existing && await session.resolve(existing).then(Boolean, () => false)
+      ? existing
+      : await session.create('project', { projectId: project.id })
+    const agent = await session.activate(id)
+    const stopReason: SettlementStopReason = reason === 'failed' ? 'error' : reason === 'stopped' ? 'aborted' : 'completed'
+    const summary = settlementSummary(ticket.id, stopReason)
+    const closing = await closingText(current.id)
+    const message = createUserMessage({
+      content: [
+        { type: 'text', text: summary },
+        ...closing.length === 0
+          ? [{ type: 'text' as const, text: 'It left no closing message.' }]
+          : [{ type: 'text' as const, text: 'Its closing message:' }, ...closing.map(text => ({ type: 'text' as const, text }))],
+      ],
+      source: { kind: 'subagent-settled', form: 'notice', summary: boundContextSummary(summary), stopReason, senderSessionId: current.id },
+    })
+    if (agent.status === 'idle')
+      agent.followup(message)
+    else
+      agent.steer(message)
+  }
+  catch (error) {
+    getServerContext<Context>(server).logger.warn('supermesh: worker %s settlement notice failed: %s', current.id, error instanceof Error ? error.message : String(error))
+  }
 }
 
 async function archiveWorker(id: string): Promise<void> {

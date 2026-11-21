@@ -71,17 +71,18 @@ export const send = defineTool({
       throw new Error('Worker 已结束')
     if (!(await session.lookup(worker.id)))
       throw new Error('Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送')
+    let messageId: string
     if (args.mode === 'reply') {
       const asks = (await db.inbox.listByTicket(ticket.id)).filter(row => row.workerId === worker.id && row.kind === 'ask' && row.status === 'pending')
       if (asks.length !== 1 || !db.inbox.owns(asks[0]!, { type: 'project', projectId: identity.projectId }))
         throw new Error('reply 必须唯一对应当前项目编排待答的 ask')
       await db.inbox.answerScoped(asks[0]!.id, args.text, { type: 'project', projectId: identity.projectId }, new Date().toISOString())
-      await session.send(worker.id, `[Answer ${asks[0]!.id}] ${args.text}`, 'reply', `supermesh:answer:${asks[0]!.id}`)
+      messageId = await session.send(worker.id, `[Answer ${asks[0]!.id}] ${args.text}`, 'reply', `supermesh:answer:${asks[0]!.id}`)
     }
     else {
-      await session.send(worker.id, args.text, args.mode === 'interrupt' ? 'interrupt' : 'wake')
+      messageId = await session.send(worker.id, args.text, args.mode === 'interrupt' ? 'interrupt' : 'wake')
     }
-    return JSON.stringify({ sent: true, mode: args.mode })
+    return JSON.stringify({ messageId })
   },
 })
 
@@ -118,7 +119,7 @@ export const view = defineTool({
 
 export const cancel = defineTool({
   name: 'cancel',
-  description: '中止 Worker 当前回合。那一次回合一并作废。票已结束也能停，只看 Worker 是否还活着。',
+  description: '中断 Worker 当前回合：那一次回合作废，会话不结束，之后还能用 send 继续。票已结束也能停，只看 Worker 是否还活着。',
   parameters: {
     workerId: {
       type: 'string',
@@ -131,7 +132,7 @@ export const cancel = defineTool({
     },
   },
   output: {
-    schema: { type: 'string', description: '中止结果。' },
+    schema: { type: 'string', description: '是否已受理。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
   execute: async (args, exec) => {
@@ -147,43 +148,33 @@ export const cancel = defineTool({
     if (worker.status === 'ended')
       throw new Error('Worker 已结束')
     await session.cancel(worker.id, args.keepInbox)
-    return JSON.stringify({ cancelled: true })
+    return JSON.stringify({ accepted: true })
   },
 })
 
-export const rename = defineTool({
-  name: 'rename',
-  description: '改 Worker 会话的标题，方便在会话列表里认出来。',
-  parameters: {
-    workerId: {
-      type: 'string',
-      required: true,
-      description: '要改名的 Worker。',
-    },
-    title: {
-      type: 'string',
-      required: true,
-      description: '新标题。',
-    },
-  },
+export const list_worker = defineTool({
+  name: 'list_worker',
+  description: '列出本项目还没结束的 Worker 和当前回合状态。running 表示正在跑；inactive 表示没有回合在跑，可以 send 继续。',
+  parameters: {},
   output: {
-    schema: { type: 'string', description: '改名结果。' },
+    schema: { type: 'string', description: 'Worker 列表：id、票号、标题、状态。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
-  execute: async (args, exec) => {
+  execute: async (_args, exec) => {
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (identity?.role !== 'project' || !identity.projectId)
       throw new Error('仅项目编排可调用')
-    const worker = await db.worker.findById(args.workerId)
-    if (!worker)
-      throw new Error('Worker 不存在')
-    const ticket = await db.ticket.findById(worker.ticketId)
-    if (!ticket || ticket.projectId !== identity.projectId)
-      throw new Error('Worker 不属于当前项目')
-    if (worker.status === 'ended')
-      throw new Error('Worker 已结束')
-    await session.rename(worker.id, args.title)
-    await db.worker.update(worker.id, { title: args.title })
-    return JSON.stringify({ id: worker.id, title: args.title })
+    const rows = []
+    for (const ticket of await db.ticket.listByProject(identity.projectId)) {
+      if (ticket.status === 'done' || ticket.status === 'cancelled')
+        continue
+      for (const worker of await db.worker.listByTicket(ticket.id)) {
+        if (worker.status === 'ended')
+          continue
+        const agent = await session.lookup(worker.id)
+        rows.push({ id: worker.id, ticketId: ticket.id, title: ticket.title, status: agent?.status === 'running' ? 'running' : 'inactive' })
+      }
+    }
+    return JSON.stringify(rows)
   },
 })
