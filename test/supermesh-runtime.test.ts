@@ -80,6 +80,7 @@ describe('supermesh services composed with the installed official runtime', () =
     ['channelIsolation', 'a stalled channel mail does not block internal mail for the same recipient'],
     ['workerEnd', 'a ticket that reached a terminal state ends the worker that was still running'],
     ['roleMarker', 'only the four role sessions receive the bot identity marker'],
+    ['sendDelivery', 'running sessions steer at the next step while idle sessions and explicit queues open a new turn'],
   ])('%s: %s', async (name) => {
     const output = await runCase(name)
     expect(output).toContain(`SUPERMESH_RUNTIME_PASS ${name} DSH=`)

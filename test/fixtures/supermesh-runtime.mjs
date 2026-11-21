@@ -53,8 +53,14 @@ async function start() {
   const loader = new Loader(ctx, { baseUrl: pathToFileURL(`${process.env.DSH_INSTALL_DIR}/`).href })
   const webServer = new WebServer(ctx, { host: '127.0.0.1', port: 0 })
   const proposals = []
+  let preStepGate = null
   ctx.on('agent/pre-step', async ({ agent, messages }) => {
     proposals.push({ id: agent.id, messages: structuredClone(messages) })
+    const gate = preStepGate
+    if (gate) {
+      gate.entered.resolve()
+      await gate.released.promise
+    }
     return { kind: 'reject' }
   })
   const rows = [
@@ -112,6 +118,18 @@ async function start() {
     return {
       ctx,
       proposals,
+      holdPreStep() {
+        const entered = Promise.withResolvers()
+        const released = Promise.withResolvers()
+        preStepGate = { entered, released }
+        return {
+          entered: entered.promise,
+          release() {
+            preStepGate = null
+            released.resolve()
+          },
+        }
+      },
       async close() {
         await stopInbox()
         await stopSession()
@@ -493,6 +511,36 @@ const cases = {
     finally {
       await stopShell()
     }
+  },
+  async sendDelivery() {
+    const p = await project('send-delivery-project')
+    const id = await session.create('project', { projectId: p.id })
+    const agent = await session.activate(id)
+    const textOf = message => message.content.flatMap(part => part.type === 'text' ? [part.text] : [])
+    assert.equal(agent.status, 'idle')
+
+    const idle = runtime.holdPreStep()
+    await session.send(id, 'idle wake', 'wake')
+    await idle.entered
+    assert.equal(runtime.proposals.some(item => item.id === id && item.messages.some(message => textOf(message).includes('idle wake'))), true, 'an idle wake must open a new turn with the message')
+    assert.equal(agent.inbox.nextStep.length, 0, 'an idle wake must not park steering for a turn that already started')
+    idle.release()
+    await settle()
+
+    const running = runtime.holdPreStep()
+    await session.send(id, 'running wake', 'wake')
+    await running.entered
+    assert.equal(agent.status, 'running', 'the held pre-step must keep the agent running')
+    await session.send(id, 'steer now', 'wake')
+    assert.equal(agent.inbox.nextStep.some(message => textOf(message).includes('steer now')), true, 'a running wake must steer to the next step')
+    assert.equal(agent.inbox.nextTurn.some(message => textOf(message).includes('steer now')), false, 'a running wake must not wait for the next turn')
+    await session.send(id, 'reply now', 'reply')
+    assert.equal(agent.inbox.nextStep.some(message => textOf(message).includes('reply now')), true, 'a running reply must steer to the next step')
+    await session.send(id, 'queued now', 'queue')
+    assert.equal(agent.inbox.nextTurn.some(message => textOf(message).includes('queued now')), true, 'an explicit queue must wait for the next turn')
+    assert.equal(agent.inbox.nextStep.some(message => textOf(message).includes('queued now')), false, 'an explicit queue must not steer')
+    running.release()
+    await settle()
   },
   async workerEnd() {
     const p = await project('worker-end-project')

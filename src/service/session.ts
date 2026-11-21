@@ -188,7 +188,7 @@ export const session = defineService({
     // key 必须带上正文摘要：worker 派工传的是固定 requestId，只按 id+requestId 去重会把
     // 第二轮及以后的所有 prompt 都判成重复投递，Worker 永远只收到第一条。
     (id, text, _mode, requestId = '') => `session:send:${id}:${requestId}:${text.length}:${text.slice(0, 64)}`,
-    async (id: string, text: string, mode: 'queue' | 'interrupt' | 'reply' = 'queue', requestId: string = randomUUID()): Promise<void> => {
+    async (id: string, text: string, mode: 'queue' | 'interrupt' | 'reply' | 'wake' = 'queue', requestId: string = randomUUID()): Promise<void> => {
       if (!text.trim())
         throw new Error('empty_message')
       if (stopped)
@@ -203,12 +203,17 @@ export const session = defineService({
       const ctx = getServerContext<Context>(server)
       if (mode === 'interrupt')
         await session.cancel(id, true)
+      // 与官方 sendWaking 一致：运行中 steer 到下一步，空闲时 queue 开新回合。
+      const live = ctx.agents.get(SessionId(id))
+      const target = mode === 'interrupt'
+        ? 'steer'
+        : mode === 'queue' || live?.status !== 'running'
+          ? 'queue'
+          : 'steer'
       const admitted = await ctx.sessionController.prompt({
         sessionId: SessionId(id),
         requestId: requestId as SessionRequestId,
-        // worker 复用同一会话时，上一轮已经结束；只有 queue 会开启新回合，
-        // steer 只会试图插进正在进行的回合，对已结束的会话等于丢弃这条 prompt。
-        mode: mode === 'interrupt' ? 'steer' : 'queue',
+        mode: target,
         content: [{ type: 'text', text }],
       }, controller.signal)
       // prompt 以 RemoteResult 返回失败，不抛异常；不检查就会静默丢消息，
