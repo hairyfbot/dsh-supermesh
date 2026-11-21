@@ -19,7 +19,7 @@ export const report = defineTool({
     },
   },
   output: {
-    schema: { type: 'string', description: '是否已投递。' },
+    schema: { type: 'string', description: '是否已记录。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
   execute: async (args, exec) => {
@@ -31,7 +31,8 @@ export const report = defineTool({
     const worker = await db.worker.findById(identity.workerId)
     if (!worker || worker.status === 'ended')
       throw new Error('Worker 已结束')
-    return JSON.stringify(await db.worker.reportProgress(worker.id, args.state, args.summary))
+    await db.worker.reportProgress(worker.id, args.state, args.summary)
+    return JSON.stringify({ recorded: true, state: args.state })
   },
 })
 
