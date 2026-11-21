@@ -2,7 +2,6 @@ import type { Kysely, Selectable } from 'kysely'
 import type { DB, ReportState, WorkerEndReason } from '@/database/types'
 import { randomUUID } from 'node:crypto'
 import { Model } from 'kysely-model'
-import { Inbox } from '@/database/models/inbox'
 import { Ticket } from '@/database/models/ticket'
 
 export class Worker extends Model<DB, 'worker'> {
@@ -148,8 +147,8 @@ export class Worker extends Model<DB, 'worker'> {
       .execute()
   }
 
-  async reportProgress(id: string, reportState: ReportState, report: string): Promise<Selectable<DB['inbox']>> {
-    return this.db.transaction().execute(async (trx) => {
+  async reportProgress(id: string, reportState: ReportState, report: string): Promise<void> {
+    await this.db.transaction().execute(async (trx) => {
       const worker = await new Worker(trx).findById(id)
       if (!worker || worker.status === 'ended')
         throw new Error('Worker 已结束或不存在')
@@ -158,10 +157,8 @@ export class Worker extends Model<DB, 'worker'> {
         throw new Error('工单已结束或不存在')
       const now = new Date().toISOString()
       await new Worker(trx).setReport(id, reportState, report, now)
-      const message = await new Inbox(trx).enqueue({ type: 'project', projectId: ticket.projectId, origin: 'worker', kind: 'ticket', ticketId: ticket.id, workerId: id, title: reportState, message: report })
       if (reportState === 'ready')
         await new Ticket(trx).endOnReport(ticket.id, now)
-      return message
     })
   }
 }

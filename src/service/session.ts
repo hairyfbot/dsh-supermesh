@@ -188,7 +188,7 @@ export const session = defineService({
     // key 必须带上正文摘要：worker 派工传的是固定 requestId，只按 id+requestId 去重会把
     // 第二轮及以后的所有 prompt 都判成重复投递，Worker 永远只收到第一条。
     (id, text, _mode, requestId = '') => `session:send:${id}:${requestId}:${text.length}:${text.slice(0, 64)}`,
-    async (id: string, text: string, mode: 'queue' | 'interrupt' | 'reply' = 'queue', requestId: string = randomUUID()): Promise<void> => {
+    async (id: string, text: string, mode: 'queue' | 'interrupt' | 'reply' = 'queue', requestId: string = randomUUID()): Promise<string> => {
       if (!text.trim())
         throw new Error('empty_message')
       if (stopped)
@@ -215,6 +215,7 @@ export const session = defineService({
       // 派工侧看到的是「成功」，票却永远等不到这一轮。
       if (admitted && typeof admitted === 'object' && 'ok' in admitted && admitted.ok === false)
         throw new Error(`prompt_rejected: ${String((admitted as { error?: unknown }).error ?? 'unknown')}`)
+      return requestId
     },
   ),
   async cancel(id: string, keepInbox = false): Promise<void> {
