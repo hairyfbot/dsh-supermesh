@@ -45,10 +45,28 @@ export class GitHubChannel implements ChannelAdapter {
   }
 
   async projectForRepository(repository: string) {
-    const projects = (await db.project.listAll()).filter(project => resource.of(project.remoteUrl) === repository)
+    const match = async (name: string) => (await db.project.listAll()).filter(project => resource.of(project.remoteUrl) === name)
+    let projects = await match(repository)
+    if (!projects.length) {
+      // 仓库改名/转移后旧全名仍可访问：跟随一次重定向再匹配。
+      // 不跟随的话，旧链接上的回复目标会永远解析不到项目，投递直接卡死。
+      const canonical = await this.canonicalRepository(repository)
+      if (canonical)
+        projects = await match(canonical)
+    }
     if (projects.length !== 1)
       throw new GhError(projects.length ? 'ambiguous_repository' : 'unknown_repository')
     return projects[0]!
+  }
+
+  private async canonicalRepository(repository: string): Promise<string | null> {
+    try {
+      const remote = record(await this.request(`repos/${repository}`))
+      return resource.renamed(repository, text(remote.full_name))
+    }
+    catch {
+      return null
+    }
   }
 
   async probe(projectId: string, signal?: AbortSignal): Promise<ChannelIdentity> {

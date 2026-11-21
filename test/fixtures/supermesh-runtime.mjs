@@ -572,6 +572,49 @@ const cases = {
     assert.equal((await db.worker.findById(queued.id)).endedReason, 'stopped')
     assert.equal((await db.worker.listRunning()).length, 0)
   },
+  async workerRedispatch() {
+    const p = await project('redispatch-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const ticketId = 'redispatch-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '重派工必须真的送达', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const queued = await db.worker.queue(ticketId, p.id)
+    // 预先建好会话且不填 worktree：派工会复用这个会话，不必真的建 worktree。
+    await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
+    const dispatches = async () => {
+      const { events } = await session.history(queued.id)
+      const texts = events.flatMap(event => event.type === 'user/message'
+        ? [event.data]
+        : event.type === 'agent/inbox/spliced' ? event.data.inserted : [])
+        .flatMap(message => message.content.flatMap(part => part.type === 'text' ? [part.text] : []))
+      return texts.filter(text => text.startsWith(`${ticketId}:`))
+    }
+    await workers.reconcile()
+    await settle()
+    assert.equal((await dispatches()).length, 1, 'the first dispatch must reach the worker session')
+    // 复现线上循环：worker 结束、票回 waiting，下一轮派工必须重新送达。
+    assert.equal((await db.worker.findById(queued.id)).status, 'ended')
+    assert.equal((await db.ticket.findById(ticketId)).status, 'waiting')
+    await workers.reconcile()
+    await waitFor(async () => (await dispatches()).length === 2)
+    assert.equal((await dispatches()).length, 2, 'a re-dispatch must land a second prompt instead of being deduplicated by its request id')
+  },
+  async answerRelay() {
+    const p = await project('relay-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const ticketId = 'relay-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '答案改投编排', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const worker = await db.worker.queue(ticketId, p.id)
+    await db.worker.end(worker.id, 'stopped', now)
+    const ask = await db.inbox.enqueueAsk({ type: 'main', origin: 'worker', projectId: p.id, ticketId, workerId: worker.id, message: '需要你确认方案' })
+    await db.inbox.answerScoped(ask.id, '按 A 方案做', { type: 'main' }, now)
+    await inbox.deliverAnswers()
+    const relay = await db.inbox.findById(`supermesh:answer-relay:${ask.id}`)
+    assert.equal(relay?.type, 'project', 'an answer that cannot reach the ended worker must be relayed to the project orchestrator')
+    assert.equal(relay?.projectId, p.id)
+    assert.equal(relay?.ticketId, ticketId)
+    assert.match(relay.message, /按 A 方案做/)
+    assert.equal((await db.inbox.findById(ask.id)).deliveryError, null, 'the answered ask must not keep retrying toward the ended worker')
+  },
   async workerSettlement() {
     const p = await project('settlement-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()

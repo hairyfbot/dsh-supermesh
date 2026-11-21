@@ -135,7 +135,10 @@ export const worker = defineService({
     let running = (await db.worker.listRunning()).length
     // flow.md：`running --> waiting : Worker 结束需重开`。`waiting` 没有依赖时同样要能被派工，
     // 否则一旦编排把票置回 waiting，它就再也不会被拾起（MR 开着也不会继续改）。
-    const queueable = [...await db.worker.listQueued()]
+    // 按 id 去重：`listQueued()` 与下面新排队的 worker 会重叠，同一个 worker 派两次会重复投递 prompt。
+    const queueable = new Map<string, Selectable<DB['worker']>>()
+    for (const worker of await db.worker.listQueued())
+      queueable.set(worker.id, worker)
     for (const waiting of await db.ticket.listFiltered({ status: 'waiting' })) {
       if (waiting.paused || waiting.prepareError)
         continue
@@ -147,11 +150,17 @@ export const worker = defineService({
         continue
       if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
         continue
-      await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
+      const queued = await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
+      if (queued)
+        queueable.set(queued.id, queued)
     }
-    for (const worker of [...queueable, ...await db.worker.listQueued()]) {
+    for (const worker of queueable.values()) {
       if (stopped || running >= settings.maxWorkers)
         break
+      // 同一 tick 里前面的分支可能已经把它派出去，只派仍然在排队的。
+      const current = await db.worker.findById(worker.id)
+      if (!current || current.status !== 'queued')
+        continue
       const ticket = await db.ticket.findById(worker.ticketId)
       if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled') {
         await db.worker.end(worker.id, 'stopped', new Date().toISOString())
@@ -220,7 +229,9 @@ export const worker = defineService({
         await db.ticket.start(ticket.id, now, now)
         running++
         started = true
-        await session.send(worker.id, prompt, 'queue', `supermesh:worker:${worker.id}`)
+        // requestId 必须每次派工唯一：会话控制器按 rpcId 去重（hasPromptRequest），
+        // 固定 id 会让重派工被静默吞掉，worker 置 running 却收不到任何 prompt。
+        await session.send(worker.id, prompt, 'queue', `supermesh:worker:${worker.id}:${randomUUID()}`)
         await db.ticket.setPrepareError(ticket.id, null, now)
       }
       catch (error) {

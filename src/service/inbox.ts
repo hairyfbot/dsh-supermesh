@@ -188,8 +188,28 @@ export const inbox = defineService({
           const worker = message.workerId ? await db.worker.findById(message.workerId) : undefined
           if (!worker)
             throw new Error('worker_not_found')
-          if (worker.status === 'ended')
-            throw new Error('worker_ended')
+          if (worker.status === 'ended') {
+            // Worker 已经结束，答案送不回它了：改投项目编排，别让答案烂在队列里。
+            // 固定 id 保证重启后重放也不会重复投递。
+            if (!deliveredAnswers.has(`${message.id}:relayed`)) {
+              const ticket = await db.ticket.findById(worker.ticketId)
+              if (ticket) {
+                await db.inbox.enqueue({
+                  id: `supermesh:answer-relay:${message.id}`,
+                  type: 'project',
+                  projectId: ticket.projectId,
+                  origin: 'system',
+                  kind: 'notice',
+                  ticketId: ticket.id,
+                  title: '答案未送达',
+                  message: `${worker.id} 已结束，答案没能送到它手里：${message.answer}`,
+                })
+              }
+              deliveredAnswers.add(`${message.id}:relayed`)
+              await db.inbox.resetDelivery(message.id)
+            }
+            continue
+          }
           id = worker.id
         }
         else if (message.origin === 'project' && message.projectId) {

@@ -171,6 +171,9 @@ stateDiagram-v2
 | `failed` | 回 `waiting`，或转人工 |
 | `restarted` | 回 `waiting`，自动重开 |
 
+**重开必须重新投递**：`waiting → queued → running` 每一轮都用新的 requestId 投 prompt。
+会话控制器按 rpcId 去重，复用同一个 id 会让重派工被静默吞掉 —— worker 置 `running`、会话里却什么都没有。
+
 ### 汇报状态
 
 `reportState` 是结构化通道，和会话正文（`view` 读的）是两回事。
@@ -266,6 +269,9 @@ flowchart LR
 
 `stalled` 不是「没轮到」，是「送不到」。混进未读数会让人以为消息还在排队。
 退避 2s → 4s → … → 封顶 60s，连续失败 3 次转 `stalled`。
+
+**Worker 已结束时答案送不回它**：改投它所属项目的编排（`kind=notice`），
+不留在队列里反复重试 —— 那条答案对人仍然有用，烂在队列里等于丢了。
 
 ### 已读与顺序
 
