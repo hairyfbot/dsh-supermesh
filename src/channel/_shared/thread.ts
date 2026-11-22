@@ -9,8 +9,8 @@ export async function recordThread(input: { channel: ChannelId, refId: string, k
 }
 
 /** 结单话题；合并时顺带关闭同一项目下已结单票关联的 issue。 */
-export async function closeThread(input: { channel: ChannelId, projectId: string, thread: ThreadRow, outcome: 'merged' | 'closed', at: string, branch: string | null, closeIssue: (url: string) => Promise<void> }): Promise<void> {
-  const ended = await db.ticket.closeThread(input.thread.id, input.outcome, input.at, input.branch)
+export async function closeThread(input: { channel: ChannelId, projectId: string, thread: ThreadRow, outcome: 'merged' | 'closed', at: string, closeIssue: (url: string) => Promise<void> }): Promise<void> {
+  const ended = await db.ticket.closeThread(input.thread.id, input.outcome, input.at)
   for (const ticketId of ended)
     await worker.archiveSessions(ticketId)
   if (input.outcome !== 'merged' || !ended.length)

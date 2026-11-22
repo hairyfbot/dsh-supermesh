@@ -61,11 +61,12 @@ describe('ticket and worker transactions', () => {
   it('worker queue reserves one worker for concurrent calls and rejects other project access', async () => {
     const [first, second] = await Promise.all([models.worker.queue(ticketId, 'p1'), models.worker.queue(ticketId, 'p1')])
     expect(first.id).toBe(second.id)
-    expect(first).toMatchObject({ status: 'queued', branch: `dsh/${ticketId}`, worktree: null })
+    expect(first).toMatchObject({ status: 'queued', branch: null, worktree: null })
     expect(await models.worker.listByTicket(ticketId)).toHaveLength(1)
     expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'queued' })
     await expect(models.worker.queue(ticketId, 'p2')).rejects.toThrow('不属于当前项目')
-    await expect(models.worker.queue(ticketId, 'p1', 'dsh/wrong')).rejects.toThrow('分支末段必须是任务号')
+    // 分支名不再要求末段是任务号：任意名字都能排队，已排队的 worker 原样复用。
+    await expect(models.worker.queue(ticketId, 'p1', 'dsh/随便起的名字')).resolves.toMatchObject({ ticketId })
   })
 
   it('worker report records facts without writing the project inbox', async () => {

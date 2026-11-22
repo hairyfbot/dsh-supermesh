@@ -206,14 +206,13 @@ export const worker = defineService({
         continue
       let started = false
       try {
-        const branch = `dsh/${ticket.id}`
         let directory = worker.worktree
         // 复用判据必须与 activate 一致：归档后的会话仍有 history，但 resolve 返回 null，
         // 复用它只会在激活时 unknown_session，票就永远卡在 queued。
         const existing = await session.resolve(worker.id).then(Boolean).catch(() => false)
         if (existing) {
-          if (directory && worker.branch === branch)
-            await worktree.verify(project.directory, directory, branch)
+          if (directory && worker.branch)
+            await worktree.verify(project.directory, directory, worker.branch)
           directory = directory ?? project.directory
           // 复用同一 worker 时上一轮会话已 end-seed；prompt 的契约是「先显式恢复会话再投递」，
           // 不在这里恢复，后面的 send 只会进空气，Worker 永远收不到这一轮的 prompt。
@@ -223,11 +222,11 @@ export const worker = defineService({
           await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory })
           if (stopped)
             throw new Error('worker_stopped')
-          if (directory && worker.branch === branch) {
-            await worktree.verify(project.directory, directory, branch)
+          if (directory && worker.branch) {
+            await worktree.verify(project.directory, directory, worker.branch)
           }
           else {
-            const created = await worktree.create(await session.activate(worker.id), ticket.id)
+            const created = await worktree.create(await session.activate(worker.id), ticket.title, ticket.id)
             directory = created.worktree
             await db.worker.update(worker.id, { branch: created.branch, worktree: directory })
           }

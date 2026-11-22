@@ -8,6 +8,7 @@ import { promisify } from 'node:util'
 import { getServerContext } from 'dsh-h3/utils'
 import { singlet } from '@/runtime/singlet'
 import { server } from '@/server'
+import { worktreeBranch } from '@/utils/branch'
 import { parseRepositoryRemote } from '@/utils/repository'
 import { defineService } from '@/utils/service'
 
@@ -90,17 +91,25 @@ export const worktree = defineService({
       return result
     },
   ),
-  async create(agent: Agent, ticketId: string): Promise<{ branch: string, worktree: string, baseCommit: string, repositoryRoot: string }> {
-    if (!/^[a-z0-9][\w-]*$/i.test(ticketId))
-      throw new Error('invalid_worktree_identity')
-    const branch = `dsh/${ticketId}`
+  async create(agent: Agent, title: string, ticketId: string): Promise<{ branch: string, worktree: string, baseCommit: string, repositoryRoot: string }> {
     const ctx = getServerContext<Context>(server)
     if (!ctx.worktrees)
       throw new Error('worktrees_unavailable')
-    const created = await ctx.worktrees.create(agent, { name: branch, from: 'HEAD' })
-    if (created.branch !== branch)
-      throw new Error('worktree_branch_conflict')
-    return { branch: created.branch, worktree: created.path, baseCommit: created.baseCommit, repositoryRoot: created.repositoryRoot }
+    const base = worktreeBranch(title, ticketId)
+    let failure: unknown
+    // 同名任务会撞车：官方对已存在的分支直接报错，换个后缀再试。
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        const created = await ctx.worktrees.create(agent, { name: attempt === 1 ? base : `${base}-${attempt}`, from: 'HEAD' })
+        return { branch: created.branch, worktree: created.path, baseCommit: created.baseCommit, repositoryRoot: created.repositoryRoot }
+      }
+      catch (error) {
+        if (!(error instanceof Error) || !error.message.includes('already exists'))
+          throw error
+        failure = error
+      }
+    }
+    throw failure instanceof Error ? failure : new Error('worktree_branch_conflict')
   },
   verify: singlet(
     (_directory, target) => `worktree:verify:${resolve(target)}`,

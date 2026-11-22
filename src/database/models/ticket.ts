@@ -225,7 +225,7 @@ export class Ticket extends Model<DB, 'ticket'> {
     return Number(result.numUpdatedRows ?? 0) > 0
   }
 
-  async closeThread(threadId: string, outcome: 'merged' | 'closed', at: string, branch: string | null): Promise<string[]> {
+  async closeThread(threadId: string, outcome: 'merged' | 'closed', at: string): Promise<string[]> {
     const thread = await this.db.selectFrom('thread').selectAll().where('id', '=', threadId).executeTakeFirst()
     if (!thread?.url || thread.kind !== 'pull')
       return []
@@ -235,10 +235,10 @@ export class Ticket extends Model<DB, 'ticket'> {
       const row = await this.findById(ticketId)
       if (!row || CLOSED_STATUS.includes(row.status))
         continue
-      const owns = row.prUrl === thread.url || (row.prUrl === null && !!branch && (await this.latestWorker(ticketId))?.branch === branch)
-      if (!owns && row.prUrl)
+      // 归属只认票上记下的 prUrl：分支名不参与匹配，挂着别的 PR 的票不受这条话题影响。
+      if (row.prUrl && row.prUrl !== thread.url)
         continue
-      if (owns)
+      if (row.prUrl === thread.url)
         await this.setPullRequest(ticketId, thread.url, outcome, row.ciState)
       const ticket = (await this.findById(ticketId))!
       const closed = await this.followsDone(ticket)
