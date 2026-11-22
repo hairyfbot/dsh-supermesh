@@ -19,6 +19,8 @@ type Project = Selectable<DB['project']>
 
 /** 已经补挂过的票：同一个运行时里不重复读会话日志。 */
 const reconciled = new Set<string>()
+/** 确认过不是 Worker 的会话：主编排、项目编排的每条工具结果都查一次库没有意义。 */
+const outsiders = new Set<string>()
 
 export const forge = defineService({
   /**
@@ -28,11 +30,15 @@ export const forge = defineService({
   async observe(source: Session, event: SessionEvent): Promise<void> {
     if (event.type !== 'tool/result' && event.type !== 'turn/end')
       return
+    if (outsiders.has(source.id))
+      return
     try {
       // Worker 会话 id 就是 worker 行 id，按主键认人即可；每次工具结果都读整份会话日志太重。
       const worker = await db.worker.findById(source.id)
-      if (!worker)
+      if (!worker) {
+        outsiders.add(source.id)
         return
+      }
       const ticket = await db.ticket.findById(worker.ticketId)
       if (!ticket || ticket.prUrl || ticket.status === 'done' || ticket.status === 'cancelled')
         return

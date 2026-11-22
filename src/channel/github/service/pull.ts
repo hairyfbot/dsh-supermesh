@@ -53,7 +53,7 @@ export const pull = defineService({
       const fact: PullFact = { head, base: text(base.ref), state, ciState, collectedAt: now(), updatedAt, ciError, url: text(detail.html_url) }
       await courier.record('github', target.repository, `pr_fact:${target.number}`, fact)
       const branch = typeof record(detail.head).ref === 'string' ? text(record(detail.head).ref) : null
-      if (typeof detail.title === 'string' && detail.title)
+      if (typeof detail.title === 'string' && detail.title && thread.title !== detail.title)
         await db.thread.setTitle(thread.id, detail.title)
       // 挂票按票上已记下的 prUrl 反查：Worker 用自造分支开 PR 时分支名对不上，
       // 绑定来自会话自己的 shell 证据。分支名只留最后兜底。

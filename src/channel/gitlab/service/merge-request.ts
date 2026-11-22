@@ -16,7 +16,7 @@ export const mergeRequest = defineService({
     if (!state)
       throw new GitLabError('invalid_response')
     const branch = typeof row.source_branch === 'string' ? text(row.source_branch) : null
-    if (typeof row.title === 'string' && row.title)
+    if (typeof row.title === 'string' && row.title && thread.title !== row.title)
       await db.thread.setTitle(thread.id, row.title)
     // 挂票按票上已记下的 prUrl 反查：Worker 用自造分支开 MR 时分支名对不上，
     // 绑定来自会话自己的 shell 证据。分支名只留最后兜底。
