@@ -1,14 +1,21 @@
+import { createHash } from 'node:crypto'
+
 /**
- * 分支名固定为 `dsh/<任务名称>`：标题压成 Git 认的一段，不掺任务号。
+ * 分支名固定为 `dsh/<任务名称>`，且必须是纯 ASCII：标题里的字母数字压成一段，
+ * 标题本身没有可用的 ASCII 时用任务号的短摘要兜底。
  * PR 归哪张票只看会话证据，分支名不参与匹配。
  */
 export function worktreeBranch(title: string, ticketId: string): string {
   const slug = title
-    .normalize('NFKC')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036F]/g, '')
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 48)
+    .slice(0, 40)
     .replace(/-+$/g, '')
-  return `dsh/${slug || ticketId.toLowerCase()}`
+  if (slug.length >= 3)
+    return `dsh/${slug}`
+  const digest = createHash('sha256').update(ticketId).digest('hex').slice(0, 6)
+  return `dsh/${slug ? `${slug}-${digest}` : `task-${digest}`}`
 }

@@ -14,7 +14,7 @@ export const create_worker = defineTool({
     },
     branch: {
       type: 'string',
-      description: '分支名，省略则用 dsh/<任务名称>。PR 归哪张票只看 Worker 会话证据，不靠这个字符串。',
+      description: '分支名，省略则用 dsh/<任务名称>。必须是纯 ASCII 的常规分支名；PR 归哪张票只看 Worker 会话证据，不靠这个字符串。',
     },
   },
   output: {

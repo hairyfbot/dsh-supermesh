@@ -37,7 +37,7 @@ dsh plugin --profile <name> add github:omdsh-dev/dsh-supermesh
 
 - 🧭 **四层代理**：主编排定归属、项目编排管执行、临时协调者处理跨项目、执行会话改代码。
 - 🔁 **任务闭环**：事件 → 话题 → 分诊开票 → Worker；`ready` 转 review，PR 与 CI 状态回写到票。
-- 🌿 **一票一树**：分支 `dsh/<任务名称>`，worktree 在仓库同级 `.agents/worktrees/`；PR 只按 Worker 会话里的 `gh pr create` / `glab mr create` 与推送证据回挂，分支名不参与匹配。
+- 🌿 **一票一树**：分支 `dsh/<任务名称>`（纯 ASCII），worktree 在仓库同级 `.agents/worktrees/`；PR 只按 Worker 会话里的 `gh pr create` / `glab mr create` 与推送证据回挂，分支名不参与匹配。
 - 📥 **收件箱**：代理与人类共用投递规则，`ask` 只挂起当前工作线，失败指数退避并单独记受阻。
 - 🔗 **多渠道**：GitHub、GitLab 每 30 秒轮询事件与 CI，按仓库归属投递。
 - 🖥️ **面板**：概览、任务、触发、渠道、设置五个分区，可一键进入主编排。

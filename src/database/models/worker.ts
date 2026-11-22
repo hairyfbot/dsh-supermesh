@@ -93,6 +93,8 @@ export class Worker extends Model<DB, 'worker'> {
    * 用于旧会话已被归档、无法再激活的情形 —— 那时复用同一个 id 只会一直失败。
    */
   async queue(ticketId: string, projectId: string, branch?: string, fresh = false): Promise<Selectable<DB['worker']>> {
+    if (branch && !/^[\w./-]+$/.test(branch))
+      throw new Error('分支名必须是纯 ASCII')
     return this.db.transaction().execute(async (trx) => {
       const ticket = await trx.selectFrom('ticket').selectAll().where('id', '=', ticketId).where('projectId', '=', projectId).executeTakeFirst()
       if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
