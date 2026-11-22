@@ -572,6 +572,56 @@ const cases = {
     assert.equal((await db.worker.findById(queued.id)).endedReason, 'stopped')
     assert.equal((await db.worker.listRunning()).length, 0)
   },
+  async ticketArchive() {
+    const p = await project('archive-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const { setting } = await import('@/service/setting.ts')
+    const { closeThread } = await import('@/channel/_shared/thread.ts')
+    const archived = () => runtime.ctx.workspaceRegistry.archivedSessionIds
+    const ticketWithWorker = async (id) => {
+      await db.ticket.create({ id, projectId: p.id, channelId: 'github', title: id, description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+      const worker = await db.worker.queue(id, p.id)
+      await session.create('worker', { sessionId: worker.id, ticketId: id, projectId: p.id, directory: p.directory })
+      await db.worker.start(worker.id, now)
+      return worker
+    }
+
+    const offWorker = await ticketWithWorker('archive-off-ticket')
+    await db.worker.end(offWorker.id, 'completed', now)
+    await workers.archiveSessions('archive-off-ticket')
+    assert.equal(archived().includes(offWorker.id), false, 'autoArchiveWorkers 关闭时票结单不得归档 Worker 会话')
+
+    await setting.save({ autoArchiveWorkers: true })
+
+    // Worker 先结束、票后结单：结单那一刻归档票名下已结束的 Worker 会话。
+    const mergedWorker = await ticketWithWorker('archive-merged-ticket')
+    await db.ticket.update('archive-merged-ticket', { prState: 'merged', updatedAt: now })
+    await workers.reconcile()
+    assert.equal((await db.ticket.findById('archive-merged-ticket')).status, 'done')
+    assert.equal(archived().includes(mergedWorker.id), true, '票进终态后它名下已结束的 Worker 会话必须被归档')
+    assert.equal(await session.resolve(mergedWorker.id), null, '归档后的 Worker 会话不再可解析')
+    await workers.archiveSessions('archive-merged-ticket')
+    assert.equal(archived().filter(id => id === mergedWorker.id).length, 1, '重复结单不得重复归档')
+
+    // 票先结单、Worker 后结束：收尾时同样要归档。
+    const lateWorker = await ticketWithWorker('archive-late-ticket')
+    await db.ticket.update('archive-late-ticket', { status: 'done', endedAt: now, updatedAt: now })
+    await workers.reconcile()
+    assert.equal((await db.worker.findById(lateWorker.id)).status, 'ended')
+    assert.equal(archived().includes(lateWorker.id), true, '票已终态时结束的 Worker 会话同样要归档')
+
+    // PR 合并结单走 closeThread：同样要归档。
+    const pullWorker = await ticketWithWorker('archive-pull-ticket')
+    await db.worker.end(pullWorker.id, 'completed', now)
+    const url = 'https://github.com/example/archive-project/pull/7'
+    const threadId = 'github:archive-project:7'
+    await db.thread.record({ id: threadId, channelId: 'github', refId: 'archive-project:7', kind: 'pull', title: 'Archive pull request', url, createdAt: now, updatedAt: now, projectId: p.id, triage: 'claimed', triagedAt: now })
+    await db.ticketThread.link('archive-pull-ticket', threadId, now)
+    await db.ticket.setPullRequest('archive-pull-ticket', url, 'merged', null)
+    await closeThread({ channel: 'github', projectId: p.id, thread: (await db.thread.findById(threadId)), outcome: 'merged', at: now, branch: null, closeIssue: async () => {} })
+    assert.equal((await db.ticket.findById('archive-pull-ticket')).status, 'done')
+    assert.equal(archived().includes(pullWorker.id), true, 'PR 合并结单同样要归档票名下的 Worker 会话')
+  },
   async workerRedispatch() {
     const p = await project('redispatch-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()

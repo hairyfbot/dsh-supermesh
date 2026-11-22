@@ -80,6 +80,7 @@ describe('supermesh services composed with the installed official runtime', () =
     ['channelIsolation', 'a stalled channel mail does not block internal mail for the same recipient'],
     ['workerEnd', 'a ticket that reached a terminal state ends the worker that was still running'],
     ['workerSettlement', 'a finished worker wakes the project orchestrator with the official settlement notice'],
+    ['ticketArchive', 'a ticket that reached a terminal state archives its ended worker sessions and skips them when archiving is off'],
     ['workerRedispatch', 'a requeued worker receives the dispatch prompt again instead of being deduplicated by request id'],
     ['answerRelay', 'an answer for an ended worker is relayed to the project orchestrator instead of stalling'],
     ['roleMarker', 'only the four role sessions receive the bot identity marker'],

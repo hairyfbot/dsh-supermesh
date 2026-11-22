@@ -115,6 +115,7 @@ export const stop_ticket = defineTool({
     }
     const now = new Date().toISOString()
     await db.ticket.finish(ticket.id, 'cancelled', now, now)
+    await workerService.archiveSessions(ticket.id)
     await db.inbox.returnPendingTicket(ticket.id, args.reason ?? '人类要求停止', now)
     for (const link of await db.supervisorTicket.listByTicket(ticket.id)) await db.inbox.enqueue({ type: 'supervisor', supervisorId: link.supervisorId, projectId: ticket.projectId, origin: 'project', kind: 'ticket', ticketId: ticket.id, title: 'dropped', message: args.reason ?? '人类要求停止' })
     return JSON.stringify({ id: ticket.id, status: 'cancelled' })

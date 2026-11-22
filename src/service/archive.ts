@@ -12,6 +12,8 @@ export const archive = defineService({
     if (!settings.autoArchiveWorkers)
       return false
     const ctx = getServerContext<Context>(server)
+    if (ctx.workspaceRegistry.archivedSessionIds.includes(id as SessionId))
+      return false
     await session.stop(id).catch(() => undefined)
     for (let attempt = 0; attempt < 3; attempt++) {
       try {

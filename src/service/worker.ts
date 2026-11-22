@@ -19,6 +19,20 @@ const eventQueues = new Map<string, Promise<void>>()
 let stopped = false
 let observing = false
 
+/** 票进终态后归档它名下所有已结束的 Worker 会话：已归档跳过，单个失败只告警，不阻断结单。 */
+const archiveEndedWorkers = singlet(
+  (ticketId: string) => `worker:archive:${ticketId}`,
+  async (ticketId: string): Promise<void> => {
+    for (const current of await db.worker.listByTicket(ticketId)) {
+      if (current.status !== 'ended' || !current.startedAt)
+        continue
+      await archive.session(current.id).catch((error: unknown) => {
+        getServerContext<Context>(server).logger.warn('supermesh: archiving worker %s failed: %s', current.id, error instanceof Error ? error.message : String(error))
+      })
+    }
+  },
+)
+
 const finish = singlet(
   (current: Selectable<DB['worker']>) => `worker:finish:${current.id}`,
   async (current: Selectable<DB['worker']>, reason?: 'failed' | 'stopped'): Promise<void> => {
@@ -58,10 +72,10 @@ const finish = singlet(
     const ended = await db.ticket.findById(worker.ticketId)
     // 只有票真正终结才归档会话。票还在 review / waiting 时，后续的 review 意见要复用这个 worker，
     // 会话一旦归档，resolve 就返回 null，下一轮会直接以 unknown_session 失败。
-    if (!reason && worker.reportState !== 'failed' && ended && (ended.status === 'done' || ended.status === 'cancelled'))
-      await archiveWorker(worker.id)
-    if (ended && (ended.status === 'done' || ended.status === 'cancelled'))
+    if (ended && (ended.status === 'done' || ended.status === 'cancelled')) {
+      await archiveEndedWorkers(ended.id)
       await releaseDependents(ended.id)
+    }
     await notifyRouter(worker, reason)
   },
 )
@@ -93,6 +107,7 @@ export const worker = defineService({
       if (ticket.status === 'done' || ticket.status === 'cancelled') {
         await session.send(worker.id, `票 ${ticket.id} 已${ticket.status === 'done' ? '完成' : '取消'}，本次授权已收回：立即停手，不要再提交、推送或开 PR。`, 'interrupt').catch(() => undefined)
         await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+        await archiveEndedWorkers(ticket.id)
         continue
       }
       if (ticket.prState === 'merged' || ticket.prState === 'closed') {
@@ -282,6 +297,7 @@ export const worker = defineService({
       await finish(worker, expired ? 'stopped' : undefined)
     }
   }),
+  archiveSessions: archiveEndedWorkers,
   cancel: singlet(
     (ticketId: string) => `worker:cancel:${ticketId}`,
     async (ticketId: string): Promise<void> => {
@@ -446,6 +462,7 @@ async function blockedByDependency(ticketId: string): Promise<boolean> {
 /** 结单并通知相关方：所有终态路径都必须经过这里，否则 supervisor 收不到「这张做完了」。 */
 async function finishTicket(id: string, status: 'done' | 'cancelled', endedAt: string, updatedAt: string): Promise<void> {
   await db.ticket.finish(id, status, endedAt, updatedAt)
+  await archiveEndedWorkers(id)
   await notifySupervisor(id)
 }
 
@@ -564,8 +581,4 @@ async function notifyRouter(current: Selectable<DB['worker']>, reason?: 'failed'
   catch (error) {
     getServerContext<Context>(server).logger.warn('supermesh: worker %s settlement notice failed: %s', current.id, error instanceof Error ? error.message : String(error))
   }
-}
-
-async function archiveWorker(id: string): Promise<void> {
-  await archive.session(id)
 }
