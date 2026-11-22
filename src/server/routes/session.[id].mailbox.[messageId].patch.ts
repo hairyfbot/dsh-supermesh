@@ -15,7 +15,7 @@ export default defineHandler(async (event) => {
   const message = mailbox.messages.find(message => message.id === messageId)
   if (!message)
     throw new HTTPError({ status: 403, message: 'scope_denied' })
-  if (message.kind === 'ask')
+  if (message.kind === 'ask' && !message.answer)
     throw new HTTPError({ status: 409, message: 'answer_required' })
   return { completed: await inbox.complete(id, [messageId]) }
 })

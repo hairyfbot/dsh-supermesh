@@ -14,7 +14,7 @@ export const inbox_list = defineTool({
 
 export const read_mailbox = defineTool({
   name: 'read_mailbox',
-  description: '读取当前角色未处理邮件，以及可用项目的 id、仓库地址和本地路径。可传 ids 一次读取指定多条邮件。渠道邮件带 trigger 事实（actor / human / mentioned / strength）：strength=inferred 只是候选，只能分诊记录，不能建票。读取标为已读，处理完用 inbox_kill，ask 必须用 answer。',
+  description: '读取当前角色未处理邮件，以及可用项目的 id、仓库地址和本地路径。可传 ids 一次读取指定多条邮件。投递失败的对外回复也会出现在这里，可用 inbox_kill 放弃。渠道邮件带 trigger 事实（actor / human / mentioned / strength）：strength=inferred 只是候选，只能分诊记录，不能建票。读取标为已读，处理完用 inbox_kill，ask 必须用 answer。',
   parameters: {
     ids: {
       type: 'array',

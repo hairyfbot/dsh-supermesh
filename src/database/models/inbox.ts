@@ -100,6 +100,22 @@ export class Inbox extends Model<DB, 'inbox'> {
       .execute()
   }
 
+  async finishAnswer(id: string, doneAt: string): Promise<void> {
+    await this.db
+      .updateTable('inbox')
+      .set({ status: 'done', doneAt, deliveryAttempts: 0, deliveryError: null, nextRetryAt: null })
+      .where('id', '=', id)
+      .execute()
+  }
+
+  async settleAnswer(id: string, doneAt: string): Promise<void> {
+    await this.db
+      .updateTable('inbox')
+      .set({ status: 'done', doneAt, nextRetryAt: null })
+      .where('id', '=', id)
+      .execute()
+  }
+
   async listRetryable(now: string): Promise<Selectable<DB['inbox']>[]> {
     return this.db
       .selectFrom('inbox')
@@ -185,18 +201,34 @@ export class Inbox extends Model<DB, 'inbox'> {
   async listScoped(scope: InboxScope, includeChannel = false): Promise<Selectable<DB['inbox']>[]> {
     if (!['main', 'project', 'supervisor'].includes(scope.type))
       throw new Error('invalid_inbox_recipient')
-    let query = this.db.selectFrom('inbox').selectAll().where('type', '=', scope.type).where('status', 'in', ['pending', 'stalled'])
-    if (!includeChannel)
-      query = query.where('origin', '!=', 'channel')
-    if (scope.type === 'project')
-      query = query.where('projectId', '=', scope.projectId)
-    if (scope.type === 'supervisor')
-      query = query.where('supervisorId', '=', scope.supervisorId)
-    return query.orderBy('createdAt').orderBy('seq').execute()
+    const base = () => {
+      const query = this.db.selectFrom('inbox').selectAll().where('status', 'in', ['pending', 'stalled'])
+      return includeChannel ? query : query.where('origin', '!=', 'channel')
+    }
+    const incoming = base().where('type', '=', scope.type)
+    const undelivered = base().where('type', '=', 'user').where('kind', '=', 'notice').where('status', '=', 'stalled')
+    const [own, failed] = await Promise.all([
+      scope.type === 'project'
+        ? incoming.where('projectId', '=', scope.projectId).execute()
+        : scope.type === 'supervisor'
+          ? incoming.where('supervisorId', '=', scope.supervisorId).execute()
+          : incoming.execute(),
+      scope.type === 'project'
+        ? undelivered.where('projectId', '=', scope.projectId).execute()
+        : scope.type === 'supervisor'
+          ? undelivered.where('supervisorId', '=', scope.supervisorId).execute()
+          : undelivered.where('projectId', 'is', null).where('supervisorId', 'is', null).execute(),
+    ])
+    return [...own, ...failed].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.seq - b.seq)
   }
 
   owns(row: Selectable<DB['inbox']>, scope: InboxScope, includeChannel = false): boolean {
-    return ['main', 'project', 'supervisor'].includes(scope.type) && (includeChannel || row.origin !== 'channel') && row.type === scope.type && (scope.type !== 'project' || row.projectId === scope.projectId) && (scope.type !== 'supervisor' || row.supervisorId === scope.supervisorId)
+    if (!['main', 'project', 'supervisor'].includes(scope.type) || (!includeChannel && row.origin === 'channel'))
+      return false
+    const scoped = scope.type === 'project' ? row.projectId === scope.projectId : scope.type === 'supervisor' ? row.supervisorId === scope.supervisorId : true
+    if (row.type === scope.type)
+      return scoped
+    return row.type === 'user' && row.kind === 'notice' && row.status === 'stalled' && scoped && (scope.type !== 'main' || (row.projectId === null && row.supervisorId === null))
   }
 
   async completeScoped(ids: string[], scope: InboxScope, now: string, includeChannel = false): Promise<number> {
@@ -207,7 +239,7 @@ export class Inbox extends Model<DB, 'inbox'> {
       const rows = await trx.selectFrom('inbox').selectAll().where('id', 'in', [...new Set(ids)]).execute()
       if (rows.length !== new Set(ids).size || rows.some(row => !model.owns(row, scope, includeChannel)))
         throw new Error('收件箱不存在或不属于当前身份')
-      if (rows.some(row => row.kind === 'ask' && row.status !== 'done'))
+      if (rows.some(row => row.kind === 'ask' && !row.answer))
         throw new Error('answer_required')
       const result = await trx.updateTable('inbox').set({ status: 'done', doneAt: now }).where('id', 'in', ids).where('status', 'in', ['pending', 'stalled']).executeTakeFirst()
       return Number(result.numUpdatedRows)
@@ -252,7 +284,27 @@ export class Inbox extends Model<DB, 'inbox'> {
   }
 
   async listAnswered(): Promise<Selectable<DB['inbox']>[]> {
-    return this.db.selectFrom('inbox').selectAll().where('kind', '=', 'ask').where('status', '=', 'done').where('answer', 'is not', null).orderBy('seq').execute()
+    return this.db.selectFrom('inbox').selectAll().where('kind', '=', 'ask').where('answer', 'is not', null).where('status', 'in', ['done', 'stalled']).orderBy('seq').execute()
+  }
+
+  async relayAnswer(id: string, reason: string, doneAt: string): Promise<void> {
+    await this.db.transaction().execute(async (trx) => {
+      const model = new Inbox(trx)
+      const row = await model.findById(id)
+      if (!row?.answer)
+        return
+      await model.enqueue({
+        id: `supermesh:answer-relay:${row.id}`,
+        type: row.projectId ? 'project' : 'main',
+        projectId: row.projectId,
+        origin: 'system',
+        kind: 'notice',
+        ticketId: row.ticketId,
+        title: '答案未送达',
+        message: `${reason}：${row.answer}`,
+      })
+      await model.settleAnswer(row.id, doneAt)
+    })
   }
 
   async returnPendingTicket(ticketId: string, reason: string, now: string): Promise<void> {
