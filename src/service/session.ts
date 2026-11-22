@@ -108,6 +108,23 @@ export const session = defineService({
       return preset === presets.supervisor && supervisor.status === 'active' ? { role: 'supervisor', supervisorId: supervisor.id } : null
     return preset === presets.main && await storage.getItem<string>('orchestrator.id') === id ? { role: 'main' } : null
   },
+  /**
+   * 按会话日志重建一个 Session 实例。没有活动 Agent 的票（Worker 已结束）也要能读
+   * 它自己的投影 —— 官方 forge-session 的绑定正是从这份日志折出来的。
+   */
+  async instance(id: string): Promise<Session | null> {
+    const ctx = getServerContext<Context>(server)
+    const sid = SessionId(id)
+    if (ctx.workspaceRegistry.archivedSessionIds.includes(sid))
+      return null
+    try {
+      const snapshot = await ctx.sessionQuery.readSession(sid)
+      return Session.create(sid, snapshot.events, snapshot.session)
+    }
+    catch {
+      return null
+    }
+  },
   async findMain(): Promise<string | null> {
     const id = await storage.getItem<string>('orchestrator.id')
     return id && (await session.resolve(id))?.role === 'main' ? id : null

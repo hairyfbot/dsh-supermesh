@@ -618,7 +618,7 @@ const cases = {
     await db.thread.record({ id: threadId, channelId: 'github', refId: 'archive-project:7', kind: 'pull', title: 'Archive pull request', url, createdAt: now, updatedAt: now, projectId: p.id, triage: 'claimed', triagedAt: now })
     await db.ticketThread.link('archive-pull-ticket', threadId, now)
     await db.ticket.setPullRequest('archive-pull-ticket', url, 'merged', null)
-    await closeThread({ channel: 'github', projectId: p.id, thread: (await db.thread.findById(threadId)), outcome: 'merged', at: now, branch: null, closeIssue: async () => {} })
+    await closeThread({ channel: 'github', projectId: p.id, thread: (await db.thread.findById(threadId)), outcome: 'merged', at: now, closeIssue: async () => {} })
     assert.equal((await db.ticket.findById('archive-pull-ticket')).status, 'done')
     assert.equal(archived().includes(pullWorker.id), true, 'PR 合并结单同样要归档票名下的 Worker 会话')
   },

@@ -14,7 +14,8 @@ export const create_worker = defineTool({
     },
     branch: {
       type: 'string',
-      description: '分支名，省略则用 dsh/<任务号>。末段必须是任务号，PR 归哪张票就靠这个字符串比对。',
+      required: true,
+      description: '分支名称（英文）将会自动拼接为 dsh/[分支名称]',
     },
   },
   output: {
@@ -25,7 +26,7 @@ export const create_worker = defineTool({
     const identity = await session.resolve(exec.agent?.session.id ?? '')
     if (identity?.role !== 'project' || !identity.projectId)
       throw new Error('仅项目编排可调用')
-    const worker = await db.worker.queue(args.ticketId, identity.projectId, args.branch)
+    const worker = await db.worker.queue(args.ticketId, identity.projectId, `dsh/${args.branch}`)
     await db.ticket.setPrepareError(args.ticketId, null, new Date().toISOString())
     await workerService.reconcile()
     return JSON.stringify(await db.worker.findById(worker.id))

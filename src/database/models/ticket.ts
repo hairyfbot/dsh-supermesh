@@ -76,6 +76,16 @@ export class Ticket extends Model<DB, 'ticket'> {
     })
   }
 
+  /** 按已挂上的变更请求反查票：采集侧靠它把 PR 话题接回票，不再依赖分支名。 */
+  async listByPullRequest(projectId: string, prUrl: string): Promise<Selectable<DB['ticket']>[]> {
+    return this.db
+      .selectFrom('ticket')
+      .selectAll()
+      .where('projectId', '=', projectId)
+      .where('prUrl', '=', prUrl)
+      .execute()
+  }
+
   async setPullRequest(id: string, prUrl: string | null, prState: PullRequestState | null, ciState: CiState | null): Promise<void> {
     await this.db
       .updateTable('ticket')
@@ -215,7 +225,7 @@ export class Ticket extends Model<DB, 'ticket'> {
     return Number(result.numUpdatedRows ?? 0) > 0
   }
 
-  async closeThread(threadId: string, outcome: 'merged' | 'closed', at: string, branch: string | null): Promise<string[]> {
+  async closeThread(threadId: string, outcome: 'merged' | 'closed', at: string): Promise<string[]> {
     const thread = await this.db.selectFrom('thread').selectAll().where('id', '=', threadId).executeTakeFirst()
     if (!thread?.url || thread.kind !== 'pull')
       return []
@@ -225,10 +235,10 @@ export class Ticket extends Model<DB, 'ticket'> {
       const row = await this.findById(ticketId)
       if (!row || CLOSED_STATUS.includes(row.status))
         continue
-      const owns = row.prUrl === thread.url || (row.prUrl === null && !!branch && (await this.latestWorker(ticketId))?.branch === branch)
-      if (!owns && row.prUrl)
+      // 归属只认票上记下的 prUrl：分支名不参与匹配，挂着别的 PR 的票不受这条话题影响。
+      if (row.prUrl && row.prUrl !== thread.url)
         continue
-      if (owns)
+      if (row.prUrl === thread.url)
         await this.setPullRequest(ticketId, thread.url, outcome, row.ciState)
       const ticket = (await this.findById(ticketId))!
       const closed = await this.followsDone(ticket)

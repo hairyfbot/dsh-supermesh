@@ -413,24 +413,19 @@ PR 合并 / 关闭 → closePull → threadClosed(thread, outcome, at)
 
 ### 8.4 PR 归哪张工单
 
-```mermaid
-flowchart TD
-    A["PR #88 打开"] --> B{"分支名对得上?"}
-    B -->|"对得上"| D["attach_thread_to_ticket + claim"]
-    B -->|"对不上"| E{"正文引用了已有工单的 issue?"}
-    E -->|是| F["attach_thread_to_ticket"]
-    E -->|否| G["当新活 create_ticket"]
-    D --> H["插件记 prUrl / prState"]
-    F --> H
-```
+挂票只认 **Worker 会话自己的 shell 证据**。分支名不参与匹配。
 
-| 依据 | 可靠性 |
-| --- | --- |
-| 分支名末段 == `Worker.branch` 末段 | **确定性**，纯字符串比较 |
-| 正文 `Closes #42` | 高，但作者可能不写 |
-| 标题 / 内容相似 | 低，不要用 |
+| 证据 | 从哪来 | 绑定来源 |
+| --- | --- | --- |
+| `gh pr create` 打印的 PR 地址 | 官方 `forgeSession` 的会话投影 | `created` |
+| `gh pr view` / `edit` / `checkout` 选中的 PR | 同上 | `referenced` |
+| `git push` 之后按被推分支反查打开的 PR | 同上（`forge.findByHead`） | `discovered` |
+| `glab mr create` 打印的 MR 地址 | 插件读 Worker 会话的 `tool/result` | 直接挂票 |
+| `git push` 之后按 `source_branch` 反查打开的 MR | 插件查 GitLab API | 直接挂票 |
 
-**分支名优先**，所以建分支时末段必须就是任务号：`dsh/T-105`。不这么做只能靠模型读正文猜。
+Worker 回合结束时插件把证据里的地址写进票的 `prUrl` 并订阅那条 PR 话题；
+采集侧随后按 `prUrl` 反查就能接回票，合并 / 关闭照常推成 `done`。
+运行时启动后还会给 `waiting` / `review` 里 `prUrl` 为空的票补挂一次，历史票因此能自己收尾。
 
 ### 8.5 两套 CI
 

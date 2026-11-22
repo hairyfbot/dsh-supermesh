@@ -1,6 +1,12 @@
 - insert:
     - id: experimental-worktree
       name: '@deepseek-ai/dsh-experimental-worktree'
+    - id: supermesh-forge
+      name: '@deepseek-ai/dsh-experimental-forge'
+    - id: supermesh-forge-github
+      name: '@deepseek-ai/dsh-experimental-forge-github'
+    - id: supermesh-forge-session
+      name: '@deepseek-ai/dsh-experimental-forge-session'
     - id: dsh-supermesh
       name: dsh-supermesh
     - id: dsh-taiwind

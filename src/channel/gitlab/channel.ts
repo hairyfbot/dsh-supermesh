@@ -224,8 +224,8 @@ export class GitLabChannel implements ChannelAdapter {
     return recordThread({ channel: 'gitlab', refId: `${resource.source(target)}:${target.kind}:${target.number}`, kind: target.kind, title: text(row.title), url: text(row.web_url), createdAt: timestamp(row.created_at), updatedAt: timestamp(row.updated_at) })
   }
 
-  async threadClosed(projectId: string, thread: ThreadRow, outcome: 'merged' | 'closed', at: string, branch: string | null): Promise<void> {
-    await closeThread({ channel: 'gitlab', projectId, thread, outcome, at, branch, closeIssue: async (url) => {
+  async threadClosed(projectId: string, thread: ThreadRow, outcome: 'merged' | 'closed', at: string): Promise<void> {
+    await closeThread({ channel: 'gitlab', projectId, thread, outcome, at, closeIssue: async (url) => {
       const target = resource.parse(url, await this.site())
       if (target.kind !== 'issue')
         return

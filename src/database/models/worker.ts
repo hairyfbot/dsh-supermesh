@@ -36,16 +36,6 @@ export class Worker extends Model<DB, 'worker'> {
       .executeTakeFirst()
   }
 
-  async findByBranch(branch: string): Promise<Selectable<DB['worker']> | undefined> {
-    return this.db
-      .selectFrom('worker')
-      .selectAll()
-      .where('branch', '=', branch)
-      .orderBy('createdAt', 'desc')
-      .orderBy('id', 'desc')
-      .executeTakeFirst()
-  }
-
   async start(id: string, startedAt: string): Promise<void> {
     await this.db
       .updateTable('worker')
@@ -103,8 +93,8 @@ export class Worker extends Model<DB, 'worker'> {
    * 用于旧会话已被归档、无法再激活的情形 —— 那时复用同一个 id 只会一直失败。
    */
   async queue(ticketId: string, projectId: string, branch?: string, fresh = false): Promise<Selectable<DB['worker']>> {
-    if (branch && branch.split('/').at(-1) !== ticketId)
-      throw new Error('分支末段必须是任务号')
+    if (branch && !/^[\w./-]+$/.test(branch))
+      throw new Error('分支名只能是 ASCII')
     return this.db.transaction().execute(async (trx) => {
       const ticket = await trx.selectFrom('ticket').selectAll().where('id', '=', ticketId).where('projectId', '=', projectId).executeTakeFirst()
       if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
@@ -133,7 +123,7 @@ export class Worker extends Model<DB, 'worker'> {
         return (await new Worker(trx).findById(previous.id))!
       }
       const id = randomUUID()
-      await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? previous?.branch ?? `dsh/${ticketId}`, worktree: previous?.worktree ?? null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
+      await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? previous?.branch ?? null, worktree: previous?.worktree ?? null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
       await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
       return (await new Worker(trx).findById(id))!
     })
