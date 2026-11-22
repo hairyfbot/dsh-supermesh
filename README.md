@@ -10,6 +10,21 @@
 
 DSH 多代理任务编排：把 GitHub / GitLab 的 issue、PR 与评论变成任务，交给各自 worktree 里的 Worker 改代码、开 PR，再由上级代理验收收尾。
 
+## 🧩 设计参考
+
+部分设计参考官方 [Superagent 原型](https://github.com/deepseek-ai/dsh-superagent-prototype)的领域模型（话题、触发、任务、执行会话、收件箱），并按多仓库长期编排重做了分层与状态归属。
+
+| 维度 | 官方原型 | Supermesh |
+| --- | --- | --- |
+| 编排层级 | 主 Session → 执行器 | 主编排 → 项目编排 → 执行会话，跨项目另起协调者 |
+| 适用范围 | 单个 GitHub 仓库 | 多工作区，每项目一个编排，可记录跨项目依赖 |
+| 授权模型 | Policy / Eval / Gate / Decision / Mandate | 机器人账号即授权身份，判定不入库 |
+| 消息投递 | 四张表协作 | 一张 `Inbox` |
+| 需人工介入 | 独立 Attention | pending `ask` 派生，不覆盖任务状态 |
+| 渠道 | GitHub、飞书 | GitHub、GitLab，飞书待接入 |
+
+取舍理由见[数据模型](prisma/README.md#相对官方删掉的概念)。
+
 ## 📦 安装
 
 ```sh
