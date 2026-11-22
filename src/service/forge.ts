@@ -46,8 +46,8 @@ export const forge = defineService({
       if (!project?.enabled)
         return
       reconciled.add(ticket.id)
-      // 回合结束才做推送发现与日志回读：工具结果阶段只读已经折好的绑定，别把整份日志翻一遍。
-      await attach(ticket, await evidenceOf(source, project, ticket, worker.branch, event.type === 'turn/end'))
+      // 回合结束才回读日志：工具结果阶段只读已经折好的绑定，别把整份日志翻一遍。
+      await attach(ticket, await evidenceOf(source, project, ticket, event.type === 'turn/end'))
     }
     catch (error) {
       getServerContext<Context>(server).logger.warn('supermesh: forge binding failed for %s: %s', source.id, error instanceof Error ? error.message : String(error))
@@ -69,7 +69,7 @@ export const forge = defineService({
       if (!source)
         continue
       try {
-        await attach(ticket, await evidenceOf(source, project, ticket, worker.branch, true))
+        await attach(ticket, await evidenceOf(source, project, ticket, true))
       }
       catch (error) {
         getServerContext<Context>(server).logger.warn('supermesh: forge backfill failed for %s: %s', ticket.id, error instanceof Error ? error.message : String(error))
@@ -78,11 +78,11 @@ export const forge = defineService({
   },
 })
 
-async function evidenceOf(source: Session, project: Project, ticket: Ticket, branch: string | null, settled: boolean): Promise<string[]> {
+async function evidenceOf(source: Session, project: Project, ticket: Ticket, settled: boolean): Promise<string[]> {
   if (ticket.channelId === 'github')
-    return githubEvidence(source, project, branch, settled)
+    return githubEvidence(source, project)
   if (ticket.channelId === 'gitlab' && settled)
-    return gitlabEvidence(source, project, branch)
+    return gitlabEvidence(source, project)
   return []
 }
 
@@ -90,15 +90,12 @@ async function evidenceOf(source: Session, project: Project, ticket: Ticket, bra
  * GitHub 走官方 forge-session：绑定来自会话自己的 `gh pr create`、`gh pr view` 等
  * 命令结果，以及推送后按分支反查到的打开状态 PR。
  */
-async function githubEvidence(source: Session, project: Project, branch: string | null, settled: boolean): Promise<string[]> {
+async function githubEvidence(source: Session, project: Project): Promise<string[]> {
   const service = getServerContext<Context>(server).forgeSession
   const repository = project.remoteUrl ? githubResource.of(project.remoteUrl) : null
   if (!service || !repository)
     return []
-  // 官方只在 tool/result 里异步做推送发现；回合结束时再报一次分支，
-  // 才能保证「先 push 再开 PR」这一轮也读得到绑定。
-  if (settled && branch && project.remoteUrl)
-    await service.discoverBranch(source, project.remoteUrl, branch).catch(() => undefined)
+  // 推送发现由官方按 git push 结果自己做；这里只读它折出来的绑定，不拿分支名去猜。
   return service.changeRequests(source)
     .map(entry => entry.url)
     .filter(url => githubRepositoryOf(url) === repository)
@@ -117,7 +114,7 @@ function githubRepositoryOf(url: string): string | null {
  * GitLab 没有官方 provider，按同一套证据自己做：`glab mr create` 打印的地址，
  * 以及 `git push` 之后按源分支反查到的打开状态 MR。
  */
-async function gitlabEvidence(source: Session, project: Project, branch: string | null): Promise<string[]> {
+async function gitlabEvidence(source: Session, project: Project): Promise<string[]> {
   const site = await gitlab.site()
   const scope = await gitlab.scopeOf(project).catch(() => null)
   if (!scope)
@@ -125,9 +122,8 @@ async function gitlabEvidence(source: Session, project: Project, branch: string 
   const { events } = await session.history(source.id)
   const evidence = shellEvidence(events)
   const urls = evidence.urls.filter(url => gitlabScopeOf(url, site) === scope)
+  // 只按 git push 自己报告的分支反查，不用 Worker 建树时的分支名。
   const branches = new Set(evidence.branches.map(entry => entry.branch))
-  if (branch)
-    branches.add(branch)
   for (const name of branches) {
     for (const url of await openMergeRequests(site, scope, name)) {
       if (!urls.includes(url))

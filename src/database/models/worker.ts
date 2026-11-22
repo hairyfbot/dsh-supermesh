@@ -36,16 +36,6 @@ export class Worker extends Model<DB, 'worker'> {
       .executeTakeFirst()
   }
 
-  async findByBranch(branch: string): Promise<Selectable<DB['worker']> | undefined> {
-    return this.db
-      .selectFrom('worker')
-      .selectAll()
-      .where('branch', '=', branch)
-      .orderBy('createdAt', 'desc')
-      .orderBy('id', 'desc')
-      .executeTakeFirst()
-  }
-
   async start(id: string, startedAt: string): Promise<void> {
     await this.db
       .updateTable('worker')
