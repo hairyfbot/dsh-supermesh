@@ -29,6 +29,7 @@ export default defineHandler(async (event) => {
   if (body.status === 'cancelled') {
     await worker.cancel(id)
     await db.ticket.finish(id, 'cancelled', now, now)
+    await worker.archiveSessions(id)
     return await db.ticket.findById(id)
   }
   const updated = await db.ticket.setPausedIfOpen(id, body.paused!, now)
