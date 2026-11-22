@@ -1,6 +1,7 @@
 import type { ChannelId, ThreadRow } from '@/channel/_shared/types'
 import type { ThreadKind } from '@/database/types'
 import { db } from '@/database'
+import { worker } from '@/service/worker'
 
 export async function recordThread(input: { channel: ChannelId, refId: string, kind: ThreadKind, title: string, url: string, createdAt: string, updatedAt: string }): Promise<ThreadRow> {
   const existing = await db.thread.findByRef(input.channel, input.refId)
@@ -10,6 +11,8 @@ export async function recordThread(input: { channel: ChannelId, refId: string, k
 /** 结单话题；合并时顺带关闭同一项目下已结单票关联的 issue。 */
 export async function closeThread(input: { channel: ChannelId, projectId: string, thread: ThreadRow, outcome: 'merged' | 'closed', at: string, branch: string | null, closeIssue: (url: string) => Promise<void> }): Promise<void> {
   const ended = await db.ticket.closeThread(input.thread.id, input.outcome, input.at, input.branch)
+  for (const ticketId of ended)
+    await worker.archiveSessions(ticketId)
   if (input.outcome !== 'merged' || !ended.length)
     return
   for (const source of await db.thread.listByChannel(input.channel)) {
