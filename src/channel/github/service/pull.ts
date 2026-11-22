@@ -53,11 +53,18 @@ export const pull = defineService({
       const fact: PullFact = { head, base: text(base.ref), state, ciState, collectedAt: now(), updatedAt, ciError, url: text(detail.html_url) }
       await courier.record('github', target.repository, `pr_fact:${target.number}`, fact)
       const branch = typeof record(detail.head).ref === 'string' ? text(record(detail.head).ref) : null
+      if (typeof detail.title === 'string' && detail.title)
+        await db.thread.setTitle(thread.id, detail.title)
+      // 挂票按票上已记下的 prUrl 反查：Worker 用自造分支开 PR 时分支名对不上，
+      // 绑定来自会话自己的 shell 证据。分支名只留最后兜底。
+      const owned = new Set((await db.ticket.listByPullRequest(projectId, thread.url)).map(ticket => ticket.id))
       const worker = branch ? await db.worker.findByBranch(branch) : undefined
-      const owned = worker && await db.ticket.findById(worker.ticketId)
-      if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
-        await db.ticketThread.link(owned.id, thread.id, now())
-        await db.ticket.setPullRequest(owned.id, thread.url, state, ciState)
+      const fallback = worker && await db.ticket.findById(worker.ticketId)
+      if (fallback?.projectId === projectId && (!fallback.prUrl || fallback.prUrl === thread.url))
+        owned.add(fallback.id)
+      for (const ticketId of owned) {
+        await db.ticketThread.link(ticketId, thread.id, now())
+        await db.ticket.setPullRequest(ticketId, thread.url, state, ciState)
       }
       const subscriptions = await db.ticketThread.listTicketIds(thread.id)
       for (const ticketId of subscriptions) {

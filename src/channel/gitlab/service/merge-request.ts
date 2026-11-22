@@ -16,13 +16,21 @@ export const mergeRequest = defineService({
     if (!state)
       throw new GitLabError('invalid_response')
     const branch = typeof row.source_branch === 'string' ? text(row.source_branch) : null
-    // 分支反查 Worker 建立绑定：prUrl 只能由这里写入，若要求它已等于 thread.url 才写，
-    // 就成环了 —— 永远为空、MR 合并也不会结单。
+    if (typeof row.title === 'string' && row.title)
+      await db.thread.setTitle(thread.id, row.title)
+    // 挂票按票上已记下的 prUrl 反查：Worker 用自造分支开 MR 时分支名对不上，
+    // 绑定来自会话自己的 shell 证据。分支名只留最后兜底。
+    const owned = new Set((await db.ticket.listByPullRequest(projectId, thread.url!)).map(ticket => ticket.id))
     const worker = branch ? await db.worker.findByBranch(branch) : undefined
-    const owned = worker && await db.ticket.findById(worker.ticketId)
-    if (owned?.projectId === projectId && (!owned.prUrl || owned.prUrl === thread.url)) {
-      await db.ticketThread.link(owned.id, thread.id, now())
-      await db.ticket.setPullRequest(owned.id, thread.url, state, owned.ciState)
+    const fallback = worker && await db.ticket.findById(worker.ticketId)
+    if (fallback?.projectId === projectId && (!fallback.prUrl || fallback.prUrl === thread.url))
+      owned.add(fallback.id)
+    for (const ticketId of owned) {
+      const ticket = await db.ticket.findById(ticketId)
+      if (!ticket)
+        continue
+      await db.ticketThread.link(ticketId, thread.id, now())
+      await db.ticket.setPullRequest(ticketId, thread.url!, state, ticket.ciState)
     }
     for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
       const ticket = await db.ticket.findById(ticketId)

@@ -4,6 +4,7 @@ import { db } from '@/database'
 import { scheduler } from '@/runtime/scheduler'
 import { archive } from '@/service/archive'
 import { devops } from '@/service/devops'
+import { forge } from '@/service/forge'
 import { inbox } from '@/service/inbox'
 import { project } from '@/service/project'
 import { session } from '@/service/session'
@@ -90,6 +91,7 @@ async function activate(): Promise<() => Promise<void>> {
       await inbox.deliverAnswers()
       await inbox.deliver()
       await worker.reconcile()
+      await forge.reconcile()
       await closeFinishedSupervisors()
     })))
     unregister.push(scheduler.use({ id: 'supermesh:projects', cron: '*/5 * * * * *' }, () => track(async () => {

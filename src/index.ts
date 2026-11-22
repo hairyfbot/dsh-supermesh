@@ -16,7 +16,7 @@ import { runtime } from '@/service/runtime'
 import { session } from '@/service/session'
 import { skill } from '@/service/skill'
 
-export const inject = ['agents', 'agentPresets', 'sessionController', 'workspaceRegistry', 'sessionQuery', 'credentials', 'connection', 'webServer', 'worktrees']
+export const inject = ['agents', 'agentPresets', 'sessionController', 'workspaceRegistry', 'sessionQuery', 'credentials', 'connection', 'webServer', 'worktrees', 'forgeSession']
 
 export async function apply(ctx: Context): Promise<void> {
   await ctx.effect(async function* () {

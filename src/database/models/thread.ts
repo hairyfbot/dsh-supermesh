@@ -33,6 +33,15 @@ export class Thread extends Model<DB, 'thread'> {
       .execute()
   }
 
+  /** 只补标题：采集侧新建的占位标题由第一次读到远程详情时替换，不动 updatedAt 的轮询判据。 */
+  async setTitle(id: string, title: string): Promise<void> {
+    await this.db
+      .updateTable('thread')
+      .set({ title })
+      .where('id', '=', id)
+      .execute()
+  }
+
   async claim(id: string, projectId: string, triagedAt: string): Promise<void> {
     await this.db
       .updateTable('thread')

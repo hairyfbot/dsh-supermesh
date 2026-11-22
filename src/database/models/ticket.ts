@@ -76,6 +76,16 @@ export class Ticket extends Model<DB, 'ticket'> {
     })
   }
 
+  /** 按已挂上的变更请求反查票：采集侧靠它把 PR 话题接回票，不再依赖分支名。 */
+  async listByPullRequest(projectId: string, prUrl: string): Promise<Selectable<DB['ticket']>[]> {
+    return this.db
+      .selectFrom('ticket')
+      .selectAll()
+      .where('projectId', '=', projectId)
+      .where('prUrl', '=', prUrl)
+      .execute()
+  }
+
   async setPullRequest(id: string, prUrl: string | null, prState: PullRequestState | null, ciState: CiState | null): Promise<void> {
     await this.db
       .updateTable('ticket')
