@@ -176,11 +176,13 @@ export const inbox = defineService({
     for (const message of await db.inbox.listAnswered()) {
       if (stopped)
         break
-      if (!message.answer || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
+      if (!message.answer || deliveredAnswers.has(`${message.id}:relayed`) || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
         continue
       try {
         if (message.answeredBy !== 'user' && message.origin !== 'worker') {
           await db.inbox.enqueueAnswer(message)
+          if (message.status !== 'done')
+            await db.inbox.settleAnswer(message.id, new Date().toISOString())
           continue
         }
         let id: string | null = null
@@ -190,24 +192,8 @@ export const inbox = defineService({
             throw new Error('worker_not_found')
           if (worker.status === 'ended') {
             // Worker 已经结束，答案送不回它了：改投项目编排，别让答案烂在队列里。
-            // 固定 id 保证重启后重放也不会重复投递。
-            if (!deliveredAnswers.has(`${message.id}:relayed`)) {
-              const ticket = await db.ticket.findById(worker.ticketId)
-              if (ticket) {
-                await db.inbox.enqueue({
-                  id: `supermesh:answer-relay:${message.id}`,
-                  type: 'project',
-                  projectId: ticket.projectId,
-                  origin: 'system',
-                  kind: 'notice',
-                  ticketId: ticket.id,
-                  title: '答案未送达',
-                  message: `${worker.id} 已结束，答案没能送到它手里：${message.answer}`,
-                })
-              }
-              deliveredAnswers.add(`${message.id}:relayed`)
-              await db.inbox.resetDelivery(message.id)
-            }
+            await db.inbox.relayAnswer(message.id, `${worker.id} 已结束，答案没能送到它手里`, new Date().toISOString())
+            deliveredAnswers.add(`${message.id}:relayed`)
             continue
           }
           id = worker.id
@@ -231,17 +217,21 @@ export const inbox = defineService({
           continue
         await session.send(id, `[Answer ${message.id}] ${message.answer}`, 'reply', `supermesh:answer:${message.id}`)
         deliveredAnswers.add(`${message.id}:${id}`)
-        await db.inbox.resetDelivery(message.id)
+        await db.inbox.finishAnswer(message.id, new Date().toISOString())
       }
       catch (error) {
         if (stopped)
           break
         const reason = error instanceof Error ? error.message : String(error)
         const settings = await setting.load()
-        const delays = Math.min(2 ** Math.min(message.deliveryAttempts + 1, 20), settings.deliveryRetryCeilingSeconds) * 1000
+        const attempts = message.deliveryAttempts + 1
+        const delays = Math.min(2 ** Math.min(attempts, 20), settings.deliveryRetryCeilingSeconds) * 1000
         await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delays).toISOString())
-        if (message.deliveryAttempts + 1 >= settings.deliveryMaxAttempts)
-          await db.inbox.markStalled(message.id, reason)
+        // 已答的 ask 不再转 stalled：投递失败到上限就把答案改投项目编排，行本身收尾。
+        if (attempts >= settings.deliveryMaxAttempts) {
+          await db.inbox.relayAnswer(message.id, `答案投递失败（${reason}）`, new Date().toISOString())
+          deliveredAnswers.add(`${message.id}:relayed`)
+        }
       }
     }
   }),
