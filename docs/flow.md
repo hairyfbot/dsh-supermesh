@@ -413,8 +413,7 @@ PR 合并 / 关闭 → closePull → threadClosed(thread, outcome, at)
 
 ### 8.4 PR 归哪张工单
 
-挂票只认 **Worker 会话自己的 shell 证据**。分支名是模型的自由发挥，不是事实 ——
-它既不参与匹配，也不做兜底。
+挂票靠 **Worker 会话自己的 shell 证据**，不靠分支名 —— 分支名是模型的自由发挥，不是事实。
 
 | 证据 | 从哪来 | 绑定来源 |
 | --- | --- | --- |
@@ -423,6 +422,7 @@ PR 合并 / 关闭 → closePull → threadClosed(thread, outcome, at)
 | `git push` 之后按被推分支反查打开的 PR | 同上（`forge.findByHead`） | `discovered` |
 | `glab mr create` 打印的 MR 地址 | 插件读 Worker 会话的 `tool/result` | 直接挂票 |
 | `git push` 之后按 `source_branch` 反查打开的 MR | 插件查 GitLab API | 直接挂票 |
+| PR / MR 的 head 分支 == `Worker.branch` | 采集侧反查 | **最后兜底** |
 
 Worker 回合结束时插件把证据里的地址写进票的 `prUrl` 并订阅那条 PR 话题；
 采集侧随后按 `prUrl` 反查就能接回票，合并 / 关闭照常推成 `done`。

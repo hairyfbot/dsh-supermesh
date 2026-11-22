@@ -52,13 +52,19 @@ export const pull = defineService({
       }
       const fact: PullFact = { head, base: text(base.ref), state, ciState, collectedAt: now(), updatedAt, ciError, url: text(detail.html_url) }
       await courier.record('github', target.repository, `pr_fact:${target.number}`, fact)
+      const branch = typeof record(detail.head).ref === 'string' ? text(record(detail.head).ref) : null
       if (typeof detail.title === 'string' && detail.title && thread.title !== detail.title)
         await db.thread.setTitle(thread.id, detail.title)
-      // 挂票只认票上已记下的 prUrl：绑定来自 Worker 会话自己的 shell 证据。
-      // 分支名是模型的自由发挥，不参与匹配，也不做兜底。
-      for (const ticket of await db.ticket.listByPullRequest(projectId, thread.url)) {
-        await db.ticketThread.link(ticket.id, thread.id, now())
-        await db.ticket.setPullRequest(ticket.id, thread.url, state, ciState)
+      // 挂票按票上已记下的 prUrl 反查：Worker 用自造分支开 PR 时分支名对不上，
+      // 绑定来自会话自己的 shell 证据。分支名只留最后兜底。
+      const owned = new Set((await db.ticket.listByPullRequest(projectId, thread.url)).map(ticket => ticket.id))
+      const worker = branch ? await db.worker.findByBranch(branch) : undefined
+      const fallback = worker && await db.ticket.findById(worker.ticketId)
+      if (fallback?.projectId === projectId && (!fallback.prUrl || fallback.prUrl === thread.url))
+        owned.add(fallback.id)
+      for (const ticketId of owned) {
+        await db.ticketThread.link(ticketId, thread.id, now())
+        await db.ticket.setPullRequest(ticketId, thread.url, state, ciState)
       }
       const subscriptions = await db.ticketThread.listTicketIds(thread.id)
       for (const ticketId of subscriptions) {
@@ -67,7 +73,7 @@ export const pull = defineService({
           await db.ticket.setPullRequest(ticketId, thread.url, state, ciState)
       }
       if (state === 'merged' || state === 'closed')
-        await pull.closed(remote, projectId, thread, state, detail.merged === true ? timestamp(detail.merged_at ?? detail.closed_at ?? detail.updated_at) : timestamp(detail.closed_at ?? detail.updated_at))
+        await pull.closed(remote, projectId, thread, state, detail.merged === true ? timestamp(detail.merged_at ?? detail.closed_at ?? detail.updated_at) : timestamp(detail.closed_at ?? detail.updated_at), branch)
       const fingerprint = digest({ head, state, ciState, ciError, checks: snapshot?.checks, statuses: snapshot?.statuses })
       const ref = `${target.repository}:${target.number}`
       const { row: watch } = await db.ciWatch.recordRevision({ id: `github:pull:${ref}`, channelId: 'github', kind: 'pull', ref, fingerprint, head, updatedAt: now() })
@@ -82,8 +88,8 @@ export const pull = defineService({
       return { ok: !ciError, ...(ciError ? { reason: ciError } : {}) }
     })
   },
-  async closed(remote: RemotePort, projectId: string, thread: Thread, outcome: 'merged' | 'closed', at: string): Promise<void> {
-    await closeThread({ channel: 'github', projectId, thread, outcome, at, closeIssue: async (url) => {
+  async closed(remote: RemotePort, projectId: string, thread: Thread, outcome: 'merged' | 'closed', at: string, branch: string | null): Promise<void> {
+    await closeThread({ channel: 'github', projectId, thread, outcome, at, branch, closeIssue: async (url) => {
       const target = resource.parse(url)
       if (target.kind !== 'issue')
         return
