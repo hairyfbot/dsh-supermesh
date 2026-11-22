@@ -413,8 +413,7 @@ PR 合并 / 关闭 → closePull → threadClosed(thread, outcome, at)
 
 ### 8.4 PR 归哪张工单
 
-挂票只认 **Worker 会话自己的 shell 证据**。分支名是模型的自由发挥，不是事实 ——
-它既不参与匹配，也不做兜底。
+挂票只认 **Worker 会话自己的 shell 证据**。分支名不参与匹配。
 
 | 证据 | 从哪来 | 绑定来源 |
 | --- | --- | --- |

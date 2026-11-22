@@ -10,21 +10,6 @@
 
 DSH 多代理任务编排：把 GitHub / GitLab 的 issue、PR 与评论变成任务，交给各自 worktree 里的 Worker 改代码、开 PR，再由上级代理验收收尾。
 
-## 🧩 设计参考
-
-部分设计参考官方 [Superagent 原型](https://github.com/deepseek-ai/dsh-superagent-prototype)的领域模型（话题、触发、任务、执行会话、收件箱），并按多仓库长期编排重做了分层与状态归属。
-
-| 维度 | 官方原型 | Supermesh |
-| --- | --- | --- |
-| 编排层级 | 主 Session → 执行器 | 主编排 → 项目编排 → 执行会话，跨项目另起协调者 |
-| 适用范围 | 单个 GitHub 仓库 | 多工作区，每项目一个编排，可记录跨项目依赖 |
-| 授权模型 | Policy / Eval / Gate / Decision / Mandate | 机器人账号即授权身份，判定不入库 |
-| 消息投递 | 四张表协作 | 一张 `Inbox` |
-| 需人工介入 | 独立 Attention | pending `ask` 派生，不覆盖任务状态 |
-| 渠道 | GitHub、飞书 | GitHub、GitLab，飞书待接入 |
-
-取舍理由见[数据模型](prisma/README.md#相对官方删掉的概念)。
-
 ## 📦 安装
 
 ```sh
@@ -37,7 +22,7 @@ dsh plugin --profile <name> add github:omdsh-dev/dsh-supermesh
 
 - 🧭 **四层代理**：主编排定归属、项目编排管执行、临时协调者处理跨项目、执行会话改代码。
 - 🔁 **任务闭环**：事件 → 话题 → 分诊开票 → Worker；`ready` 转 review，PR 与 CI 状态回写到票。
-- 🌿 **一票一树**：分支 `dsh/<任务名称>`（纯 ASCII），worktree 在仓库同级 `.agents/worktrees/`；PR 只按 Worker 会话里的 `gh pr create` / `glab mr create` 与推送证据回挂，分支名不参与匹配。
+- 🌿 **一票一树**：分支 `dsh/<分支名称>`，worktree 在仓库同级 `.agents/worktrees/`；PR 按 Worker 会话里的 `gh pr create` / `glab mr create` 与推送证据回挂。
 - 📥 **收件箱**：代理与人类共用投递规则，`ask` 只挂起当前工作线，失败指数退避并单独记受阻。
 - 🔗 **多渠道**：GitHub、GitLab 每 30 秒轮询事件与 CI，按仓库归属投递。
 - 🖥️ **面板**：概览、任务、触发、渠道、设置五个分区，可一键进入主编排。

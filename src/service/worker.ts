@@ -13,6 +13,7 @@ import { archive } from '@/service/archive'
 import { session } from '@/service/session'
 import { setting } from '@/service/setting'
 import { worktree } from '@/service/worktree'
+import { worktreeBranch } from '@/utils/branch'
 import { defineService } from '@/utils/service'
 
 const eventQueues = new Map<string, Promise<void>>()
@@ -226,7 +227,7 @@ export const worker = defineService({
             await worktree.verify(project.directory, directory, worker.branch)
           }
           else {
-            const created = await worktree.create(await session.activate(worker.id), ticket.title, ticket.id)
+            const created = await worktree.create(await session.activate(worker.id), worker.branch ?? worktreeBranch(ticket.title, ticket.id))
             directory = created.worktree
             await db.worker.update(worker.id, { branch: created.branch, worktree: directory })
           }

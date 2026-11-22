@@ -65,9 +65,9 @@ describe('ticket and worker transactions', () => {
     expect(await models.worker.listByTicket(ticketId)).toHaveLength(1)
     expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'queued' })
     await expect(models.worker.queue(ticketId, 'p2')).rejects.toThrow('不属于当前项目')
-    // 分支名不再要求末段是任务号，但必须是纯 ASCII；已排队的 worker 原样复用。
+    // 分支名不再要求末段是任务号，只用 ASCII；已排队的 worker 原样复用。
     await expect(models.worker.queue(ticketId, 'p1', 'dsh/custom-name')).resolves.toMatchObject({ ticketId })
-    await expect(models.worker.queue(ticketId, 'p1', 'dsh/中文分支')).rejects.toThrow('分支名必须是纯 ASCII')
+    await expect(models.worker.queue(ticketId, 'p1', 'dsh/中文分支')).rejects.toThrow('分支名只能是 ASCII')
   })
 
   it('worker report records facts without writing the project inbox', async () => {

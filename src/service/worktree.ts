@@ -8,7 +8,6 @@ import { promisify } from 'node:util'
 import { getServerContext } from 'dsh-h3/utils'
 import { singlet } from '@/runtime/singlet'
 import { server } from '@/server'
-import { worktreeBranch } from '@/utils/branch'
 import { parseRepositoryRemote } from '@/utils/repository'
 import { defineService } from '@/utils/service'
 
@@ -91,16 +90,15 @@ export const worktree = defineService({
       return result
     },
   ),
-  async create(agent: Agent, title: string, ticketId: string): Promise<{ branch: string, worktree: string, baseCommit: string, repositoryRoot: string }> {
+  async create(agent: Agent, branch: string): Promise<{ branch: string, worktree: string, baseCommit: string, repositoryRoot: string }> {
     const ctx = getServerContext<Context>(server)
     if (!ctx.worktrees)
       throw new Error('worktrees_unavailable')
-    const base = worktreeBranch(title, ticketId)
     let failure: unknown
-    // 同名任务会撞车：官方对已存在的分支直接报错，换个后缀再试。
+    // 同名分支会撞车：官方对已存在的分支直接报错，换个后缀再试。
     for (let attempt = 1; attempt <= 5; attempt++) {
       try {
-        const created = await ctx.worktrees.create(agent, { name: attempt === 1 ? base : `${base}-${attempt}`, from: 'HEAD' })
+        const created = await ctx.worktrees.create(agent, { name: attempt === 1 ? branch : `${branch}-${attempt}`, from: 'HEAD' })
         return { branch: created.branch, worktree: created.path, baseCommit: created.baseCommit, repositoryRoot: created.repositoryRoot }
       }
       catch (error) {

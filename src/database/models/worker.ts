@@ -94,7 +94,7 @@ export class Worker extends Model<DB, 'worker'> {
    */
   async queue(ticketId: string, projectId: string, branch?: string, fresh = false): Promise<Selectable<DB['worker']>> {
     if (branch && !/^[\w./-]+$/.test(branch))
-      throw new Error('分支名必须是纯 ASCII')
+      throw new Error('分支名只能是 ASCII')
     return this.db.transaction().execute(async (trx) => {
       const ticket = await trx.selectFrom('ticket').selectAll().where('id', '=', ticketId).where('projectId', '=', projectId).executeTakeFirst()
       if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
