@@ -654,6 +654,56 @@ const cases = {
     await waitFor(async () => (await dispatches()).length === 2)
     assert.equal((await dispatches()).length, 2, 'an explicit re-queue must land a second prompt instead of being deduplicated by its request id')
   },
+  async workerRestart() {
+    const p = await project('restart-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const ticketId = 'restart-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '重启复用执行会话', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    // recover 会核对真实 worktree 注册，这里按派工之后的真实形态准备仓库与分支。
+    const branch = 'dsh/restart-ticket'
+    const linked = join(p.directory, 'worktree')
+    await git('git', ['init'], { cwd: p.directory })
+    await git('git', ['-c', 'user.name=Initial author', '-c', 'user.email=initial@example.invalid', '-c', 'core.hooksPath=', '-c', 'commit.gpgSign=false', 'commit', '--allow-empty', '-m', 'Initialize isolated test repository'], { cwd: p.directory })
+    await git('git', ['worktree', 'add', '-b', branch, linked], { cwd: p.directory })
+
+    const queued = await db.worker.queue(ticketId, p.id)
+    await db.worker.update(queued.id, { branch, worktree: linked })
+    await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
+    await db.worker.start(queued.id, now)
+    await db.ticket.start(ticketId, now, now)
+    await session.send(queued.id, `${ticketId}: 执行这张票`, 'queue', 'restart:prompt')
+    await settle()
+    const dispatched = await session.history(queued.id)
+    assert.equal(dispatched.events.some(event => event.type === 'turn/start'), true, 'the worker session must have run a turn before the restart')
+
+    // 应用退出：会话日志与 worker 记录留在盘上，Agent 随进程消失。
+    await runtime.close()
+    runtime = await start()
+    assert.equal(runtime.ctx.agents.list().length, 0, 'a restart must leave every Agent cold')
+    await db.worker.start(queued.id, now)
+    await db.ticket.start(ticketId, now, now)
+    assert.notEqual(await session.resolve(queued.id), null, 'a persisted worker session must resolve before its Agent is resumed')
+
+    await workers.recover()
+    const recovered = await db.worker.findById(queued.id)
+    assert.equal(recovered.status, 'running', '恢复时仍在运行的 Worker 不能被 requeue')
+    assert.equal(recovered.startedAt, now, '恢复不得清空派工时间')
+    assert.equal((await db.worker.listByTicket(ticketId)).length, 1, '重启不得为同一张票新建 worker 记录')
+
+    // 重启后的派工循环同样要复用这个会话，不能另起一条 worker 记录把整张票重跑一遍。
+    await workers.reconcile()
+    assert.equal((await db.worker.listByTicket(ticketId)).length, 1, '派工循环不得为同一张票新建 worker 记录')
+
+    await settle()
+    const resumed = await session.history(queued.id)
+    const delivered = resumed.events.flatMap(event => event.type === 'user/message'
+      ? [event.data]
+      : event.type === 'agent/inbox/spliced' ? event.data.inserted : [])
+      .flatMap(message => message.content.flatMap(part => part.type === 'text' ? [part.text] : []))
+    assert.equal(delivered.some(text => text.includes('运行已恢复')), true, '恢复提示必须投进原来那个会话')
+    assert.equal((await db.worker.listByTicket(ticketId)).length, 1, '整轮恢复之后仍然只有一个 worker 记录')
+    assert.equal(resumed.session.id, dispatched.session.id, '恢复必须续在同一个会话 id 上')
+  },
   async answerRelay() {
     const p = await project('relay-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
