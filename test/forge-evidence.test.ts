@@ -10,6 +10,10 @@ function result(callId: string, text: string, isError = false): SessionEvent {
   return { type: 'tool/result', seq: 2, time: 0, data: { turn: 1, step: 1, message: { toolCallId: callId, isError, content: [{ type: 'text', text }] } } } as unknown as SessionEvent
 }
 
+function dispatch(rootCallId: string, name: string, command: string): SessionEvent {
+  return { type: 'tool/ptc-dispatch', seq: 1, time: 0, data: { rootCallId, parentCallId: rootCallId, subCallId: `${rootCallId}:ptc:1`, name, arguments: { command } } } as unknown as SessionEvent
+}
+
 const turnEnd = { type: 'turn/end', seq: 3, time: 0, data: { reason: { kind: 'completed' } } } as unknown as SessionEvent
 
 describe('pushedBranches', () => {
@@ -93,5 +97,54 @@ describe('shellEvidence', () => {
       result('f', 'https://gitlab.com/owner/repo/-/merge_requests/12'),
     ])
     expect(evidence.urls).toEqual([])
+  })
+
+  it('reads shell calls dispatched from run_code', () => {
+    const evidence = shellEvidence([
+      dispatch('root', 'pwsh', 'git push -u origin feat/self-made'),
+      result('root', 'To https://gitlab.com/owner/repo.git\n * [new branch]      feat/self-made -> feat/self-made'),
+      dispatch('root2', 'pwsh', 'glab mr create --fill --yes'),
+      result('root2', 'https://gitlab.com/owner/repo/-/merge_requests/12'),
+    ])
+    expect(evidence.branches).toEqual([{ remote: 'https://gitlab.com/owner/repo.git', branch: 'feat/self-made' }])
+    expect(evidence.urls).toEqual(['https://gitlab.com/owner/repo/-/merge_requests/12'])
+  })
+
+  it('keeps both evidence kinds when one run_code dispatches push and create', () => {
+    const evidence = shellEvidence([
+      dispatch('root3', 'pwsh', 'git push -u origin feat/x'),
+      dispatch('root3', 'pwsh', 'glab mr create --fill'),
+      result('root3', [
+        'To https://gitlab.com/owner/repo.git',
+        ' * [new branch]      feat/x -> feat/x',
+        'https://gitlab.com/owner/repo/-/merge_requests/21',
+      ].join('\n')),
+    ])
+    expect(evidence.branches).toEqual([{ remote: 'https://gitlab.com/owner/repo.git', branch: 'feat/x' }])
+    expect(evidence.urls).toEqual(['https://gitlab.com/owner/repo/-/merge_requests/21'])
+  })
+
+  it('ignores run_code dispatches that are not shell tools', () => {
+    const evidence = shellEvidence([
+      dispatch('root4', 'read_channel', 'glab mr create --fill'),
+      result('root4', 'https://gitlab.com/owner/repo/-/merge_requests/12'),
+    ])
+    expect(evidence).toEqual({ urls: [], branches: [] })
+  })
+
+  it('keeps both the direct and the run_code call shapes in one session', () => {
+    const evidence = shellEvidence([
+      call('direct', 'pwsh', 'git push -u origin feat/direct'),
+      result('direct', 'To https://gitlab.com/owner/repo.git\n * [new branch]      feat/direct -> feat/direct'),
+      dispatch('root5', 'pwsh', 'glab mr create --fill'),
+      result('root5', 'https://gitlab.com/owner/repo/-/merge_requests/31'),
+      dispatch('root6', 'pwsh', 'git push -u origin feat/program'),
+      result('root6', 'To https://gitlab.com/owner/repo.git\n * [new branch]      feat/program -> feat/program'),
+    ])
+    expect(evidence.branches).toEqual([
+      { remote: 'https://gitlab.com/owner/repo.git', branch: 'feat/direct' },
+      { remote: 'https://gitlab.com/owner/repo.git', branch: 'feat/program' },
+    ])
+    expect(evidence.urls).toEqual(['https://gitlab.com/owner/repo/-/merge_requests/31'])
   })
 })

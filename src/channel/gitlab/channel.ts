@@ -110,7 +110,8 @@ export class GitLabChannel implements ChannelAdapter {
 
   async pages(site: string, path: string, signal?: AbortSignal, since?: string, etag?: string): Promise<{ rows: ChannelRow[], etag: string | null, notModified: boolean }> {
     // 只有 issues / merge_requests 这类顶层列表支持 updated_after；notes、pipelines 传它会被拒。
-    const supports = since && /\/projects\/[^/]+\/(?:issues|merge_requests)(?:\?|$)/.test(path)
+    // path 形如 `projects/<repo>/issues?...`，没有前导斜杠，所以这里不能要求 `/projects/`。
+    const supports = since && /(?:^|\/)projects\/[^/]+\/(?:issues|merge_requests)(?:\?|$)/.test(path)
     const stamp = supports ? `&updated_after=${encodeURIComponent(since)}` : ''
     return courier.pages(async (page) => {
       const url = `${path + (path.includes('?') ? '&' : '?')}per_page=100&page=${page}${stamp}`
@@ -191,12 +192,18 @@ export class GitLabChannel implements ChannelAdapter {
       const url = thread.url
       if (!url || !['issue', 'pull'].includes(thread.kind))
         continue
-      if (!await courier.polled(await db.ticketThread.listTicketIds(thread.id), thread.updatedAt))
+      const ticketIds = await db.ticketThread.listTicketIds(thread.id)
+      if (!await courier.polled(ticketIds, thread.updatedAt))
         continue
       await context.attempt(async () => {
         const threadTarget = resource.parse(url, site)
         if (threadTarget.repository !== repository)
           return
+        // 已挂票的 MR 每轮回读一次状态：合并可能发生在挂票之前，采集游标不会回头补。
+        if (threadTarget.kind === 'pull' && ticketIds.length) {
+          const current = record(await this.request(site, resource.apiRoot(threadTarget), signal))
+          await mergeRequest.observe(this, context.projectId, thread, current)
+        }
         await courier.stream({
           channel: 'gitlab',
           scope,
