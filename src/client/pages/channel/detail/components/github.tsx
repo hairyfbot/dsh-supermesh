@@ -7,6 +7,7 @@ import { deleteApiSupermeshChannelIdCredential, getApiSupermeshChannel, getApiSu
 import { GitHubIcon } from '@/client/components/icons'
 import { keys } from '@/client/config/query-keys'
 import { useTranslation } from '@/client/hooks/use-translation'
+import { AdmissionNotice } from '@/client/pages/channel/detail/components/admission'
 import { Environment } from '@/client/pages/channel/detail/components/environment'
 import { DetailHeader } from '@/client/pages/channel/detail/components/header'
 import { Section } from '@/client/pages/channel/detail/components/section'
@@ -245,6 +246,7 @@ export function GithubDetail(): ReactNode {
         )}
       />
       <p className="m-0 rounded-xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-card-fill) px-4 py-3 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelGithubAvailability')}</p>
+      <AdmissionNotice channel={channel} />
       <p className="m-0 text-xs text-(--dsw-alias-label-secondary)">{t('channelSingleAccount')}</p>
       <div className="grid min-w-0 items-start gap-4 @min-[780px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">

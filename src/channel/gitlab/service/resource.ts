@@ -3,6 +3,7 @@ import type { Resource } from '@/channel/gitlab/service/resource.types'
 import { answerLines } from '@/channel/_shared/answers'
 import { identity, number, record, text, timestamp } from '@/channel/_shared/primitives'
 import { GitLabError, gitlabSite } from '@/channel/gitlab/runner'
+import { hosts } from '@/channel/gitlab/service/hosts'
 import { defineService } from '@/utils/service'
 
 export const resource = defineService({
@@ -10,17 +11,17 @@ export const resource = defineService({
     if (!remoteUrl)
       return null
     const site = gitlabSite(host)
-    const configured = new URL(site)
+    const allowed = hosts.allowed(site)
     const scp = /^git@([^/:]+):(.+)$/.exec(remoteUrl)
     if (scp) {
-      if (scp[1]!.toLowerCase() !== configured.hostname || configured.port)
+      if (!allowed.some(entry => hostnameOf(entry) === scp[1]!.toLowerCase()))
         return null
       const repository = resource.path(scp[2]!.replace(/\.git$/, ''))
       return repository ? { site, repository } : null
     }
     try {
       const url = new URL(remoteUrl)
-      if (!['http:', 'https:', 'ssh:'].includes(url.protocol) || url.host !== configured.host || url.password || url.search || url.hash)
+      if (!['http:', 'https:', 'ssh:'].includes(url.protocol) || !allowed.includes(url.host) || url.password || url.search || url.hash)
         return null
       if (url.protocol === 'ssh:' ? url.username !== 'git' : Boolean(url.username))
         return null
@@ -57,7 +58,7 @@ export const resource = defineService({
     const match = /^\/(.+?)(?:\/-\/(issues|work_items|merge_requests)|\/(issues|merge_requests))\/([1-9]\d*)\/?$/.exec(url.pathname)
     const repository = match && resource.path(match[1]!)
     const number = Number(match?.[4])
-    if (url.origin !== site || url.username || url.password || url.search || (url.hash && !/^#note_[1-9]\d*$/.test(url.hash)) || !repository || !Number.isSafeInteger(number))
+    if (!['http:', 'https:'].includes(url.protocol) || !hosts.allowed(site).includes(url.host) || url.username || url.password || url.search || (url.hash && !/^#note_[1-9]\d*$/.test(url.hash)) || !repository || !Number.isSafeInteger(number))
       throw new GitLabError('invalid_resource')
     const kind = (match![2] ?? match![3]) === 'merge_requests' ? 'pull' : 'issue'
     return { site, repository, kind, number }
@@ -114,3 +115,10 @@ export const resource = defineService({
     return { answers, conflicts }
   },
 })
+
+function hostnameOf(host: string): string {
+  try {
+    return new URL(`http://${host}`).hostname
+  }
+  catch { return host }
+}

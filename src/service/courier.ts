@@ -14,7 +14,7 @@ import type {
   StreamInput,
   ThreadRow,
 } from '@/service/courier.types'
-import { channelTriggerStrength } from '@/channel/_shared/admission'
+import { channelTriggerRejection, channelTriggerStrength } from '@/channel/_shared/admission'
 import { ChannelError } from '@/channel/_shared/error'
 import { digest, identity, now, timestamp } from '@/channel/_shared/primitives'
 import { db } from '@/database'
@@ -97,8 +97,15 @@ export const courier = defineService({
     const historical = port.createdAt(row) < baseline
     const { administrators, inferred } = await setting.load()
     const admin = administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
-    if (!channelTriggerStrength({ human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, ignored: thread.triage === 'ignored', inferred }))
+    const admission = { human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, ignored: thread.triage === 'ignored', inferred }
+    if (!channelTriggerStrength(admission)) {
+      // 白名单为空或没加这个人时，@bot 会被静默丢弃；这种「点名了却没反应」必须留痕。
+      if (mentioned && channelTriggerRejection(admission) === 'not_administrator') {
+        await courier.record(port.channel, 'admission', 'last_drop', { reason: 'not_administrator', actor: actorName, threadId: thread.id, at: now() })
+        console.warn(`[${port.channel}:ingest] ${thread.url ?? thread.id} ${actorName} -> not_administrator`)
+      }
       return
+    }
     const targets = new Map<string, { projectId: string | null, ticketId: string | null }>()
     for (const ticketId of subscriptions) {
       const ticket = await db.ticket.findById(ticketId)
@@ -356,10 +363,9 @@ export const courier = defineService({
           throw error
         errors.push(courier.failure(error, port.detail))
       }
-      // probe 失败时作用域解析不出来，仍要按项目远端记录状态，否则整条采集链无声消失。
-      const status = scope ?? (project ? await port.scope(project).catch(() => null) : null)
-      if (port.status && status)
-        await courier.record(port.channel, status, 'collection_status', { ok: !errors.length, reasons: [...new Set(errors)], collectedAt: now() })
+      // probe 失败时作用域解析不出来，仍要按项目记录状态，否则整条采集链无声消失。
+      if (port.status && project)
+        await courier.record(port.channel, projectId, 'collection_status', { ok: !errors.length, reasons: [...new Set(errors)], collectedAt: now() })
       return errors.length ? { projectId, ok: false, reason: [...new Set(errors)].join(',') } : { projectId, ok: true }
     })
   },

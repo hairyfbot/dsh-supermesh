@@ -1,5 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { ChannelConnection, ChannelKind, ChannelView } from '@/service/channel.types'
+import type { Selectable } from 'kysely'
+import type { DB } from '@/database/types'
+import type { ChannelConnection, ChannelDrop, ChannelKind, ChannelView } from '@/service/channel.types'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { getServerContext } from 'dsh-h3/utils'
 import { db } from '@/database'
@@ -40,6 +42,7 @@ export const channel = defineService({
         commitEmail: metadata.commitEmail,
         commitEmailSuggestion: suggestion,
         providerId: metadata.providerId,
+        lastDrop: dropOf(await db.sourceState.find(preset.id, 'admission:last_drop')),
       }
     }))
   },
@@ -94,4 +97,18 @@ function readMetadata(raw: string | undefined): { commitName: string, commitEmai
   if (!value || typeof value !== 'object' || !('commitName' in value) || !('commitEmail' in value) || typeof value.commitName !== 'string' || typeof value.commitEmail !== 'string' || ('providerId' in value && value.providerId !== undefined && typeof value.providerId !== 'string'))
     throw new Error('invalid_channel_metadata')
   return { commitName: value.commitName, commitEmail: value.commitEmail, providerId: 'providerId' in value && typeof value.providerId === 'string' ? value.providerId : '' }
+}
+
+function dropOf(row: Selectable<DB['source_state']> | undefined): ChannelDrop | null {
+  if (!row)
+    return null
+  let value: unknown
+  try {
+    value = JSON.parse(row.value)
+  }
+  catch { return null }
+  if (!value || typeof value !== 'object' || Array.isArray(value) || !('reason' in value) || !('actor' in value) || !('at' in value))
+    return null
+  const { reason, actor, at } = value as { reason: unknown, actor: unknown, at: unknown }
+  return typeof reason === 'string' && typeof actor === 'string' && typeof at === 'string' ? { reason, actor, at } : null
 }

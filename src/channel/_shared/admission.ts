@@ -1,19 +1,47 @@
 import type { InferredMode, TriggerStrength } from '@/types/admission'
 
+export interface AdmissionInput {
+  human: boolean
+  historical: boolean
+  subscribed: boolean
+  admin: boolean
+  mentioned: boolean
+  kind: string
+  ignored: boolean
+  inferred: InferredMode
+}
+
+type Admission = { strength: TriggerStrength } | { reason: string }
+
 /**
  * 准入只回答「这条消息能不能进流程」，强度回答「它算不算开工请求」。
  * 没 @ bot 的消息最多是 inferred 候选，只有管理员点名或已订阅话题上的跟进才是 explicit。
  */
-export function channelTriggerStrength(input: { human: boolean, historical: boolean, subscribed: boolean, admin: boolean, mentioned: boolean, kind: string, ignored: boolean, inferred: InferredMode }): TriggerStrength | null {
-  if (!input.human || (input.historical && !input.subscribed))
-    return null
+export function channelTriggerStrength(input: AdmissionInput): TriggerStrength | null {
+  const outcome = evaluate(input)
+  return 'strength' in outcome ? outcome.strength : null
+}
+
+/** 被准入拒绝的原因码，用于把「消息被静默丢弃」变成可诊断的痕迹。 */
+export function channelTriggerRejection(input: AdmissionInput): string | null {
+  const outcome = evaluate(input)
+  return 'reason' in outcome ? outcome.reason : null
+}
+
+function evaluate(input: AdmissionInput): Admission {
+  if (!input.human)
+    return { reason: 'bot_actor' }
+  if (input.historical && !input.subscribed)
+    return { reason: 'historical' }
   if (input.subscribed)
-    return input.admin ? 'explicit' : input.inferred === 'off' ? null : 'inferred'
-  if (!input.admin || (input.ignored && !input.mentioned))
-    return null
+    return input.admin ? { strength: 'explicit' } : input.inferred === 'off' ? { reason: 'inferred_disabled' } : { strength: 'inferred' }
+  if (!input.admin)
+    return { reason: 'not_administrator' }
+  if (input.ignored && !input.mentioned)
+    return { reason: 'ignored_thread' }
   if (input.mentioned)
-    return 'explicit'
-  return input.kind === 'open' && input.inferred !== 'off' ? 'inferred' : null
+    return { strength: 'explicit' }
+  return input.kind === 'open' && input.inferred !== 'off' ? { strength: 'inferred' } : { reason: 'not_mentioned' }
 }
 
 /** 已投递的触发按当前事实判强度，供收件箱与建票闸使用。 */

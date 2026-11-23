@@ -15,6 +15,13 @@ let syncing: Promise<Selectable<DB['project']>[]> | undefined
 let controller = new AbortController()
 let stopped = false
 const repositories = new Map<string, Promise<{ project: Selectable<DB['project']>, workspaceId: string }>>()
+const COLLECTION_STATE = 'collection_status'
+
+export interface CollectionStatus {
+  ok: boolean
+  reasons: string[]
+  collectedAt: string
+}
 
 export const project = defineService({
   start(): () => Promise<void> {
@@ -28,13 +35,14 @@ export const project = defineService({
       await Promise.allSettled([...repositories.values(), ...(syncing ? [syncing] : [])])
     }
   },
-  async list(): Promise<(Selectable<DB['project']> & { available?: boolean })[]> {
-    const [rows, gitlabHost] = await Promise.all([db.project.listAll(), gitlabChannelHost()])
+  async list(): Promise<(Selectable<DB['project']> & { available?: boolean, collection: CollectionStatus | null })[]> {
+    const [rows, gitlabHost, statuses] = await Promise.all([db.project.listAll(), gitlabChannelHost(), db.sourceState.listBySuffix(COLLECTION_STATE)])
+    const collection = new Map(statuses.map(row => [row.name.slice(0, row.name.length - COLLECTION_STATE.length - 1), collectionStatus(row.value)]))
     const workspaces = getServerContext<Context>(server).workspaceRegistry.list()
     return Promise.all(rows.map(async (current) => {
       const workspace = workspaces.find(workspace => workspace.id === current.workspaceId)
       const facts = workspace && await workspace.status() === 'ok' ? await repositoryFacts(workspace.path, gitlabHost) : null
-      return { ...current, available: Boolean(facts?.remoteUrl && samePath(facts.directory, current.directory) && facts.remoteUrl === current.remoteUrl) }
+      return { ...current, available: Boolean(facts?.remoteUrl && samePath(facts.directory, current.directory) && facts.remoteUrl === current.remoteUrl), collection: collection.get(current.id) ?? null }
     }))
   },
   addRepository(remoteUrl: string, name?: string, signal?: AbortSignal): Promise<{ project: Selectable<DB['project']>, workspaceId: string }> {
@@ -168,6 +176,20 @@ async function repositoryFacts(directory: string, gitlabHost?: string): Promise<
 
 async function gitlabChannelHost(): Promise<string | undefined> {
   return (await db.channel.findById('gitlab'))?.host ?? undefined
+}
+
+function collectionStatus(value: string): CollectionStatus | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  }
+  catch { return null }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !('ok' in parsed) || !('reasons' in parsed) || !('collectedAt' in parsed))
+    return null
+  const { ok, reasons, collectedAt } = parsed as { ok: unknown, reasons: unknown, collectedAt: unknown }
+  if (typeof ok !== 'boolean' || !Array.isArray(reasons) || typeof collectedAt !== 'string')
+    return null
+  return { ok, reasons: reasons.filter((reason): reason is string => typeof reason === 'string'), collectedAt }
 }
 
 function samePath(left: string, right: string): boolean {

@@ -14,6 +14,12 @@ export interface ChannelConfiguration {
   token?: string
 }
 
+export interface ChannelDrop {
+  reason: string
+  actor: string
+  at: string
+}
+
 export interface ChannelView {
   id: string
   kind: ChannelKind
@@ -29,5 +35,6 @@ export interface ChannelView {
   commitEmail: string
   commitEmailSuggestion: string
   providerId: string
+  lastDrop: ChannelDrop | null
   accounts: { id: string, channelId: string, role: 'bot' | 'admin', name: string, avatar: string | null, status: 'online' | 'offline', createdAt: string }[]
 }

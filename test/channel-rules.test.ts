@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addressedToBot, channelTriggerStrength, ticketAllowed, triggerStrengthOf } from '@/channel/_shared/admission'
+import { addressedToBot, channelTriggerRejection, channelTriggerStrength, ticketAllowed, triggerStrengthOf } from '@/channel/_shared/admission'
 
 describe('渠道准入强度', () => {
   const base = { human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', ignored: false, inferred: 'observe' } as const
@@ -33,6 +33,36 @@ describe('渠道准入强度', () => {
     expect(channelTriggerStrength({ ...base, subscribed: true, historical: true })).toBe('inferred')
     expect(channelTriggerStrength({ ...base, subscribed: true, historical: true, inferred: 'off' })).toBeNull()
     expect(channelTriggerStrength({ ...base, subscribed: true, human: false })).toBeNull()
+  })
+})
+
+describe('准入拒绝原因', () => {
+  const base = { human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', ignored: false, inferred: 'observe' } as const
+
+  it('被拒绝的消息给出可诊断原因，放行的消息没有原因', () => {
+    expect(channelTriggerRejection({ ...base, mentioned: true })).toBe('not_administrator')
+    expect(channelTriggerRejection({ ...base, admin: true })).toBe('not_mentioned')
+    expect(channelTriggerRejection({ ...base, admin: true, kind: 'open', inferred: 'off' })).toBe('not_mentioned')
+    expect(channelTriggerRejection({ ...base, admin: true, kind: 'open', ignored: true })).toBe('ignored_thread')
+    expect(channelTriggerRejection({ ...base, admin: true, mentioned: true, historical: true })).toBe('historical')
+    expect(channelTriggerRejection({ ...base, admin: true, mentioned: true, human: false })).toBe('bot_actor')
+    expect(channelTriggerRejection({ ...base, subscribed: true, inferred: 'off' })).toBe('inferred_disabled')
+    expect(channelTriggerRejection({ ...base, admin: true, mentioned: true })).toBeNull()
+    expect(channelTriggerRejection({ ...base, subscribed: true })).toBeNull()
+  })
+
+  it('拒绝原因与准入强度对同一条消息给出一致结论', () => {
+    for (const input of [
+      { ...base, mentioned: true },
+      { ...base, admin: true, kind: 'open' },
+      { ...base, admin: true, mentioned: true },
+      { ...base, subscribed: true },
+      { ...base, admin: true, kind: 'open', ignored: true },
+    ]) {
+      const strength = channelTriggerStrength(input)
+      const reason = channelTriggerRejection(input)
+      expect(strength === null).toBe(reason !== null)
+    }
   })
 })
 

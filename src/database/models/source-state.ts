@@ -34,6 +34,15 @@ export class SourceState {
       .execute()
   }
 
+  /** 按名字后缀取跨渠道状态，例如每个项目最近一次采集结果。 */
+  async listBySuffix(suffix: string): Promise<Selectable<DB['source_state']>[]> {
+    return this.db
+      .selectFrom('source_state')
+      .selectAll()
+      .where('name', 'like', `%:${suffix}`)
+      .execute()
+  }
+
   /** 推进游标；不存在则插入。 */
   async set(channelId: string, name: string, value: string, updatedAt: string): Promise<void> {
     await this.db

@@ -18,7 +18,7 @@ function collectPort(channel: GitLabChannel): CollectPort {
   return {
     channel: 'gitlab',
     detail: true,
-    status: false,
+    status: true,
     scope: project => channel.scopeOf(project),
     project: projectId => channel.project(projectId),
     probe: (projectId, signal) => channel.probe(projectId, signal),

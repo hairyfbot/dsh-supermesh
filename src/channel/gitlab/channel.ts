@@ -7,6 +7,7 @@ import { closeThread, recordThread } from '@/channel/_shared/thread'
 import { FetchGitLabRunner, GitLabError, gitlabSite } from '@/channel/gitlab/runner'
 import { binding } from '@/channel/gitlab/service/binding'
 import { ci } from '@/channel/gitlab/service/ci'
+import { hosts } from '@/channel/gitlab/service/hosts'
 import { mergeRequest } from '@/channel/gitlab/service/merge-request'
 import { resource } from '@/channel/gitlab/service/resource'
 import { db } from '@/database'
@@ -23,6 +24,7 @@ export class GitLabChannel implements ChannelAdapter {
   }
 
   async site(): Promise<string> {
+    await hosts.ready()
     return gitlabSite((await db.channel.findById('gitlab'))?.host ?? null)
   }
 
@@ -79,6 +81,7 @@ export class GitLabChannel implements ChannelAdapter {
     if (!channel?.enabled)
       throw new GitLabError('channel_disabled')
     const site = gitlabSite(channel.host)
+    await hosts.ready()
     const target = resource.remote(project.remoteUrl, site)!
     const bots = (await db.channelAccount.findByRole('gitlab', 'bot')).filter(account => account.status === 'online')
     const account = record(await this.request(site, 'user', signal))
@@ -87,7 +90,10 @@ export class GitLabChannel implements ChannelAdapter {
     if (!bots.some(bot => bot.name.toLowerCase() === login.toLowerCase()) || (account.state !== undefined && account.state !== 'active'))
       throw new GitLabError('account_mismatch')
     const remote = record(await this.request(site, `projects/${encodeURIComponent(target.repository)}`, signal))
-    if (text(remote.path_with_namespace) !== target.repository || resource.source(resource.remote(text(remote.web_url), site) ?? { site: '', repository: '' }) !== resource.source(target))
+    const webUrl = text(remote.web_url)
+    // 自建实例常把 API 放在 IP、external_url 用域名：先学下这个网页 host，thread 的 web_url 才解析得出来。
+    await hosts.learn(site, webUrl)
+    if (text(remote.path_with_namespace) !== target.repository || resource.source(resource.remote(webUrl, site) ?? { site: '', repository: '' }) !== resource.source(target))
       throw new GitLabError('repository_mismatch')
     const result = { providerId, login, repositoryId: identity(remote.id) }
     const previous = await courier.state<ChannelIdentity>('gitlab', resource.source(target), 'verified_environment')
