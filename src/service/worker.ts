@@ -106,7 +106,9 @@ export const worker = defineService({
       }
       // 票进终态就是授权收回：必须结束它的 running Worker，否则它会一直占着槽位继续推代码。
       if (ticket.status === 'done' || ticket.status === 'cancelled') {
-        await session.send(worker.id, `票 ${ticket.id} 已${ticket.status === 'done' ? '完成' : '取消'}，本次授权已收回：立即停手，不要再提交、推送或开 PR。`, 'interrupt').catch(() => undefined)
+        // 冷会话没有可打断的回合：为它 resume 一个 Agent 只会留下一条永远等不到下一步的 steer。
+        if (await session.lookup(worker.id))
+          await session.send(worker.id, `票 ${ticket.id} 已${ticket.status === 'done' ? '完成' : '取消'}，本次授权已收回：立即停手，不要再提交、推送或开 PR。`, 'interrupt').catch(() => undefined)
         await db.worker.end(worker.id, 'stopped', new Date().toISOString())
         await archiveEndedWorkers(ticket.id)
         continue
@@ -346,7 +348,7 @@ export const worker = defineService({
       if (!ticket)
         continue
       if (ticket.status === 'done' || ticket.status === 'cancelled') {
-        if (await session.resolve(worker.id))
+        if (await session.lookup(worker.id))
           await session.stop(worker.id)
         await db.worker.end(worker.id, 'stopped', new Date().toISOString())
         continue

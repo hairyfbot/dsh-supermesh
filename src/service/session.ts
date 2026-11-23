@@ -95,9 +95,11 @@ export const session = defineService({
     ])
     if ([worker, project, supervisor].filter(Boolean).length > 1)
       throw new Error('session_binding_conflict')
+    // 重启后会话日志还在、Agent 尚未 resume：这仍是同一个 Worker 会话，不能当成不存在。
+    // 只有会话已归档、日志缺失或预设不符才算不可用，真正的激活由 resolveAgent 完成。
     if (worker) {
       const agent = ctx.agents.get(sid)
-      if (preset !== presets.worker || !agent || ctx.agentPresets.composedPreset(agent.ctx) !== presets.worker)
+      if (preset !== presets.worker || (agent && ctx.agentPresets.composedPreset(agent.ctx) !== presets.worker))
         return null
       const ticket = await db.ticket.findById(worker.ticketId)
       return ticket ? { role: 'worker', projectId: ticket.projectId, ticketId: ticket.id, workerId: worker.id } : null
