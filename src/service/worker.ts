@@ -365,11 +365,12 @@ export const worker = defineService({
           await releaseDependents(ticket.id)
           continue
         }
-        if (!project || !worker.worktree || !worker.branch) {
+        if (!project) {
           await db.worker.requeue(worker.id)
           continue
         }
-        await worktree.verify(project.directory, worker.worktree, worker.branch)
+        if (worker.worktree && worker.branch)
+          await worktree.verify(project.directory, worker.worktree, worker.branch)
         if (!(await session.resolve(worker.id))) {
           await db.worker.requeue(worker.id)
           continue

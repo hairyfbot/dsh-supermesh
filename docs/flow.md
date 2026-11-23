@@ -161,8 +161,9 @@ stateDiagram-v2
     ended --> [*]
 ```
 
-`branch` / `worktree` 在 `queued` 时为空，`running` 起填上，`ended` 后**保留不删** ——
-那是「这个任务曾经在哪个分支上干过」的唯一记录。
+`branch` / `worktree` 记录 Worker 的分支和工作树，`ended` 后仍保留。复用项目目录里的已有会话时，这两项可以为空。
+
+应用重启时，仍在运行且会话可恢复的 Worker 沿用原会话和派工时间。空闲时向原会话发送恢复提示。
 
 | `WorkerEndReason` | 编排动作 |
 | --- | --- |
