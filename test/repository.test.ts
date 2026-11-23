@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseRepositoryRemote } from '@/utils/repository'
+import { parseGitRemote, parseRepositoryRemote } from '@/utils/repository'
 
 describe('repository remote parsing at the trusted boundary', () => {
   it.each(['https://github.com/Owner/Repository.git', 'git@github.com:Owner/Repository.git', 'ssh://git@github.com/Owner/Repository.git'])('normalizes %s to one webpage identity and workspace default', (remote) => {
@@ -10,6 +10,21 @@ describe('repository remote parsing at the trusted boundary', () => {
     expect(parseRepositoryRemote('git@git.example.test:group/subgroup/repository.git', 'https://git.example.test')).toMatchObject({ platform: 'gitlab', owner: 'group/subgroup', name: 'repository', webUrl: 'https://git.example.test/group/subgroup/repository', defaultName: 'gitlab/repository' })
     expect(() => parseRepositoryRemote('https://git.example.test/group/repository')).toThrow('invalid_repository_remote')
     expect(() => parseRepositoryRemote('https://other.example.test/group/repository', 'https://git.example.test')).toThrow('invalid_repository_remote')
+  })
+
+  it('keeps the plain HTTP protocol of a self-hosted GitLab remote', () => {
+    expect(parseRepositoryRemote('http://git.example.test/group/subgroup/repository.git', 'http://git.example.test')).toMatchObject({ platform: 'gitlab', host: 'git.example.test', owner: 'group/subgroup', name: 'repository', remoteUrl: 'http://git.example.test/group/subgroup/repository.git', webUrl: 'http://git.example.test/group/subgroup/repository' })
+  })
+
+  it('maps an ssh remote to the protocol of the configured site', () => {
+    expect(parseGitRemote('git@git.example.test:group/repository.git', 'http://git.example.test').webUrl).toBe('http://git.example.test/group/repository')
+    expect(parseGitRemote('git@git.example.test:group/repository.git', 'https://git.example.test').webUrl).toBe('https://git.example.test/group/repository')
+    expect(parseGitRemote('git@git.example.test:group/repository.git', 'http://other.example.test').webUrl).toBe('https://git.example.test/group/repository')
+  })
+
+  it('accepts a self-hosted port but keeps GitHub on the default https port', () => {
+    expect(parseGitRemote('https://git.example.test:8443/group/repository.git').webUrl).toBe('https://git.example.test:8443/group/repository')
+    expect(() => parseGitRemote('https://github.com:444/org/repo')).toThrow('invalid_repository_remote')
   })
 
   it.each([

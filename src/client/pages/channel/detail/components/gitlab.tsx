@@ -196,10 +196,11 @@ export function GitlabDetail(): ReactNode {
     || Boolean(token.trim())
   function validateHost(): boolean {
     const url = URL.canParse(host.trim()) ? new URL(host.trim()) : null
-    const valid = Boolean(url && url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/')
+    const valid = Boolean(url && (url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/')
     setHostInvalid(!valid)
     return valid
   }
+  const hostInsecure = URL.canParse(host.trim()) && new URL(host.trim()).protocol === 'http:'
   const busy = saving || deleteConfirming
   return (
     <>
@@ -269,9 +270,10 @@ export function GitlabDetail(): ReactNode {
                 spellCheck={false}
                 autoComplete="url"
                 aria-invalid={hostInvalid}
-                aria-describedby={`${id}-host-help${hostInvalid ? ` ${id}-host-error` : ''}`}
+                aria-describedby={`${id}-host-help${hostInsecure ? ` ${id}-host-warning` : ''}${hostInvalid ? ` ${id}-host-error` : ''}`}
               />
               <p id={`${id}-host-help`} className="m-0 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('channelHostHelp')}</p>
+              {hostInsecure && <p id={`${id}-host-warning`} role="status" className="m-0 rounded-lg border border-(--dsw-alias-state-error-primary) px-3 py-2 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{t('channelHostInsecure')}</p>}
               {hostInvalid && <p id={`${id}-host-error`} role="alert" className="m-0 text-xs text-(--dsw-alias-state-error-primary)">{t('channelHostInvalid')}</p>}
             </div>
           </Section>

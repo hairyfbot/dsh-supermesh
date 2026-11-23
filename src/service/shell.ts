@@ -90,10 +90,12 @@ export const shell = defineService({
 async function refresh(): Promise<void> {
   const [github, gitlab, views, projects] = await Promise.all([channel.connection('github'), channel.connection('gitlab'), channel.list(), db.project.listAll()])
   await Promise.all([bin, join(directory, 'gh'), join(directory, 'glab')].map(path => mkdir(path, { recursive: true, mode: 0o700 })))
-  const gitlabHost = new URL(gitlab.host ?? 'https://gitlab.com').host
+  const gitlabSite = new URL(gitlab.host ?? 'https://gitlab.com')
+  const gitlabHost = gitlabSite.host
   const bot = (kind: string) => views.find(view => view.id === kind)?.accounts.find(account => account.role === 'bot')?.name ?? ''
   await own(join(directory, 'gh', 'hosts.yml'), JSON.stringify(github.enabled && github.token ? { 'github.com': { oauth_token: github.token, user: bot('github'), git_protocol: 'https' } } : {}))
-  await own(join(directory, 'glab', 'config.yml'), JSON.stringify({ git_protocol: 'https', hosts: gitlab.enabled && gitlab.token ? { [gitlabHost]: { token: gitlab.token, user: bot('gitlab'), api_protocol: 'https', git_protocol: 'https' } } : {} }))
+  // glab 的 git_protocol 只接受 ssh|https，纯 HTTP 站点靠下面的 gitconfig insteadOf 落到实际协议。
+  await own(join(directory, 'glab', 'config.yml'), JSON.stringify({ git_protocol: 'https', hosts: gitlab.enabled && gitlab.token ? { [gitlabHost]: { token: gitlab.token, user: bot('gitlab'), api_protocol: gitlabSite.protocol.slice(0, -1), git_protocol: 'https' } } : {} }))
   const shellPath = shellPathOf(basePath)
   for (const cli of ['gh', 'glab'] as const) {
     const executable = await nativeCli(cli)
@@ -146,12 +148,12 @@ async function refresh(): Promise<void> {
     '\thelper =',
     '[credential "https://github.com"]',
     `\thelper = ${gitQuote(`!${cliPath('gh')} auth git-credential`)}`,
-    `[credential "https://${gitlabHost}"]`,
+    `[credential "${gitlabSite.origin}"]`,
     `\thelper = ${gitQuote(`!f() { if test "$1" = get; then token=$( ${cliPath('glab')} config get token --host ${quote(gitlabHost)} ) || exit; test -n "$token" || exit; printf 'username=oauth2\\npassword=%s\\n' "$token"; fi; }; f`)}`,
     '[url "https://github.com/"]',
     '\tinsteadOf = git@github.com:',
     '\tinsteadOf = ssh://git@github.com/',
-    `[url "https://${gitlabHost}/"]`,
+    `[url "${gitlabSite.origin}/"]`,
     `\tinsteadOf = git@${gitlabHost}:`,
     `\tinsteadOf = ssh://git@${gitlabHost}/`,
     '[filter "lfs"]',

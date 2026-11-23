@@ -6,7 +6,7 @@ export interface GitRemote {
   webUrl: string
 }
 
-export function parseGitRemote(value: string): GitRemote {
+export function parseGitRemote(value: string, site?: string): GitRemote {
   const invalid = () => new Error('invalid_repository_remote')
   if (typeof value !== 'string' || !value || value !== value.trim() || /[\s\\%]/.test(value))
     throw invalid()
@@ -16,7 +16,10 @@ export function parseGitRemote(value: string): GitRemote {
     url = new URL(scp ? `ssh://git@${scp[1]}/${scp[2]}` : value)
   }
   catch { throw invalid() }
-  if (!['https:', 'ssh:'].includes(url.protocol) || !url.hostname || url.password || url.search || url.hash || (url.protocol === 'https:' ? Boolean(url.username) : url.username !== 'git' || Boolean(url.port)))
+  // 自建 GitLab 常只监听 80 端口，纯 HTTP 远程要认；GitHub 没有纯 HTTP 服务，仍只收默认端口的 https。
+  if (!['http:', 'https:', 'ssh:'].includes(url.protocol) || !url.hostname || url.password || url.search || url.hash)
+    throw invalid()
+  if (url.protocol === 'ssh:' ? url.username !== 'git' || Boolean(url.port) : Boolean(url.username) || (url.hostname === 'github.com' && (url.protocol !== 'https:' || Boolean(url.port))))
     throw invalid()
   const rawPath = scp ? scp[2]! : value.slice(value.indexOf('://') + 3).replace(/^[^/]+\//, '')
   const segments = rawPath.replace(/\/$/, '').replace(/\.git$/, '').split('/')
@@ -24,8 +27,19 @@ export function parseGitRemote(value: string): GitRemote {
     throw invalid()
   const owner = segments.slice(0, -1).join('/')
   const name = segments.at(-1)!
-  const webUrl = `https://${url.host}/${segments.join('/')}`
-  return { host: url.host, owner, name, remoteUrl: url.protocol === 'https:' ? `${webUrl}.git` : `git@${url.hostname}:${segments.join('/')}.git`, webUrl }
+  const webUrl = `${webProtocol(site, url.host, url.protocol)}//${url.host}/${segments.join('/')}`
+  return { host: url.host, owner, name, remoteUrl: url.protocol === 'ssh:' ? `git@${url.hostname}:${segments.join('/')}.git` : `${webUrl}.git`, webUrl }
+}
+
+/** ssh 远端没有网页协议，按渠道配置的站点协议归一；站点不是同一台主机时退回 https。 */
+function webProtocol(site: string | undefined, host: string, protocol: string): string {
+  if (protocol !== 'ssh:' || !site)
+    return protocol
+  try {
+    const configured = new URL(site)
+    return configured.host === host && configured.protocol === 'http:' ? 'http:' : 'https:'
+  }
+  catch { return 'https:' }
 }
 
 export function parseRepositoryRemote(value: string, gitlabHost = 'https://gitlab.com'): GitRemote & {
@@ -38,9 +52,9 @@ export function parseRepositoryRemote(value: string, gitlabHost = 'https://gitla
     configured = new URL(gitlabHost)
   }
   catch { throw invalid() }
-  if (configured.protocol !== 'https:' || configured.username || configured.password || configured.pathname !== '/' || configured.search || configured.hash)
+  if (!['http:', 'https:'].includes(configured.protocol) || configured.username || configured.password || configured.pathname !== '/' || configured.search || configured.hash)
     throw invalid()
-  const remote = parseGitRemote(value)
+  const remote = parseGitRemote(value, gitlabHost)
   const platform = remote.host === 'github.com' ? 'github' : remote.host === configured.host ? 'gitlab' : null
   if (!platform || (platform === 'github' && remote.owner.includes('/')))
     throw invalid()

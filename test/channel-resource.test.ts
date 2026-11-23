@@ -54,6 +54,15 @@ describe('gitLab 资源解析', () => {
     for (const value of ['https://evil.example/group/project/issues/7', 'http://gitlab.com/group/project/issues/7', 'https://gitlab.com/group/project/issues/7#evil', 'https://gitlab.com/single/issues/7'])
       expect(() => gitlabResource.parse(value, site)).toThrow('invalid_resource')
   })
+  it('纯 HTTP 自建站点按配置 origin 认远端与资源', () => {
+    const http = 'http://git.example.test'
+    expect(gitlabResource.remote('http://git.example.test/group/project.git', http)).toEqual({ site: http, repository: 'group/project' })
+    expect(gitlabResource.remote('git@git.example.test:group/project.git', http)).toEqual({ site: http, repository: 'group/project' })
+    expect(gitlabResource.remote('https://git.example.test/group/project.git', http)).toEqual({ site: http, repository: 'group/project' })
+    expect(gitlabResource.remote('http://other.example.test/group/project.git', http)).toBeNull()
+    expect(gitlabResource.url(gitlabResource.parse('http://git.example.test/group/project/-/issues/7', http))).toBe('http://git.example.test/group/project/issues/7')
+    expect(() => gitlabResource.parse('https://git.example.test/group/project/issues/7', http)).toThrow('invalid_resource')
+  })
   it('note 归属校验拦住跨话题与错类型', () => {
     const target = { site, repository: 'group/project', kind: 'issue' as const, number: 7 }
     expect(() => gitlabResource.validateNote({ id: 1, noteable_iid: 8 }, target)).toThrow('source_repository_mismatch')

@@ -78,7 +78,7 @@ export function gitlabSite(host: string | null): string {
     url = new URL(host ?? 'https://gitlab.com')
   }
   catch { throw new GitLabError('invalid_channel_host') }
-  if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash)
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash)
     throw new GitLabError('invalid_channel_host')
   return url.origin
 }

@@ -29,11 +29,11 @@ export const project = defineService({
     }
   },
   async list(): Promise<(Selectable<DB['project']> & { available?: boolean })[]> {
-    const rows = await db.project.listAll()
+    const [rows, gitlabHost] = await Promise.all([db.project.listAll(), gitlabChannelHost()])
     const workspaces = getServerContext<Context>(server).workspaceRegistry.list()
     return Promise.all(rows.map(async (current) => {
       const workspace = workspaces.find(workspace => workspace.id === current.workspaceId)
-      const facts = workspace && await workspace.status() === 'ok' ? await repositoryFacts(workspace.path) : null
+      const facts = workspace && await workspace.status() === 'ok' ? await repositoryFacts(workspace.path, gitlabHost) : null
       return { ...current, available: Boolean(facts?.remoteUrl && samePath(facts.directory, current.directory) && facts.remoteUrl === current.remoteUrl) }
     }))
   },
@@ -60,7 +60,8 @@ async function addRepository(remoteUrl: string, name?: string, requestSignal?: A
   if (stopped)
     throw new Error('project_stopped')
   const signal = requestSignal ? AbortSignal.any([controller.signal, requestSignal]) : controller.signal
-  const remote = parseGitRemote(remoteUrl)
+  const gitlabHost = await gitlabChannelHost()
+  const remote = parseGitRemote(remoteUrl, gitlabHost)
   const platform = remote.host === 'github.com' ? 'github' : remote.host
   if (name !== undefined && (typeof name !== 'string' || !name.trim() || name.trim().length > 200 || [...name].some(character => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)))
     throw new Error('invalid_workspace_name')
@@ -74,7 +75,7 @@ async function addRepository(remoteUrl: string, name?: string, requestSignal?: A
     for (const workspace of registry.list()) {
       if (await workspace.status() !== 'ok')
         continue
-      const facts = await repositoryFacts(workspace.path)
+      const facts = await repositoryFacts(workspace.path, gitlabHost)
       if (facts?.remoteUrl === remote.webUrl) {
         directory = facts.directory
         break
@@ -83,7 +84,7 @@ async function addRepository(remoteUrl: string, name?: string, requestSignal?: A
     if (!directory) {
       const target = join(DSH_PLUGIN_HOME, 'repositories', platform, remote.host.replace(':', '_'), remote.owner, remote.name)
       try {
-        directory = (await worktree.clone(remote.remoteUrl, resolve(target), undefined, signal)).directory
+        directory = (await worktree.clone(remote.remoteUrl, resolve(target), gitlabHost, signal)).directory
       }
       catch (error) {
         if (signal?.aborted || (error instanceof Error && error.name === 'AbortError'))
@@ -96,7 +97,7 @@ async function addRepository(remoteUrl: string, name?: string, requestSignal?: A
       }
     }
     signal.throwIfAborted()
-    if (parseGitRemote(remoteUrl).webUrl !== remote.webUrl || (await repositoryFacts(directory))?.remoteUrl !== remote.webUrl)
+    if (parseGitRemote(remoteUrl, gitlabHost).webUrl !== remote.webUrl || (await repositoryFacts(directory, gitlabHost))?.remoteUrl !== remote.webUrl)
       throw new Error('repository_remote_mismatch')
     signal.throwIfAborted()
     const workspace = await registry.create(directory, name?.trim() ?? `${platform}/${remote.name}`)
@@ -121,12 +122,13 @@ function queueSync(): Promise<Selectable<DB['project']>[]> {
 
 async function synchronize(): Promise<Selectable<DB['project']>[]> {
   const registry = getServerContext<Context>(server).workspaceRegistry
+  const gitlabHost = await gitlabChannelHost()
   const available: string[] = []
   const now = new Date().toISOString()
   for (const workspace of registry.list()) {
     if (await workspace.status() !== 'ok')
       continue
-    const facts = await repositoryFacts(workspace.path)
+    const facts = await repositoryFacts(workspace.path, gitlabHost)
     if (!facts)
       continue
     const current = await db.project.findByWorkspace(workspace.id)
@@ -146,7 +148,7 @@ async function synchronize(): Promise<Selectable<DB['project']>[]> {
   return db.project.listAll()
 }
 
-async function repositoryFacts(directory: string): Promise<{ directory: string, remoteUrl: string | null } | null> {
+async function repositoryFacts(directory: string, gitlabHost?: string): Promise<{ directory: string, remoteUrl: string | null } | null> {
   let facts: Awaited<ReturnType<typeof worktree.peek>>
   try {
     facts = await worktree.peek(directory)
@@ -159,9 +161,13 @@ async function repositoryFacts(directory: string): Promise<{ directory: string, 
   if (!facts?.remoteUrl)
     return facts
   try {
-    return { ...facts, remoteUrl: parseGitRemote(facts.remoteUrl).webUrl }
+    return { ...facts, remoteUrl: parseGitRemote(facts.remoteUrl, gitlabHost).webUrl }
   }
   catch { return { ...facts, remoteUrl: null } }
+}
+
+async function gitlabChannelHost(): Promise<string | undefined> {
+  return (await db.channel.findById('gitlab'))?.host ?? undefined
 }
 
 function samePath(left: string, right: string): boolean {

@@ -126,7 +126,7 @@ async function save(kind: string, patch: ChannelConfiguration): Promise<ChannelV
   catch {
     throw new TypeError('invalid_channel_host')
   }
-  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/' || (kind === 'github' && url.origin !== 'https://github.com'))
+  if (!(url.protocol === 'https:' || (kind === 'gitlab' && url.protocol === 'http:')) || url.username || url.password || url.search || url.hash || url.pathname !== '/' || (kind === 'github' && url.origin !== 'https://github.com'))
     throw new TypeError('invalid_channel_host')
   const hostChanged = kind === 'gitlab' && url.origin !== new URL(current.host ?? 'https://gitlab.com').origin
   const token = patch.token?.trim()
@@ -368,7 +368,8 @@ function authorize(task: Authentication, raw: string): void {
 function site(channelId: string, host: string): string {
   try {
     const url = new URL(host)
-    if (url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/' && (channelId !== 'github' || url.origin === 'https://github.com'))
+    const allowed = url.protocol === 'https:' || (channelId === 'gitlab' && url.protocol === 'http:')
+    if (allowed && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/' && (channelId !== 'github' || url.origin === 'https://github.com'))
       return url.origin
   }
   catch {}
