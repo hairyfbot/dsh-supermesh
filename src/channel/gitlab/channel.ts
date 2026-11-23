@@ -117,7 +117,10 @@ export class GitLabChannel implements ChannelAdapter {
       // 只在第一页带条件头；ETag 对应整个列表的表示，翻到第二页就不再适用。
       const headers = page === 1 && etag ? { 'if-none-match': etag } : undefined
       const value = await this.requestValue(site, url, signal, headers)
-      return { rows: array(value.body).map(record), notModified: value.notModified, etag: value.etag }
+      // 304 没有响应体：先判 notModified，否则 array(null) 会把整轮采集打成 invalid_response。
+      if (value.notModified)
+        return { rows: [], notModified: true, etag: value.etag }
+      return { rows: array(value.body).map(record), notModified: false, etag: value.etag }
     })
   }
 
