@@ -1,20 +1,23 @@
-# 宿主 profile 可能已经通过官方 bundle 挂载了 worktree / forge（桌面版默认就是）。
-# 再插一遍会让服务重复注册（service "worktrees" has been registered at ...），
-# 所以每行都带一个与 dsh-better-sidebar 相同的守卫：只在本行之前没有其它启用的同名条目时才挂载。
-# 守卫只看排在它前面的条目，profile 的 bundle 顺序天然满足这一点（插件 bundle 最后追加）。
+# 宿主 profile 可能已经通过官方 bundle 挂载了 worktree / forge（桌面版默认就是），再插一遍会让
+# 服务重复注册（service "worktrees" has been registered at ...），所以每行都带守卫让位。
+#
+# 判据只能读 profileContext.startedBundles，不能读 ctx.loader.entries()：条目按插入顺序逐个激活，
+# 兜底行先激活时看不到排在它后面的官方行，会抢注成功；官方行随后全部激活失败，却仍留在树里且
+# disabled 为假，于是重载时守卫翻转成禁用，兜底消失、inject 不满足，插件再也起不来。
+# startedBundles 是启动时固定的 bundle 清单，两种情况都给出同一个结论，重载不会翻转。
 - insert:
     - id: experimental-worktree
       name: '@deepseek-ai/dsh-experimental-worktree'
-      disabled: !!js "[...ctx.loader.entries()].some((e) => (e.options.name === '@deepseek-ai/dsh-experimental-worktree' || e.options.name === '@deepseek-ai/dsh-experimental-tool-worktree') && e.options.id !== 'experimental-worktree' && !e.disabled)"
+      disabled: !!js "(ctx.get('profileContext')?.startedBundles ?? []).some((bundle) => bundle === '@deepseek-ai/dsh-experimental-forge-bundle' || bundle === '@deepseek-ai/dsh-experimental-tool-worktree')"
     - id: supermesh-forge
       name: '@deepseek-ai/dsh-experimental-forge'
-      disabled: !!js "[...ctx.loader.entries()].some((e) => e.options.name === '@deepseek-ai/dsh-experimental-forge' && e.options.id !== 'supermesh-forge' && !e.disabled)"
+      disabled: !!js "(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-experimental-forge-bundle')"
     - id: supermesh-forge-github
       name: '@deepseek-ai/dsh-experimental-forge-github'
-      disabled: !!js "[...ctx.loader.entries()].some((e) => e.options.name === '@deepseek-ai/dsh-experimental-forge-github' && e.options.id !== 'supermesh-forge-github' && !e.disabled)"
+      disabled: !!js "(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-experimental-forge-bundle')"
     - id: supermesh-forge-session
       name: '@deepseek-ai/dsh-experimental-forge-session'
-      disabled: !!js "[...ctx.loader.entries()].some((e) => e.options.name === '@deepseek-ai/dsh-experimental-forge-session' && e.options.id !== 'supermesh-forge-session' && !e.disabled)"
+      disabled: !!js "(ctx.get('profileContext')?.startedBundles ?? []).includes('@deepseek-ai/dsh-experimental-forge-bundle')"
     - id: dsh-supermesh
       name: dsh-supermesh
     - id: dsh-taiwind

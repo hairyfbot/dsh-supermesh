@@ -11,6 +11,7 @@ export async function getApiSupermeshProject(config?: RequestInit) {
   const response = await fetch("/api/supermesh/project", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshProjectResponse>;
 }
 
@@ -20,6 +21,7 @@ export async function postApiSupermeshProject(config?: RequestInit) {
     method: "POST",
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PostApiSupermeshProjectResponse>;
 }
 
@@ -31,6 +33,7 @@ export async function patchApiSupermeshProjectId(paths: Types.PatchApiSupermeshP
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PatchApiSupermeshProjectidResponse>;
 }
 
@@ -40,6 +43,7 @@ export async function putApiSupermeshProjectIdSession(paths: Types.PutApiSuperme
     method: "PUT",
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PutApiSupermeshProjectidSessionResponse>;
 }
 
@@ -49,6 +53,7 @@ export async function postApiSupermeshProjectIdOpening(paths: Types.PostApiSuper
     method: "POST",
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PostApiSupermeshProjectidOpeningResponse>;
 }
 
@@ -60,6 +65,7 @@ export async function postApiSupermeshRepository(body: Types.PostApiSupermeshRep
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PostApiSupermeshRepositoryResponse>;
 }
 
@@ -69,6 +75,7 @@ export async function getApiSupermeshTicket(query?: Types.GetApiSupermeshTicketQ
   const response = await fetch(`/api/supermesh/ticket?${querystr}`, {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshTicketResponse>;
 }
 
@@ -77,6 +84,7 @@ export async function getApiSupermeshTicketCount(config?: RequestInit) {
   const response = await fetch("/api/supermesh/ticket/count", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshTicketCountResponse>;
 }
 
@@ -85,6 +93,7 @@ export async function getApiSupermeshTicketCurrent(config?: RequestInit) {
   const response = await fetch("/api/supermesh/ticket/current", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshTicketCurrentResponse>;
 }
 
@@ -93,6 +102,7 @@ export async function getApiSupermeshTicketId(paths: Types.GetApiSupermeshTicket
   const response = await fetch(`/api/supermesh/ticket/${paths.id}`, {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshTicketidResponse>;
 }
 
@@ -104,6 +114,7 @@ export async function patchApiSupermeshTicketId(paths: Types.PatchApiSupermeshTi
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PatchApiSupermeshTicketidResponse>;
 }
 
@@ -115,6 +126,7 @@ export async function postApiSupermeshAskIdAnswer(paths: Types.PostApiSupermeshA
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PostApiSupermeshAskidAnswerResponse>;
 }
 
@@ -123,6 +135,7 @@ export async function getApiSupermeshWorker(config?: RequestInit) {
   const response = await fetch("/api/supermesh/worker", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshWorkerResponse>;
 }
 
@@ -131,6 +144,7 @@ export async function getApiSupermeshSupervisor(config?: RequestInit) {
   const response = await fetch("/api/supermesh/supervisor", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshSupervisorResponse>;
 }
 
@@ -139,6 +153,7 @@ export async function getApiSupermeshScope(config?: RequestInit) {
   const response = await fetch("/api/supermesh/scope", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshScopeResponse>;
 }
 
@@ -147,6 +162,7 @@ export async function getApiSupermeshNode(config?: RequestInit) {
   const response = await fetch("/api/supermesh/node", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshNodeResponse>;
 }
 
@@ -155,6 +171,7 @@ export async function getApiSupermeshEdge(config?: RequestInit) {
   const response = await fetch("/api/supermesh/edge", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshEdgeResponse>;
 }
 
@@ -163,6 +180,7 @@ export async function getApiSupermeshGroup(config?: RequestInit) {
   const response = await fetch("/api/supermesh/group", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshGroupResponse>;
 }
 
@@ -171,6 +189,7 @@ export async function getApiSupermeshStatus(config?: RequestInit) {
   const response = await fetch("/api/supermesh/status", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshStatusResponse>;
 }
 
@@ -179,6 +198,7 @@ export async function getApiSupermeshMessage(config?: RequestInit) {
   const response = await fetch("/api/supermesh/message", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshMessageResponse>;
 }
 
@@ -187,6 +207,7 @@ export async function getApiSupermeshPending(config?: RequestInit) {
   const response = await fetch("/api/supermesh/pending", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshPendingResponse>;
 }
 
@@ -195,6 +216,7 @@ export async function getApiSupermeshDelivery(config?: RequestInit) {
   const response = await fetch("/api/supermesh/delivery", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshDeliveryResponse>;
 }
 
@@ -203,6 +225,7 @@ export async function getApiSupermeshThread(config?: RequestInit) {
   const response = await fetch("/api/supermesh/thread", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshThreadResponse>;
 }
 
@@ -211,6 +234,7 @@ export async function getApiSupermeshTrigger(config?: RequestInit) {
   const response = await fetch("/api/supermesh/trigger", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshTriggerResponse>;
 }
 
@@ -220,6 +244,7 @@ export async function getApiSupermeshTopic(query?: Types.GetApiSupermeshTopicQue
   const response = await fetch(`/api/supermesh/topic?${querystr}`, {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshTopicResponse>;
 }
 
@@ -229,6 +254,7 @@ export async function getApiSupermeshTopicCount(query?: Types.GetApiSupermeshTop
   const response = await fetch(`/api/supermesh/topic/count?${querystr}`, {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshTopicCountResponse>;
 }
 
@@ -237,6 +263,7 @@ export async function getApiSupermeshSubscription(config?: RequestInit) {
   const response = await fetch("/api/supermesh/subscription", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshSubscriptionResponse>;
 }
 
@@ -245,6 +272,7 @@ export async function getApiSupermeshChannel(config?: RequestInit) {
   const response = await fetch("/api/supermesh/channel", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshChannelResponse>;
 }
 
@@ -256,6 +284,7 @@ export async function putApiSupermeshChannelIdConfiguration(paths: Types.PutApiS
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PutApiSupermeshChannelidConfigurationResponse>;
 }
 
@@ -265,6 +294,7 @@ export async function deleteApiSupermeshChannelIdCredential(paths: Types.DeleteA
     method: "DELETE",
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.DeleteApiSupermeshChannelidCredentialResponse>;
 }
 
@@ -276,6 +306,7 @@ export async function postApiSupermeshChannelIdAuthentication(paths: Types.PostA
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PostApiSupermeshChannelidAuthenticationResponse>;
 }
 
@@ -284,6 +315,7 @@ export async function getApiSupermeshChannelIdAuthenticationAuthenticationId(pat
   const response = await fetch(`/api/supermesh/channel/${paths.id}/authentication/${paths.authenticationId}`, {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshChannelidAuthenticationauthenticationIdResponse>;
 }
 
@@ -292,6 +324,7 @@ export async function getApiSupermeshSetting(config?: RequestInit) {
   const response = await fetch("/api/supermesh/setting", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshSettingResponse>;
 }
 
@@ -303,6 +336,7 @@ export async function patchApiSupermeshSetting(body: Types.PatchApiSupermeshSett
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PatchApiSupermeshSettingResponse>;
 }
 
@@ -311,6 +345,7 @@ export async function getApiSupermeshAgentModel(config?: RequestInit) {
   const response = await fetch("/api/supermesh/agent/model", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshAgentModelResponse>;
 }
 
@@ -322,6 +357,7 @@ export async function patchApiSupermeshAgentModel(body: Types.PatchApiSupermeshA
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PatchApiSupermeshAgentModelResponse>;
 }
 
@@ -330,6 +366,7 @@ export async function getApiSupermeshAgentModelCatalog(config?: RequestInit) {
   const response = await fetch("/api/supermesh/agent/model/catalog", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshAgentModelCatalogResponse>;
 }
 
@@ -339,6 +376,7 @@ export async function putApiSupermeshSessionMain(config?: RequestInit) {
     method: "PUT",
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PutApiSupermeshSessionMainResponse>;
 }
 
@@ -347,6 +385,7 @@ export async function getApiSupermeshSessionRole(config?: RequestInit) {
   const response = await fetch("/api/supermesh/session/role", {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshSessionRoleResponse>;
 }
 
@@ -355,6 +394,7 @@ export async function getApiSupermeshSessionIdContext(paths: Types.GetApiSuperme
   const response = await fetch(`/api/supermesh/session/${paths.id}/context`, {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshSessionidContextResponse>;
 }
 
@@ -363,6 +403,7 @@ export async function getApiSupermeshSessionIdMailbox(paths: Types.GetApiSuperme
   const response = await fetch(`/api/supermesh/session/${paths.id}/mailbox`, {
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.GetApiSupermeshSessionidMailboxResponse>;
 }
 
@@ -374,5 +415,6 @@ export async function patchApiSupermeshSessionIdMailboxMessageId(paths: Types.Pa
     body: JSON.stringify(body),
     ...config,
   });
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`);
   return response.json() as Promise<Types.PatchApiSupermeshSessionidMailboxmessageIdResponse>;
 }
