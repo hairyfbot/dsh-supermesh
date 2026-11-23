@@ -156,20 +156,26 @@ export class GitLabChannel implements ChannelAdapter {
 
   async collectProject(context: CollectContext, signal?: AbortSignal): Promise<void> {
     const site = await this.site()
-    const repository = context.scope
+    // context.scope 是带站点的来源键（同一实例可能被多个渠道配置指向），API 路径只认 path_with_namespace。
+    const scope = context.scope
+    const project = await this.project(context.projectId)
+    const target = resource.remote(project.remoteUrl, site)
+    if (!target)
+      throw new GitLabError('unknown_repository')
+    const repository = target.repository
     for (const kind of ['issue', 'pull'] as const) {
       await context.attempt(async () => {
         await courier.stream({
           channel: 'gitlab',
-          scope: repository,
+          scope,
           name: kind,
           initial: INITIAL_CURSOR,
           read: cursor => this.pages(site, `projects/${encodeURIComponent(repository)}/${kind === 'issue' ? 'issues' : 'merge_requests'}?state=all&scope=all&order_by=updated_at&sort=asc`, signal, cursor.since, cursor.etag ?? undefined),
           advance: (cursor, rows, startedAt) => this.advance(cursor, rows, startedAt),
           accept: async (row) => {
-            const target: Resource = { site, repository, kind, number: number(row.iid) }
-            resource.validateTopic(row, target)
-            const thread = await this.ensureThread(target, row)
+            const resourceTarget: Resource = { site, repository, kind, number: number(row.iid) }
+            resource.validateTopic(row, resourceTarget)
+            const thread = await this.ensureThread(resourceTarget, row)
             await courier.ingest(this.ports.ingest, thread, row, row.state === 'closed' || row.state === 'merged' ? 'close' : 'open', context.baseline, kind)
             if (kind === 'pull')
               await mergeRequest.observe(this, context.projectId, thread, row)
@@ -185,18 +191,18 @@ export class GitLabChannel implements ChannelAdapter {
       if (!await courier.polled(await db.ticketThread.listTicketIds(thread.id), thread.updatedAt))
         continue
       await context.attempt(async () => {
-        const target = resource.parse(url, site)
-        if (resource.source(target) !== repository)
+        const threadTarget = resource.parse(url, site)
+        if (threadTarget.repository !== repository)
           return
         await courier.stream({
           channel: 'gitlab',
-          scope: repository,
-          name: `notes:${target.kind}:${target.number}`,
+          scope,
+          name: `notes:${threadTarget.kind}:${threadTarget.number}`,
           initial: INITIAL_CURSOR,
-          read: cursor => this.pages(site, `${resource.apiRoot(target)}/notes?sort=asc&order_by=updated_at`, signal, cursor.since, cursor.etag ?? undefined),
+          read: cursor => this.pages(site, `${resource.apiRoot(threadTarget)}/notes?sort=asc&order_by=updated_at`, signal, cursor.since, cursor.etag ?? undefined),
           advance: (cursor, rows, startedAt) => this.advance(cursor, rows, startedAt),
           accept: async (row) => {
-            resource.validateNote(row, target)
+            resource.validateNote(row, threadTarget)
             await courier.answers(this.ports.answer, thread, row)
             await courier.ingest(this.ports.ingest, thread, row, 'comment', context.baseline, 'note')
           },

@@ -39,4 +39,11 @@ describe('gitLab 自建实例的网页 host 别名', () => {
     expect(hosts.allowed(moved)).not.toContain(webHost)
     expect(() => resource.parse(`http://${webHost}/group/project/issues/7`, moved)).toThrow('invalid_resource')
   })
+
+  it('来源键带站点，API 仓库路径只认 path_with_namespace', () => {
+    const site = 'http://10.3.0.7'
+    const remote = resource.remote('http://10.3.0.7/group/subgroup/project.git', site)!
+    expect(remote.repository).toBe('group/subgroup/project')
+    expect(resource.source(remote)).toBe('http://10.3.0.7/group/subgroup/project')
+  })
 })
