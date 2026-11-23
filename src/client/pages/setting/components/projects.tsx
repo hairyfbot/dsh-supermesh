@@ -22,7 +22,6 @@ const COLLECTION_REASONS: Record<string, Parameters<T>[0]> = {
   unknown_repository: 'settingCollectionReasonUnknownRepository',
   account_mismatch: 'settingCollectionReasonAccountMismatch',
   environment_identity_changed: 'settingCollectionReasonIdentityChanged',
-  interrupted: 'settingCollectionReasonInterrupted',
   invalid_response: 'settingCollectionReasonInvalidResponse',
   remote_rejected: 'settingCollectionReasonRemoteRejected',
 }
@@ -32,6 +31,18 @@ function collectionReason(t: T, code: string): string {
     return t('settingCollectionReasonTransport')
   const key = COLLECTION_REASONS[code]
   return key ? t(key) : code
+}
+
+/** 网络抖动和中断是暂时的，不该当成采集失败长期挂在项目上。 */
+function transient(code: string): boolean {
+  return code.startsWith('transport_unknown') || code === 'interrupted'
+}
+
+function collectionFailure(collection: { ok: boolean, reasons: string[] }): string[] {
+  if (collection.ok)
+    return []
+  const reasons = collection.reasons.filter(code => !transient(code))
+  return [...new Set(reasons)]
 }
 
 export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null) => void }): ReactNode {
@@ -90,7 +101,6 @@ export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null
   }).filter(project => project.repository)
   const visible = candidates.filter(project => !normalized || [project.name, project.repository!.platform, project.repository!.owner, project.repository!.name].join(' ').toLocaleLowerCase().includes(normalized))
   const enabled = candidates.filter(project => Boolean(project.enabled)).length
-  const failing = candidates.filter(project => project.collection && !project.collection.ok).length
   const loadError = projects.error ?? channels.error
   return (
     <section className="overflow-hidden rounded-2xl border border-(--dsw-alias-border-l3) bg-(--dsw-alias-bg-layer-1)" aria-labelledby={id}>
@@ -99,7 +109,6 @@ export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null
           <div className="flex flex-wrap items-center gap-2">
             <h3 id={id} className="m-0 text-sm font-medium">{t('settingProjects')}</h3>
             <Tag tone="quiet">{t('settingEnabledCount', { enabled, total: candidates.length })}</Tag>
-            {failing > 0 && <span role="status" className="text-xs leading-5 text-(--dsw-alias-state-error-primary)">{t('settingCollectionFailing', { count: failing })}</span>}
           </div>
           <p className="m-0 mt-1.5 text-xs leading-5 text-(--dsw-alias-label-secondary)">{t('settingProjectsDescription')}</p>
         </div>
@@ -135,11 +144,11 @@ export function Projects({ onNotice }: { onNotice: (notice: SettingNotice | null
                         <div className="min-w-0 pt-0.5">
                           <div className="truncate text-[13px] leading-5 font-medium text-(--dsw-alias-label-primary)">{project.name}</div>
                           <p id={pathId} className="m-0 mt-1 truncate font-mono text-[11px] leading-5 text-(--dsw-alias-label-tertiary)" title={project.repository!.webUrl}>{`${project.repository!.platform}:${project.repository!.owner}/${project.repository!.name}`}</p>
-                          {project.collection && (
+                          {project.collection && (project.collection.ok || collectionFailure(project.collection).length > 0) && (
                             <p className={`m-0 mt-0.5 truncate text-[11px] leading-5 ${project.collection.ok ? 'text-(--dsw-alias-label-tertiary)' : 'text-(--dsw-alias-state-error-primary)'}`}>
                               {project.collection.ok
                                 ? t('settingCollectionOk', { time: new Date(project.collection.collectedAt).toLocaleTimeString() })
-                                : t('settingCollectionFailed', { reasons: project.collection.reasons.map(code => collectionReason(t, code)).join('、'), time: new Date(project.collection.collectedAt).toLocaleTimeString() })}
+                                : t('settingCollectionFailed', { reasons: collectionFailure(project.collection).map(code => collectionReason(t, code)).join('、'), time: new Date(project.collection.collectedAt).toLocaleTimeString() })}
                             </p>
                           )}
                         </div>
