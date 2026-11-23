@@ -107,9 +107,11 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
     { name: 'conversation.input.dock', id: 'supermesh-mailbox', order: 1, locale: NS },
     props => (
-      <PluginContext.Provider key={props.sessionId} value={{ ctx, t: props.t }}>
-        <MailboxPanel sessionId={props.sessionId} />
-      </PluginContext.Provider>
+      <QueryClientProvider client={client}>
+        <PluginContext.Provider key={props.sessionId} value={{ ctx, t: props.t }}>
+          <MailboxPanel sessionId={props.sessionId} />
+        </PluginContext.Provider>
+      </QueryClientProvider>
     ),
   ))
 
