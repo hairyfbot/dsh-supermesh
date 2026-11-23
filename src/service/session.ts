@@ -197,7 +197,7 @@ export const session = defineService({
       if (role === 'main')
         await ctx.workspaceRegistry.pinSession(SessionId(id)).catch(() => undefined)
       if (role !== 'worker')
-        await inbox.notify(await resolveAgent(id), true)
+        await inbox.notify(await resolveAgent(id))
       if (options.prompt)
         await session.send(id, options.prompt)
       return id

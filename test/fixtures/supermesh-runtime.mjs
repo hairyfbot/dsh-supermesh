@@ -503,7 +503,8 @@ const cases = {
     await inbox.deliver()
     const id = (await db.project.findById(p.id)).orchestratorSessionId
     assert.equal(typeof id, 'string')
-    await expectWake(id, 1)
+    // 渠道邮件和内部邮件走同一条通知：一条紧凑提示覆盖两条待处理邮件。
+    await expectWake(id, 2)
     assert.equal((await db.inbox.findById('stalled-channel')).status, 'stalled')
     assert.equal((await db.inbox.findById('internal-after-channel')).deliveryAttempts, 0)
   },
@@ -735,19 +736,94 @@ const cases = {
     const notice = await waitFor(() => runtime.proposals
       .filter(item => item.id === managerId)
       .flatMap(item => item.messages)
-      .find(message => message.source.kind === 'subagent-settled'))
+      .find(message => message.source.kind === 'supermesh-mailbox'))
     await settle()
-    const durable = (await session.history(managerId)).events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === 'subagent-settled'))
+    const history = await session.history(managerId)
+    const durable = history.events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === 'supermesh-mailbox'))
     assert.equal(durable, true, 'the settlement notice must be durable')
-    assert.equal(notice.source.form, 'notice')
-    assert.equal(notice.source.stopReason, 'completed')
-    assert.equal(notice.source.senderSessionId, queued.id)
-    assert.equal(notice.source.summary.length <= 120, true, 'the notice summary must stay within the context bound')
-    assert.match(notice.content[0].text, /Worker settlement-ticket finished/)
-    assert.equal(notice.content.some(part => part.type === 'text' && part.text === 'It left no closing message.'), true, 'a worker without assistant text must still produce a shaped settlement notice')
+    assert.equal(notice.content[0].text, '你有1个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。')
+    assert.equal(history.events.some(event => (event.type === 'user/message' ? [event.data] : []).some(message => message.content.some(part => part.type === 'text' && part.text.includes('Worker settlement-ticket finished')))), false, 'the closing text must not be pasted into the orchestrator conversation')
+    const mail = (await db.inbox.listByTicket(ticketId)).find(row => row.id.startsWith(`supermesh:settlement:${queued.id}:`))
+    assert.equal(mail?.type, 'project')
+    assert.equal(mail?.projectId, p.id)
+    assert.equal(mail?.ticketId, ticketId)
+    assert.equal(mail?.workerId, queued.id)
+    assert.equal(mail?.kind, 'notice')
+    assert.match(mail.message, /Worker settlement-ticket finished/)
+    assert.match(mail.message, /It left no closing message/)
     assert.equal((await db.worker.findById(queued.id)).status, 'ended')
     assert.equal((await db.worker.findById(queued.id)).endedReason, 'completed')
     assert.equal((await db.ticket.findById(ticketId)).status, 'waiting')
+  },
+  async answerNotice() {
+    const p = await project('answer-notice-project')
+    const managerId = await session.create('project', { projectId: p.id })
+    const ask = await db.inbox.enqueueAsk({ type: 'main', origin: 'project', projectId: p.id, message: '可以合并吗？' })
+    await db.inbox.answerScoped(ask.id, '可以', { type: 'main' }, now)
+    await inbox.deliverAnswers()
+    await inbox.deliver()
+    const notice = await waitFor(() => runtime.proposals
+      .filter(item => item.id === managerId)
+      .flatMap(item => item.messages)
+      .find(message => message.source.kind === 'supermesh-mailbox'))
+    await settle()
+    assert.equal(notice.content[0].text, '你有1个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。')
+    const mail = await db.inbox.findById(`supermesh:answer:${ask.id}`)
+    assert.equal(mail?.type, 'project')
+    assert.equal(mail?.kind, 'notice')
+    assert.equal(mail?.message, '可以')
+    assert.equal((await db.inbox.findById(ask.id)).status, 'done')
+    const history = await session.history(managerId)
+    assert.equal(history.events.some(event => event.type === 'user/message' && event.data.content.some(part => part.type === 'text' && part.text.includes('[Answer'))), false, 'the answer must not be pasted into the orchestrator conversation')
+  },
+  async channelNotice() {
+    const { setting } = await import('@/service/setting.ts')
+    await setting.save({ administrators: ['hairyf'] })
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const p = await project('channel-notice-project')
+    const threadId = 'github:channel-notice:1'
+    const triggerId = `${threadId}:comment:1`
+    await db.thread.record({ id: threadId, channelId: 'github', refId: 'channel-notice:1', kind: 'issue', title: 'Channel notice', url: 'https://github.com/example/channel-notice/issues/1', createdAt: now, updatedAt: now, projectId: p.id, triage: 'claimed', triagedAt: now })
+    await db.trigger.ingest({ id: triggerId, channelId: 'github', threadId, kind: 'comment', actorName: 'hairyf', human: 1, mentioned: 1, text: 'Private channel body', url: 'https://github.com/example/channel-notice/issues/1#issuecomment-1', at: now, ref: null })
+    await db.inbox.enqueue({ id: 'channel-notice-mail', type: 'project', projectId: p.id, origin: 'channel', kind: 'trigger', triggerId, threadId, title: 'Channel notice', message: 'Private channel body' })
+    await inbox.deliver()
+    const id = (await db.project.findById(p.id)).orchestratorSessionId
+    assert.equal(typeof id, 'string')
+    await expectWake(id, 1)
+    const history = await session.history(id)
+    assert.equal(history.events.some(event => event.type === 'user/message' && event.data.content.some(part => part.type === 'text' && part.text.includes('Private channel body'))), false, 'the channel body must not be pasted into the orchestrator conversation')
+    const mailbox = await inbox.read(id)
+    const mail = mailbox.messages.find(message => message.id === 'channel-notice-mail')
+    assert.equal(mail?.message, 'Private channel body')
+    assert.equal(mail?.trigger?.actorName, 'hairyf')
+    assert.equal(mail?.trigger?.strength, 'explicit')
+  },
+  async supervisorOpen() {
+    const p = await project('supervisor-open-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const ticketId = 'supervisor-open-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '跨项目协调', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const mainId = await session.create('main', {})
+    const main = await session.activate(mainId)
+    await runtime.ctx.tools.execute({
+      calls: [{ type: 'tool-call', id: 'call-supervisor', name: 'create_supervisor', arguments: JSON.stringify({ title: '跨项目协调', reason: '两个仓库互相等', ticketIds: [ticketId] }) }],
+      signal: AbortSignal.timeout(15000),
+      agent: main,
+    })
+    const supervisor = (await db.supervisor.listActive()).find(row => row.title === '跨项目协调')
+    assert.equal(typeof supervisor?.sessionId, 'string')
+    const notice = await waitFor(() => runtime.proposals
+      .filter(item => item.id === supervisor.sessionId)
+      .flatMap(item => item.messages)
+      .find(message => message.source.kind === 'supermesh-mailbox'))
+    await settle()
+    assert.equal(notice.content[0].text, '你有1个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。')
+    const mail = (await db.inbox.listScoped({ type: 'supervisor', supervisorId: supervisor.id }))[0]
+    assert.equal(mail?.kind, 'notice')
+    assert.match(mail.message, /两个仓库互相等/)
+    assert.match(mail.message, new RegExp(ticketId))
+    const history = await session.history(supervisor.sessionId)
+    assert.equal(history.events.some(event => event.type === 'user/message' && event.data.content.some(part => part.type === 'text' && part.text.includes('两个仓库互相等'))), false, 'the opening payload must not be pasted into the supervisor conversation')
   },
 }
 

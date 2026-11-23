@@ -7,7 +7,7 @@ export const inbox_list = defineTool({
   parameters: { detail: { type: 'boolean', description: 'true 返回完整上下文；默认返回摘要。' } },
   output: { schema: { type: 'string', description: '当前角色未处理邮件。' }, render: (_args, value) => [{ type: 'text', text: value }] },
   execute: async (args, exec) => {
-    const mailbox = await inbox.read(exec.agent?.session.id ?? '', true)
+    const mailbox = await inbox.read(exec.agent?.session.id ?? '')
     return JSON.stringify(args.detail ? mailbox.messages : mailbox.messages.map(row => ({ id: row.id, kind: row.kind, summary: row.title ?? row.message.split('\n')[0].slice(0, 120) })))
   },
 })
@@ -23,7 +23,7 @@ export const read_mailbox = defineTool({
     },
   },
   output: { schema: { type: 'string', description: '完整角色邮箱，或所选邮件。' }, render: (_args, value) => [{ type: 'text', text: value }] },
-  execute: async (args, exec) => JSON.stringify(await inbox.read(exec.agent?.session.id ?? '', true, args.ids)),
+  execute: async (args, exec) => JSON.stringify(await inbox.read(exec.agent?.session.id ?? '', args.ids)),
 })
 
 export const inbox_kill = defineTool({
@@ -31,5 +31,5 @@ export const inbox_kill = defineTool({
   description: '将自己角色的邮件显式标为 done；未回答的 ask 不能跳过。',
   parameters: { ids: { type: 'array', items: { type: 'string' }, required: true, description: '已处理邮件的 id。' } },
   output: { schema: { type: 'string', description: '完成数量。' }, render: (_args, value) => [{ type: 'text', text: value }] },
-  execute: async (args, exec) => String(await inbox.complete(exec.agent?.session.id ?? '', args.ids, true)),
+  execute: async (args, exec) => String(await inbox.complete(exec.agent?.session.id ?? '', args.ids)),
 })

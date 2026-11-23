@@ -19,38 +19,35 @@ let stopped = false
 export const inbox = defineService({
   notify: singlet(
     agent => `inbox:notify:${agent.session.id}`,
-    async (agent: Agent, restore = false): Promise<void> => {
-      if (agent.status !== 'idle' && !restore)
+    async (agent: Agent): Promise<void> => {
+      if (agent.status !== 'idle')
         return
       const mailbox = await inbox.peek(agent.session.id)
       if (!mailbox)
         return
       const revision = mailbox.messages.map(message => [message.id, message.escalations]).sort().map(parts => parts.join(':')).join('|')
-      if (!revision && !restore)
+      if (!revision)
         return
       const { events } = await session.history(agent.session.id)
-      if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some(message => message.source.kind === (restore ? 'supermesh-mailbox-context' : 'supermesh-mailbox') && message.source.revision === revision))
+      if ([...agent.inbox.nextTurn, ...agent.inbox.nextStep].some(message => message.source.kind === 'supermesh-mailbox' && message.source.revision === revision))
         return
-      if (events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === (restore ? 'supermesh-mailbox-context' : 'supermesh-mailbox') && message.source.revision === revision)))
+      if (events.some(event => (event.type === 'user/message' ? [event.data] : event.type === 'agent/inbox/spliced' ? event.data.inserted : []).some(message => message.source.kind === 'supermesh-mailbox' && message.source.revision === revision)))
         return
       const text = `你有${mailbox.pendingCount}个未处理邮件。用 read_mailbox 读取邮件和项目上下文，处理完成后显式完成邮件。`
-      const message = createUserMessage({ content: [{ type: 'text', text }], source: { kind: restore ? 'supermesh-mailbox-context' : 'supermesh-mailbox', form: 'notice', summary: text, revision } })
+      const message = createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'supermesh-mailbox', form: 'notice', summary: text, revision } })
       if (stopped || !(await session.resolve(agent.session.id)))
         return
-      if (restore)
-        agent.inject(message)
-      else if (agent.status === 'idle')
-        agent.followup(message)
+      agent.followup(message)
     },
   ),
-  async peek(id: string, includeChannel = false) {
+  async peek(id: string) {
     const identity = await session.resolve(id)
     if (!identity)
       return null
     const scope = scopeOf(identity)
     if (!scope)
       return null
-    const rows = await db.inbox.listScoped(scope, includeChannel)
+    const rows = await db.inbox.listScoped(scope)
     const triggers = new Map<string, { kind: string, actorName: string | null, human: boolean, mentioned: boolean, strength: TriggerStrength }>()
     for (const triggerId of new Set(rows.map(message => message.triggerId).filter(Boolean) as string[])) {
       const trigger = await db.trigger.findById(triggerId)
@@ -61,8 +58,8 @@ export const inbox = defineService({
     const projects = (await db.project.listAll()).filter(project => project.enabled && (identity.role === 'main' || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({ id, name, directory, remoteUrl }))
     return { sessionId: id, role: scope.type, projects, pendingCount: messages.length, messages }
   },
-  async read(id: string, includeChannel = false, ids?: string[]) {
-    const mailbox = await inbox.peek(id, includeChannel)
+  async read(id: string, ids?: string[]) {
+    const mailbox = await inbox.peek(id)
     if (!mailbox)
       throw new Error('unknown_session')
     const now = new Date().toISOString()
@@ -73,14 +70,14 @@ export const inbox = defineService({
     const missing = ids.filter(id => !mailbox.messages.some(message => message.id === id))
     return { ...mailbox, messages: selected, missing }
   },
-  async complete(id: string, ids: string[], includeChannel = false): Promise<number> {
+  async complete(id: string, ids: string[]): Promise<number> {
     const identity = await session.resolve(id)
     if (!identity)
       throw new Error('unknown_session')
     const scope = scopeOf(identity)
     if (!scope)
       throw new Error('unknown_session')
-    return db.inbox.completeScoped(ids, scope, new Date().toISOString(), includeChannel)
+    return db.inbox.completeScoped(ids, scope, new Date().toISOString())
   },
   start(): () => Promise<void> {
     if (singlet.busy('inbox:delivery') || singlet.busy('inbox:answers'))
@@ -95,9 +92,8 @@ export const inbox = defineService({
   },
   deliver: singlet('inbox:delivery', async () => {
     const settings = await setting.load()
-    const blocked = new Set<string>()
     const notified = new Set<string>()
-    const receipts = new Map<string, Awaited<ReturnType<typeof session.receipts>>>()
+    const woken = new Set<string>()
     for (const message of await db.inbox.listDelivery()) {
       if (stopped)
         break
@@ -108,57 +104,24 @@ export const inbox = defineService({
         continue
       if (message.type === 'supervisor' && message.supervisorId && (await db.supervisor.findById(message.supervisorId))?.status !== 'active')
         continue
-      if (message.origin === 'channel') {
-        if (blocked.has(key) || message.readAt)
-          continue
-        blocked.add(key)
-      }
-      else if (notified.has(key)) {
+      if (notified.has(key))
         continue
-      }
       if (message.status === 'stalled' || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
         continue
       try {
         const id = await recipient(message)
         if (!id)
           throw new Error('recipient_session_unavailable')
-        if (message.origin !== 'channel') {
-          const agent = await session.activate(id)
-          if (stopped)
-            break
-          if (agent.status === 'idle')
-            await inbox.notify(agent)
-          notified.add(key)
-          await db.inbox.resetDelivery(message.id)
-          continue
+        const agent = await session.activate(id)
+        if (stopped)
+          break
+        // 一条通知覆盖收件人当前所有待处理邮件，同一轮里不必为每条邮件重算一次。
+        if (agent.status === 'idle' && !woken.has(id)) {
+          woken.add(id)
+          await inbox.notify(agent)
         }
-        let consumed = receipts.get(id)
-        if (!consumed) {
-          consumed = await session.receipts(id)
-          receipts.set(id, consumed)
-        }
-        const requestId = `supermesh:inbox:${message.id}:${message.escalations}`
-        const receipt = consumed.find(item => item.requestId === requestId)
-        if (receipt) {
-          await db.inbox.markRead([message.id], receipt.consumedAt)
-          blocked.delete(key)
-          continue
-        }
-        if ((await session.activity(id)).running || stopped)
-          continue
-        // 把触发事实带给收件人：没 @ bot 的消息只是时间线记录，不能当成开工请求。
-        const trigger = message.triggerId ? await db.trigger.findById(message.triggerId) : undefined
-        const strength = trigger ? await triggerStrength(trigger) : undefined
-        await session.send(id, [
-          message.title ?? '',
-          `[Inbox ${message.id}]`,
-          message.triggerId ? `triggerId: ${message.triggerId}` : '',
-          message.threadId ? `threadId: ${message.threadId}` : '',
-          trigger ? `actor: ${trigger.actorName ?? 'unknown'} human: ${trigger.human ? 'yes' : 'no'} mentioned: ${trigger.mentioned ? 'yes' : 'no'} strength: ${strength}` : '',
-          message.message,
-        ].filter(Boolean).join(String.fromCharCode(10)), 'queue', requestId)
+        notified.add(key)
         await db.inbox.resetDelivery(message.id)
-        blocked.delete(key)
       }
       catch (error) {
         if (stopped)
@@ -179,44 +142,28 @@ export const inbox = defineService({
       if (!message.answer || deliveredAnswers.has(`${message.id}:relayed`) || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
         continue
       try {
-        if (message.answeredBy !== 'user' && message.origin !== 'worker') {
+        // 编排会话只收紧凑通知：答案落成一条邮件，由收件人自己 read_mailbox 取。
+        if (message.origin !== 'worker') {
           await db.inbox.enqueueAnswer(message)
           if (message.status !== 'done')
             await db.inbox.settleAnswer(message.id, new Date().toISOString())
           continue
         }
-        let id: string | null = null
-        if (message.origin === 'worker') {
-          const worker = message.workerId ? await db.worker.findById(message.workerId) : undefined
-          if (!worker)
-            throw new Error('worker_not_found')
-          if (worker.status === 'ended') {
-            // Worker 已经结束，答案送不回它了：改投项目编排，别让答案烂在队列里。
-            await db.inbox.relayAnswer(message.id, `${worker.id} 已结束，答案没能送到它手里`, new Date().toISOString())
-            deliveredAnswers.add(`${message.id}:relayed`)
-            continue
-          }
-          id = worker.id
+        const worker = message.workerId ? await db.worker.findById(message.workerId) : undefined
+        if (!worker)
+          throw new Error('worker_not_found')
+        if (worker.status === 'ended') {
+          // Worker 已经结束，答案送不回它了：改投项目编排，别让答案烂在队列里。
+          await db.inbox.relayAnswer(message.id, `${worker.id} 已结束，答案没能送到它手里`, new Date().toISOString())
+          deliveredAnswers.add(`${message.id}:relayed`)
+          continue
         }
-        else if (message.origin === 'project' && message.projectId) {
-          const project = await db.project.findById(message.projectId)
-          if (project?.enabled)
-            id = project.orchestratorSessionId
-        }
-        else if (message.origin === 'supervisor' && message.supervisorId) {
-          const supervisor = await db.supervisor.findById(message.supervisorId)
-          if (supervisor?.status === 'active')
-            id = supervisor.sessionId
-        }
-        else if (message.origin === 'main') {
-          id = await session.findMain()
-        }
-        if (!id || deliveredAnswers.has(`${message.id}:${id}`) || stopped)
+        if (deliveredAnswers.has(`${message.id}:${worker.id}`) || stopped)
           continue
         if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused)
           continue
-        await session.send(id, `[Answer ${message.id}] ${message.answer}`, 'reply', `supermesh:answer:${message.id}`)
-        deliveredAnswers.add(`${message.id}:${id}`)
+        await session.send(worker.id, `[Answer ${message.id}] ${message.answer}`, 'reply', `supermesh:answer:${message.id}`)
+        deliveredAnswers.add(`${message.id}:${worker.id}`)
         await db.inbox.finishAnswer(message.id, new Date().toISOString())
       }
       catch (error) {

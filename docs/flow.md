@@ -180,7 +180,7 @@ stateDiagram-v2
 ### 汇报状态
 
 `reportState` 是结构化通道，和会话正文（`view` 读的）是两回事。
-Worker 跑完时，插件按官方结算通知的形状把它最后一条消息直接送进项目编排会话；
+Worker 跑完时，插件把它最后一条消息写进项目编排的收件箱，会话里只收到一条紧凑通知；
 `report` 本身只写票面状态，不写 Inbox。
 
 ```mermaid
@@ -260,7 +260,11 @@ flowchart LR
 
 三条边界：`type=user` 只有 main 能写；`type=supervisor` 只有 main 和 project 能写；
 **Worker 没有收件箱**，上级的话直接 prompt 进会话。
-**Worker 的 `report` 也不走 Inbox**：跑完由结算通知直接送进项目编排会话。
+**Worker 的 `report` 也不走 Inbox**：跑完的收尾文本作为一条 notice 进项目编排的收件箱。
+
+**编排会话只收紧凑通知。** 所有投给主编排 / 项目编排 / Supervisor 的消息——渠道触发、Worker 结算、
+答案回传、Supervisor 开场——都先落成 Inbox 行，会话里只出现一条「你有 N 个未处理邮件」，
+正文由 `read_mailbox` 按需读取。渠道正文不再以会话消息的形式再铺一遍。
 
 ### 三个状态
 
@@ -475,7 +479,7 @@ sequenceDiagram
     M->>P: dispatch_ticket
     P->>W: create_worker
 
-    W->>P: 结算通知（收尾文本）
+    W->>P: 结算邮件（收尾文本）
     W->>P: ask「需要改 B/x」
     alt 跨项目
         P->>M: ask「请考虑 Supervisor」
@@ -490,7 +494,7 @@ sequenceDiagram
     P->>W: send(mode=reply)
 
     W->>U: 开 PR
-    W->>P: 结算通知（ready 收尾文本）
+    W->>P: 结算邮件（ready 收尾文本）
 
     U->>CH: 合并
     CH->>CH: 引擎结单（Host half）

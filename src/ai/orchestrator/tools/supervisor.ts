@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { db } from '@/database'
 import { archive } from '@/service/archive'
+import { inbox } from '@/service/inbox'
 import { session } from '@/service/session'
 
 export const supervisor_list = defineTool({
@@ -70,7 +71,8 @@ export const create_supervisor = defineTool({
     for (const ticketId of ticketIds) await db.supervisorTicket.link(id, ticketId, now)
     const sessionId = await session.create('supervisor', { supervisorId: id, title: args.title })
     await db.supervisor.attachSession(id, sessionId)
-    await session.send(sessionId, JSON.stringify({ title: args.title, reason: args.reason, tickets }), 'queue')
+    await db.inbox.enqueue({ type: 'supervisor', supervisorId: id, origin: 'main', kind: 'notice', title: args.title, message: JSON.stringify({ title: args.title, reason: args.reason, tickets }) })
+    await inbox.notify(await session.activate(sessionId))
     return JSON.stringify({ id, sessionId, ticketIds })
   },
 })

@@ -2,14 +2,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { Selectable } from 'kysely'
 import type { DB } from '@/database/types'
-import type {} from '@/types/settlement'
 import { randomUUID } from 'node:crypto'
-import { boundContextSummary, createUserMessage, joinAssistantStreamText } from '@deepseek-ai/dsh-llm'
+import { joinAssistantStreamText } from '@deepseek-ai/dsh-llm'
 import { getServerContext } from 'dsh-h3/utils'
 import { db } from '@/database'
 import { singlet } from '@/runtime/singlet'
 import { server } from '@/server'
 import { archive } from '@/service/archive'
+import { inbox } from '@/service/inbox'
 import { session } from '@/service/session'
 import { setting } from '@/service/setting'
 import { worktree } from '@/service/worktree'
@@ -547,8 +547,7 @@ async function closingText(id: string): Promise<string[]> {
 
 /**
  * Worker 是独立根会话，不在官方 subagent 树里，拿不到官方的结算通知。
- * 这里按官方结算的形状补一条：同一条消息、同一个 source.form，编排在跑就 steer，空闲就 followup。
- * 编排不在线也投：先激活会话再送，官方是直接丢掉。
+ * 结算落成项目编排的一条邮件：会话里只留紧凑通知，收尾文本由 read_mailbox 取。
  */
 async function notifyRouter(current: Selectable<DB['worker']>, reason?: 'failed' | 'stopped'): Promise<void> {
   try {
@@ -558,27 +557,27 @@ async function notifyRouter(current: Selectable<DB['worker']>, reason?: 'failed'
     const project = await db.project.findById(ticket.projectId)
     if (!project?.enabled)
       return
+    const stopReason: SettlementStopReason = reason === 'failed' ? 'error' : reason === 'stopped' ? 'aborted' : 'completed'
+    const summary = settlementSummary(ticket.id, stopReason)
+    const closing = await closingText(current.id)
+    // 同一个 worker 记录可以被重新排队再跑一轮：结算 id 带上这一次的结束时刻，两轮各留一条。
+    const settledAt = (await db.worker.findById(current.id))?.endedAt ?? new Date().toISOString()
+    await db.inbox.enqueue({
+      id: `supermesh:settlement:${current.id}:${settledAt}`,
+      type: 'project',
+      projectId: project.id,
+      origin: 'worker',
+      kind: 'notice',
+      ticketId: ticket.id,
+      workerId: current.id,
+      title: summary,
+      message: [summary, ...closing.length === 0 ? ['It left no closing message.'] : ['Its closing message:', ...closing]].join(String.fromCharCode(10)),
+    })
     const existing = project.orchestratorSessionId
     const id = existing && await session.resolve(existing).then(Boolean, () => false)
       ? existing
       : await session.create('project', { projectId: project.id })
-    const agent = await session.activate(id)
-    const stopReason: SettlementStopReason = reason === 'failed' ? 'error' : reason === 'stopped' ? 'aborted' : 'completed'
-    const summary = settlementSummary(ticket.id, stopReason)
-    const closing = await closingText(current.id)
-    const message = createUserMessage({
-      content: [
-        { type: 'text', text: summary },
-        ...closing.length === 0
-          ? [{ type: 'text' as const, text: 'It left no closing message.' }]
-          : [{ type: 'text' as const, text: 'Its closing message:' }, ...closing.map(text => ({ type: 'text' as const, text }))],
-      ],
-      source: { kind: 'subagent-settled', form: 'notice', summary: boundContextSummary(summary), stopReason, senderSessionId: current.id },
-    })
-    if (agent.status === 'idle')
-      agent.followup(message)
-    else
-      agent.steer(message)
+    await inbox.notify(await session.activate(id))
   }
   catch (error) {
     getServerContext<Context>(server).logger.warn('supermesh: worker %s settlement notice failed: %s', current.id, error instanceof Error ? error.message : String(error))

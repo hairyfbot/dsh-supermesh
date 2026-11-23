@@ -9,7 +9,7 @@
 **派活。** 一张票该开跑时 `create_worker`，建 worktree、开分支、起会话一次性配好。
 **槽位满了就让它留在 `queued`，不要硬开** —— 硬开的后果是两个 Worker 抢同一个端口。
 
-**看着。** Worker 跑完会以结算通知叫醒你，收尾文本就在通知里；`reportState` 在票上。
+**看着。** Worker 跑完会以一条邮件叫醒你，收尾文本在 `read_mailbox` 里；`reportState` 在票上。
 `ready` 说明能审了，`failed` 说明要重试，`dropped` 说明这活不用做了。
 **收工的时候留下 branch 和 worktree，那是唯一记录。**
 
