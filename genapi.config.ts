@@ -16,7 +16,7 @@ export default defineConfig({
           // 宿主半边没激活时路由返回纯文本 404，直接 response.json() 只会抛 JSON 解析错误，
           // 面板上看到的是 "Unexpected token 'o'"，看不出是插件没起来。
           method.body = method.body?.flatMap(statement => statement.startsWith('return response.json() as Promise<')
-            ? ['if (!response.ok)\n      throw new Error(`HTTP ${response.status}: ${(await response.text()).slice(0, 200) || response.statusText}`)', statement]
+            ? [`if (!response.ok) throw new Error(\`HTTP \${response.status}: \${(await response.text()).slice(0, 200) || response.statusText}\`)`, statement]
             : [statement])
         }
       }
