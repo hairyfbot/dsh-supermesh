@@ -1,12 +1,20 @@
+# 宿主 profile 可能已经通过官方 bundle 挂载了 worktree / forge（桌面版默认就是）。
+# 再插一遍会让服务重复注册（service "worktrees" has been registered at ...），
+# 所以每行都带一个与 dsh-better-sidebar 相同的守卫：只在本行之前没有其它启用的同名条目时才挂载。
+# 守卫只看排在它前面的条目，profile 的 bundle 顺序天然满足这一点（插件 bundle 最后追加）。
 - insert:
     - id: experimental-worktree
       name: '@deepseek-ai/dsh-experimental-worktree'
+      disabled: !!js "[...ctx.loader.entries()].some((e) => (e.options.name === '@deepseek-ai/dsh-experimental-worktree' || e.options.name === '@deepseek-ai/dsh-experimental-tool-worktree') && e.options.id !== 'experimental-worktree' && !e.disabled)"
     - id: supermesh-forge
       name: '@deepseek-ai/dsh-experimental-forge'
+      disabled: !!js "[...ctx.loader.entries()].some((e) => e.options.name === '@deepseek-ai/dsh-experimental-forge' && e.options.id !== 'supermesh-forge' && !e.disabled)"
     - id: supermesh-forge-github
       name: '@deepseek-ai/dsh-experimental-forge-github'
+      disabled: !!js "[...ctx.loader.entries()].some((e) => e.options.name === '@deepseek-ai/dsh-experimental-forge-github' && e.options.id !== 'supermesh-forge-github' && !e.disabled)"
     - id: supermesh-forge-session
       name: '@deepseek-ai/dsh-experimental-forge-session'
+      disabled: !!js "[...ctx.loader.entries()].some((e) => e.options.name === '@deepseek-ai/dsh-experimental-forge-session' && e.options.id !== 'supermesh-forge-session' && !e.disabled)"
     - id: dsh-supermesh
       name: dsh-supermesh
     - id: dsh-taiwind
