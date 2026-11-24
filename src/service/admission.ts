@@ -13,7 +13,7 @@ async function admin(actorName: string | null): Promise<boolean> {
 /** 按触发自身的点名事实和话题订阅判强度；订阅状态每次现查，票可能在建票之后才挂上。 */
 export async function triggerStrength(trigger: Selectable<DB['trigger']>): Promise<TriggerStrength> {
   const subscribed = (await db.ticketThread.listTicketIds(trigger.threadId)).length > 0
-  return triggerStrengthOf({ mentioned: Boolean(trigger.mentioned), subscribed, admin: await admin(trigger.actorName) })
+  return triggerStrengthOf({ human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned), subscribed, admin: await admin(trigger.actorName) })
 }
 
 /** 建票闸用：指定 triggerId 时按那条触发判，否则取这些话题里最新的一条人类触发。 */

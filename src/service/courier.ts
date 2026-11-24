@@ -99,6 +99,8 @@ export const courier = defineService({
   async ingest(port: IngestPort, thread: ThreadRow, row: ChannelRow, kind: 'open' | 'comment' | 'close', baseline: string, sourceKind: string): Promise<void> {
     const bots = await port.bots()
     const actorName = port.actor(row)
+    // bots() 就是我们在该渠道的登录账号；只有它发的消息不产生触发，第三方 bot 只是上下文。
+    const self = actorName !== '' && bots.some(bot => bot.name.toLowerCase() === actorName.toLowerCase())
     const human = port.human(row, bots)
     const body = port.body(row)
     const mentioned = port.mentioned(body, bots)
@@ -109,7 +111,7 @@ export const courier = defineService({
     const historical = port.createdAt(row) < baseline
     const { administrators, inferred } = await setting.load()
     const admin = administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
-    const admission = { human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, ignored: thread.triage === 'ignored', inferred }
+    const admission = { self, human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, ignored: thread.triage === 'ignored', inferred }
     if (!channelTriggerStrength(admission)) {
       // 白名单为空或没加这个人时，@bot 会被静默丢弃；这种「点名了却没反应」必须留痕。
       if (mentioned && channelTriggerRejection(admission) === 'not_administrator') {
@@ -134,7 +136,9 @@ export const courier = defineService({
         }
         continue
       }
-      await port.onSubscribedTicket?.(ticket)
+      // 机器人消息只作上下文：重新开工必须是人说的，不能让 bot / CI 借订阅把票从 review 拉回队列。
+      if (human)
+        await port.onSubscribedTicket?.(ticket)
       const target = courier.route(thread, ticket)
       targets.set(target.key, target)
     }
