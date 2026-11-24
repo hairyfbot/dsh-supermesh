@@ -161,8 +161,8 @@ export const reply_channel = defineTool({
     // 一条话题上同一次事件只由一个人发声。
     // 「读过没有」只能证明它看过上下文，挡不住三个角色各自看过后各说一遍 ——
     // 真正的判据是这条话题上已经有谁就同一个 trigger 说过话。
-    const said = await db.inbox.listByThread(thread.id)
-    if (said.some(message => message.triggerId === trigger.id && message.origin !== identity.role))
+    // 提问不算占位：escalate 出去的提问还在等人回答，后面的交付结论必须能发出来。
+    if (await db.inbox.repliedByOther(thread.id, trigger.id, identity.role))
       return JSON.stringify({ status: 'suppressed', reason: 'another_role_already_replied' })
     // 没 @ bot、也不是已订阅话题上的跟进：这条消息不是在跟 bot 说话，发言就是自作主张。
     const subscribed = (await db.ticketThread.listTicketIds(thread.id)).length > 0
