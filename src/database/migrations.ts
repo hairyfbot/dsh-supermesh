@@ -340,6 +340,15 @@ export const migrations: Record<string, string> = {
     PRAGMA defer_foreign_keys=OFF;
   `,
 
+  '20261124160208_answer_relayed_at': `
+    -- AlterTable
+    ALTER TABLE "inbox" ADD COLUMN "answerRelayedAt" TEXT;
+
+    -- 已经答过、也早已被消费的历史答案不算待投递：不补这一列，升级后第一轮就会把它们
+    -- 当成新答案重新播报一遍。
+    UPDATE "inbox" SET "answerRelayedAt" = COALESCE("answeredAt", "doneAt", "createdAt") WHERE "answer" IS NOT NULL;
+  `,
+
   '20261124230000_ticket_stage': `
     -- 票的阶段与官方对齐：waiting 拆成 queued（还没派工）与 idle（跑过一轮、等新触发）。
     -- 有 Worker 记录说明已经派过工，其余是还没派工的新票。

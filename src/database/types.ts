@@ -266,6 +266,13 @@ export type Inbox = {
     answeredBy: InboxAnsweredBy | null;
     answeredAt: string | null;
     /**
+     * 答案真正交出去的时刻：送进 Worker 会话，或改投给项目编排。
+     *
+     * 为空表示这条答案还没交出去。投递队列只扫这一列 —— 没有它，每次重启或每次调整
+     * 改投判据都会把已经消费过的历史答案重新播报一遍。
+     */
+    answerRelayedAt: string | null;
+    /**
      * 这条消息是由哪条触发 / 哪个话题 / 哪个任务 / 哪个 Worker 冒出来的，都可能为空。
      * 代理靠它决定「要不要去看那条触发 / 那个任务的上下文」，而不是靠猜正文。
      *

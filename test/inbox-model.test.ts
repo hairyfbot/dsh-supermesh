@@ -68,6 +68,23 @@ describe('已答的 ask 收尾', () => {
     expect(await inbox.findById(`supermesh:answer:${ask.id}`)).toMatchObject({ type: 'project', origin: 'channel', kind: 'notice', message: '可以', projectId: 'p1' })
   })
 
+  it('交出去的答案不再回到待投递列表', async () => {
+    const id = await askedWorker()
+    await inbox.answer(id, '要', 'project', '2025-01-01T00:00:01.000Z')
+    await inbox.finishAnswer(id, '2025-01-01T00:00:02.000Z')
+    expect(await inbox.listAnswered()).toEqual([])
+  })
+
+  it('改投之后不再重复改投', async () => {
+    const id = await askedWorker()
+    await inbox.answer(id, '要', 'project', '2025-01-01T00:00:01.000Z')
+    await inbox.relayAnswer(id, '会话已归档，答案没能送到它手里', '2025-01-01T00:00:02.000Z')
+    expect(await inbox.listAnswered()).toEqual([])
+    await inbox.relayAnswer(id, '会话已归档，答案没能送到它手里', '2025-01-01T00:00:03.000Z')
+    expect(await inbox.listAnswered()).toEqual([])
+    expect((await inbox.findById(id))?.answerRelayedAt).toBe('2025-01-01T00:00:02.000Z')
+  })
+
   it('没有项目的答案改投主编排', async () => {
     const ask = await inbox.enqueueAsk({ type: 'main', origin: 'supervisor', message: '这条要发吗？' })
     await inbox.answer(ask.id, '发', 'user', '2025-01-01T00:00:01.000Z')

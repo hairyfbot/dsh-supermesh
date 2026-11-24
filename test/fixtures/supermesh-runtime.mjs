@@ -860,6 +860,7 @@ const cases = {
     assert.equal(notice?.type, 'project', '派工失败必须通知项目编排')
     assert.equal(notice.message.includes(ticket.prepareError), true, '通知里必须带上失败原因')
   },
+  /** 会话已经归档、答案再也送不回去：改投项目编排，并说明退回原因。 */
   async answerRelay() {
     const p = await project('relay-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
@@ -871,11 +872,89 @@ const cases = {
     await db.inbox.answerScoped(ask.id, '按 A 方案做', { type: 'main' }, now)
     await inbox.deliverAnswers()
     const relay = await db.inbox.findById(`supermesh:answer-relay:${ask.id}`)
-    assert.equal(relay?.type, 'project', 'an answer that cannot reach the ended worker must be relayed to the project orchestrator')
+    assert.equal(relay?.type, 'project', 'an answer that cannot reach the archived worker must be relayed to the project orchestrator')
     assert.equal(relay?.projectId, p.id)
     assert.equal(relay?.ticketId, ticketId)
     assert.match(relay.message, /按 A 方案做/)
-    assert.equal((await db.inbox.findById(ask.id)).deliveryError, null, 'the answered ask must not keep retrying toward the ended worker')
+    assert.match(relay.message, /归档/, 'the relay must say why the answer could not be delivered')
+    assert.equal((await db.inbox.findById(ask.id)).deliveryError, null, 'the answered ask must not keep retrying toward the archived worker')
+    assert.notEqual((await db.inbox.findById(ask.id)).answerRelayedAt, null, 'a relayed answer must be marked so it is never replayed')
+    await inbox.deliverAnswers()
+    assert.equal((await db.inbox.listAnswered()).length, 0, 'an already relayed answer must not be queued again on the next pass')
+  },
+  /**
+   * Worker 等答案时这一轮已经结束，但会话还在：答案必须把它重新拉起来送回去，
+   * 而不是当成「已结束」丢掉或改投编排。
+   */
+  async answerResume() {
+    const p = await project('answer-resume-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const ticketId = 'answer-resume-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '答案叫醒 Worker', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const worker = await db.worker.queue(ticketId, p.id)
+    await session.create('worker', { sessionId: worker.id, ticketId, projectId: p.id, directory: p.directory })
+    await db.worker.start(worker.id, now)
+    await db.ticket.start(ticketId, now, now)
+    await session.send(worker.id, `${ticketId}: 执行这张票`, 'queue', 'answer-resume:prompt')
+    await settle()
+    // Worker 提问后这一轮结束：记录 ended，票退回 waiting，会话仍在。
+    const ask = await db.inbox.enqueueAsk({ type: 'project', origin: 'worker', projectId: p.id, ticketId, workerId: worker.id, message: '按哪个方案做？' })
+    await db.worker.end(worker.id, 'completed', now)
+    await db.ticket.update(ticketId, { status: 'waiting', updatedAt: now })
+    await db.inbox.answerScoped(ask.id, '按 A 方案', { type: 'project', projectId: p.id }, now)
+    await inbox.deliverAnswers()
+    await settle()
+    const history = await session.history(worker.id)
+    const texts = history.events.flatMap(event => event.type === 'user/message'
+      ? [event.data]
+      : event.type === 'agent/inbox/spliced' ? event.data.inserted : [])
+      .flatMap(message => message.content.flatMap(part => part.type === 'text' ? [part.text] : []))
+    assert.equal(texts.some(text => text.includes(`[Answer ${ask.id}] 按 A 方案`)), true, 'the answer must reach the ended but live worker session')
+    assert.equal(await db.inbox.findById(`supermesh:answer-relay:${ask.id}`), undefined, 'a live worker session must not fall back to relaying')
+    assert.notEqual((await db.inbox.findById(ask.id)).answerRelayedAt, null, 'a delivered answer must be marked so it is never replayed')
+    await inbox.deliverAnswers()
+    assert.equal((await db.inbox.listAnswered()).length, 0, 'a delivered answer must not be queued again on the next pass')
+  },
+  /** 对外回复彻底送不出去时，必须让编排知道「这条没送到」，而不是只在行上留个错误码。 */
+  async replyFailure() {
+    const { setting } = await import('@/service/setting.ts')
+    const { courier } = await import('@/service/courier.ts')
+    const { ChannelError } = await import('@/channel/_shared/error.ts')
+    await setting.save({ deliveryMaxAttempts: 1 })
+    const p = await project('reply-failure-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 1, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const threadId = 'github:reply-failure:1'
+    await db.thread.record({ id: threadId, channelId: 'github', refId: 'reply-failure:1', kind: 'issue', title: 'Reply failure', url: 'https://github.com/example/reply-failure/issues/1', createdAt: now, updatedAt: now, projectId: p.id, triage: 'claimed', triagedAt: now })
+    const triggerId = `${threadId}:comment:1`
+    await db.trigger.ingest({ id: triggerId, channelId: 'github', threadId, kind: 'comment', actorName: 'hairyf', human: 1, mentioned: 1, text: '改一下设置页', url: 'https://github.com/example/reply-failure/issues/1#issuecomment-1', at: now, ref: null })
+    const row = await db.inbox.enqueue({ id: 'reply:1', type: 'user', origin: 'project', kind: 'notice', projectId: p.id, threadId, triggerId, message: '收到，正在把设置页的保存按钮改名' })
+    const port = {
+      channel: 'github',
+      detail: false,
+      skipReasons: [],
+      parse: async url => ({ url }),
+      projectFor: async () => p,
+      probe: async () => {
+        throw new ChannelError('forbidden')
+      },
+      scope: () => 'example/reply-failure',
+      comments: async () => [],
+      post: async () => {
+        throw new Error('a forbidden probe must not post')
+      },
+      authorId: () => '1',
+      body: () => '',
+      commentUrl: () => '',
+    }
+    const result = await courier.publish(port, row.id)
+    assert.equal(result.ok, false)
+    assert.equal((await db.inbox.findById(row.id)).status, 'stalled', 'a reply that cannot be delivered must end up stalled')
+    const notice = await db.inbox.findById(`supermesh:reply-failed:${row.id}`)
+    assert.equal(notice?.type, 'project', 'a reply that never reaches the channel must tell the orchestrator')
+    assert.equal(notice?.projectId, p.id)
+    assert.equal(notice?.kind, 'notice')
+    assert.match(notice.message, /收到，正在把设置页的保存按钮改名/, 'the notice must carry the reply that was lost')
+    assert.match(notice.message, /forbidden/, 'the notice must carry the failure reason')
   },
   async workerSettlement() {
     const p = await project('settlement-project')

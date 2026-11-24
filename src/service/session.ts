@@ -213,12 +213,10 @@ export const session = defineService({
       if (stopped)
         throw new Error('runtime_stopping')
       const identity = await session.resolve(id)
-      if (!identity) {
-        const worker = await db.worker.findById(id)
-        throw new Error(worker ? worker.status === 'ended' ? 'worker_ended' : 'worker_not_live_or_archived' : 'unknown_session')
-      }
-      if (identity.workerId && (await db.worker.findById(id))?.status === 'ended')
-        throw new Error('worker_ended')
+      // worker.status === 'ended' 只是「这一轮跑完了」，会话还在就还能续：把它当成不可投递
+      // 会让答案、追问在 Worker 结束后全部丢失。真正投不出去的是会话已归档（resolve 不到）。
+      if (!identity)
+        throw new Error(await db.worker.findById(id) ? 'worker_session_unavailable' : 'unknown_session')
       const ctx = getServerContext<Context>(server)
       if (mode === 'interrupt')
         await session.cancel(id, true)

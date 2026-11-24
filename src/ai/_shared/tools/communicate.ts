@@ -4,7 +4,7 @@ import { session } from '@/service/session'
 
 export const answer = defineTool({
   name: 'answer',
-  description: '回答下面升上来的 ask：填 answer，标 status=done，答案送回发起方。',
+  description: '回答下面升上来的 ask：填 answer，标 status=done，答案由投递队列送回发起方。Worker 这一轮已结束也会被重新拉起；会话已归档才改投项目编排。',
   parameters: {
     askId: {
       type: 'string',
@@ -18,7 +18,7 @@ export const answer = defineTool({
     },
   },
   output: {
-    schema: { type: 'string', description: '是否已回送。' },
+    schema: { type: 'string', description: '答案 id、状态与投递去向。' },
     render: (_args, value) => [{ type: 'text', text: value }],
   },
   execute: async (args, exec) => {
@@ -30,16 +30,9 @@ export const answer = defineTool({
     const scope = identity.role === 'project' && identity.projectId ? { type: 'project' as const, projectId: identity.projectId } : identity.role === 'supervisor' && identity.supervisorId ? { type: 'supervisor' as const, supervisorId: identity.supervisorId } : identity.role === 'main' ? { type: 'main' as const } : null
     if (!scope)
       throw new Error('会话身份不完整')
-    const question = await db.inbox.findById(args.askId)
-    if (question?.origin === 'worker') {
-      if (!question.workerId || !(await session.lookup(question.workerId)))
-        throw new Error('Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接回答')
-      if ((await db.worker.findById(question.workerId))?.status === 'ended')
-        throw new Error('Worker 已结束')
-    }
-    const row = await db.inbox.answerScoped(args.askId, args.text, scope, new Date().toISOString())
-    if (row.origin === 'worker' && row.workerId)
-      await session.send(row.workerId, `[Answer ${row.id}] ${args.text}`, 'reply', `supermesh:answer:${row.id}`)
-    return JSON.stringify({ id: args.askId, status: 'done', delivery: row.origin === 'worker' ? 'direct' : 'queued' })
+    // 答案先落库，投递交给 inbox.deliverAnswers 统一处理：Worker 这一轮结束了就把它重新
+    // 拉起来，会话已归档才改投项目编排。这里直接拒绝或直接 send 都会让答案凭空消失。
+    await db.inbox.answerScoped(args.askId, args.text, scope, new Date().toISOString())
+    return JSON.stringify({ id: args.askId, status: 'done', delivery: 'queued' })
   },
 })

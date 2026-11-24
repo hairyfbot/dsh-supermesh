@@ -80,6 +80,7 @@ describe('supermesh services composed with the installed official runtime', () =
     ['invalidMail', 'disabled projects are skipped and an invalid mail does not prevent valid delivery'],
     ['channelIsolation', 'a stalled channel mail does not block internal mail for the same recipient'],
     ['workerEnd', 'a ticket that reached a terminal state ends the worker that was still running'],
+    ['replyFailure', 'a reply that never reaches the channel stalls and tells the orchestrator instead of failing silently'],
     ['workerSettlement', 'a finished worker wakes the project orchestrator with a compact mail notice instead of pasting its closing text'],
     ['workerReadySettlement', 'a ready report completes a ticket without a pull request and leaves one with a pull request in review'],
     ['answerNotice', 'an answer for the project orchestrator lands in its mailbox and wakes it with a compact notice'],
@@ -94,7 +95,8 @@ describe('supermesh services composed with the installed official runtime', () =
     ['workerDispatchNotice', 'a dispatchable ticket only notifies the project orchestrator once instead of creating a worker itself'],
     ['workerDispatchWorktree', 'a dispatch without a worktree creates one instead of running in the project clone'],
     ['workerDispatchFailure', 'a dispatch that cannot create a worktree fails loudly instead of falling back to the project directory'],
-    ['answerRelay', 'an answer for an ended worker is relayed to the project orchestrator instead of stalling'],
+    ['answerRelay', 'an answer for an archived worker is relayed to the project orchestrator with the reason and never replayed'],
+    ['answerResume', 'an answer for an ended but live worker resumes it and reaches its session instead of being dropped'],
     ['roleMarker', 'only the four role sessions receive the bot identity marker'],
     ['sendDelivery', 'running sessions steer at the next step while idle sessions and explicit queues open a new turn'],
   ])('%s: %s', async (name) => {

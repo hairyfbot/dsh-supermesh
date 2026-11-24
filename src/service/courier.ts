@@ -263,14 +263,14 @@ export const courier = defineService({
       catch (error) {
         const reason = courier.failure(error, port.detail)
         if (posting && !['rate_limited', 'forbidden', 'not_found', 'not_logged_in', 'remote_rejected'].includes(reason)) {
-          await db.inbox.markStalled(row.id, 'transport_unknown')
+          await courier.stall(row, 'transport_unknown')
         }
         else if (!['human_paused', 'project_disabled', 'channel_disabled', 'retry_pending', ...port.skipReasons].includes(reason)) {
           row = (await db.inbox.findById(row.id))!
           const settings = await setting.load()
           const attempts = row.deliveryAttempts + (posting ? 0 : 1)
           if (attempts >= settings.deliveryMaxAttempts) {
-            await db.inbox.markStalled(row.id, reason)
+            await courier.stall(row, reason)
           }
           else {
             const seconds = courier.retryDelay(error, attempts, settings.deliveryRetryCeilingSeconds)
@@ -302,6 +302,30 @@ export const courier = defineService({
           publishing.delete(key)
       }
     })
+  },
+  /**
+   * 一条对外回复彻底送不出去：标成 stalled，并告诉它的编排。
+   *
+   * 失败信号只留在行上（deliveryError / status）时，编排看不到 —— 工具早就回过 queued，
+   * 人却一直等一条永远不来的评论。改投一条邮件，让编排知道这条没送到。
+   */
+  async stall(row: InboxRow, reason: string): Promise<void> {
+    await db.inbox.markStalled(row.id, reason)
+    if (row.type !== 'user')
+      return
+    await db.inbox.enqueue({
+      id: `supermesh:reply-failed:${row.id}`,
+      type: row.projectId ? 'project' : 'main',
+      projectId: row.projectId,
+      supervisorId: row.supervisorId,
+      origin: 'system',
+      kind: 'notice',
+      ticketId: row.ticketId,
+      threadId: row.threadId,
+      triggerId: row.triggerId,
+      title: '回复没有送达',
+      message: `这条回复没能发到渠道（${reason}）：${row.message}`,
+    }).catch(() => undefined)
   },
   async flush<Resource>(port: DeliveryPort<Resource>, signal?: AbortSignal): Promise<({ id: string } & DeliveryResult)[]> {
     signal?.throwIfAborted()

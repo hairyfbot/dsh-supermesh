@@ -103,7 +103,7 @@ export class Inbox extends Model<DB, 'inbox'> {
   async finishAnswer(id: string, doneAt: string): Promise<void> {
     await this.db
       .updateTable('inbox')
-      .set({ status: 'done', doneAt, deliveryAttempts: 0, deliveryError: null, nextRetryAt: null })
+      .set({ status: 'done', doneAt, answerRelayedAt: doneAt, deliveryAttempts: 0, deliveryError: null, nextRetryAt: null })
       .where('id', '=', id)
       .execute()
   }
@@ -111,7 +111,7 @@ export class Inbox extends Model<DB, 'inbox'> {
   async settleAnswer(id: string, doneAt: string): Promise<void> {
     await this.db
       .updateTable('inbox')
-      .set({ status: 'done', doneAt, nextRetryAt: null })
+      .set({ status: 'done', doneAt, answerRelayedAt: doneAt, nextRetryAt: null })
       .where('id', '=', id)
       .execute()
   }
@@ -282,15 +282,22 @@ export class Inbox extends Model<DB, 'inbox'> {
     await this.enqueue({ id: `supermesh:answer:${row.id}`, type: row.origin, origin, kind: 'notice', title: row.title, message: row.answer, projectId: row.projectId, supervisorId: row.supervisorId, ticketId: row.ticketId, workerId: row.workerId, threadId: row.threadId, triggerId: row.triggerId })
   }
 
+  /**
+   * 还没交出去的答案。
+   *
+   * 判据是 `answerRelayedAt` 为空，不是「有没有 answer」：答案一写下就已经 done，
+   * 按 answer 扫会把历史上所有答过的 ask 每一轮都捞出来重投一遍。
+   */
   async listAnswered(): Promise<Selectable<DB['inbox']>[]> {
-    return this.db.selectFrom('inbox').selectAll().where('kind', '=', 'ask').where('answer', 'is not', null).where('status', 'in', ['done', 'stalled']).orderBy('seq').execute()
+    return this.db.selectFrom('inbox').selectAll().where('kind', '=', 'ask').where('answer', 'is not', null).where('answerRelayedAt', 'is', null).where('status', 'in', ['done', 'stalled']).orderBy('seq').execute()
   }
 
   async relayAnswer(id: string, reason: string, doneAt: string): Promise<void> {
     await this.db.transaction().execute(async (trx) => {
       const model = new Inbox(trx)
       const row = await model.findById(id)
-      if (!row?.answer)
+      // 已经交出去过的答案不再改投：重复改投只会让编排反复看到同一条历史答案。
+      if (!row?.answer || row.answerRelayedAt)
         return
       await model.enqueue({
         id: `supermesh:answer-relay:${row.id}`,
