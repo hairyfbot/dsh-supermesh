@@ -73,10 +73,8 @@ const finish = singlet(
     const ended = await db.ticket.findById(worker.ticketId)
     // 只有票真正终结才归档会话。票还在 review / waiting 时，后续的 review 意见要复用这个 worker，
     // 会话一旦归档，resolve 就返回 null，下一轮会直接以 unknown_session 失败。
-    if (ended && (ended.status === 'done' || ended.status === 'cancelled')) {
+    if (ended && (ended.status === 'done' || ended.status === 'cancelled'))
       await archiveEndedWorkers(ended.id)
-      await releaseDependents(ended.id)
-    }
     await notifyRouter(worker, reason)
   },
 )
@@ -117,7 +115,6 @@ export const worker = defineService({
         const now = new Date().toISOString()
         await db.worker.end(worker.id, 'stopped', now)
         await finishTicket(ticket.id, 'done', now, now)
-        await releaseDependents(ticket.id)
         continue
       }
       const activity = await session.activity(worker.id).catch(() => null)
@@ -135,46 +132,19 @@ export const worker = defineService({
       await db.worker.end(worker.id, worker.reportState === 'ready' ? 'completed' : 'stopped', now)
       await db.ticket.update(ticket.id, { status: worker.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
     }
+    // 内部调度不建会话：可派工的 waiting 票只通知项目编排一次，派工由它的 create_worker 发起。
+    // 被依赖卡住的票留在 waiting 不发通知，依赖满足的那一刻才发。
     for (const waiting of await db.ticket.listFiltered({ status: 'waiting' })) {
       if (stopped)
         break
-      if (waiting.paused || waiting.prepareError)
-        continue
-      if (await blockedByDependency(waiting.id))
-        continue
-      const links = await db.ticketLink.listDependsOn(waiting.id)
-      if (!links.length)
-        continue
-      if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
-        continue
-      await db.ticket.update(waiting.id, { status: 'queued', updatedAt: new Date().toISOString() })
-      await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
+      await notifyDispatchable(waiting)
     }
     let running = (await db.worker.listRunning()).length
-    // flow.md：`running --> waiting : Worker 结束需重开`。`waiting` 没有依赖时同样要能被派工，
-    // 否则一旦编排把票置回 waiting，它就再也不会被拾起（MR 开着也不会继续改）。
-    // 按 id 去重：`listQueued()` 与下面新排队的 worker 会重叠，同一个 worker 派两次会重复投递 prompt。
+    // 只有显式排队的 Worker 会被派工：create_worker / retry_ticket / 渠道上的新事实。
+    // 按 id 去重，同一个 worker 派两次会重复投递 prompt。
     const queueable = new Map<string, Selectable<DB['worker']>>()
     for (const worker of await db.worker.listQueued())
       queueable.set(worker.id, worker)
-    for (const waiting of await db.ticket.listFiltered({ status: 'waiting' })) {
-      if (waiting.paused || waiting.prepareError)
-        continue
-      if (waiting.prState === 'merged' || waiting.prState === 'closed')
-        continue
-      // 被依赖的票没到终态时必须留在 waiting：这一步会直接把票改成 queued，
-      // 不挡就会绕过 depends 约束，出现「前置还没做完，后继已经开工」。
-      if (await blockedByDependency(waiting.id))
-        continue
-      if ((await db.worker.listByTicket(waiting.id)).some(worker => worker.status !== 'ended'))
-        continue
-      // 同 rescue：派过工的票不自动重开，避免 waiting/running 死循环。
-      if ((await db.worker.listByTicket(waiting.id)).length)
-        continue
-      const queued = await db.worker.queue(waiting.id, waiting.projectId).catch(() => undefined)
-      if (queued)
-        queueable.set(queued.id, queued)
-    }
     for (const worker of queueable.values()) {
       if (stopped || running >= settings.maxWorkers)
         break
@@ -191,7 +161,6 @@ export const worker = defineService({
         const now = new Date().toISOString()
         await db.worker.end(worker.id, 'stopped', now)
         await finishTicket(ticket.id, 'done', now, now)
-        await releaseDependents(ticket.id)
         continue
       }
       if (ticket.paused)
@@ -209,33 +178,29 @@ export const worker = defineService({
         continue
       let started = false
       try {
-        let directory = worker.worktree
+        let directory = worker.worktree && worker.branch ? worker.worktree : null
+        // 记录下来的工作树可能已经被回收（会话归档时会清掉干净的 checkout）：核对不过就当它不存在，
+        // 补建一个新的，而不是让这张票永远卡在同一个失败上。
+        if (directory && worker.branch)
+          await worktree.verify(project.directory, directory, worker.branch).catch(() => { directory = null })
         // 复用判据必须与 activate 一致：归档后的会话仍有 history，但 resolve 返回 null，
         // 复用它只会在激活时 unknown_session，票就永远卡在 queued。
         const existing = await session.resolve(worker.id).then(Boolean).catch(() => false)
-        if (existing) {
-          if (directory && worker.branch)
-            await worktree.verify(project.directory, directory, worker.branch)
-          directory = directory ?? project.directory
-          // 复用同一 worker 时上一轮会话已 end-seed；prompt 的契约是「先显式恢复会话再投递」，
-          // 不在这里恢复，后面的 send 只会进空气，Worker 永远收不到这一轮的 prompt。
-          await session.activate(worker.id)
-        }
-        else {
-          await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: project.directory })
+        if (!existing) {
+          // 已有工作树就直接起在里面；没有就先落在项目目录，紧接着由 worktree.create 迁进去。
+          await session.create('worker', { sessionId: worker.id, ticketId: ticket.id, projectId: project.id, directory: directory ?? project.directory })
           if (stopped)
             throw new Error('worker_stopped')
-          if (directory && worker.branch) {
-            await worktree.verify(project.directory, directory, worker.branch)
-          }
-          else {
-            const created = await worktree.create(await session.activate(worker.id), worker.branch ?? worktreeBranch(ticket.title, ticket.id))
-            directory = created.worktree
-            await db.worker.update(worker.id, { branch: created.branch, worktree: directory })
-          }
         }
-        if (!directory)
-          throw new Error('worker_directory_required')
+        // 复用同一 worker 时上一轮会话已 end-seed；prompt 的契约是「先显式恢复会话再投递」，
+        // 不在这里恢复，后面的 send 只会进空气，Worker 永远收不到这一轮的 prompt。
+        const agent = await session.activate(worker.id)
+        if (!directory) {
+          // 没有工作树就补建：绝不退回项目主 clone，一票一树的隔离不能靠降级实现。
+          const created = await worktree.create(agent, worker.branch ?? worktreeBranch(ticket.title, ticket.id))
+          directory = created.worktree
+          await db.worker.update(worker.id, { branch: created.branch, worktree: directory })
+        }
         if (stopped)
           throw new Error('worker_stopped')
         const threads = await db.ticketThread.listByTicket(ticket.id)
@@ -252,33 +217,35 @@ export const worker = defineService({
         // requestId 必须每次派工唯一：会话控制器按 rpcId 去重（hasPromptRequest），
         // 固定 id 会让重派工被静默吞掉，worker 置 running 却收不到任何 prompt。
         await session.send(worker.id, prompt, 'queue', `supermesh:worker:${worker.id}:${randomUUID()}`)
-        await db.ticket.setPrepareError(ticket.id, null, now)
       }
       catch (error) {
         const reason = error instanceof Error ? error.message : String(error)
+        const now = new Date().toISOString()
         // 会话相关的失败（已归档 / id 被占）只有换新 worker 记录才能恢复：
         // 老 id 的会话归档后既激活不了、也建不了同 id，继续复用只会一直失败。
         if (reason === 'unknown_session' || reason === 'session_identity_conflict') {
-          await db.worker.end(worker.id, 'stopped', new Date().toISOString())
+          await db.worker.end(worker.id, 'stopped', now)
           await db.worker.queue(ticket.id, ticket.projectId, worker.branch ?? undefined, true).catch(() => undefined)
-          await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
           if (stopped)
             break
           continue
         }
-        await db.ticket.setPrepareError(ticket.id, reason, new Date().toISOString())
-        if (stopped)
-          break
         if (started) {
           await session.stop(worker.id)
-          await db.worker.end(worker.id, 'failed', new Date().toISOString())
-          const latest = await db.ticket.findById(ticket.id)
-          if (latest && latest.prState === 'merged' && latest.status !== 'done')
-            await finishTicket(latest.id, 'done', new Date().toISOString(), new Date().toISOString())
-          else if (!latest || (latest.status !== 'done' && latest.status !== 'cancelled'))
-            await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
           running--
         }
+        // 派工没成：结束这条 worker 记录，票退回 queued 并留下原因。不自动重试 ——
+        // 每轮扫描重撞同一个失败只会刷屏，原因留在票面上，由编排 create_worker 显式重派。
+        await db.worker.end(worker.id, 'failed', now)
+        await db.ticket.setPrepareError(ticket.id, reason, now)
+        const latest = await db.ticket.findById(ticket.id)
+        if (latest && latest.prState === 'merged' && latest.status !== 'done')
+          await finishTicket(latest.id, 'done', now, now)
+        else if (latest && latest.status !== 'done' && latest.status !== 'cancelled')
+          await db.ticket.update(ticket.id, { status: 'queued', updatedAt: now })
+        await notifyDispatchFailure(ticket.id, reason, now)
+        if (stopped)
+          break
       }
     }
   }),
@@ -312,32 +279,15 @@ export const worker = defineService({
       }
     },
   ),
+  /** 事实结单的兜底：改动请求已经合并 / 关闭的票不再需要 Worker，直接收掉。 */
   rescue: singlet('worker:rescue', async () => {
     for (const ticket of await db.ticket.listOpen()) {
       if (stopped)
         break
-      if (ticket.status !== 'waiting')
+      if (ticket.status !== 'waiting' || (ticket.prState !== 'merged' && ticket.prState !== 'closed'))
         continue
-      if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
-        continue
-      // 派过工的票不自动重开：worker 结束后回 waiting 是等新事实（评论、retry_ticket、编排 send），
-      // 拿同一份 prompt 反复重派只会让票在 waiting/running 之间无限循环。
-      if ((await db.worker.listByTicket(ticket.id)).length)
-        continue
-      const project = await db.project.findById(ticket.projectId)
-      if (!project?.enabled)
-        continue
-      if (ticket.prState === 'merged' || ticket.prState === 'closed') {
-        const now = new Date().toISOString()
-        await finishTicket(ticket.id, 'done', now, now)
-        await releaseDependents(ticket.id)
-        continue
-      }
-      if (ticket.paused)
-        continue
-      if (ticket.prepareError)
-        await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
-      await db.worker.queue(ticket.id, ticket.projectId)
+      const now = new Date().toISOString()
+      await finishTicket(ticket.id, 'done', now, now)
     }
   }),
   recover: singlet('worker:recovery', async () => {
@@ -362,7 +312,6 @@ export const worker = defineService({
         if (ticket.prState === 'merged') {
           await db.worker.end(worker.id, 'stopped', new Date().toISOString())
           await finishTicket(ticket.id, 'done', new Date().toISOString(), new Date().toISOString())
-          await releaseDependents(ticket.id)
           continue
         }
         if (!project) {
@@ -489,18 +438,53 @@ async function notifySupervisor(ticketId: string): Promise<void> {
   }
 }
 
-async function releaseDependents(relatedId: string): Promise<void> {
-  for (const link of await db.ticketLink.listDependents(relatedId)) {
-    const ticket = await db.ticket.findById(link.ticketId)
-    if (!ticket || ticket.status !== 'waiting' || ticket.paused)
-      continue
-    if (await blockedByDependency(ticket.id))
-      continue
-    if ((await db.worker.listByTicket(ticket.id)).some(worker => worker.status !== 'ended'))
-      continue
-    await db.ticket.update(ticket.id, { status: 'queued', updatedAt: new Date().toISOString() })
-    await db.worker.queue(ticket.id, ticket.projectId).catch(() => undefined)
-  }
+/**
+ * 票可以派工时通知项目编排一次。派工不由内部调度发起：分支和工作树由编排的 create_worker 决定，
+ * 插件只负责告诉它「这张票现在能开工了」。通知 id 固定，重复扫描不会重复投递；
+ * 被依赖卡住的票不发，依赖满足的那一刻才发。
+ */
+async function notifyDispatchable(ticket: Selectable<DB['ticket']>): Promise<void> {
+  if (ticket.paused || ticket.prepareError)
+    return
+  if (ticket.prState === 'merged' || ticket.prState === 'closed')
+    return
+  if (await db.inbox.findById(`supermesh:dispatch:${ticket.id}`))
+    return
+  if (await blockedByDependency(ticket.id))
+    return
+  // 派过工的票不自动重开：worker 结束后回 waiting 是等新事实（评论、retry_ticket、编排 send）。
+  if ((await db.worker.listByTicket(ticket.id)).length)
+    return
+  const project = await db.project.findById(ticket.projectId)
+  if (!project?.enabled)
+    return
+  await db.inbox.enqueue({
+    id: `supermesh:dispatch:${ticket.id}`,
+    type: 'project',
+    projectId: project.id,
+    origin: 'system',
+    kind: 'ticket',
+    ticketId: ticket.id,
+    title: ticket.title,
+    message: `${ticket.id} 可以派工：没有未完成的前置依赖。用 create_worker 指定分支后开工。`,
+  }).catch(() => undefined)
+}
+
+/** 派工失败必须让编排看见原因：票退回 queued 后不会自动重试，只能由它显式重派。 */
+async function notifyDispatchFailure(ticketId: string, reason: string, at: string): Promise<void> {
+  const ticket = await db.ticket.findById(ticketId)
+  if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+    return
+  await db.inbox.enqueue({
+    id: `supermesh:dispatch-failed:${ticket.id}:${at}`,
+    type: 'project',
+    projectId: ticket.projectId,
+    origin: 'system',
+    kind: 'notice',
+    ticketId: ticket.id,
+    title: ticket.title,
+    message: `${ticket.id} 派工失败：${reason}。票已退回 queued，没有工作树就不会开工；用 create_worker 重新派工。`,
+  }).catch(() => undefined)
 }
 
 async function deferWhileWaiting(current: Selectable<DB['worker']>): Promise<void> {

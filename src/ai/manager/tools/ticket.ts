@@ -151,7 +151,6 @@ export const retry_ticket = defineTool({
     const worker = await db.worker.queue(ticket.id, identity.projectId, old.branch ?? undefined)
     if (old.branch && old.worktree)
       await db.worker.update(worker.id, { branch: old.branch, worktree: old.worktree })
-    await db.ticket.setPrepareError(ticket.id, null, new Date().toISOString())
     await workerService.reconcile()
     return JSON.stringify(await db.worker.findById(worker.id))
   },
