@@ -91,6 +91,9 @@ export const attach_thread_to_ticket = defineTool({
       return JSON.stringify({ linked: true, existing: true })
     if (!await db.ticketThread.link(ticket.id, thread.id, new Date().toISOString()))
       return JSON.stringify({ linked: true, existing: true })
+    // 采集侧只按票上记下的 prUrl 认领 PR：手工挂上的 PR 话题不写这一列，prState 永远采不到。
+    if (thread.kind === 'pull' && thread.url && !ticket.prUrl)
+      await db.ticket.save(ticket.id, { prUrl: thread.url })
     await db.inbox.enqueue({ type: 'project', projectId: ticket.projectId, origin: 'main', kind: 'ticket', ticketId: ticket.id, threadId: thread.id, message: args.note ?? thread.title })
     return JSON.stringify({ linked: true })
   },
