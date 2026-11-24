@@ -10,7 +10,7 @@ import { gitlab } from '@/channel/gitlab/channel'
 import { resource as gitlabResource } from '@/channel/gitlab/service/resource'
 import { db } from '@/database'
 import { server } from '@/server'
-import { shellEvidence } from '@/service/forge.evidence'
+import { githubEvidence, shellEvidence } from '@/service/forge.evidence'
 import { session } from '@/service/session'
 import { defineService } from '@/utils/service'
 
@@ -47,7 +47,7 @@ export const forge = defineService({
         return
       reconciled.add(ticket.id)
       // 回合结束才回读日志：工具结果阶段只读已经折好的绑定，别把整份日志翻一遍。
-      await attach(ticket, await evidenceOf(source, project, ticket, event.type === 'turn/end'))
+      await attach(ticket, await evidenceOf(source, project, ticket, event.type === 'turn/end', true))
     }
     catch (error) {
       getServerContext<Context>(server).logger.warn('supermesh: forge binding failed for %s: %s', source.id, error instanceof Error ? error.message : String(error))
@@ -69,7 +69,7 @@ export const forge = defineService({
       if (!source)
         continue
       try {
-        await attach(ticket, await evidenceOf(source, project, ticket, true))
+        await attach(ticket, await evidenceOf(source, project, ticket, true, false))
       }
       catch (error) {
         getServerContext<Context>(server).logger.warn('supermesh: forge backfill failed for %s: %s', ticket.id, error instanceof Error ? error.message : String(error))
@@ -78,27 +78,37 @@ export const forge = defineService({
   },
 })
 
-async function evidenceOf(source: Session, project: Project, ticket: Ticket, settled: boolean): Promise<string[]> {
+/** 回合结束才回读整份会话日志；只有活着的会话才值得让官方按分支反查。 */
+async function evidenceOf(source: Session, project: Project, ticket: Ticket, settled: boolean, live: boolean): Promise<string[]> {
   if (ticket.channelId === 'github')
-    return githubEvidence(source, project)
+    return githubUrls(source, project, settled, live)
   if (ticket.channelId === 'gitlab' && settled)
-    return gitlabEvidence(source, project)
+    return gitlabUrls(source, project)
   return []
 }
 
 /**
  * GitHub 走官方 forge-session：绑定来自会话自己的 `gh pr create`、`gh pr view` 等
- * 命令结果，以及推送后按分支反查到的打开状态 PR。
+ * 命令结果，以及推送后按分支反查到的打开状态 PR。官方投影只认 `tool/call` 里的
+ * `bash` / `pwsh`，Worker 在程序模式下用 `run_code` 调 shell 时它看不到，
+ * 所以再叠一份会话自己的 shell 证据；官方绑定在前，仍是权威来源。
  */
-async function githubEvidence(source: Session, project: Project): Promise<string[]> {
+async function githubUrls(source: Session, project: Project, settled: boolean, live: boolean): Promise<string[]> {
   const service = getServerContext<Context>(server).forgeSession
   const repository = project.remoteUrl ? githubResource.of(project.remoteUrl) : null
   if (!service || !repository)
     return []
+  const evidence = settled ? githubEvidence((await session.history(source.id)).events, repository) : { urls: [], branches: [] }
+  // 按 git push 自己报告的分支让官方反查开放 PR，不用 Worker 建树时的分支名去猜。
+  if (live) {
+    for (const entry of evidence.branches)
+      await service.discoverBranch(source, entry.remote, entry.branch)
+  }
   // 推送发现由官方按 git push 结果自己做；这里只读它折出来的绑定，不拿分支名去猜。
-  return service.changeRequests(source)
+  const official = service.changeRequests(source)
     .map(entry => entry.url)
     .filter(url => githubRepositoryOf(url) === repository)
+  return [...new Set([...official, ...evidence.urls])]
 }
 
 function githubRepositoryOf(url: string): string | null {
@@ -114,7 +124,7 @@ function githubRepositoryOf(url: string): string | null {
  * GitLab 没有官方 provider，按同一套证据自己做：`glab mr create` 打印的地址，
  * 以及 `git push` 之后按源分支反查到的打开状态 MR。
  */
-async function gitlabEvidence(source: Session, project: Project): Promise<string[]> {
+async function gitlabUrls(source: Session, project: Project): Promise<string[]> {
   const site = await gitlab.site()
   const scope = await gitlab.scopeOf(project).catch(() => null)
   if (!scope)

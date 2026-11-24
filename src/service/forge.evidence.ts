@@ -1,4 +1,5 @@
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { resource as githubResource } from '@/channel/github/service/resource'
 
 declare module '@deepseek-ai/dsh-session' {
   interface SessionEventMap {
@@ -18,11 +19,11 @@ declare module '@deepseek-ai/dsh-session' {
 
 /** 只有这两个工具会把命令交给 shell，证据也只从它们的调用与结果里取。 */
 const SHELL_TOOLS = new Set(['bash', 'pwsh'])
-const CREATE = /\bglab\s+mr\s+(?:create|new)\b/
+const CREATE = /\b(?:glab\s+mr\s+(?:create|new)|gh\s+pr\s+create)\b/
 const PUSH = /\bgit(?:\s+(?:-[Cc]\s+\S+|--[\w-]+(?:=\S+)?))*\s+push\b/
 const TARGET = /^To (\S+)$/
 const REF = /^ [ +*=] (\[[^\]]+\]|\S+) +\S+ -> (\S+)(?: \(.*\))?$/
-const MR_URL = /\bhttps?:\/\/[^\s"'<>]+?\/merge_requests\/\d+(?![\w-])/g
+const CHANGE_REQUEST_URL = /\bhttps?:\/\/[^\s"'<>]+?\/(?:merge_requests|pull)\/\d+(?![\w-])/g
 
 export interface PushedRef {
   remote: string
@@ -30,9 +31,16 @@ export interface PushedRef {
 }
 
 export interface ShellEvidence {
-  /** `glab mr create` 打印出来的 MR 地址。 */
+  /** `glab mr create` 打印的 MR 地址与 `gh pr create` 打印的 PR 地址。 */
   urls: string[]
   /** `git push` 报告已创建或已更新的分支。 */
+  branches: PushedRef[]
+}
+
+export interface GithubEvidence {
+  /** 属于这个仓库的 PR 地址。 */
+  urls: string[]
+  /** 推到这个仓库的分支。 */
   branches: PushedRef[]
 }
 
@@ -64,14 +72,41 @@ export function pushedBranches(text: string): PushedRef[] {
   return pushed
 }
 
-/** 取命令输出里的 MR 地址，保持首次出现的顺序。 */
-export function mergeRequestUrls(text: string): string[] {
-  return [...new Set(text.match(MR_URL) ?? [])]
+/** 取命令输出里的变更请求地址，保持首次出现的顺序。 */
+export function changeRequestUrls(text: string): string[] {
+  return [...new Set(text.match(CHANGE_REQUEST_URL) ?? [])]
 }
 
 /**
- * 从会话日志里取 Worker 自己留下的开单证据：`glab mr create` 打印的地址，
- * 以及 `git push` 推上去的分支。只认工具调用本身成功的结果。
+ * 从会话日志里取属于这个仓库的 GitHub 证据：`gh pr create` 打印的 PR 地址，
+ * 以及推到这个仓库的分支。官方 forge-session 投影只认 `tool/call` 里的
+ * `bash` / `pwsh`，Worker 在程序模式下用 `run_code` 调 shell 时它一条都看不到，
+ * 所以 GitHub 与 GitLab 共用同一份 shell 证据。
+ *
+ * @param events - Worker 会话的完整事件。
+ * @param repository - 项目仓库全名，小写 `owner/name`。
+ */
+export function githubEvidence(events: readonly SessionEvent[], repository: string): GithubEvidence {
+  const evidence = shellEvidence(events)
+  return {
+    urls: evidence.urls.filter(url => pullRepositoryOf(url) === repository),
+    branches: evidence.branches.filter(entry => githubResource.of(entry.remote) === repository),
+  }
+}
+
+function pullRepositoryOf(url: string): string | null {
+  try {
+    const target = githubResource.parse(url)
+    return target.kind === 'pull' ? target.repository : null
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * 从会话日志里取 Worker 自己留下的开单证据：`glab mr create` / `gh pr create`
+ * 打印的地址，以及 `git push` 推上去的分支。只认工具调用本身成功的结果。
  *
  * 两种调用形态都要认，Worker 换模式时不能丢绑定：
  * - 标准模式：模型直接调 `pwsh` / `bash`，命令在 `tool/call` 里；
@@ -110,7 +145,7 @@ export function shellEvidence(events: readonly SessionEvent[]): ShellEvidence {
       continue
     const text = message.content.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n')
     if (evidence.urls)
-      urls.push(...mergeRequestUrls(text))
+      urls.push(...changeRequestUrls(text))
     if (evidence.pushes)
       branches.push(...pushedBranches(text))
   }

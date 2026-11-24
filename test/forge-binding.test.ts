@@ -6,11 +6,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { migrations } from '@/database/migrations'
 import { Thread } from '@/database/models/thread'
 import { Ticket } from '@/database/models/ticket'
+import { TicketThread } from '@/database/models/ticket-thread'
 
 let native: DatabaseSync
 let connection: Kysely<DB>
 let ticket: Ticket
 let thread: Thread
+let ticketThread: TicketThread
 
 beforeEach(async () => {
   native = new DatabaseSync(':memory:')
@@ -19,6 +21,7 @@ beforeEach(async () => {
   connection = new Kysely<DB>({ dialect: new NodeSqliteDialect({ database: native }) })
   ticket = new Ticket(connection)
   thread = new Thread(connection)
+  ticketThread = new TicketThread(connection)
   await connection.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 1, host: null, createdAt: '2026-01-01T00:00:00.000Z' }).execute()
   for (const id of ['p1', 'p2']) {
     await connection.insertInto('project').values({ id, name: id, workspaceId: `w-${id}`, directory: `/repo/${id}`, remoteUrl: 'https://github.com/owner/repo', enabled: 1, orchestratorSessionId: null, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }).execute()
@@ -47,5 +50,21 @@ describe('话题标题', () => {
     await thread.record({ id: 'github:owner/repo:7', channelId: 'github', refId: 'owner/repo:7', kind: 'pull', title: 'PR #7', url: 'https://github.com/owner/repo/pull/7', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-02T00:00:00.000Z', projectId: 'p1', triage: 'claimed', triagedAt: '2026-01-01T00:00:00.000Z' })
     await thread.setTitle('github:owner/repo:7', '修好日期显示')
     expect(await thread.findById('github:owner/repo:7')).toMatchObject({ title: '修好日期显示', updatedAt: '2026-01-02T00:00:00.000Z' })
+  })
+})
+
+describe('手工挂上 PR 话题', () => {
+  const at = '2026-01-02T00:00:00.000Z'
+  const url = 'https://github.com/owner/repo/pull/9'
+
+  it('票上写下 prUrl 后采集侧才按 PR 反查到它，并跟着更新 prState', async () => {
+    await thread.record({ id: 'github:owner/repo:9', channelId: 'github', refId: 'owner/repo:9', kind: 'pull', title: 'PR #9', url, createdAt: at, updatedAt: at, projectId: 'p1', triage: 'claimed', triagedAt: at })
+    await ticketThread.link('T-002', 'github:owner/repo:9', at)
+    // 只挂话题不写 prUrl 就是 #54 的现场：采集侧按 PR 反查不到这张票，prState 永远停在 null。
+    expect(await ticket.listByPullRequest('p1', url)).toEqual([])
+    await ticket.save('T-002', { prUrl: url })
+    expect((await ticket.listByPullRequest('p1', url)).map(row => row.id)).toEqual(['T-002'])
+    await ticket.setPullRequest('T-002', url, 'merged', 'passing')
+    expect(await ticket.findById('T-002')).toMatchObject({ prUrl: url, prState: 'merged', ciState: 'passing' })
   })
 })

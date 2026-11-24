@@ -1,6 +1,6 @@
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { describe, expect, it } from 'vitest'
-import { mergeRequestUrls, pushedBranches, shellEvidence } from '@/service/forge.evidence'
+import { changeRequestUrls, githubEvidence, pushedBranches, shellEvidence } from '@/service/forge.evidence'
 
 function call(callId: string, name: string, command: string): SessionEvent {
   return { type: 'tool/call', seq: 1, time: 0, data: { turn: 1, step: 1, callId, name, arguments: JSON.stringify({ command }) } } as unknown as SessionEvent
@@ -45,7 +45,7 @@ describe('pushedBranches', () => {
   })
 })
 
-describe('mergeRequestUrls', () => {
+describe('changeRequestUrls', () => {
   it('finds merge request links in either URL shape', () => {
     const output = [
       'Creating merge request for feat/foo into main in owner/repo',
@@ -53,10 +53,19 @@ describe('mergeRequestUrls', () => {
       'https://gitlab.com/owner/repo/-/merge_requests/12',
       'https://gitlab.com/owner/repo/merge_requests/13',
     ].join('\n')
-    expect(mergeRequestUrls(output)).toEqual([
+    expect(changeRequestUrls(output)).toEqual([
       'https://gitlab.com/owner/repo/-/merge_requests/12',
       'https://gitlab.com/owner/repo/merge_requests/13',
     ])
+  })
+
+  it('finds pull request links and skips the compare page a push prints', () => {
+    const output = [
+      'remote: Create a pull request for \'dsh/T-046\' on GitHub by visiting:',
+      'remote:      https://github.com/owner/repo/pull/new/dsh/T-046',
+      'https://github.com/owner/repo/pull/1635',
+    ].join('\n')
+    expect(changeRequestUrls(output)).toEqual(['https://github.com/owner/repo/pull/1635'])
   })
 })
 
@@ -146,5 +155,72 @@ describe('shellEvidence', () => {
       { remote: 'https://gitlab.com/owner/repo.git', branch: 'feat/program' },
     ])
     expect(evidence.urls).toEqual(['https://gitlab.com/owner/repo/-/merge_requests/31'])
+  })
+})
+
+const repository = 'dsh-tauri/deepseek-harness-desktop'
+const pushOutput = [
+  'remote: ',
+  'remote: Create a pull request for \'dsh/T-046\' on GitHub by visiting:',
+  'remote:      https://github.com/dsh-tauri/deepseek-harness-desktop/pull/new/dsh/T-046',
+  'remote: ',
+  'To https://github.com/dsh-tauri/deepseek-harness-desktop.git',
+  ' * [new branch]        dsh/T-046 -> dsh/T-046',
+  'branch \'dsh/T-046\' set up to track \'origin/dsh/T-046\'.',
+].join('\n')
+
+describe('githubEvidence', () => {
+  it('reads the pull request a run_code dispatch created', () => {
+    const evidence = githubEvidence([
+      dispatch('call_c2a204fb699a4c52be1bba98', 'pwsh', 'gh pr create --draft --repo dsh-tauri/deepseek-harness-desktop --base main --head dsh/T-046 --title "fix(desktop): 核心页管理远端核心" --body-file .temp/pr-body.md 2>&1 | Select-Object -Last 5'),
+      result('call_c2a204fb699a4c52be1bba98', 'https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1635'),
+    ], repository)
+    expect(evidence.urls).toEqual(['https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1635'])
+    expect(evidence.branches).toEqual([])
+  })
+
+  it('reads the pull request a direct pwsh call created', () => {
+    const evidence = githubEvidence([
+      call('call_direct', 'pwsh', 'gh pr create --fill --base main'),
+      result('call_direct', 'https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1640'),
+    ], repository)
+    expect(evidence.urls).toEqual(['https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1640'])
+  })
+
+  it('ignores a create whose result failed', () => {
+    const evidence = githubEvidence([
+      dispatch('call_failed', 'pwsh', 'gh pr create --draft --fill'),
+      result('call_failed', 'https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1636', true),
+    ], repository)
+    expect(evidence).toEqual({ urls: [], branches: [] })
+  })
+
+  it('drops pull requests and pushes that belong to another repository', () => {
+    const evidence = githubEvidence([
+      dispatch('call_other', 'pwsh', 'gh pr create --draft --fill'),
+      result('call_other', 'https://github.com/dsh-tauri/dsh-pet-component/pull/12'),
+      dispatch('call_push_other', 'pwsh', 'git push -u origin dsh/T-047'),
+      result('call_push_other', 'To https://github.com/dsh-tauri/dsh-pet-component.git\n * [new branch]        dsh/T-047 -> dsh/T-047'),
+    ], repository)
+    expect(evidence).toEqual({ urls: [], branches: [] })
+  })
+
+  it('reads the branch a push reported to this repository', () => {
+    const evidence = githubEvidence([
+      dispatch('call_8f181b1c175b4666b2b4faa9', 'pwsh', 'git push -u origin dsh/T-046 2>&1 | Select-Object -Last 10'),
+      result('call_8f181b1c175b4666b2b4faa9', pushOutput),
+    ], repository)
+    expect(evidence.branches).toEqual([{ remote: 'https://github.com/dsh-tauri/deepseek-harness-desktop.git', branch: 'dsh/T-046' }])
+    expect(evidence.urls).toEqual([])
+  })
+
+  it('reads a push and a create from the same run_code dispatch', () => {
+    const evidence = githubEvidence([
+      dispatch('call_both', 'pwsh', 'git push -u origin dsh/T-046'),
+      dispatch('call_both', 'pwsh', 'gh pr create --draft --fill'),
+      result('call_both', `${pushOutput}\nhttps://github.com/dsh-tauri/deepseek-harness-desktop/pull/1635`),
+    ], repository)
+    expect(evidence.branches).toEqual([{ remote: 'https://github.com/dsh-tauri/deepseek-harness-desktop.git', branch: 'dsh/T-046' }])
+    expect(evidence.urls).toEqual(['https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1635'])
   })
 })
