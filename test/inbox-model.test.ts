@@ -61,6 +61,13 @@ describe('已答的 ask 收尾', () => {
     expect(settled).toMatchObject({ status: 'done', deliveryError: 'worker_ended', nextRetryAt: null })
   })
 
+  it('人回答的 ask 落成收件人邮箱里的一条通知', async () => {
+    const ask = await inbox.enqueueAsk({ type: 'main', origin: 'project', projectId: 'p1', message: '可以合并吗？' })
+    await inbox.answer(ask.id, '可以', 'user', '2025-01-01T00:00:01.000Z')
+    await inbox.enqueueAnswer((await inbox.findById(ask.id))!)
+    expect(await inbox.findById(`supermesh:answer:${ask.id}`)).toMatchObject({ type: 'project', origin: 'channel', kind: 'notice', message: '可以', projectId: 'p1' })
+  })
+
   it('没有项目的答案改投主编排', async () => {
     const ask = await inbox.enqueueAsk({ type: 'main', origin: 'supervisor', message: '这条要发吗？' })
     await inbox.answer(ask.id, '发', 'user', '2025-01-01T00:00:01.000Z')

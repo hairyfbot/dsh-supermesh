@@ -23,5 +23,5 @@ export async function handleAgentCreated(ctx: Context, agent: Agent): Promise<un
     if (status === 'idle')
       void inbox.notify(agent).catch(error => ctx.logger.error(error))
   }), 'supermesh:mailbox-notice')
-  await inbox.notify(agent, true)
+  await inbox.notify(agent)
 }

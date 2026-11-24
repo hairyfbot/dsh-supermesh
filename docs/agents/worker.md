@@ -34,7 +34,7 @@
 
 | 工具 | 参数 | 行为 |
 | --- | --- | --- |
-| `report` | `state, summary` | 更新 `Worker.report` + `reportAt`；不写收件箱，跑完由结算通知带收尾文本 |
+| `report` | `state, summary` | 更新 `Worker.report` + `reportAt`；不写收件箱，跑完由结算邮件带收尾文本 |
 | `ask` | `question` | 建 ask 投给项目编排。**停住这条线** |
 | `read_channel` | `resource, offset?, limit?` | 读渠道原文，**只能读本任务来源的** |
 | `reply_channel` | `triggerId, text` | 按触发发一条 |

@@ -53,7 +53,7 @@
 | `list_ticket` | `status?, projectId?, attentionOnly?` | 全局任务 |
 | `ask_user` | `question, triggerId?` | 建 `Inbox(type=user, kind=ask)` |
 | `answer` | `askId, text` | 回下级升上来的 ask |
-| `create_supervisor` | `title, reason, ticketIds[]` | 建记录 + 起会话，开场带双方上下文 |
+| `create_supervisor` | `title, reason, ticketIds[]` | 建记录 + 起会话，开场上下文进它的收件箱 |
 | `close_supervisor` | `supervisorId, reason` | `reason` 进各持票项目编排收件箱 |
 | `attach_tickets_to_supervisor` | `supervisorId, ticketIds[]` | 扩范围，自动通知 |
 | `detach_tickets_from_supervisor` | `supervisorId, ticketIds[], reason` | 缩范围，工退原项目（不取消） |
