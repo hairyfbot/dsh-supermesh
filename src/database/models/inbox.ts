@@ -1,5 +1,5 @@
 import type { Insertable, Kysely, Selectable } from 'kysely'
-import type { DB, InboxAnsweredBy, InboxTarget } from '@/database/types'
+import type { DB, InboxAnsweredBy, InboxOrigin, InboxTarget } from '@/database/types'
 import { randomUUID } from 'node:crypto'
 import { Model } from 'kysely-model'
 
@@ -151,9 +151,23 @@ export class Inbox extends Model<DB, 'inbox'> {
     return this.db.selectFrom('inbox').selectAll().orderBy('createdAt', 'desc').orderBy('id').limit(Math.max(1, Math.min(1000, limit))).execute()
   }
 
-  /** 一条话题上所有已入队的对外消息，用于判断「这次事件是不是已经有人说过了」。 */
-  async listByThread(threadId: string): Promise<Selectable<DB['inbox']>[]> {
-    return this.db.selectFrom('inbox').selectAll().where('threadId', '=', threadId).where('type', '=', 'user').execute()
+  /**
+   * 这条触发上是否已经有别的角色说过话。
+   *
+   * 提问不算占位：escalate 出去的提问还在等人回答，后面必然要跟一条结果，两者语义不同，都该出现。
+   * 只有已经说出口的结论才占住这次事件。
+   */
+  async repliedByOther(threadId: string, triggerId: string, role: InboxOrigin): Promise<boolean> {
+    const row = await this.db
+      .selectFrom('inbox')
+      .select('id')
+      .where('threadId', '=', threadId)
+      .where('triggerId', '=', triggerId)
+      .where('type', '=', 'user')
+      .where('kind', '=', 'notice')
+      .where('origin', '!=', role)
+      .executeTakeFirst()
+    return row !== undefined
   }
 
   async enqueue(value: Pick<Insertable<DB['inbox']>, 'type' | 'origin' | 'kind' | 'message'> & Partial<Insertable<DB['inbox']>>): Promise<Selectable<DB['inbox']>> {

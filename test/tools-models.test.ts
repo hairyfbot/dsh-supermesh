@@ -123,6 +123,17 @@ describe('inbox ownership and ask lifecycle', () => {
   })
 })
 
+describe('reply dedupe across roles', () => {
+  it('escalated questions leave the trigger open while a posted result still occupies it', async () => {
+    await models.trigger.ingest({ id: 'trigger-1', channelId: 'github', threadId: 'thread-1', kind: 'comment', actorName: 'hairyf', text: '修一下', url: 'https://github.com/org/p1/issues/1#issuecomment-1', at: now })
+    await models.inbox.enqueueAsk({ type: 'user', origin: 'main', kind: 'ask', triggerId: 'trigger-1', threadId: 'thread-1', message: '要合并吗？' })
+    expect(await models.inbox.repliedByOther('thread-1', 'trigger-1', 'project')).toBe(false)
+    await models.inbox.enqueue({ type: 'user', origin: 'project', kind: 'notice', triggerId: 'trigger-1', threadId: 'thread-1', message: '已提交 PR' })
+    expect(await models.inbox.repliedByOther('thread-1', 'trigger-1', 'main')).toBe(true)
+    expect(await models.inbox.repliedByOther('thread-1', 'trigger-1', 'project')).toBe(false)
+  })
+})
+
 describe('queue and project boundary regressions', () => {
   it('concurrent identical work line questions create one pending ask and reject a different question', async () => {
     const worker = await models.worker.queue(ticketId, 'p1')
