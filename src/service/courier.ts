@@ -343,6 +343,7 @@ export const courier = defineService({
           errors.push(courier.reason(error, port.detail, step))
         },
       }
+      let ready = false
       try {
         project = await port.project(projectId)
         const environment = await port.probe(projectId, signal)
@@ -356,12 +357,22 @@ export const courier = defineService({
         context.scope = scope
         context.baseline = baseline
         context.environment = environment
-        await port.collect(context, signal)
+        ready = true
       }
       catch (error) {
         if (signal?.aborted)
           throw error
-        errors.push(courier.reason(error, port.detail))
+        errors.push(courier.reason(error, port.detail, 'probe'))
+      }
+      if (ready) {
+        try {
+          await port.collect(context, signal)
+        }
+        catch (error) {
+          if (signal?.aborted)
+            throw error
+          errors.push(courier.reason(error, port.detail, 'collect'))
+        }
       }
       // probe 失败时作用域解析不出来，仍要按项目记录状态，否则整条采集链无声消失。
       if (port.status && project)
