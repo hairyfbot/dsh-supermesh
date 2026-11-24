@@ -72,6 +72,7 @@ async function runCase(name: string): Promise<string> {
 describe('supermesh services composed with the installed official runtime', () => {
   it.each([
     ['shell', 'native CLI shims use isolated bot credentials and git identities, reject other hosts and restore the process environment'],
+    ['shellGitRevision', 'git revision syntax reaches the real git through the official resolver and a native shell instead of a cmd shim'],
     ['projectSync', 'official workspace changes discover and disable repositories while preserving history and explicit choices'],
     ['workspace', 'non-worker sessions share and persist one official workspace and reuse role bindings'],
     ['createMail', 'internal mail creates and wakes main, project and supervisor with mail counts'],

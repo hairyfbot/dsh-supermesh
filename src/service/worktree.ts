@@ -97,17 +97,18 @@ export const worktree = defineService({
     let failure: unknown
     // 同名分支会撞车：官方对已存在的分支直接报错，换个后缀再试。
     for (let attempt = 1; attempt <= 5; attempt++) {
+      const name = attempt === 1 ? branch : `${branch}-${attempt}`
       try {
-        const created = await ctx.worktrees.create(agent, { name: attempt === 1 ? branch : `${branch}-${attempt}`, from: 'HEAD' })
+        const created = await ctx.worktrees.create(agent, { name, from: 'HEAD' })
         return { branch: created.branch, worktree: created.path, baseCommit: created.baseCommit, repositoryRoot: created.repositoryRoot }
       }
       catch (error) {
         if (!(error instanceof Error) || !error.message.includes('already exists'))
-          throw error
+          throw createFailure(name, error)
         failure = error
       }
     }
-    throw failure instanceof Error ? failure : new Error('worktree_branch_conflict')
+    throw createFailure(branch, failure ?? new Error('worktree_branch_conflict'))
   },
   verify: singlet(
     (_directory, target) => `worktree:verify:${resolve(target)}`,
@@ -126,6 +127,10 @@ export const worktree = defineService({
     },
   ),
 })
+
+function createFailure(branch: string, error: unknown): Error {
+  return new Error(`worktree.create(${branch}, from HEAD) failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
+}
 
 async function existingRepository(target: string, webUrl: string, gitlabHost?: string): Promise<{ directory: string, remoteUrl: string } | null> {
   try {
