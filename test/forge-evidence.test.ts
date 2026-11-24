@@ -179,6 +179,14 @@ describe('githubEvidence', () => {
     expect(evidence.branches).toEqual([])
   })
 
+  it('reads the pull request a channel wrapper created', () => {
+    const evidence = githubEvidence([
+      dispatch('call_wrapper', 'pwsh', 'gh-default pr create --repo dsh-tauri/deepseek-harness-desktop --base main --head dsh/T-050 --title "x" --body "y"'),
+      result('call_wrapper', 'exit=0\nhttps://github.com/dsh-tauri/deepseek-harness-desktop/pull/1640\n'),
+    ], repository)
+    expect(evidence.urls).toEqual(['https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1640'])
+  })
+
   it('reads the pull request a direct pwsh call created', () => {
     const evidence = githubEvidence([
       call('call_direct', 'pwsh', 'gh pr create --fill --base main'),
@@ -192,17 +200,19 @@ describe('githubEvidence', () => {
       dispatch('call_failed', 'pwsh', 'gh pr create --draft --fill'),
       result('call_failed', 'https://github.com/dsh-tauri/deepseek-harness-desktop/pull/1636', true),
     ], repository)
-    expect(evidence).toEqual({ urls: [], branches: [] })
+    expect(evidence).toEqual({ urls: [], branches: [], forks: [] })
   })
 
-  it('drops pull requests and pushes that belong to another repository', () => {
+  it('drops pull requests of another repository but keeps its pushes as fork heads', () => {
     const evidence = githubEvidence([
       dispatch('call_other', 'pwsh', 'gh pr create --draft --fill'),
       result('call_other', 'https://github.com/dsh-tauri/dsh-pet-component/pull/12'),
       dispatch('call_push_other', 'pwsh', 'git push -u origin dsh/T-047'),
       result('call_push_other', 'To https://github.com/dsh-tauri/dsh-pet-component.git\n * [new branch]        dsh/T-047 -> dsh/T-047'),
     ], repository)
-    expect(evidence).toEqual({ urls: [], branches: [] })
+    expect(evidence.urls).toEqual([])
+    expect(evidence.branches).toEqual([])
+    expect(evidence.forks).toEqual([{ remote: 'https://github.com/dsh-tauri/dsh-pet-component.git', branch: 'dsh/T-047' }])
   })
 
   it('reads the branch a push reported to this repository', () => {

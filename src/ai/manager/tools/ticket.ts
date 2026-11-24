@@ -68,7 +68,7 @@ export const link_ticket = defineTool({
       throw new Error('工单不能关联自己')
     await db.ticketLink.link(ticket.id, related.id, args.kind, new Date().toISOString())
     if (args.kind === 'depends' && !['done', 'completed', 'cancelled'].includes(related.status))
-      await db.ticket.save(ticket.id, { status: 'queued', updatedAt: new Date().toISOString() })
+      await db.ticket.setOpenStatus(ticket.id, 'queued', new Date().toISOString())
     return JSON.stringify({ linked: true })
   },
 })
@@ -106,15 +106,18 @@ export const stop_ticket = defineTool({
       throw new Error('停止工单必须绑定 human=true 的触发')
     if (!(await db.ticketThread.listByTicket(ticket.id)).some(row => row.threadId === trigger.threadId))
       throw new Error('停止触发不属于当前工单来源')
+    // 先结单再收 Worker：反过来的话，收尾期间任何一次并发派工都能把还开着的票重新排队，
+    // 结单结果随后被覆盖，票就再也停不下来了。
+    const now = new Date().toISOString()
+    await db.ticket.finish(ticket.id, 'cancelled', now, now)
     for (const worker of await db.worker.listByTicket(ticket.id)) {
       if (worker.status === 'ended')
         continue
+      // 会话可能已经归档、resolve 不出来：收尾不能因此中断，worker 行照样结束。
       if (worker.status === 'running')
-        await session.cancel(worker.id)
+        await session.cancel(worker.id).catch(() => undefined)
       await db.worker.end(worker.id, 'stopped', new Date().toISOString())
     }
-    const now = new Date().toISOString()
-    await db.ticket.finish(ticket.id, 'cancelled', now, now)
     await workerService.archiveSessions(ticket.id)
     await db.inbox.returnPendingTicket(ticket.id, args.reason ?? '人类要求停止', now)
     for (const link of await db.supervisorTicket.listByTicket(ticket.id)) await db.inbox.enqueue({ type: 'supervisor', supervisorId: link.supervisorId, projectId: ticket.projectId, origin: 'project', kind: 'ticket', ticketId: ticket.id, title: 'dropped', message: args.reason ?? '人类要求停止' })

@@ -73,7 +73,7 @@ const finish = singlet(
       else if (!reason && worker.reportState === 'ready')
         await settleReady(ticket, now)
       else
-        await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
+        await db.ticket.setOpenStatus(ticket.id, 'idle', now)
     }
     const ended = await db.ticket.findById(worker.ticketId)
     // 只有票真正终结才归档会话。票还在 review / idle 时，后续的 review 意见要复用这个 worker，
@@ -138,7 +138,7 @@ export const worker = defineService({
       if (worker.reportState === 'ready')
         await settleReady(ticket, now)
       else
-        await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
+        await db.ticket.setOpenStatus(ticket.id, 'idle', now)
     }
     // 内部调度不建会话：可派工的 queued 票只通知项目编排一次，派工由它的 create_worker 发起。
     // 被依赖卡住的票留在 queued 不发通知，依赖满足的那一刻才发。
@@ -249,8 +249,8 @@ export const worker = defineService({
         const latest = await db.ticket.findById(ticket.id)
         if (latest && latest.prState === 'merged' && !closed(latest))
           await finishTicket(latest.id, 'done', now, now)
-        else if (latest && !closed(latest))
-          await db.ticket.update(ticket.id, { status: 'queued', updatedAt: now })
+        else
+          await db.ticket.setOpenStatus(ticket.id, 'queued', now)
         await notifyDispatchFailure(ticket.id, reason, now)
         if (stopped)
           break
@@ -357,7 +357,7 @@ export const worker = defineService({
           continue
         }
         await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now)
-        await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
+        await db.ticket.setOpenStatus(ticket.id, 'idle', now)
         await db.worker.end(worker.id, 'failed', now)
       }
     }
@@ -407,7 +407,7 @@ export const worker = defineService({
  */
 async function settleReady(ticket: Selectable<DB['ticket']>, now: string): Promise<void> {
   if (await db.ticket.hasPullRequest(ticket.id))
-    await db.ticket.update(ticket.id, { status: 'review', updatedAt: now })
+    await db.ticket.setOpenStatus(ticket.id, 'review', now)
   else
     await finishTicket(ticket.id, 'completed', now, now)
 }
@@ -515,7 +515,7 @@ async function deferWhileWaiting(current: Selectable<DB['worker']>): Promise<voi
   if (ticket.prState === 'merged')
     await finishTicket(ticket.id, 'done', now, now)
   else
-    await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
+    await db.ticket.setOpenStatus(ticket.id, 'idle', now)
   await notifyRouter(current)
 }
 

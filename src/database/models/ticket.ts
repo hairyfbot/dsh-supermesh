@@ -105,7 +105,24 @@ export class Ticket extends Model<DB, 'ticket'> {
       .updateTable('ticket')
       .set({ prepareError, updatedAt })
       .where('id', '=', id)
+      .where('status', 'not in', [...CLOSED_STATUS])
       .execute()
+  }
+
+  /**
+   * 内部调度推进票的状态。票进了终态就不能再被后台路径写回非终态：
+   * 停止是人的决定，派工、回收、结算都不能把它重新拉起。
+   *
+   * @returns 是否真的写入了（票已结束时为 false）。
+   */
+  async setOpenStatus(id: string, status: TicketStatus, updatedAt: string): Promise<boolean> {
+    const result = await this.db
+      .updateTable('ticket')
+      .set({ status, updatedAt })
+      .where('id', '=', id)
+      .where('status', 'not in', [...CLOSED_STATUS])
+      .executeTakeFirst()
+    return Number(result.numUpdatedRows ?? 0) > 0
   }
 
   async save(id: string, patch: Updateable<DB['ticket']>): Promise<void> {
@@ -213,12 +230,18 @@ export class Ticket extends Model<DB, 'ticket'> {
     return row
   }
 
-  async reopen(id: string, updatedAt: string): Promise<boolean> {
+  /**
+   * 人在这条话题上又说话了，把做完的票唤醒。
+   * 人叫停的票不在此列 —— 停止是人的决定，那里的新活要重新分诊，不能被一句 @ 唤醒。
+   *
+   * @returns 是否真的唤醒（票不是 done / completed 时为 false）。
+   */
+  async revive(id: string, updatedAt: string): Promise<boolean> {
     const result = await this.db
       .updateTable('ticket')
       .set({ status: 'queued', endedAt: null, updatedAt })
       .where('id', '=', id)
-      .where('status', 'in', [...CLOSED_STATUS])
+      .where('status', 'in', ['done', 'completed'])
       .executeTakeFirst()
     return Number(result.numUpdatedRows ?? 0) > 0
   }
