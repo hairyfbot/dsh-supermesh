@@ -97,7 +97,7 @@ export class Worker extends Model<DB, 'worker'> {
       throw new Error('分支名只能是 ASCII')
     return this.db.transaction().execute(async (trx) => {
       const ticket = await trx.selectFrom('ticket').selectAll().where('id', '=', ticketId).where('projectId', '=', projectId).executeTakeFirst()
-      if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+      if (!ticket || ['done', 'completed', 'cancelled'].includes(ticket.status))
         throw new Error('工单不存在、已结束或不属于当前项目')
       if (ticket.paused)
         throw new Error('工单已暂停')
@@ -109,7 +109,7 @@ export class Worker extends Model<DB, 'worker'> {
       const depends = await trx.selectFrom('ticket_link').select('relatedId').where('ticketId', '=', ticketId).where('kind', '=', 'depends').execute()
       for (const link of depends) {
         const related = await trx.selectFrom('ticket').select(['id', 'status']).where('id', '=', link.relatedId).executeTakeFirst()
-        if (related && related.status !== 'done' && related.status !== 'cancelled')
+        if (related && !['done', 'completed', 'cancelled'].includes(related.status))
           throw new Error(`依赖的 ${related.id} 还没完成`)
       }
       const existing = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).where('status', '!=', 'ended').executeTakeFirst()
@@ -144,7 +144,7 @@ export class Worker extends Model<DB, 'worker'> {
       if (!worker || worker.status === 'ended')
         throw new Error('Worker 已结束或不存在')
       const ticket = await trx.selectFrom('ticket').selectAll().where('id', '=', worker.ticketId).executeTakeFirst()
-      if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+      if (!ticket || ['done', 'completed', 'cancelled'].includes(ticket.status))
         throw new Error('工单已结束或不存在')
       const now = new Date().toISOString()
       await new Worker(trx).setReport(id, reportState, report, now)

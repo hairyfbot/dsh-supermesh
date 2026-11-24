@@ -23,7 +23,7 @@ export default defineHandler(async (event) => {
   const ticket = await db.ticket.findById(id)
   if (!ticket)
     throw new HTTPError({ status: 404, message: 'not_found' })
-  if (ticket.status === 'done' || ticket.status === 'cancelled')
+  if (['done', 'completed', 'cancelled'].includes(ticket.status))
     throw new HTTPError({ status: 409, message: 'ticket_closed' })
   const now = new Date().toISOString()
   if (body.status === 'cancelled') {

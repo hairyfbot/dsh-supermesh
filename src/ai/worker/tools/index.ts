@@ -10,7 +10,7 @@ export const report = defineTool({
       type: 'string',
       enum: ['progress', 'ready', 'failed', 'dropped'],
       required: true,
-      description: 'progress 在跑 / ready 干完了（PR 已开）/ failed 失败了 / dropped 不用做了。「我在等答复」不占状态位。',
+      description: 'progress 在跑 / ready 干完了（有 PR 就进 review，没有就正常完成）/ failed 失败了 / dropped 不用做了。「我在等答复」不占状态位。',
     },
     summary: {
       type: 'string',

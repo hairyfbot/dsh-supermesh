@@ -3,7 +3,7 @@ import type { Resource } from '@/channel/github/service/resource.types'
 import type { AnswerPort, CollectPort, DeliveryPort, IngestPort } from '@/service/courier.types'
 import { answerLines } from '@/channel/_shared/answers'
 import { githubMentioned } from '@/channel/_shared/mention'
-import { identity, now, record, text, timestamp } from '@/channel/_shared/primitives'
+import { identity, record, text, timestamp } from '@/channel/_shared/primitives'
 import { GhError } from '@/channel/github/runner'
 import { ci } from '@/channel/github/service/ci'
 import { resource } from '@/channel/github/service/resource'
@@ -78,7 +78,6 @@ export const binding = defineService({
       onSubscribedTicket: async (ticket) => {
         if (ticket.status !== 'review' || ticket.paused)
           return
-        await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now() })
         await db.worker.queue(ticket.id, ticket.projectId).catch(() => undefined)
       },
     }

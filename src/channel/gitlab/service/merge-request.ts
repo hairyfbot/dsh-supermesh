@@ -25,7 +25,7 @@ export const mergeRequest = defineService({
     }
     for (const ticketId of await db.ticketThread.listTicketIds(thread.id)) {
       const ticket = await db.ticket.findById(ticketId)
-      if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ['done', 'cancelled'].includes(ticket.status))
+      if (!ticket || ticket.projectId !== projectId || ticket.prUrl !== thread.url || ['done', 'completed', 'cancelled'].includes(ticket.status))
         continue
       await db.ticket.setPullRequest(ticketId, thread.url, state, ticket.ciState)
     }

@@ -32,7 +32,7 @@ export const runtime = defineService({
 async function closeFinishedSupervisors(): Promise<void> {
   for (const supervisor of await db.supervisor.listActive()) {
     const tickets = await Promise.all((await db.supervisorTicket.listBySupervisor(supervisor.id)).map(link => db.ticket.findById(link.ticketId)))
-    if (!tickets.length || tickets.some(ticket => !ticket || (ticket.status !== 'done' && ticket.status !== 'cancelled')))
+    if (!tickets.length || tickets.some(ticket => !ticket || !['done', 'completed', 'cancelled'].includes(ticket.status)))
       continue
     // 手上还有没处理完的消息就先不收：那可能是等待中的协调任务，
     // 直接关掉会让整条跨项目链路静默停在这里。

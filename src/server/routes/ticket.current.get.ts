@@ -14,5 +14,5 @@ export default defineHandler(async () => {
     if (ticket)
       ticketMap.set(ticket.id, ticket)
   }
-  return [...ticketMap.values()].filter(ticket => !['closed', 'done', 'cancelled'].includes(ticket.status) || runningTicketIds.has(ticket.id))
+  return [...ticketMap.values()].filter(ticket => !['closed', 'done', 'completed', 'cancelled'].includes(ticket.status) || runningTicketIds.has(ticket.id))
 })

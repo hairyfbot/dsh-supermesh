@@ -48,7 +48,7 @@
 | `triage_thread` | `threadId, action, projectId?` | `claim` 必给 projectId |
 | `attach_thread_to_ticket` | `ticketId, threadId, note?` | 已有票接管一条新话题 |
 | `unlink_thread` | `ticketId, threadId, reason` | 摘掉挂错的话题，和 attach 对称 |
-| `create_ticket` | `title, projectId, threadIds[], description?` | 初始 `status=waiting` |
+| `create_ticket` | `title, projectId, threadIds[], description?` | 初始 `status=queued` |
 | `dispatch_ticket` | `ticketId, message?` | 派活：`Inbox(kind=ticket)`，会唤醒终态的票 |
 | `note_ticket` | `ticketId, text` | 通报：`Inbox(kind=notice)`，**不改状态、不唤醒** |
 | `list_ticket` | `status?, projectId?, attentionOnly?` | 全局任务 |

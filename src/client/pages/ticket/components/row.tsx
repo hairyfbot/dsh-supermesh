@@ -22,14 +22,15 @@ export function Row({ task, nodes, channels, triggers, subscriptions, refreshedA
   const session = sessions.find(node => node.status === 'running') ?? sessions.at(-1)
   const channel = channels.find(channel => channel.id === task.channelId)
   const status = {
-    waiting: { label: 'overviewStatusWaiting', tone: 'quiet' },
     queued: { label: 'ticketStatusQueued', tone: 'quiet' },
     running: { label: 'overviewStatusRunning', tone: 'info' },
+    idle: { label: 'ticketStatusIdle', tone: 'quiet' },
     review: { label: 'overviewStatusReview', tone: 'warning' },
     done: { label: 'overviewCompleted', tone: 'success' },
+    completed: { label: 'overviewCompleted', tone: 'success' },
     cancelled: { label: 'ticketStatusCancelled', tone: 'quiet' },
   } as const
-  const intervention = Boolean(task.prepareError || task.paused) && task.status !== 'done' && task.status !== 'cancelled'
+  const intervention = Boolean(task.prepareError || task.paused) && !['done', 'completed', 'cancelled'].includes(task.status)
   const ticketSubscriptions = subscriptions.filter(subscription => subscription.ticketId === task.id)
   const trigger = triggers
     .filter(trigger => ticketSubscriptions.some(subscription => subscription.threadId === trigger.threadId))
@@ -37,7 +38,7 @@ export function Row({ task, nodes, channels, triggers, subscriptions, refreshedA
   const prUrl = task.prUrl && /^https?:\/\//i.test(task.prUrl) ? task.prUrl : null
   const prNumber = prUrl?.match(/\/(?:pull|merge_requests)\/(\d+)(?:[/?#]|$)/)?.[1]
   const event = prNumber ? `PR #${prNumber}${task.prState ? ` ${task.prState}` : ''}` : trigger ? `${trigger.ref ?? ''} ${trigger.kind}`.trim() : null
-  const start = task.status === 'waiting' ? null : task.startedAt
+  const start = task.status === 'queued' ? null : task.startedAt
   const end = task.endedAt ?? (start ? refreshedAt : null)
   const seconds = start && end ? Math.max(0, Math.floor((Date.parse(end) - Date.parse(start)) / 1000)) : Number.NaN
   const duration = Number.isFinite(seconds) ? `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ` : ''}${seconds >= 60 ? `${Math.floor(seconds / 60) % 60}m ` : ''}${seconds % 60}s` : null
@@ -63,16 +64,16 @@ export function Row({ task, nodes, channels, triggers, subscriptions, refreshedA
                         <span>{event}</span>
                       </>
                     )}
-                    {task.status === 'waiting' && session?.status === 'running' && (
+                    {task.status === 'idle' && session?.status === 'running' && (
                       <>
                         <span aria-hidden="true">·</span>
                         <span>{t('overviewTriggerRunning')}</span>
                       </>
                     )}
-                    {(duration || task.status === 'waiting') && (
+                    {(duration || task.status === 'queued') && (
                       <>
                         <span aria-hidden="true">·</span>
-                        <span>{`${t(task.status === 'waiting' ? 'ticketWaitDuration' : 'ticketExecutionDuration')}: ${duration ?? t('ticketDurationUnknown')}`}</span>
+                        <span>{`${t(task.status === 'queued' ? 'ticketWaitDuration' : 'ticketExecutionDuration')}: ${duration ?? t('ticketDurationUnknown')}`}</span>
                       </>
                     )}
                   </>

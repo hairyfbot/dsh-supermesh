@@ -27,9 +27,9 @@ beforeEach(async () => {
     await connection.insertInto('project').values({ id, name: id, workspaceId: `w-${id}`, directory: `/repo/${id}`, remoteUrl: 'https://github.com/owner/repo', enabled: 1, orchestratorSessionId: null, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }).execute()
   }
   await connection.insertInto('ticket').values([
-    { id: 'T-001', projectId: 'p1', channelId: 'github', title: 'a', description: null, status: 'waiting', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', startedAt: null, endedAt: null, prUrl: 'https://github.com/owner/repo/pull/7', prState: null, ciState: null, paused: 0, prepareError: null },
-    { id: 'T-002', projectId: 'p1', channelId: 'github', title: 'b', description: null, status: 'waiting', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null },
-    { id: 'T-003', projectId: 'p2', channelId: 'github', title: 'c', description: null, status: 'waiting', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', startedAt: null, endedAt: null, prUrl: 'https://github.com/owner/repo/pull/7', prState: null, ciState: null, paused: 0, prepareError: null },
+    { id: 'T-001', projectId: 'p1', channelId: 'github', title: 'a', description: null, status: 'queued', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', startedAt: null, endedAt: null, prUrl: 'https://github.com/owner/repo/pull/7', prState: null, ciState: null, paused: 0, prepareError: null },
+    { id: 'T-002', projectId: 'p1', channelId: 'github', title: 'b', description: null, status: 'queued', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null },
+    { id: 'T-003', projectId: 'p2', channelId: 'github', title: 'c', description: null, status: 'queued', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z', startedAt: null, endedAt: null, prUrl: 'https://github.com/owner/repo/pull/7', prState: null, ciState: null, paused: 0, prepareError: null },
   ]).execute()
 })
 afterEach(async () => connection.destroy())

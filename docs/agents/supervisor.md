@@ -29,7 +29,7 @@
 5. 有项目编排问上来的 → 答得了 answer，答不了 ask
 6. 需要加人 / 加项目 → ask 主编排
 
-收工不归你管。关联票全部 done 时插件会自动关停你，你不会被叫醒第二次。
+收工不归你管。关联票全部 done / completed 时插件会自动关停你，你不会被叫醒第二次。
 
 你随时可能被重启。依赖写进 TicketLink(kind=depends)，别只记在脑子里；
 没交接完的事随时 report，强关那一刻你已经不在线了。
@@ -110,7 +110,7 @@ sequenceDiagram
 
 | 事实 | 谁来收 | 通知谁 |
 | --- | --- | --- |
-| 关联工单**全部 done** | 插件自动 `closed` + `closedAt` | 主编排 |
+| 关联工单**全部 done / completed** | 插件自动 `closed` + `closedAt` | 主编排 |
 | 有工单 **cancelled** | 主编排决定：关掉 / `detach` 那张 / 继续等 | 主编排 |
 | 主编排认为没必要继续 | `close_supervisor(reason)` | **各持票项目编排** |
 

@@ -643,7 +643,7 @@ const cases = {
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     const { worker: workers } = await import('@/service/worker.ts')
     const ticketId = 'worker-end-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '票已结束的 Worker', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '票已结束的 Worker', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const queued = await db.worker.queue(ticketId, p.id)
     await db.worker.start(queued.id, now)
     await db.ticket.update(ticketId, { status: 'done', endedAt: now, updatedAt: now })
@@ -659,7 +659,7 @@ const cases = {
     const { closeThread } = await import('@/channel/_shared/thread.ts')
     const archived = () => runtime.ctx.workspaceRegistry.archivedSessionIds
     const ticketWithWorker = async (id) => {
-      await db.ticket.create({ id, projectId: p.id, channelId: 'github', title: id, description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+      await db.ticket.create({ id, projectId: p.id, channelId: 'github', title: id, description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
       const worker = await db.worker.queue(id, p.id)
       await session.create('worker', { sessionId: worker.id, ticketId: id, projectId: p.id, directory: p.directory })
       await db.worker.start(worker.id, now)
@@ -707,7 +707,7 @@ const cases = {
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     await initRepository(p.directory)
     const ticketId = 'redispatch-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '重派工必须真的送达', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '重派工必须真的送达', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const queued = await db.worker.queue(ticketId, p.id)
     // 预先建好会话且不填 worktree：派工复用这个会话，并补建它缺的工作树。
     await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
@@ -717,7 +717,7 @@ const cases = {
     assert.equal((await dispatches()).length, 1, 'the first dispatch must reach the worker session')
     // worker 结束、票回 waiting 之后不能自动重开：拿同一份 prompt 反复重派就是线上那个死循环。
     assert.equal((await db.worker.findById(queued.id)).status, 'ended')
-    assert.equal((await db.ticket.findById(ticketId)).status, 'waiting')
+    assert.equal((await db.ticket.findById(ticketId)).status, 'idle')
     await workers.rescue()
     await workers.reconcile()
     await settle()
@@ -732,7 +732,7 @@ const cases = {
     const p = await project('restart-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     const ticketId = 'restart-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '重启复用执行会话', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '重启复用执行会话', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const queued = await db.worker.queue(ticketId, p.id)
     if (withWorktree) {
       // recover 会核对真实 worktree 注册，这里按派工之后的真实形态准备仓库与分支。
@@ -790,7 +790,7 @@ const cases = {
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     await initRepository(p.directory)
     const ticketId = 'dispatch-worktree-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '缺工作树必须补建', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '缺工作树必须补建', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const queued = await db.worker.queue(ticketId, p.id)
     await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
     await workers.reconcile()
@@ -814,7 +814,7 @@ const cases = {
     const p = await project('dispatch-notice-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     const ticketId = 'dispatch-notice-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '可派工只通知编排', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '可派工只通知编排', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     await workers.reconcile()
     await workers.reconcile()
     const mails = (await db.inbox.listByTicket(ticketId)).filter(row => row.id === `supermesh:dispatch:${ticketId}`)
@@ -823,12 +823,12 @@ const cases = {
     assert.equal(mails[0].projectId, p.id)
     assert.equal(mails[0].kind, 'ticket')
     assert.equal((await db.worker.listByTicket(ticketId)).length, 0, '内部调度不得自己排队建 Worker')
-    assert.equal((await db.ticket.findById(ticketId)).status, 'waiting', '通知不等于派工，票还留在 waiting')
+    assert.equal((await db.ticket.findById(ticketId)).status, 'queued', '通知不等于派工，票还留在 queued')
 
     const blockedId = 'dispatch-notice-blocked'
     const dependencyId = 'dispatch-notice-dependency'
     for (const id of [blockedId, dependencyId])
-      await db.ticket.create({ id, projectId: p.id, channelId: 'github', title: id, description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+      await db.ticket.create({ id, projectId: p.id, channelId: 'github', title: id, description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     await db.ticketLink.link(blockedId, dependencyId, 'depends', now)
     await workers.reconcile()
     assert.equal(await db.inbox.findById(`supermesh:dispatch:${blockedId}`), undefined, '依赖没做完的票不得被通知派工')
@@ -843,7 +843,7 @@ const cases = {
     // 有仓库但还没有任何提交：git 建不出工作树，派工必须明确失败。
     await git('git', ['init'], { cwd: p.directory })
     const ticketId = 'dispatch-failure-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '建不出工作树就失败', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '建不出工作树就失败', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const queued = await db.worker.queue(ticketId, p.id)
     await workers.reconcile()
     await settle()
@@ -864,7 +864,7 @@ const cases = {
     const p = await project('relay-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     const ticketId = 'relay-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '答案改投编排', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '答案改投编排', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const worker = await db.worker.queue(ticketId, p.id)
     await db.worker.end(worker.id, 'stopped', now)
     const ask = await db.inbox.enqueueAsk({ type: 'main', origin: 'worker', projectId: p.id, ticketId, workerId: worker.id, message: '需要你确认方案' })
@@ -881,7 +881,7 @@ const cases = {
     const p = await project('settlement-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     const ticketId = 'settlement-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '结算通知', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '结算通知', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const managerId = await session.create('project', { projectId: p.id })
     const queued = await db.worker.queue(ticketId, p.id)
     await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
@@ -908,7 +908,44 @@ const cases = {
     assert.match(mail.message, /It left no closing message/)
     assert.equal((await db.worker.findById(queued.id)).status, 'ended')
     assert.equal((await db.worker.findById(queued.id)).endedReason, 'completed')
-    assert.equal((await db.ticket.findById(ticketId)).status, 'waiting')
+    assert.equal((await db.ticket.findById(ticketId)).status, 'idle')
+  },
+  /**
+   * 报 ready 的落点看票有没有变更请求：没有 PR 的票直接 completed，
+   * 有 PR 的票进 review 等人审 —— 两种都不该停在 review / idle。
+   */
+  async workerReadySettlement() {
+    const p = await project('ready-settlement-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const run = async (ticketId, prUrl) => {
+      await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: ticketId, description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl, prState: null, ciState: null, paused: 0, prepareError: null })
+      const worker = await db.worker.queue(ticketId, p.id)
+      await session.create('worker', { sessionId: worker.id, ticketId, projectId: p.id, directory: p.directory })
+      await db.worker.start(worker.id, now)
+      await db.ticket.start(ticketId, now, now)
+      const held = runtime.holdPreStep()
+      await session.send(worker.id, `${ticketId}: 执行这张票`, 'queue', `ready:${ticketId}`)
+      await held.entered
+      const outcome = await runtime.ctx.tools.execute({
+        calls: [{ type: 'tool-call', id: `call-report-${ticketId}`, name: 'report', arguments: JSON.stringify({ state: 'ready', summary: '做完了' }) }],
+        signal: AbortSignal.timeout(15000),
+        agent: runtime.ctx.agents.get(SessionId(worker.id)),
+      })
+      assert.equal(outcome.results[0].result.isError, false, 'the worker report must be recorded')
+      held.release()
+      await settle()
+      return worker
+    }
+
+    const completedWorker = await run('ready-without-pr', null)
+    const completed = await db.ticket.findById('ready-without-pr')
+    assert.equal(completed.status, 'completed', 'ready without a pull request must complete the ticket')
+    assert.notEqual(completed.endedAt, null, 'completed is terminal and records its end time')
+    assert.equal((await db.worker.findById(completedWorker.id)).status, 'ended')
+
+    const reviewWorker = await run('ready-with-pr', 'https://github.com/example/ready-settlement/pull/7')
+    assert.equal((await db.ticket.findById('ready-with-pr')).status, 'review', 'ready with a pull request must wait for review')
+    assert.equal((await db.worker.findById(reviewWorker.id)).status, 'ended')
   },
   async answerNotice() {
     const p = await project('answer-notice-project')
@@ -1037,7 +1074,7 @@ const cases = {
     const p = await project('supervisor-open-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     const ticketId = 'supervisor-open-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '跨项目协调', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '跨项目协调', description: null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const mainId = await session.create('main', {})
     const main = await session.activate(mainId)
     await runtime.ctx.tools.execute({

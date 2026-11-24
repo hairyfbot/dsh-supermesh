@@ -33,7 +33,7 @@ describe('分支 CI 通知', () => {
 
   it('票订阅后按票所属项目投递并带上票号', async () => {
     const ticketId = `ticket-${suffix}`
-    await db.ticket.create({ id: ticketId, projectId, channelId: 'github', title: '修 CI', description: null, status: 'waiting', createdAt: at, updatedAt: at, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId, channelId: 'github', title: '修 CI', description: null, status: 'queued', createdAt: at, updatedAt: at, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     await db.ticketThread.link(ticketId, threadId, at)
     await notify('second')
     expect(await notices(`${threadId}:revision:1`)).toMatchObject([{ type: 'project', origin: 'system', kind: 'notice', projectId, ticketId, threadId }])

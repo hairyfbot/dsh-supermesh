@@ -81,6 +81,7 @@ describe('supermesh services composed with the installed official runtime', () =
     ['channelIsolation', 'a stalled channel mail does not block internal mail for the same recipient'],
     ['workerEnd', 'a ticket that reached a terminal state ends the worker that was still running'],
     ['workerSettlement', 'a finished worker wakes the project orchestrator with a compact mail notice instead of pasting its closing text'],
+    ['workerReadySettlement', 'a ready report completes a ticket without a pull request and leaves one with a pull request in review'],
     ['answerNotice', 'an answer for the project orchestrator lands in its mailbox and wakes it with a compact notice'],
     ['channelNotice', 'a channel trigger wakes the project orchestrator with the same compact notice and keeps its body in the mailbox'],
     ['triggerAttribution', 'a channel trigger carries the project matched by its repository and the mailbox exposes that as a server fact'],

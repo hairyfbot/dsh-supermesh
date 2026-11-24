@@ -62,10 +62,10 @@ export function TicketDetail(): ReactNode {
   const unavailable = stored !== undefined && !detail
   const latest = detail?.executions.toSorted((a, b) => a.createdAt.localeCompare(b.createdAt)).at(-1)
   const channel = channelList?.find(channel => channel.id === task?.channelId)
-  const seconds = task?.status !== 'waiting' && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? new Date()).getTime() - new Date(task.startedAt).getTime()) / 1000)) : null
+  const seconds = task?.status !== 'queued' && task?.startedAt ? Math.max(0, Math.floor((new Date(task.endedAt ?? new Date()).getTime() - new Date(task.startedAt).getTime()) / 1000)) : null
   const supervisors = [...new Set(detail?.inbox.map(message => message.supervisorId).filter((id): id is string => Boolean(id)))].map(id => ({ id, group: groupList?.find(group => group.id === `supervisor:${id}`) }))
-  const statusLabels = { waiting: 'overviewStatusWaiting', queued: 'ticketStatusQueued', running: 'overviewStatusRunning', review: 'overviewStatusReview', done: 'overviewCompleted', cancelled: 'ticketStatusCancelled' } as const
-  const attention = Boolean(task?.prepareError || task?.paused) && task?.status !== 'done' && task?.status !== 'cancelled'
+  const statusLabels = { queued: 'ticketStatusQueued', running: 'overviewStatusRunning', idle: 'ticketStatusIdle', review: 'overviewStatusReview', done: 'overviewCompleted', completed: 'overviewCompleted', cancelled: 'ticketStatusCancelled' } as const
+  const attention = Boolean(task && (task.prepareError || task.paused) && !['done', 'completed', 'cancelled'].includes(task.status))
   return (
     <section className="@container flex min-w-0 flex-col gap-5 pb-10" aria-label={t('ticketDetail')}>
       <div><Button variant="ghost" size="sm" icon={<ArrowLeftIcon width={16} height={16} />} onClick={() => go(returnTo)}>{t('ticketBack')}</Button></div>
@@ -78,14 +78,14 @@ export function TicketDetail(): ReactNode {
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-3">
                 <span className="text-xs text-(--dsw-alias-label-tertiary)">{task.id}</span>
-                <Tag tone={attention ? 'danger' : task.status === 'done' ? 'success' : task.status === 'running' ? 'info' : task.status === 'review' ? 'warning' : 'quiet'}>{attention ? t(task.paused ? 'ticketStatusPaused' : 'overviewStatusIntervention') : t(statusLabels[task.status])}</Tag>
+                <Tag tone={attention ? 'danger' : ['done', 'completed'].includes(task.status) ? 'success' : task.status === 'running' ? 'info' : task.status === 'review' ? 'warning' : 'quiet'}>{attention ? t(task.paused ? 'ticketStatusPaused' : 'overviewStatusIntervention') : t(statusLabels[task.status])}</Tag>
               </div>
               <h2 className="m-0 text-lg leading-7 font-medium [overflow-wrap:anywhere]">{task.title}</h2>
             </div>
             <div className="flex min-w-0 flex-col items-end gap-1.5">
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <PrStatus ticket={task} />
-                {task.status !== 'done' && task.status !== 'cancelled' && (
+                {!['done', 'completed', 'cancelled'].includes(task.status) && (
                   <>
                     <Button
                       variant="outline"
@@ -132,7 +132,7 @@ export function TicketDetail(): ReactNode {
                 </span>
               )}
             </Metric>
-            <Metric label={t(task.status === 'waiting' ? 'ticketWaitDuration' : 'ticketExecutionDuration')} icon={<ActivityIcon width={17} height={17} />}>{seconds !== null ? <span className="tabular-nums">{seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`}</span> : <Empty inline title={t('ticketDurationUnknown')} className="font-normal" />}</Metric>
+            <Metric label={t(task.status === 'queued' ? 'ticketWaitDuration' : 'ticketExecutionDuration')} icon={<ActivityIcon width={17} height={17} />}>{seconds !== null ? <span className="tabular-nums">{seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`}</span> : <Empty inline title={t('ticketDurationUnknown')} className="font-normal" />}</Metric>
             <Metric label={t('ticketExecutionBranch')} icon={<GitBranchIcon width={17} height={17} />}>{latest?.branch ? <span className="min-w-0 truncate font-mono text-xs" title={latest.branch}>{latest.branch}</span> : <Empty inline title={t('ticketBranchPending')} className="font-normal" />}</Metric>
           </dl>
           <div className="grid min-w-0 gap-4 @min-[740px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">

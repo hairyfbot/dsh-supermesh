@@ -4,7 +4,7 @@
 
 /// 任务之间的关联类型。
 enum TicketLinkKind {
-  /// 前置依赖：relatedId 没做完，ticketId 就停在「等待触发」
+  /// 前置依赖：relatedId 没做完，ticketId 就停在排队中
   depends
   /// 平行关联：只是相关，谁都不等谁（对称，存一条就够）
   relates
@@ -96,24 +96,27 @@ model TicketLink {
   @@map("ticket_link")
 }
 
-/// 任务的状态机。
+/// 任务的状态机。阶段按事实派生，不由会话写。
 ///
 /// 没有 draft：任务一旦存在，projectId 就必须是确定的，
 /// 「还没想好归谁」属于话题分诊阶段（见 ThreadTriage），不该污染任务列表。
 ///
 /// 没有 attention：一张工单可以一边 running 一边等人，把 status 覆盖掉会丢掉
 /// 它本来跑到哪一步。所以「需介入」是派生出来的 —— 存在指向它的 pending ask 即是。
+/// 派工失败同理，记在 prepareError 上，不占状态位。
 enum TicketStatus {
-  /// 等待触发：等前置任务完成，或者因为某些原因还没建 Worker
-  waiting
-  /// 排队中：项目编排并发已满，等前面的任务腾出位置
+  /// 排队中：还没派工，或有一个待启动的 Worker
   queued
-  /// 运行中：已经交给 Worker，正在跑
+  /// 运行中：Worker 在跑
   running
-  /// 待审核：分支/PR 已创建，等人类审核
+  /// 等待触发：跑过一轮、Worker 已结束，等新事实
+  idle
+  /// 待审核：报 ready 且票归属某个变更请求，等人审
   review
-  /// 已完成
+  /// 已完成：变更请求合并 / 关闭收尾
   done
+  /// 已完成：报 ready 正常完成，没有变更请求可审
+  completed
   /// 已取消：人类放弃
   cancelled
 }

@@ -100,26 +100,35 @@ attach 只加一条订阅，`unlink_thread` 只删一条订阅。写 `triage` �
 ```mermaid
 stateDiagram-v2
     direction LR
-    [*] --> waiting : create_ticket
-    waiting --> queued : 依赖满足但并发满
-    waiting --> running : create_worker
-    queued --> running : 腾出并发位
-    running --> review : Worker 报 ready
-    running --> waiting : Worker 结束需重开
-    review --> done : PR merged
+    [*] --> queued : create_ticket
+    queued --> running : create_worker 派工
+    running --> review : 报 ready 且归属变更请求
+    running --> completed : 报 ready 且没有变更请求
+    running --> idle : Worker 结束，等新事实
     review --> running : 有新改动要求
-    waiting --> cancelled : 人类放弃
-    running --> cancelled : 人类放弃
+    review --> done : PR merged / closed
+    idle --> running : 新事实重新派工
     queued --> cancelled : 人类放弃
+    running --> cancelled : 人类放弃
+    idle --> cancelled : 人类放弃
     review --> cancelled : 人类放弃
     done --> [*]
+    completed --> [*]
     cancelled --> [*]
 ```
+
+阶段按事实落库，不由会话写：`queued`（还没派工，或有一个待启动的 Worker）→ `running`（Worker 在跑）
+→ `idle`（跑过一轮、Worker 已结束，等新触发）或 `review`（报 `ready` 且票归属某个变更请求）
+→ `done` / `completed` / `cancelled`。
+
+**`ready` 的落点看有没有变更请求。** `prUrl` 或任一 PR 话题都算归属：有就进 `review` 等人审，
+没有就是正常完成，直接 `completed` —— 没有 PR 可审的票不该停在 `review`，也不该退回 `idle` 等一个不会来的触发。
 
 **没有 `draft`。** 任务一旦存在，`projectId` 就必须确定 ——「还没想好归谁」属于话题分诊。
 
 **没有 `attention`。** 工单可以一边 `running` 一边等人，覆盖 `status` 会丢掉它跑到哪一步。
 「需介入」是派生的：存在指向它、`kind=ask`、`status=pending` 的 `Inbox`。
+派工失败同理，记在 `prepareError` 上，不占状态位。
 
 ### 暂停是 `paused` 开关，不是 `status` 取值
 
@@ -133,20 +142,20 @@ stateDiagram-v2
 ```
 
 **暂停不阻止事实结单。** PR 合并 / 关闭是外部事实，与「要不要继续派工」无关：
-`prState` 到终态时照常推成 `done`。让暂停挡住结单，票会永远停在 `waiting`，
+`prState` 到终态时照常推成 `done`。让暂停挡住结单，票会永远停在 `idle`，
 而它指向的改动早已在 main 上 —— 这是虚报「还有活」。
 
-### 孤儿票：`prUrl` 永远为空的 `waiting`
+### 孤儿票：`prUrl` 永远为空的票
 
 同一话题被并发建出两张票时，后一张拿不到 PR（PR 只能挂一张）。
-它不会自己走到终态，需要人 `stop_ticket`（`cancelled`）收掉。
-根治在建票侧：`create_ticket` 必须对同一 `threadId` 串行。
+Worker 报 `ready` 且没有变更请求时票直接 `completed`，不再需要人手工收掉；
+根治仍在建票侧：`create_ticket` 必须对同一 `threadId` 串行。
 
 ### 任务之间的关联
 
 | kind | 影响 | 谁写 |
 | --- | --- | --- |
-| `depends` | `relatedId` 没做完，`ticketId` 停在 `waiting` | 同项目 `project` 的 `link_ticket`；跨项目 `supervisor` 的 `link_dependency_ticket` |
+| `depends` | `relatedId` 没做完，`ticketId` 停在 `queued` | 同项目 `project` 的 `link_ticket`；跨项目 `supervisor` 的 `link_dependency_ticket` |
 | `relates` | 无 | 同上 |
 
 `depends` 的第二个作用：`relatedId` 到终态时**系统自动通知 Supervisor**（见第 7 章）。
@@ -175,17 +184,17 @@ stateDiagram-v2
 | `WorkerEndReason` | 编排动作 |
 | --- | --- |
 | `completed` | 看 `reportState` 定任务状态 |
-| `stopped` | 任务回 `waiting` |
-| `failed` | 回 `waiting`，或转人工 |
-| `restarted` | 回 `waiting`，自动重开 |
+| `stopped` | 任务回 `idle` |
+| `failed` | 回 `idle`，或转人工 |
+| `restarted` | 回 `idle`，自动重开 |
 
-**重开必须重新投递**：`waiting → queued → running` 每一轮都用新的 requestId 投 prompt。
+**重开必须重新投递**：`queued → running` 每一轮都用新的 requestId 投 prompt。
 会话控制器按 rpcId 去重，复用同一个 id 会让重派工被静默吞掉 —— worker 置 `running`、会话里却什么都没有。
 
-**`waiting` 不自动重开**：worker 结束后回 `waiting` 是等新事实（评论、`retry_ticket`、编排 `send`），
-拿同一份 prompt 反复重派只会让票在 `waiting` / `running` 之间空转。
+**`idle` 不自动重开**：worker 结束后回 `idle` 是等新事实（评论、`retry_ticket`、编排 `send`），
+拿同一份 prompt 反复重派只会让票在 `idle` / `running` 之间空转。
 
-**派工只由 `create_worker` 发起。** 从没派过工、也没有未完成 `depends` 的票，插件只往项目编排的收件箱
+**派工只由 `create_worker` 发起。** 从没派过工、也没有未完成 `depends` 的 `queued` 票，插件只往项目编排的收件箱
 投一条「可以派工」的通知（同一张票只投一次），不建会话、不建工作树；分支名由编排给，工作树由插件保证。
 
 ### 汇报状态
@@ -197,8 +206,8 @@ Worker 跑完时，插件把它最后一条消息写进项目编排的收件箱�
 ```mermaid
 flowchart LR
     P["progress"] --> R{"干完了吗"}
-    R -->|是| READY["ready<br/>PR 已开 → Ticket review"]
-    R -->|失败| F["failed → Ticket waiting"]
+    R -->|是| READY["ready<br/>有变更请求 → Ticket review<br/>没有 → Ticket completed"]
+    R -->|失败| F["failed → Ticket idle"]
     R -->|"这事不用做"| D["dropped<br/>直接结束，不发消息"]
 ```
 
@@ -440,7 +449,7 @@ PR 合并 / 关闭 → closePull → threadClosed(thread, outcome, at)
 
 Worker 回合结束时插件把证据里的地址写进票的 `prUrl` 并订阅那条 PR 话题；
 采集侧随后按 `prUrl` 反查就能接回票，合并 / 关闭照常推成 `done`。
-运行时启动后还会给 `waiting` / `review` 里 `prUrl` 为空的票补挂一次，历史票因此能自己收尾。
+运行时启动后还会给 `idle` / `review` 里 `prUrl` 为空的票补挂一次，历史票因此能自己收尾。
 
 ### 8.5 两套 CI
 
@@ -525,7 +534,7 @@ sequenceDiagram
 | `ThreadKind` | `issue` · `pull` · `chat` · `ci` |
 | `ThreadTriage` | `pending` · `claimed` · `ignored` |
 | `TriggerKind` | `comment` · `open` · `close` · `ci` · `push` |
-| `TicketStatus` | `waiting` · `queued` · `running` · `review` · `done` · `cancelled` |
+| `TicketStatus` | `queued` · `running` · `idle` · `review` · `done` · `completed` · `cancelled` |
 | `PullRequestState` | `open` · `merged` · `closed` |
 | `CiState` | `pending` · `running` · `passing` · `failing` |
 | `TicketLinkKind` | `depends` · `relates` |
@@ -546,7 +555,7 @@ sequenceDiagram
 | 任务需介入 | 存在指向它、`kind=ask`、`status=pending` 的 Inbox |
 | 收件箱未读数 | `type=自己 AND status=pending` 的 count |
 | 已升级的 ask | `escalations > 0` |
-| Supervisor 自动关停 | 关联工单**全部 `done`** 且收件箱无 pending → 插件写 `closed` |
+| Supervisor 自动关停 | 关联工单**全部 `done` / `completed`** 且收件箱无 pending → 插件写 `closed` |
 | Supervisor 待主编排决定 | 关联工单里有 `cancelled` → 只投 notice，不自动关 |
 | 某票是不是某 Supervisor 的 | `SupervisorTicket` 有记录 |
 
