@@ -1,7 +1,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { Selectable } from 'kysely'
 import type { InboxScope } from '@/database/models/inbox'
-import type { DB } from '@/database/types'
+import type { DB, ThreadKind, ThreadTriage } from '@/database/types'
 import type { TriggerStrength } from '@/types/admission'
 import type {} from '@/types/mailbox'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -56,7 +56,7 @@ export const inbox = defineService({
         triggers.set(triggerId, { kind: trigger.kind, actorName: trigger.actorName, human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned), strength: await triggerStrength(trigger) })
     }
     // 话题归属和仓库名是服务端事实：主编排据此决定归哪个项目，不必拿显示名或远程地址猜。
-    const threads = new Map<string, { id: string, kind: string, refId: string, title: string, url: string | null, triage: string, projectId: string | null, repository: string | null, project: { id: string, name: string, enabled: boolean } | null }>()
+    const threads = new Map<string, { id: string, kind: ThreadKind, refId: string, title: string, url: string | null, triage: ThreadTriage, projectId: string | null, repository: string | null, project: { id: string, name: string, enabled: boolean } | null }>()
     for (const threadId of new Set(rows.map(message => message.threadId).filter(Boolean) as string[])) {
       const thread = await db.thread.findById(threadId)
       if (!thread)
