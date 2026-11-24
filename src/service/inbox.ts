@@ -14,7 +14,6 @@ import { repositoryOf } from '@/utils/repository'
 import { defineService } from '@/utils/service'
 
 type Message = Selectable<DB['inbox']>
-const deliveredAnswers = new Set<string>()
 let stopped = false
 
 export const inbox = defineService({
@@ -93,11 +92,9 @@ export const inbox = defineService({
     if (singlet.busy('inbox:delivery') || singlet.busy('inbox:answers'))
       throw new Error('inbox_busy')
     stopped = false
-    deliveredAnswers.clear()
     return async () => {
       stopped = true
       await Promise.allSettled([singlet.drain()])
-      deliveredAnswers.clear()
     }
   },
   deliver: singlet('inbox:delivery', async () => {
@@ -149,31 +146,34 @@ export const inbox = defineService({
     for (const message of await db.inbox.listAnswered()) {
       if (stopped)
         break
-      if (!message.answer || deliveredAnswers.has(`${message.id}:relayed`) || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
+      if (!message.answer || (message.nextRetryAt && message.nextRetryAt > new Date().toISOString()))
         continue
       try {
         // 编排会话只收紧凑通知：答案落成一条邮件，由收件人自己 read_mailbox 取。
         if (message.origin !== 'worker') {
           await db.inbox.enqueueAnswer(message)
-          if (message.status !== 'done')
-            await db.inbox.settleAnswer(message.id, new Date().toISOString())
+          await db.inbox.settleAnswer(message.id, new Date().toISOString())
           continue
         }
-        const worker = message.workerId ? await db.worker.findById(message.workerId) : undefined
-        if (!worker)
-          throw new Error('worker_not_found')
-        if (worker.status === 'ended') {
-          // Worker 已经结束，答案送不回它了：改投项目编排，别让答案烂在队列里。
-          await db.inbox.relayAnswer(message.id, `${worker.id} 已结束，答案没能送到它手里`, new Date().toISOString())
-          deliveredAnswers.add(`${message.id}:relayed`)
-          continue
-        }
-        if (deliveredAnswers.has(`${message.id}:${worker.id}`) || stopped)
-          continue
         if (message.ticketId && (await db.ticket.findById(message.ticketId))?.paused)
           continue
+        const worker = message.workerId ? await db.worker.findById(message.workerId) : undefined
+        if (!worker) {
+          await db.inbox.relayAnswer(message.id, '提问的 Worker 记录已不存在，答案没能送到它手里', new Date().toISOString())
+          continue
+        }
+        // 还没派工的 Worker 先不收答案：等它跑起来的那一轮再送，别把记录直接改成 running。
+        if (worker.status === 'queued')
+          continue
+        // ended 只是「这一轮跑完了」，会话还在就还能续：把 Worker 重新拉起来把答案送回去。
+        // 只有会话已经归档（resolve 不到）才改投项目编排，并说明退回原因。
+        if (!(await session.resolve(worker.id))) {
+          await db.inbox.relayAnswer(message.id, `${worker.id} 的会话已归档或日志缺失，答案没能送到它手里`, new Date().toISOString())
+          continue
+        }
+        await resumeWorker(worker)
+        await session.activate(worker.id)
         await session.send(worker.id, `[Answer ${message.id}] ${message.answer}`, 'reply', `supermesh:answer:${message.id}`)
-        deliveredAnswers.add(`${message.id}:${worker.id}`)
         await db.inbox.finishAnswer(message.id, new Date().toISOString())
       }
       catch (error) {
@@ -185,14 +185,28 @@ export const inbox = defineService({
         const delays = Math.min(2 ** Math.min(attempts, 20), settings.deliveryRetryCeilingSeconds) * 1000
         await db.inbox.recordDeliveryFailure(message.id, reason, new Date(Date.now() + delays).toISOString())
         // 已答的 ask 不再转 stalled：投递失败到上限就把答案改投项目编排，行本身收尾。
-        if (attempts >= settings.deliveryMaxAttempts) {
+        if (attempts >= settings.deliveryMaxAttempts)
           await db.inbox.relayAnswer(message.id, `答案投递失败（${reason}）`, new Date().toISOString())
-          deliveredAnswers.add(`${message.id}:relayed`)
-        }
       }
     }
   }),
 })
+
+/**
+ * 把已经结束、但会话还在的 Worker 重新拉起来。
+ *
+ * 答案要送进一个 ended 的 Worker，光 send 不够：worker 记录不回到 running，
+ * 这一轮结束时就没人收尾（observe 只认 running），票会一直停在原状态。
+ */
+async function resumeWorker(worker: Selectable<DB['worker']>): Promise<void> {
+  if (worker.status !== 'ended')
+    return
+  const now = new Date().toISOString()
+  await db.worker.update(worker.id, { status: 'running', endedAt: null, endedReason: null })
+  const ticket = await db.ticket.findById(worker.ticketId)
+  if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled')
+    await db.ticket.start(ticket.id, now, now)
+}
 
 async function recipient(message: Message): Promise<string> {
   if (message.type === 'main')

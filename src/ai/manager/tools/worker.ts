@@ -67,21 +67,20 @@ export const send = defineTool({
     const ticket = await db.ticket.findById(worker.ticketId)
     if (!ticket || ticket.projectId !== identity.projectId)
       throw new Error('Worker 不属于当前项目')
-    if (worker.status === 'ended')
-      throw new Error('Worker 已结束')
-    if (!(await session.lookup(worker.id)))
-      throw new Error('Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送')
-    let messageId: string
+    // reply 只落答案：投递交给 inbox.deliverAnswers —— Worker 等答案时这一轮已经结束，
+    // 在这里判「已结束」就等于把答案丢掉。会话已归档时由投递侧改投项目编排。
     if (args.mode === 'reply') {
       const asks = (await db.inbox.listByTicket(ticket.id)).filter(row => row.workerId === worker.id && row.kind === 'ask' && row.status === 'pending')
       if (asks.length !== 1 || !db.inbox.owns(asks[0]!, { type: 'project', projectId: identity.projectId }))
         throw new Error('reply 必须唯一对应当前项目编排待答的 ask')
       await db.inbox.answerScoped(asks[0]!.id, args.text, { type: 'project', projectId: identity.projectId }, new Date().toISOString())
-      messageId = await session.send(worker.id, `[Answer ${asks[0]!.id}] ${args.text}`, 'reply', `supermesh:answer:${asks[0]!.id}`)
+      return JSON.stringify({ askId: asks[0]!.id, delivery: 'queued' })
     }
-    else {
-      messageId = await session.send(worker.id, args.text, args.mode === 'interrupt' ? 'interrupt' : 'wake')
-    }
+    if (worker.status === 'ended')
+      throw new Error('Worker 已结束')
+    if (!(await session.lookup(worker.id)))
+      throw new Error('Worker 未在运行时加载、已归档或不属于 Supermesh；不能直接发送')
+    const messageId = await session.send(worker.id, args.text, args.mode === 'interrupt' ? 'interrupt' : 'wake')
     return JSON.stringify({ messageId })
   },
 })
