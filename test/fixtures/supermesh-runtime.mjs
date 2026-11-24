@@ -48,6 +48,10 @@ const roles = ['orchestrator', 'manager', 'supervisor', 'worker']
 const pluginHome = join(process.env.DSH_HOME, '.supermesh')
 const agentDirectory = join(pluginHome, 'workspace')
 const now = new Date().toISOString()
+const caseName = process.argv[2]
+// 只有需要真实工作树的用例才挂官方 worktree 服务：其余用例保持最小装配，
+// 免得沙箱策略等新服务改变它们正在验证的行为。
+const worktreeCases = new Set(['workerDispatchWorktree', 'workerDispatchFailure', 'workerRedispatch'])
 let runtime
 
 async function start() {
@@ -95,6 +99,14 @@ async function start() {
     ['dsh-client-file-upload', {}],
     ['dsh-agent-preset-registry', { default: 'orchestrator' }],
     ['dsh-api-session-controller', {}],
+    ...worktreeCases.has(caseName)
+      ? [
+          ['dsh-working-directory', {}],
+          ['dsh-sandbox-local', {}],
+          ['dsh-sandbox-policy', { mode: 'danger-full-access', workspaceRoot: process.cwd() }],
+          ['dsh-experimental-worktree', {}],
+        ]
+      : [],
   ]
   try {
     const fibers = []
@@ -162,6 +174,21 @@ async function project(id, enabled = true) {
   if (!enabled)
     await db.project.setEnabled(id, false, now)
   return row
+}
+
+async function initRepository(directory) {
+  await git('git', ['init'], { cwd: directory })
+  await git('git', ['-c', 'user.name=Initial author', '-c', 'user.email=initial@example.invalid', '-c', 'core.hooksPath=', '-c', 'commit.gpgSign=false', 'commit', '--allow-empty', '-m', 'Initialize isolated test repository'], { cwd: directory })
+}
+
+/** 会话里所有以「票号:」开头的派工正文，用来判断这一轮到底有没有把 prompt 投出去。 */
+async function dispatchPrompts(id, ticketId) {
+  const { events } = await session.history(id)
+  return events.flatMap(event => event.type === 'user/message'
+    ? [event.data]
+    : event.type === 'agent/inbox/spliced' ? event.data.inserted : [])
+    .flatMap(message => message.content.flatMap(part => part.type === 'text' ? [part.text] : []))
+    .filter(text => text.startsWith(`${ticketId}:`))
 }
 
 async function supervisor(id) {
@@ -626,19 +653,13 @@ const cases = {
   async workerRedispatch() {
     const p = await project('redispatch-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    await initRepository(p.directory)
     const ticketId = 'redispatch-ticket'
     await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '重派工必须真的送达', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const queued = await db.worker.queue(ticketId, p.id)
-    // 预先建好会话且不填 worktree：派工会复用这个会话，不必真的建 worktree。
+    // 预先建好会话且不填 worktree：派工复用这个会话，并补建它缺的工作树。
     await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
-    const dispatches = async () => {
-      const { events } = await session.history(queued.id)
-      const texts = events.flatMap(event => event.type === 'user/message'
-        ? [event.data]
-        : event.type === 'agent/inbox/spliced' ? event.data.inserted : [])
-        .flatMap(message => message.content.flatMap(part => part.type === 'text' ? [part.text] : []))
-      return texts.filter(text => text.startsWith(`${ticketId}:`))
-    }
+    const dispatches = () => dispatchPrompts(queued.id, ticketId)
     await workers.reconcile()
     await settle()
     assert.equal((await dispatches()).length, 1, 'the first dispatch must reach the worker session')
@@ -708,6 +729,85 @@ const cases = {
     assert.equal(resumed.session.id, dispatched.session.id, '恢复必须续在同一个会话 id 上')
   },
   workerRestartWithoutWorktree: () => cases.workerRestart(false),
+  /**
+   * 首轮派工在 session.create 之后、worktree 建好之前失败：会话已经落盘，worker 还没有分支和工作树。
+   * 下一轮派工必须补建工作树，不能降级到项目主 clone。
+   */
+  async workerDispatchWorktree() {
+    const p = await project('dispatch-worktree-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    await initRepository(p.directory)
+    const ticketId = 'dispatch-worktree-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '缺工作树必须补建', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const queued = await db.worker.queue(ticketId, p.id)
+    await session.create('worker', { sessionId: queued.id, ticketId, projectId: p.id, directory: p.directory })
+    await workers.reconcile()
+    await settle()
+    const dispatched = await db.worker.findById(queued.id)
+    assert.equal(typeof dispatched.branch, 'string', '派工必须给 Worker 建出分支')
+    assert.equal(typeof dispatched.worktree, 'string', '派工必须给 Worker 建出工作树')
+    assert.notEqual(dispatched.worktree.replace(/\\/g, '/'), p.directory.replace(/\\/g, '/'), 'Worker 绝不能跑在项目主 clone 上')
+    const agent = runtime.ctx.agents.get(SessionId(queued.id))
+    assert.equal(runtime.ctx.workingDirectory.get(agent.session), dispatched.worktree, 'Worker 会话必须落在自己的工作树里')
+    const listed = await git('git', ['worktree', 'list', '--porcelain'], { cwd: p.directory })
+    assert.equal(listed.stdout.replace(/\\/g, '/').includes(dispatched.worktree.replace(/\\/g, '/')), true, '工作树必须是这个仓库注册过的 git worktree')
+    const branch = await git('git', ['branch', '--show-current'], { cwd: dispatched.worktree })
+    assert.equal(branch.stdout.trim(), dispatched.branch, '工作树必须切在记录的分支上')
+    assert.equal((await dispatchPrompts(queued.id, ticketId)).length, 1, '补建工作树之后派工 prompt 必须送达')
+    assert.notEqual((await db.worker.findById(queued.id)).startedAt, null, '补建工作树之后 Worker 必须真的起过')
+    assert.equal((await db.ticket.findById(ticketId)).prepareError, null, '真正派工成功之后票面上不该留准备阶段的错误')
+  },
+  /** 内部调度只通知编排，不自己建会话：可派工的票投一条通知，被依赖卡住的票不发。 */
+  async workerDispatchNotice() {
+    const p = await project('dispatch-notice-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const ticketId = 'dispatch-notice-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '可派工只通知编排', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await workers.reconcile()
+    await workers.reconcile()
+    const mails = (await db.inbox.listByTicket(ticketId)).filter(row => row.id === `supermesh:dispatch:${ticketId}`)
+    assert.equal(mails.length, 1, '可派工的票只能通知编排一次')
+    assert.equal(mails[0].type, 'project')
+    assert.equal(mails[0].projectId, p.id)
+    assert.equal(mails[0].kind, 'ticket')
+    assert.equal((await db.worker.listByTicket(ticketId)).length, 0, '内部调度不得自己排队建 Worker')
+    assert.equal((await db.ticket.findById(ticketId)).status, 'waiting', '通知不等于派工，票还留在 waiting')
+
+    const blockedId = 'dispatch-notice-blocked'
+    const dependencyId = 'dispatch-notice-dependency'
+    for (const id of [blockedId, dependencyId])
+      await db.ticket.create({ id, projectId: p.id, channelId: 'github', title: id, description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticketLink.link(blockedId, dependencyId, 'depends', now)
+    await workers.reconcile()
+    assert.equal(await db.inbox.findById(`supermesh:dispatch:${blockedId}`), undefined, '依赖没做完的票不得被通知派工')
+    await db.ticket.finish(dependencyId, 'done', now, now)
+    await workers.reconcile()
+    assert.notEqual(await db.inbox.findById(`supermesh:dispatch:${blockedId}`), undefined, '依赖完成后必须通知一次派工')
+  },
+  /** 建不出工作树就明确失败：不降级到项目目录，票退回 queued 并让编排看见原因。 */
+  async workerDispatchFailure() {
+    const p = await project('dispatch-failure-project')
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    // 有仓库但还没有任何提交：git 建不出工作树，派工必须明确失败。
+    await git('git', ['init'], { cwd: p.directory })
+    const ticketId = 'dispatch-failure-ticket'
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '建不出工作树就失败', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    const queued = await db.worker.queue(ticketId, p.id)
+    await workers.reconcile()
+    await settle()
+    const failed = await db.worker.findById(queued.id)
+    assert.equal(failed.status, 'ended', '派工失败必须结束这条 worker 记录')
+    assert.equal(failed.endedReason, 'failed')
+    assert.equal(failed.branch, null, '失败时不得凭空记下一个分支')
+    assert.equal(failed.worktree, null, '失败时不得把项目目录记成工作树')
+    const ticket = await db.ticket.findById(ticketId)
+    assert.equal(ticket.status, 'queued', '失败后票退回 queued 等编排重派')
+    assert.equal(typeof ticket.prepareError === 'string' && ticket.prepareError.length > 0, true, '失败原因必须留在票面上')
+    assert.equal((await dispatchPrompts(queued.id, ticketId)).length, 0, '没有工作树就绝不能把派工 prompt 投出去')
+    const notice = (await db.inbox.listByTicket(ticketId)).find(row => row.id.startsWith(`supermesh:dispatch-failed:${ticketId}:`))
+    assert.equal(notice?.type, 'project', '派工失败必须通知项目编排')
+    assert.equal(notice.message.includes(ticket.prepareError), true, '通知里必须带上失败原因')
+  },
   async answerRelay() {
     const p = await project('relay-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
