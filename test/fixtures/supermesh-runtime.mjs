@@ -422,6 +422,12 @@ const cases = {
     assert.equal(initial.enabled, 1)
     assert.equal(initial.remoteUrl, 'https://github.com/example/supermesh-project')
     assert.equal((await projects.list()).find(row => row.id === initial.id).available, true)
+    // 探测到的改名写回后，每 5 秒的工作区同步不得用本地还没改的 origin 把它盖回去。
+    const renamed = 'https://github.com/example/supermesh-renamed'
+    await db.project.setRemoteUrl(initial.id, renamed, now)
+    await projects.sync()
+    assert.equal((await db.project.findById(initial.id)).remoteUrl, renamed)
+    assert.equal((await projects.list()).find(row => row.id === initial.id).available, true)
     await db.project.setEnabled(initial.id, false, now)
     await projects.sync()
     assert.equal((await db.project.findById(initial.id)).enabled, 0)

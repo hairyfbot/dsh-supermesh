@@ -63,4 +63,8 @@ describe('采集失败定位', () => {
   it('定位信息不改变投递失败码', () => {
     expect(courier.failure(new ChannelError('not_found', undefined, 'GET repos/a/b'), false)).toBe('not_found')
   })
+  it('可读原因随失败码一起给出，分类码仍在前缀', () => {
+    const error = new ChannelError('unknown_repository', undefined, undefined, '话题仓库 owner/renamed 与项目远端地址 https://github.com/owner/old 不一致')
+    expect(courier.failure(error, false)).toBe('unknown_repository(话题仓库 owner/renamed 与项目远端地址 https://github.com/owner/old 不一致)')
+  })
 })

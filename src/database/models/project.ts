@@ -66,6 +66,9 @@ export class Project extends Model<DB, 'project'> {
 
   async upsertWorkspace(value: Pick<DB['project'], 'id' | 'workspaceId' | 'name' | 'directory' | 'remoteUrl'>, updatedAt: string): Promise<Selectable<DB['project']>> {
     const hasRemote = Boolean(value.remoteUrl?.trim())
-    return this.db.insertInto('project').values({ ...value, enabled: hasRemote ? 1 : 0, orchestratorSessionId: null, createdAt: updatedAt, updatedAt }).onConflict(oc => oc.column('workspaceId').doUpdateSet({ name: value.name, directory: value.directory, remoteUrl: value.remoteUrl, ...(!hasRemote ? { enabled: 0 } : {}), updatedAt })).returningAll().executeTakeFirstOrThrow()
+    // 工作区扫描只补空缺：渠道探测到的改名是核实过的事实，本地 checkout 里还没改的 origin 不能把它盖回去。
+    const existing = await this.findByWorkspace(value.workspaceId)
+    const remoteUrl = !hasRemote ? null : existing?.remoteUrl?.trim() ? existing.remoteUrl : value.remoteUrl
+    return this.db.insertInto('project').values({ ...value, remoteUrl, enabled: hasRemote ? 1 : 0, orchestratorSessionId: null, createdAt: updatedAt, updatedAt }).onConflict(oc => oc.column('workspaceId').doUpdateSet({ name: value.name, directory: value.directory, remoteUrl, ...(!hasRemote ? { enabled: 0 } : {}), updatedAt })).returningAll().executeTakeFirstOrThrow()
   }
 }

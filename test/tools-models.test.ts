@@ -176,10 +176,11 @@ describe('source revision and disabled project contracts', () => {
 })
 
 describe('workspace fact synchronization', () => {
-  it('workspace refresh preserves the stored identity disabled choice and manager session', async () => {
+  it('workspace refresh keeps the stored remote, disabled choice and manager session', async () => {
     await models.project.setEnabled('p1', false, now)
     const row = await models.project.upsertWorkspace({ id: 'candidate-other-id', workspaceId: 'workspace-p1', name: 'Renamed workspace', directory: '/isolated/renamed', remoteUrl: 'https://github.com/org/renamed.git' }, '2026-01-02T00:00:00.000Z')
-    expect(row).toMatchObject({ id: 'p1', workspaceId: 'workspace-p1', enabled: 0, orchestratorSessionId: 'manager-p1', name: 'Renamed workspace', directory: '/isolated/renamed', remoteUrl: 'https://github.com/org/renamed.git', createdAt: now })
+    // 远端身份以渠道探测为准：工作区扫描不会用本地 origin 覆盖已有地址。
+    expect(row).toMatchObject({ id: 'p1', workspaceId: 'workspace-p1', enabled: 0, orchestratorSessionId: 'manager-p1', name: 'Renamed workspace', directory: '/isolated/renamed', remoteUrl: 'https://github.com/org/p1.git', createdAt: now })
     expect(await models.project.findById('candidate-other-id')).toBeUndefined()
     expect(await models.project.listAll()).toHaveLength(2)
   })

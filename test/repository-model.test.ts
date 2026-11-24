@@ -35,6 +35,19 @@ describe('workspace synchronization persistence', () => {
     expect(await project.listAll()).toHaveLength(1)
   })
 
+  it('a remote rename written by the channel probe survives the next workspace synchronization', async () => {
+    const original = await project.upsertWorkspace(workspace('renamed'), now)
+    await project.setRemoteUrl(original.id, 'https://github.com/new-owner/repository', '2026-11-18T00:00:00.000Z')
+    const synced = await project.upsertWorkspace(workspace('renamed'), '2026-11-19T00:00:00.000Z')
+    expect(synced).toMatchObject({ id: original.id, remoteUrl: 'https://github.com/new-owner/repository', enabled: 1 })
+  })
+
+  it('a project without a remote still picks up the address the workspace reports', async () => {
+    const original = await project.upsertWorkspace(workspace('discovered', null), now)
+    const synced = await project.upsertWorkspace(workspace('discovered'), '2026-11-19T00:00:00.000Z')
+    expect(synced).toMatchObject({ id: original.id, remoteUrl: 'https://github.com/org/repository.git' })
+  })
+
   it('a valid remote returning never silently re-enables a manually or automatically disabled project', async () => {
     await project.upsertWorkspace(workspace('manual'), now)
     await project.setEnabled('manual', false, now)
