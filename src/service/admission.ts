@@ -10,10 +10,17 @@ async function admin(actorName: string | null): Promise<boolean> {
   return name !== '' && (await setting.load()).administrators.some(entry => entry.toLowerCase() === name)
 }
 
+/** 触发作者是不是我们在该渠道的 bot 账号；读取时现查账号表，不额外存 self 列。 */
+async function ownAccount(trigger: Selectable<DB['trigger']>): Promise<boolean> {
+  const name = (trigger.actorName ?? '').toLowerCase()
+  return name !== '' && (await db.channelAccount.findByChannel(trigger.channelId)).some(account => account.role === 'bot' && account.name.toLowerCase() === name)
+}
+
 /** 按触发自身的点名事实和话题订阅判强度；订阅状态每次现查，票可能在建票之后才挂上。 */
 export async function triggerStrength(trigger: Selectable<DB['trigger']>): Promise<TriggerStrength> {
+  const thread = await db.thread.findById(trigger.threadId)
   const subscribed = (await db.ticketThread.listTicketIds(trigger.threadId)).length > 0
-  return triggerStrengthOf({ human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned), subscribed, admin: await admin(trigger.actorName) })
+  return triggerStrengthOf({ self: await ownAccount(trigger), kind: trigger.kind, issue: thread?.kind === 'issue', human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned), subscribed, admin: await admin(trigger.actorName) })
 }
 
 /** 建票闸用：指定 triggerId 时按那条触发判，否则取这些话题里最新的一条人类触发。 */

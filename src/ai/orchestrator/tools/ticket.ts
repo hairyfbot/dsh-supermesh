@@ -7,7 +7,7 @@ import { setting } from '@/service/setting'
 
 export const create_ticket = defineTool({
   name: 'create_ticket',
-  description: '开一张票。任务一旦存在，projectId 就必须确定。没 @ bot 的触发只是 inferred 候选，inferred 模式不是 auto 时会被拒绝。',
+  description: '开一张票。任务一旦存在，projectId 就必须确定。没 @ bot 的触发只是 inferred 候选，inferred 模式不是 auto 时会被拒绝；strength 为 self（你自己开的 issue）不是 inferred，不受这条限制。',
   parameters: {
     title: {
       type: 'string',
@@ -45,7 +45,7 @@ export const create_ticket = defineTool({
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
     if (!ticketAllowed(await latestTriggerStrength(args.threadIds, args.triggerId), (await setting.load()).inferred))
-      throw new Error('这条触发没有 @ bot，只是 inferred 候选，当前 inferred 模式不是 auto：只能做分诊记录，不能建票。要开工请让人 @ bot 一次，或在设置里把 inferred 改成 auto。')
+      throw new Error('这条触发没有 @ bot，只是 inferred 候选，当前 inferred 模式不是 auto：只能做分诊记录，不能建票。要开工请让人 @ bot 一次，或在设置里把 inferred 改成 auto。你自己开的 issue 强度是 self，不走这条限制。')
     return JSON.stringify(await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description))
   },
 })

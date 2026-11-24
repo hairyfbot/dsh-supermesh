@@ -99,7 +99,7 @@ export const courier = defineService({
   async ingest(port: IngestPort, thread: ThreadRow, row: ChannelRow, kind: 'open' | 'comment' | 'close', baseline: string, sourceKind: string): Promise<void> {
     const bots = await port.bots()
     const actorName = port.actor(row)
-    // bots() 就是我们在该渠道的登录账号；只有它发的消息不产生触发，第三方 bot 只是上下文。
+    // bots() 就是我们在该渠道的登录账号；它自己开的 issue 会以 self 强度送回主编排，其余消息不产生触发，第三方 bot 只是上下文。
     const self = actorName !== '' && bots.some(bot => bot.name.toLowerCase() === actorName.toLowerCase())
     const human = port.human(row, bots)
     const body = port.body(row)
@@ -111,8 +111,9 @@ export const courier = defineService({
     const historical = port.createdAt(row) < baseline
     const { administrators, inferred } = await setting.load()
     const admin = administrators.some(name => name.toLowerCase() === actorName.toLowerCase())
-    const admission = { self, human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, ignored: thread.triage === 'ignored', inferred }
-    if (!channelTriggerStrength(admission)) {
+    const admission = { self, human, historical, subscribed: subscriptions.length > 0, admin, mentioned, kind, issue: thread.kind === 'issue', ignored: thread.triage === 'ignored', inferred }
+    const strength = channelTriggerStrength(admission)
+    if (!strength) {
       // 白名单为空或没加这个人时，@bot 会被静默丢弃；这种「点名了却没反应」必须留痕。
       if (mentioned && channelTriggerRejection(admission) === 'not_administrator') {
         await courier.record(port.channel, 'admission', 'last_drop', { reason: 'not_administrator', actor: actorName, threadId: thread.id, at: now() })
@@ -143,7 +144,10 @@ export const courier = defineService({
       targets.set(target.key, target)
     }
     if (!subscriptions.length) {
-      const target = courier.route(thread, null)
+      // self 是主编排自己开的活，收件人只能是主编排：话题已被采集侧写上 projectId 也不改投项目。
+      const target: TriggerTarget = strength === 'self'
+        ? { key: 'main', type: 'main', projectId: thread.projectId, ticketId: null }
+        : courier.route(thread, null)
       targets.set(target.key, target)
     }
     for (const target of targets.values())

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { addressedToBot, channelTriggerRejection, channelTriggerStrength, ticketAllowed, triggerStrengthOf } from '@/channel/_shared/admission'
 
 describe('渠道准入强度', () => {
-  const base = { self: false, human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', ignored: false, inferred: 'observe' } as const
+  const base = { self: false, human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', issue: false, ignored: false, inferred: 'observe' } as const
 
   it('没 @ bot 的消息最多是 inferred 候选', () => {
     expect(channelTriggerStrength({ ...base, admin: true, kind: 'open' })).toBe('inferred')
@@ -42,8 +42,37 @@ describe('渠道准入强度', () => {
   })
 })
 
+describe('自己开的 issue', () => {
+  const self = { self: true, human: false, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'open', issue: true, ignored: false, inferred: 'observe' } as const
+
+  it('自己开的 issue 以 self 强度回到主编排，不受 inferred 档位影响', () => {
+    expect(channelTriggerStrength(self)).toBe('self')
+    expect(channelTriggerStrength({ ...self, inferred: 'off' })).toBe('self')
+    expect(channelTriggerRejection(self)).toBeNull()
+  })
+
+  it('self 的评论、非 issue 话题和已订阅话题仍然丢弃，原因是 self_actor', () => {
+    for (const input of [
+      { ...self, kind: 'comment' },
+      { ...self, kind: 'close' },
+      { ...self, issue: false },
+      { ...self, subscribed: true },
+    ]) {
+      expect(channelTriggerStrength(input)).toBeNull()
+      expect(channelTriggerRejection(input)).toBe('self_actor')
+    }
+  })
+
+  it('self 不是 explicit：只说明这是自己开的活，不冒充人工点名', () => {
+    expect(channelTriggerStrength(self)).not.toBe('explicit')
+    expect(channelTriggerStrength({ ...self, admin: true, mentioned: true })).toBe('self')
+    expect(ticketAllowed('self', 'off')).toBe(true)
+    expect(ticketAllowed('self', 'observe')).toBe(true)
+  })
+})
+
 describe('准入拒绝原因', () => {
-  const base = { self: false, human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', ignored: false, inferred: 'observe' } as const
+  const base = { self: false, human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', issue: false, ignored: false, inferred: 'observe' } as const
 
   it('被拒绝的消息给出可诊断原因，放行的消息没有原因', () => {
     expect(channelTriggerRejection({ ...base, mentioned: true })).toBe('not_administrator')
@@ -68,6 +97,8 @@ describe('准入拒绝原因', () => {
       { ...base, subscribed: true },
       { ...base, subscribed: true, inferred: 'off' as const },
       { ...base, self: true },
+      { ...base, self: true, kind: 'open', issue: true },
+      { ...base, self: true, kind: 'open', issue: true, subscribed: true },
       { ...base, admin: true, kind: 'open', ignored: true },
     ]) {
       const strength = channelTriggerStrength(input)
@@ -79,20 +110,30 @@ describe('准入拒绝原因', () => {
 
 describe('已投递触发的强度', () => {
   it('管理员点名或管理员在订阅话题上的跟进是 explicit，其余只能是 inferred', () => {
-    expect(triggerStrengthOf({ human: true, mentioned: true, subscribed: false, admin: true })).toBe('explicit')
-    expect(triggerStrengthOf({ human: true, mentioned: false, subscribed: true, admin: true })).toBe('explicit')
-    expect(triggerStrengthOf({ human: true, mentioned: false, subscribed: true, admin: false })).toBe('inferred')
-    expect(triggerStrengthOf({ human: true, mentioned: true, subscribed: false, admin: false })).toBe('inferred')
-    expect(triggerStrengthOf({ human: false, mentioned: false, subscribed: true, admin: true })).toBe('inferred')
+    expect(triggerStrengthOf({ self: false, kind: 'comment', issue: false, human: true, mentioned: true, subscribed: false, admin: true })).toBe('explicit')
+    expect(triggerStrengthOf({ self: false, kind: 'comment', issue: false, human: true, mentioned: false, subscribed: true, admin: true })).toBe('explicit')
+    expect(triggerStrengthOf({ self: false, kind: 'comment', issue: false, human: true, mentioned: false, subscribed: true, admin: false })).toBe('inferred')
+    expect(triggerStrengthOf({ self: false, kind: 'comment', issue: false, human: true, mentioned: true, subscribed: false, admin: false })).toBe('inferred')
+    expect(triggerStrengthOf({ self: false, kind: 'comment', issue: false, human: false, mentioned: false, subscribed: true, admin: true })).toBe('inferred')
+  })
+
+  it('自己开的 issue 是 self，其余 self 触发仍只是 inferred', () => {
+    expect(triggerStrengthOf({ self: true, kind: 'open', issue: true, human: false, mentioned: false, subscribed: false, admin: false })).toBe('self')
+    expect(triggerStrengthOf({ self: true, kind: 'open', issue: true, human: false, mentioned: false, subscribed: false, admin: true })).toBe('self')
+    expect(triggerStrengthOf({ self: true, kind: 'comment', issue: true, human: false, mentioned: false, subscribed: false, admin: false })).toBe('inferred')
+    expect(triggerStrengthOf({ self: true, kind: 'open', issue: false, human: false, mentioned: false, subscribed: false, admin: false })).toBe('inferred')
+    expect(triggerStrengthOf({ self: true, kind: 'open', issue: true, human: false, mentioned: false, subscribed: true, admin: false })).toBe('inferred')
   })
 })
 
 describe('建票闸', () => {
-  it('inferred 候选只有 auto 模式允许建票，explicit 与人工建票不受限', () => {
+  it('inferred 候选只有 auto 模式允许建票，explicit、self 与人工建票不受限', () => {
     expect(ticketAllowed('inferred', 'off')).toBe(false)
     expect(ticketAllowed('inferred', 'observe')).toBe(false)
     expect(ticketAllowed('inferred', 'auto')).toBe(true)
     expect(ticketAllowed('explicit', 'off')).toBe(true)
+    expect(ticketAllowed('self', 'off')).toBe(true)
+    expect(ticketAllowed('self', 'observe')).toBe(true)
     expect(ticketAllowed(undefined, 'observe')).toBe(true)
   })
 })
@@ -104,7 +145,7 @@ describe('是否在跟 bot 说话', () => {
     expect(addressedToBot({ mentioned: false, subscribed: true })).toBe(true)
   })
   it('进流程的准入与是否被点名是两件事', () => {
-    const base = { self: false, human: true, historical: false, subscribed: false, admin: true, mentioned: false, kind: 'open', ignored: false, inferred: 'observe' } as const
+    const base = { self: false, human: true, historical: false, subscribed: false, admin: true, mentioned: false, kind: 'open', issue: true, ignored: false, inferred: 'observe' } as const
     expect(channelTriggerStrength(base)).toBe('inferred')
     expect(addressedToBot({ mentioned: base.mentioned, subscribed: base.subscribed })).toBe(false)
   })

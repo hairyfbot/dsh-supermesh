@@ -932,6 +932,55 @@ const cases = {
     assert.equal(orphanMail?.thread?.project, null)
     assert.equal(orphanMail?.thread?.repository, 'example/orphan')
   },
+  async selfTrigger() {
+    const { courier } = await import('@/service/courier.ts')
+    const { triggerStrength } = await import('@/service/admission.ts')
+    const { github } = await import('@/channel/github/channel.ts')
+    const { binding } = await import('@/channel/github/service/binding.ts')
+    const { recordThread } = await import('@/channel/_shared/thread.ts')
+    await db.channel.saveConfiguration('github', 'GitHub', 'https://github.com', false, { commitName: 'Supermesh bot', commitEmail: 'bot@example.invalid' }, { name: 'hairyfbot', avatar: null })
+    const p = await project('self-trigger-project')
+    await db.project.setRemoteUrl(p.id, 'https://github.com/example/self-trigger', now)
+    const baseline = '1970-01-01T00:00:00.000Z'
+    const issue = number => ({ id: 9000 + number, number, title: `Issue ${number}`, html_url: `https://github.com/example/self-trigger/issues/${number}`, body: '主编排在别的仓库自己开的 issue', user: { login: 'hairyfbot', type: 'User' }, created_at: now, updated_at: now })
+    const thread = await recordThread({ channel: 'github', refId: 'example/self-trigger:1', kind: 'issue', title: 'Self opened', url: 'https://github.com/example/self-trigger/issues/1', createdAt: now, updatedAt: now, projectId: p.id })
+    await db.thread.claim(thread.id, p.id, now)
+    const claimed = await db.thread.findById(thread.id)
+    await courier.ingest(binding.of(github).ingestor, claimed, issue(1), 'open', baseline, 'open')
+    const triggerId = `${thread.id}:open:9001`
+    const trigger = await db.trigger.findById(triggerId)
+    assert.equal(trigger?.actorName, 'hairyfbot')
+    assert.equal(trigger?.human, 0)
+    assert.equal(await triggerStrength(trigger), 'self')
+    const mail = await db.inbox.findById(`${triggerId}:inbox:main`)
+    assert.equal(mail?.type, 'main', 'a self opened issue must reach main even when the thread is already claimed')
+    assert.equal(mail?.projectId, p.id, 'the mail still carries the project matched by its repository')
+    await inbox.deliver()
+    const mainId = await session.findMain()
+    await expectWake(mainId, 1)
+    const mailbox = await inbox.read(mainId)
+    assert.equal(mailbox.messages.find(message => message.id === `${triggerId}:inbox:main`)?.trigger?.strength, 'self')
+    const main = await session.activate(mainId)
+    const outcome = await runtime.ctx.tools.execute({
+      calls: [{ type: 'tool-call', id: 'call-self-ticket', name: 'create_ticket', arguments: JSON.stringify({ title: '自己开的 issue 直接建票', projectId: p.id, threadIds: [thread.id] }) }],
+      signal: AbortSignal.timeout(15000),
+      agent: main,
+    })
+    assert.equal(outcome.results[0].result.isError, false, 'self strength must pass the create_ticket gate')
+    const ticket = (await db.ticket.listAll()).find(row => row.projectId === p.id)
+    assert.equal(typeof ticket?.id, 'string')
+    assert.equal((await db.ticketThread.listTicketIds(thread.id)).includes(ticket.id), true)
+    const comment = await recordThread({ channel: 'github', refId: 'example/self-trigger:2', kind: 'issue', title: 'Self comment', url: 'https://github.com/example/self-trigger/issues/2', createdAt: now, updatedAt: now, projectId: p.id })
+    const commentRow = { id: 9102, body: '自己补一条评论', html_url: `${comment.url}#issuecomment-9102`, user: { login: 'hairyfbot', type: 'User' }, created_at: now, updated_at: now }
+    await courier.ingest(binding.of(github).ingestor, comment, commentRow, 'comment', baseline, 'comment')
+    const commentTriggerId = `${comment.id}:comment:9102`
+    assert.equal(await db.trigger.exists(commentTriggerId), true)
+    assert.equal(await triggerStrength(await db.trigger.findById(commentTriggerId)), 'inferred')
+    assert.equal(await db.inbox.findById(`${commentTriggerId}:inbox:main`), undefined, 'a bot comment must not wake main')
+    assert.equal(await db.inbox.findById(`${commentTriggerId}:inbox:project`), undefined)
+    await courier.ingest(binding.of(github).ingestor, thread, { ...issue(1), id: 9201, body: '票建好之后再评论' }, 'comment', baseline, 'comment')
+    assert.equal(await db.inbox.findById(`${thread.id}:comment:9201:inbox:main`), undefined, 'an already subscribed thread must not let a self comment through')
+  },
   async supervisorOpen() {
     const p = await project('supervisor-open-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
