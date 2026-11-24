@@ -50,6 +50,16 @@ export class Thread extends Model<DB, 'thread'> {
       .execute()
   }
 
+  /** 采集侧按仓库补归属：只填还没有归属的话题，不覆盖主编排已经写下的结论。 */
+  async bindProject(id: string, projectId: string): Promise<void> {
+    await this.db
+      .updateTable('thread')
+      .set({ projectId })
+      .where('id', '=', id)
+      .where('projectId', 'is', null)
+      .execute()
+  }
+
   async ignore(id: string, triagedAt: string): Promise<void> {
     await this.db
       .updateTable('thread')
@@ -69,5 +79,9 @@ export class Thread extends Model<DB, 'thread'> {
 
   async listByChannel(channelId: string): Promise<Selectable<DB['thread']>[]> {
     return this.db.selectFrom('thread').selectAll().where('channelId', '=', channelId).orderBy('id').execute()
+  }
+
+  async listUnbound(channelId: string): Promise<Selectable<DB['thread']>[]> {
+    return this.db.selectFrom('thread').selectAll().where('channelId', '=', channelId).where('projectId', 'is', null).orderBy('id').execute()
   }
 }

@@ -13,6 +13,8 @@ import type {
   Receipt,
   StreamInput,
   ThreadRow,
+  TicketRow,
+  TriggerTarget,
 } from '@/service/courier.types'
 import { channelTriggerRejection, channelTriggerStrength } from '@/channel/_shared/admission'
 import { ChannelError } from '@/channel/_shared/error'
@@ -84,6 +86,16 @@ export const courier = defineService({
       next.etag = value.etag
     await courier.record(input.channel, input.scope, `cursor:${input.name}`, next)
   },
+  /**
+   * 触发邮件的收件人：有票跟着就投给票所在项目；没有票时按话题分诊结论投给主编排或项目。
+   * 无论投给谁，都把话题已匹配的项目一起带上 —— 主编排据此知道该翻哪个项目的上下文，不必拿仓库名猜。
+   */
+  route(thread: ThreadRow, ticket: Pick<TicketRow, 'id' | 'projectId'> | null): TriggerTarget {
+    if (ticket)
+      return { key: ticket.projectId, type: 'project', projectId: ticket.projectId, ticketId: ticket.id }
+    const claimed = thread.triage === 'claimed' ? thread.projectId : null
+    return { key: claimed ?? 'main', type: claimed ? 'project' : 'main', projectId: thread.projectId, ticketId: null }
+  },
   async ingest(port: IngestPort, thread: ThreadRow, row: ChannelRow, kind: 'open' | 'comment' | 'close', baseline: string, sourceKind: string): Promise<void> {
     const bots = await port.bots()
     const actorName = port.actor(row)
@@ -106,7 +118,7 @@ export const courier = defineService({
       }
       return
     }
-    const targets = new Map<string, { projectId: string | null, ticketId: string | null }>()
+    const targets = new Map<string, TriggerTarget>()
     for (const ticketId of subscriptions) {
       const ticket = await db.ticket.findById(ticketId)
       if (!ticket)
@@ -117,17 +129,21 @@ export const courier = defineService({
         const resumed = await db.ticket.reopen(ticketId, at)
         if (resumed) {
           await db.worker.queue(ticketId, ticket.projectId)
-          targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
+          const target = courier.route(thread, ticket)
+          targets.set(target.key, target)
         }
         continue
       }
       await port.onSubscribedTicket?.(ticket)
-      targets.set(ticket.projectId, { projectId: ticket.projectId, ticketId })
+      const target = courier.route(thread, ticket)
+      targets.set(target.key, target)
     }
-    if (!subscriptions.length)
-      targets.set(thread.projectId ?? 'main', { projectId: thread.triage === 'claimed' ? thread.projectId : null, ticketId: null })
-    for (const [key, target] of targets)
-      await db.inbox.enqueue({ id: `${id}:inbox:${key}`, type: target.projectId ? 'project' : 'main', origin: 'channel', kind: 'trigger', message: body, title: thread.title, projectId: target.projectId, ticketId: target.ticketId, triggerId: id, threadId: thread.id })
+    if (!subscriptions.length) {
+      const target = courier.route(thread, null)
+      targets.set(target.key, target)
+    }
+    for (const target of targets.values())
+      await db.inbox.enqueue({ id: `${id}:inbox:${target.key}`, type: target.type, origin: 'channel', kind: 'trigger', message: body, title: thread.title, projectId: target.projectId, ticketId: target.ticketId, triggerId: id, threadId: thread.id })
   },
   async answers(port: AnswerPort, thread: ThreadRow, row: ChannelRow): Promise<void> {
     if (!(await port.admin(row)))

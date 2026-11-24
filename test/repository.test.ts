@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseGitRemote, parseRepositoryRemote } from '@/utils/repository'
+import { parseGitRemote, parseRepositoryRemote, repositoryOf } from '@/utils/repository'
 
 describe('repository remote parsing at the trusted boundary', () => {
   it.each(['https://github.com/Owner/Repository.git', 'git@github.com:Owner/Repository.git', 'ssh://git@github.com/Owner/Repository.git'])('normalizes %s to one webpage identity and workspace default', (remote) => {
@@ -25,6 +25,19 @@ describe('repository remote parsing at the trusted boundary', () => {
   it('accepts a self-hosted port but keeps GitHub on the default https port', () => {
     expect(parseGitRemote('https://git.example.test:8443/group/repository.git').webUrl).toBe('https://git.example.test:8443/group/repository')
     expect(() => parseGitRemote('https://github.com:444/org/repo')).toThrow('invalid_repository_remote')
+  })
+
+  it.each([
+    ['https://github.com/Owner/Repository.git', 'owner/repository'],
+    ['git@github.com:Owner/Repository.git', 'owner/repository'],
+    ['https://github.com/Owner/Repository/issues/5', 'owner/repository'],
+    ['https://github.com/Owner/Repository/pull/5#discussion_r1', 'owner/repository'],
+    ['https://git.example.test/group/subgroup/repository/-/merge_requests/7', 'group/subgroup/repository'],
+    ['https://git.example.test/group/subgroup/repository/issues/7', 'group/subgroup/repository'],
+    ['https://github.com/Owner/Repository', 'owner/repository'],
+    [null, null],
+  ])('normalizes %j to one repository key', (value, expected) => {
+    expect(repositoryOf(value)).toBe(expected)
   })
 
   it.each([

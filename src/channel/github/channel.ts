@@ -6,7 +6,7 @@ import type { DB } from '@/database/types'
 import type { AnswerPort, CollectContext, CollectPort, Cursor, DeliveryPort, IngestPort } from '@/service/courier.types'
 import { ChannelError } from '@/channel/_shared/error'
 import { array, identity, now, number, record, text, timestamp } from '@/channel/_shared/primitives'
-import { recordThread } from '@/channel/_shared/thread'
+import { bindThreads, recordThread } from '@/channel/_shared/thread'
 import { ExecFileGhRunner, GhError } from '@/channel/github/runner'
 import { binding } from '@/channel/github/service/binding'
 import { ci } from '@/channel/github/service/ci'
@@ -43,6 +43,12 @@ export class GitHubChannel implements ChannelAdapter {
     if (!project.enabled)
       throw new GhError('project_disabled')
     return project
+  }
+
+  /** 仓库唯一对应一个启用项目时返回它；没有项目或不止一个都不猜。 */
+  async bindingProject(repository: string): Promise<string | null> {
+    const projects = (await db.project.listAll()).filter(project => project.enabled && resource.of(project.remoteUrl) === repository)
+    return projects.length === 1 ? projects[0]!.id : null
   }
 
   async projectForRepository(repository: string) {
@@ -148,10 +154,14 @@ export class GitHubChannel implements ChannelAdapter {
   async collectProject(context: CollectContext, signal?: AbortSignal): Promise<void> {
     const repo = context.scope
     const { attempt, fail, baseline, environment } = context
+    // 仓库唯一对应一个启用项目时，采集侧直接写话题归属：触发邮件带上项目，主编排不必按仓库名猜。
+    const owner = await this.bindingProject(repo)
+    if (owner)
+      await bindThreads({ channel: 'github', refPrefix: `${repo}:`, projectId: owner })
     await attempt('topics', () => this.stream(repo, 'topics', `repos/${repo}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
       const target: Resource = { repository: repo, number: number(row.number), kind: row.pull_request ? 'pull' : 'issue' }
       resource.validate(row, target)
-      const thread = await this.ensureThread(target, row)
+      const thread = await this.ensureThread(target, row, owner)
       const kind = target.kind === 'issue' && row.state === 'closed' ? 'close' : 'open'
       await courier.ingest(this.ingestor, thread, row, kind, baseline, kind)
       if (target.kind === 'pull')
@@ -234,8 +244,8 @@ export class GitHubChannel implements ChannelAdapter {
     })
   }
 
-  private async ensureThread(target: Resource, row: ChannelRow): Promise<Thread> {
-    return recordThread({ channel: 'github', refId: `${target.repository}:${target.number}`, kind: target.kind, title: text(row.title), url: text(row.html_url), createdAt: timestamp(row.created_at), updatedAt: timestamp(row.updated_at) })
+  private async ensureThread(target: Resource, row: ChannelRow, projectId: string | null): Promise<Thread> {
+    return recordThread({ channel: 'github', refId: `${target.repository}:${target.number}`, kind: target.kind, title: text(row.title), url: text(row.html_url), createdAt: timestamp(row.created_at), updatedAt: timestamp(row.updated_at), projectId })
   }
 
   async collectPullRequest(projectId: string, threadId: string, number: number, signal?: AbortSignal): Promise<void> {

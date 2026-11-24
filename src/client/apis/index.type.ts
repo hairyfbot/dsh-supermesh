@@ -200,9 +200,10 @@ export type GetApiSupermeshSessionidMailboxResponse = {
   mailbox: null | {
     sessionId: string;
     role: "main" | "project" | "supervisor";
-    projects: { id: string; name: string; directory: string; remoteUrl: null | string }[];
+    projects: { id: string; name: string; directory: string; remoteUrl: null | string; repository: null | string }[];
     pendingCount: number;
     messages: {
+      thread?: undefined | { id: string; kind: "issue" | "pull" | "chat" | "ci"; refId: string; title: string; url: null | string; triage: "pending" | "claimed" | "ignored"; projectId: null | string; repository: null | string; project: null | { id: string; name: string; enabled: false | true } };
       trigger?: undefined | { kind: string; actorName: null | string; human: false | true; mentioned: false | true; strength: "explicit" | "inferred" };
       status: "pending" | "done" | "stalled";
       message: string;
