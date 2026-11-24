@@ -35,6 +35,11 @@ describe('点名判定剥掉平台不解析成 mention 的区域', () => {
     expect(mentioned('`未闭合的 @hairyfbot')).toEqual([true, true])
   })
 
+  it('正文末尾只剩空格的 @ 也算点名', () => {
+    expect(mentioned(['请关联相关 issues 一起修了', '', '@hairyfbot '].join('\n'))).toEqual([true, true])
+    expect(mentioned('@hairyfbot')).toEqual([true, true])
+  })
+
   it('大小写和名字边界按平台规则判定', () => {
     expect(mentioned('@HairyFBot 修复')).toEqual([true, true])
     expect(mentioned('@hairyfbot2 修复')).toEqual([false, false])
