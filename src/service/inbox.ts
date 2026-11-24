@@ -204,7 +204,7 @@ async function resumeWorker(worker: Selectable<DB['worker']>): Promise<void> {
   const now = new Date().toISOString()
   await db.worker.update(worker.id, { status: 'running', endedAt: null, endedReason: null })
   const ticket = await db.ticket.findById(worker.ticketId)
-  if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled')
+  if (ticket && !['done', 'completed', 'cancelled'].includes(ticket.status))
     await db.ticket.start(ticket.id, now, now)
 }
 

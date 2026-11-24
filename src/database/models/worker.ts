@@ -123,7 +123,7 @@ export class Worker extends Model<DB, 'worker'> {
         .updateTable('ticket')
         .set({ status: 'queued', prepareError: null, updatedAt: now })
         .where('id', '=', ticketId)
-        .where('status', 'not in', ['done', 'cancelled'])
+        .where('status', 'not in', ['done', 'completed', 'cancelled'])
         .executeTakeFirst()
       if (!Number(queued.numUpdatedRows ?? 0))
         throw new Error('工单已结束')
