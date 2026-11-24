@@ -14,7 +14,7 @@ import { defineService } from '@/utils/service'
 type Thread = Selectable<DB['thread']>
 
 export const pull = defineService({
-  async collect(remote: RemotePort, projectId: string, threadId: string, signal?: AbortSignal): Promise<{ ok: boolean, reason?: string }> {
+  async collect(remote: RemotePort, projectId: string, threadId: string, signal?: AbortSignal): Promise<{ ok: boolean, reason?: string, location?: string }> {
     return singlet.immediate(`github:exclusive:pull:${threadId}`, async () => {
       const project = await remote.project(projectId)
       await remote.probe(projectId, signal)
@@ -40,6 +40,7 @@ export const pull = defineService({
         return { ok: false, reason: 'stale_pr_snapshot' }
       let ciState: CiSnapshot['state'] = previous?.head === head ? previous.ciState : 'pending'
       let ciError: string | undefined
+      let ciLocation: string | undefined
       let snapshot: CiSnapshot | undefined
       try {
         snapshot = await ci.snapshot(remote, root, head, signal)
@@ -49,6 +50,7 @@ export const pull = defineService({
         if (signal?.aborted)
           throw error
         ciError = courier.failure(error, false)
+        ciLocation = `pull:${target.number}:ci`
       }
       const fact: PullFact = { head, base: text(base.ref), state, ciState, collectedAt: now(), updatedAt, ciError, url: text(detail.html_url) }
       await courier.record('github', target.repository, `pr_fact:${target.number}`, fact)
@@ -79,7 +81,7 @@ export const pull = defineService({
         if (ticket?.projectId === projectId && !['done', 'cancelled'].includes(ticket.status))
           await db.inbox.enqueue({ id: `${triggerId}:ticket:${ticketId}`, type: 'project', origin: 'system', kind: 'notice', projectId, ticketId, triggerId, threadId, title: message, message })
       }
-      return { ok: !ciError, ...(ciError ? { reason: ciError } : {}) }
+      return { ok: !ciError, ...(ciError ? { reason: ciError, location: ciLocation } : {}) }
     })
   },
   async closed(remote: RemotePort, projectId: string, thread: Thread, outcome: 'merged' | 'closed', at: string): Promise<void> {
