@@ -19,17 +19,22 @@
  * 环境变量：
  *   DSH_DEV_PROFILE   profile 名，默认 supermesh-dev
  *   DSH_DEV_PORT      端口，默认 3091
- *   DSH_DEV_CLI       官方 lib/bin.js，设置后绕过 Desktop 全局 shim
+ *   DSH_DEV_CLI       官方 lib/bin.js 绝对路径；设置了 DSH_HOME 时必须给，否则拒绝启动
  *   DSH_DEV_NODE      执行官方 CLI 的运行时，默认 process.execPath
+ *
+ * Desktop 生成的 `dsh` shim 会无条件把 `DSH_HOME` 写回用户目录，隔离运行经它启动就会
+ * 写进真实 `~/.dsh`。所以只要调用方显式指定了 `DSH_HOME`，这里只用官方 `lib/bin.js`。
  */
 import type { ChildProcess } from 'node:child_process'
 import type { Output } from 'tinyexec'
 import { existsSync, readFileSync } from 'node:fs'
+import { mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { x } from 'tinyexec'
+import { officialDshEntry } from './dsh-entry'
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const PROFILE = process.env.DSH_DEV_PROFILE ?? 'supermesh-dev'
@@ -37,8 +42,11 @@ const PORT = process.env.DSH_DEV_PORT ?? '3091'
 const OPEN_BROWSER = !process.argv.includes('--no-open')
 const BUILD = !process.argv.includes('--no-build')
 const WATCH = BUILD && !process.argv.includes('--once')
-const CLI = process.env.DSH_DEV_CLI
 const NODE = process.env.DSH_DEV_NODE ?? process.execPath
+const dshHome = process.env.DSH_HOME
+const CLI = officialDshEntry(process.env.DSH_DEV_CLI, 'DSH_DEV_CLI')
+if (dshHome !== undefined && !CLI)
+  throw new Error('DSH_HOME is set, so dev:dsh refuses the Desktop dsh shim (it overwrites DSH_HOME and would write into the real user home); set DSH_DEV_CLI to the official @deepseek-ai/dsh lib/bin.js absolute path')
 
 interface PackageJson {
   name?: string
@@ -60,13 +68,14 @@ if (!pkg?.name)
   throw new Error(`package.json has no name: ${join(REPO_ROOT, 'package.json')}`)
 const PACKAGE_NAME = pkg.name
 
-const profileDir = join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'profiles', PROFILE)
+const profileDir = join(dshHome ?? join(homedir(), '.dsh'), 'profiles', PROFILE)
 const linkSpec = `link:${REPO_ROOT.replace(/\\/gu, '/')}`
 
 /** 跑一条命令并把输出直接透到当前终端；非零退出即失败。 */
 async function run(command: string, args: string[]): Promise<void> {
-  const result: Output = await x(command === 'dsh' && CLI ? NODE : command, command === 'dsh' && CLI ? [CLI, ...args] : args, {
-    nodeOptions: { cwd: command === 'dsh' ? process.env.DSH_HOME ?? REPO_ROOT : REPO_ROOT, stdio: 'inherit', windowsHide: true },
+  const launch = command === 'dsh' && CLI ? { command: NODE, args: [CLI, ...args] } : { command, args }
+  const result: Output = await x(launch.command, launch.args, {
+    nodeOptions: { cwd: command === 'dsh' ? dshHome ?? REPO_ROOT : REPO_ROOT, stdio: 'inherit', windowsHide: true },
   })
   if (result.exitCode !== 0)
     throw new Error(`\`${command} ${args.join(' ')}\` exited ${result.exitCode}`)
@@ -118,6 +127,9 @@ function stopChildren(): void {
 }
 
 async function main(): Promise<void> {
+  // 隔离运行把 DSH_HOME 指到新建的临时目录，官方 CLI 以它为工作目录，先建出来。
+  if (dshHome !== undefined)
+    await mkdir(dshHome, { recursive: true })
   await ensureProfile()
   await ensureLinked()
 
