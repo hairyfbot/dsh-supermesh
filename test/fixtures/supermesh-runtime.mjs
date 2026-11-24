@@ -801,6 +801,37 @@ const cases = {
     assert.equal(mail?.trigger?.actorName, 'hairyf')
     assert.equal(mail?.trigger?.strength, 'explicit')
   },
+  async triggerAttribution() {
+    const { setting } = await import('@/service/setting.ts')
+    const { courier } = await import('@/service/courier.ts')
+    const { github } = await import('@/channel/github/channel.ts')
+    const { binding } = await import('@/channel/github/service/binding.ts')
+    const { recordThread } = await import('@/channel/_shared/thread.ts')
+    await setting.save({ administrators: ['hairyf'] })
+    await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
+    const p = await project('attribution-project')
+    await db.project.setRemoteUrl(p.id, 'https://github.com/example/attribution', now)
+    const issue = (number, repository) => ({ id: number, number, title: `Issue ${number}`, html_url: `https://github.com/${repository}/issues/${number}`, body: '修复一下', user: { login: 'hairyf', type: 'User' }, created_at: now, updated_at: now })
+    const baseline = '1970-01-01T00:00:00.000Z'
+    const thread = await recordThread({ channel: 'github', refId: 'example/attribution:5', kind: 'issue', title: 'Attribution', url: 'https://github.com/example/attribution/issues/5', createdAt: now, updatedAt: now, projectId: p.id })
+    await courier.ingest(binding.of(github).ingestor, thread, issue(5, 'example/attribution'), 'open', baseline, 'open')
+    const main = await session.create('main', {})
+    const mailbox = await inbox.read(main)
+    const mail = mailbox.messages.find(message => message.threadId === thread.id)
+    assert.equal(mail?.type, 'main', 'an unclaimed thread still goes to main for triage')
+    assert.equal(mail?.projectId, p.id, 'the trigger mail must carry the project its repository maps to')
+    assert.equal(mail?.thread?.projectId, p.id)
+    assert.equal(mail?.thread?.project?.name, p.name)
+    assert.equal(mail?.thread?.repository, 'example/attribution')
+    assert.equal(mailbox.projects.find(item => item.id === p.id)?.repository, 'example/attribution', 'projects expose the same normalized repository key as threads')
+    // 仓库没有对应项目时邮件里就是空归属：主编排看到的是服务端事实，不需要凭记忆判断。
+    const orphan = await recordThread({ channel: 'github', refId: 'example/orphan:6', kind: 'issue', title: 'Orphan', url: 'https://github.com/example/orphan/issues/6', createdAt: now, updatedAt: now })
+    await courier.ingest(binding.of(github).ingestor, orphan, issue(6, 'example/orphan'), 'open', baseline, 'open')
+    const orphanMail = (await inbox.read(main)).messages.find(message => message.threadId === orphan.id)
+    assert.equal(orphanMail?.projectId, null)
+    assert.equal(orphanMail?.thread?.project, null)
+    assert.equal(orphanMail?.thread?.repository, 'example/orphan')
+  },
   async supervisorOpen() {
     const p = await project('supervisor-open-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()

@@ -10,6 +10,7 @@ import { singlet } from '@/runtime/singlet'
 import { triggerStrength } from '@/service/admission'
 import { session } from '@/service/session'
 import { setting } from '@/service/setting'
+import { repositoryOf } from '@/utils/repository'
 import { defineService } from '@/utils/service'
 
 type Message = Selectable<DB['inbox']>
@@ -54,8 +55,17 @@ export const inbox = defineService({
       if (trigger)
         triggers.set(triggerId, { kind: trigger.kind, actorName: trigger.actorName, human: Boolean(trigger.human), mentioned: Boolean(trigger.mentioned), strength: await triggerStrength(trigger) })
     }
-    const messages = rows.map(message => ({ ...message, ...(message.triggerId && triggers.has(message.triggerId) ? { trigger: triggers.get(message.triggerId)! } : {}) }))
-    const projects = (await db.project.listAll()).filter(project => project.enabled && (identity.role === 'main' || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({ id, name, directory, remoteUrl }))
+    // 话题归属和仓库名是服务端事实：主编排据此决定归哪个项目，不必拿显示名或远程地址猜。
+    const threads = new Map<string, { id: string, kind: string, refId: string, title: string, url: string | null, triage: string, projectId: string | null, repository: string | null, project: { id: string, name: string, enabled: boolean } | null }>()
+    for (const threadId of new Set(rows.map(message => message.threadId).filter(Boolean) as string[])) {
+      const thread = await db.thread.findById(threadId)
+      if (!thread)
+        continue
+      const owner = thread.projectId ? await db.project.findById(thread.projectId) : undefined
+      threads.set(thread.id, { id: thread.id, kind: thread.kind, refId: thread.refId, title: thread.title, url: thread.url, triage: thread.triage, projectId: thread.projectId, repository: thread.channelId === 'github' || thread.channelId === 'gitlab' ? repositoryOf(thread.url) : null, project: owner ? { id: owner.id, name: owner.name, enabled: Boolean(owner.enabled) } : null })
+    }
+    const messages = rows.map(message => ({ ...message, ...(message.triggerId && triggers.has(message.triggerId) ? { trigger: triggers.get(message.triggerId)! } : {}), ...(message.threadId && threads.has(message.threadId) ? { thread: threads.get(message.threadId)! } : {}) }))
+    const projects = (await db.project.listAll()).filter(project => project.enabled && (identity.role === 'main' || project.id === identity.projectId)).map(({ id, name, directory, remoteUrl }) => ({ id, name, directory, remoteUrl, repository: repositoryOf(remoteUrl) }))
     return { sessionId: id, role: scope.type, projects, pendingCount: messages.length, messages }
   },
   async read(id: string, ids?: string[]) {

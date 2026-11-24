@@ -80,6 +80,11 @@ flowchart TD
 
 **所有没票跟着的新话题都先进主编排**（分支 CI 除外，见 8.5）。它是唯一做归属判断的地方。
 
+采集侧记录话题时就按仓库写入 `Thread.projectId`：仓库唯一对应一个启用项目时直接绑定，
+触发邮件同时带上这个项目（`Inbox.projectId`）和归一化后的仓库名（`thread.repository`）。
+主编排据此分诊，不必拿仓库名和 `projects[].remoteUrl` 比对大小写；`thread.project` 为空
+就是「没有启用项目对应这个仓库」的服务端事实。绑定只写归属、不改 `triage`，路由不变。
+
 ### 为什么 attach 不写 `triage`
 
 attach 只加一条订阅，`unlink_thread` 只删一条订阅。写 `triage` 会让两者不对称：

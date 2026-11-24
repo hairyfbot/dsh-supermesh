@@ -42,6 +42,31 @@ function webProtocol(site: string | undefined, host: string, protocol: string): 
   catch { return 'https:' }
 }
 
+/**
+ * 归一化仓库路径：git remote 与 issue / PR 网页地址都归到 `owner/repo`（小写）。
+ * 话题 refId、项目 remoteUrl 和邮件里的 repository 用同一种形式，匹配不再受大小写影响。
+ */
+export function repositoryOf(value: string | null): string | null {
+  if (!value)
+    return null
+  const scp = /^git@[^/:]+:(.+)$/.exec(value)
+  let path: string
+  if (scp) {
+    path = scp[1]!
+  }
+  else {
+    try {
+      path = new URL(value).pathname
+    }
+    catch {
+      return null
+    }
+  }
+  const topic = /^\/(.+?)\/(?:-\/)?(?:issues|pull|merge_requests|work_items)\/[1-9]\d*\/?$/.exec(path)
+  const repository = (topic ? topic[1]! : path.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\.git$/, '')).toLowerCase()
+  return repository || null
+}
+
 export function parseRepositoryRemote(value: string, gitlabHost = 'https://gitlab.com'): GitRemote & {
   platform: 'github' | 'gitlab'
   defaultName: string

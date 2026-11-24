@@ -3,7 +3,7 @@ import type { Resource } from '@/channel/gitlab/service/resource.types'
 import type { GitLabRunner } from '@/channel/gitlab/types'
 import type { CollectContext, Cursor, ProjectRow, ThreadRow } from '@/service/courier.types'
 import { array, cursorAt, identity, number, record, text, timestamp } from '@/channel/_shared/primitives'
-import { closeThread, recordThread } from '@/channel/_shared/thread'
+import { bindThreads, closeThread, recordThread } from '@/channel/_shared/thread'
 import { FetchGitLabRunner, GitLabError, gitlabSite } from '@/channel/gitlab/runner'
 import { binding } from '@/channel/gitlab/service/binding'
 import { ci } from '@/channel/gitlab/service/ci'
@@ -54,6 +54,12 @@ export class GitLabChannel implements ChannelAdapter {
     if (project.available === false)
       throw new GitLabError('project_unavailable')
     return project
+  }
+
+  /** 仓库唯一对应一个启用项目时返回它；没有项目或不止一个都不猜。 */
+  async bindingProject(site: string, repository: string): Promise<string | null> {
+    const projects = (await db.project.listAll()).filter(project => project.enabled && resource.remote(project.remoteUrl, site)?.repository === repository)
+    return projects.length === 1 ? projects[0]!.id : null
   }
 
   async projectForRepository(repository: string) {
@@ -167,6 +173,10 @@ export class GitLabChannel implements ChannelAdapter {
     if (!target)
       throw new GitLabError('unknown_repository')
     const repository = target.repository
+    // 仓库唯一对应一个启用项目时，采集侧直接写话题归属：触发邮件带上项目，主编排不必按仓库名猜。
+    const owner = await this.bindingProject(site, repository)
+    if (owner)
+      await bindThreads({ channel: 'gitlab', refPrefix: `${resource.source(target)}:`, projectId: owner })
     for (const kind of ['issue', 'pull'] as const) {
       await context.attempt(async () => {
         await courier.stream({
@@ -179,7 +189,7 @@ export class GitLabChannel implements ChannelAdapter {
           accept: async (row) => {
             const resourceTarget: Resource = { site, repository, kind, number: number(row.iid) }
             resource.validateTopic(row, resourceTarget)
-            const thread = await this.ensureThread(resourceTarget, row)
+            const thread = await this.ensureThread(resourceTarget, row, owner)
             await courier.ingest(this.ports.ingest, thread, row, row.state === 'closed' || row.state === 'merged' ? 'close' : 'open', context.baseline, kind)
             if (kind === 'pull')
               await mergeRequest.observe(this, context.projectId, thread, row)
@@ -242,8 +252,8 @@ export class GitLabChannel implements ChannelAdapter {
     }
   }
 
-  private async ensureThread(target: Resource, row: ChannelRow): Promise<ThreadRow> {
-    return recordThread({ channel: 'gitlab', refId: `${resource.source(target)}:${target.kind}:${target.number}`, kind: target.kind, title: text(row.title), url: text(row.web_url), createdAt: timestamp(row.created_at), updatedAt: timestamp(row.updated_at) })
+  private async ensureThread(target: Resource, row: ChannelRow, projectId: string | null): Promise<ThreadRow> {
+    return recordThread({ channel: 'gitlab', refId: `${resource.source(target)}:${target.kind}:${target.number}`, kind: target.kind, title: text(row.title), url: text(row.web_url), createdAt: timestamp(row.created_at), updatedAt: timestamp(row.updated_at), projectId })
   }
 
   async threadClosed(projectId: string, thread: ThreadRow, outcome: 'merged' | 'closed', at: string): Promise<void> {

@@ -34,6 +34,14 @@ export interface StreamInput {
   signal?: AbortSignal
 }
 
+/** 一条触发该进谁的收件箱；key 参与投递去重，所以按收件人而不是按话题归属取名。 */
+export interface TriggerTarget {
+  key: string
+  type: 'main' | 'project'
+  projectId: string | null
+  ticketId: string | null
+}
+
 export interface IngestPort {
   channel: ChannelId
   bots: () => Promise<{ name: string }[]>
