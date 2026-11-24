@@ -70,7 +70,7 @@ export const binding = defineService({
       body: row => typeof row.body === 'string' ? row.body : typeof row.state === 'string' ? row.state : '',
       url: row => text(row.html_url),
       ref: row => row.head ? text(record(row.head).ref) : null,
-      at: row => timestamp(row.updated_at ?? row.submitted_at ?? row.created_at),
+      at: (row, kind) => kind === 'close' ? timestamp(row.closed_at ?? row.updated_at ?? row.created_at) : timestamp(row.created_at ?? row.submitted_at),
       createdAt: row => timestamp(row.created_at ?? row.submitted_at),
       mentioned: githubMentioned,
       // 票停在 review（Worker 已报 ready）时，PR 上又来新的真人意见，必须重新派工，

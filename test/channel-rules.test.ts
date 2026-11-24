@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addressedToBot, channelTriggerRejection, channelTriggerStrength, ticketAllowed, triggerStrengthOf } from '@/channel/_shared/admission'
+import { addressedToBot, channelTriggerRejection, channelTriggerStrength, latestTrigger, ticketAllowed, triggerStrengthOf } from '@/channel/_shared/admission'
 
 describe('渠道准入强度', () => {
   const base = { self: false, human: true, historical: false, subscribed: false, admin: false, mentioned: false, kind: 'comment', issue: false, ignored: false, inferred: 'observe' } as const
@@ -135,6 +135,29 @@ describe('建票闸', () => {
     expect(ticketAllowed('self', 'off')).toBe(true)
     expect(ticketAllowed('self', 'observe')).toBe(true)
     expect(ticketAllowed(undefined, 'observe')).toBe(true)
+  })
+})
+
+describe('建票闸挑触发', () => {
+  const opened = { id: 'github:owner/repo:991:open:1', at: '2026-10-18T09:00:00.000Z', human: 1, mentioned: 0 }
+  const asked = { id: 'github:owner/repo:991:comment:7060524899', at: '2026-10-19T09:00:00.000Z', human: 1, mentioned: 1 }
+
+  it('先开 issue 再评论 @ bot 时取评论那条，不取更早的 issue 触发', () => {
+    expect(latestTrigger([opened, asked])).toBe(asked)
+    expect(latestTrigger([asked, opened])).toBe(asked)
+  })
+
+  it('同一时刻优先点名的那条，不点名的不算开工请求', () => {
+    const same = { ...opened, at: asked.at }
+    expect(latestTrigger([same, asked])).toBe(asked)
+    expect(latestTrigger([asked, same])).toBe(asked)
+  })
+
+  it('没有人类触发时才退回机器人触发，空话题没有候选', () => {
+    const ci = { id: 'github:owner/repo:991:ci:1', at: '2026-10-20T09:00:00.000Z', human: 0, mentioned: 0 }
+    expect(latestTrigger([opened, ci])).toBe(opened)
+    expect(latestTrigger([ci])).toBe(ci)
+    expect(latestTrigger([])).toBeUndefined()
   })
 })
 

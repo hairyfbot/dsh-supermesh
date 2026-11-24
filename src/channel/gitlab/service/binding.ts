@@ -66,7 +66,7 @@ function ingestPort(): IngestPort {
     body: row => typeof row.body === 'string' ? row.body : typeof row.description === 'string' ? row.description : typeof row.state === 'string' ? row.state : '',
     url: (row, sourceKind, thread) => sourceKind === 'note' ? `${thread.url}#note_${identity(row.id)}` : text(row.web_url),
     ref: row => typeof row.source_branch === 'string' ? row.source_branch : null,
-    at: row => timestamp(row.updated_at ?? row.created_at),
+    at: (row, kind) => kind === 'close' ? timestamp(row.closed_at ?? row.updated_at ?? row.created_at) : timestamp(row.created_at),
     createdAt: row => timestamp(row.created_at),
     mentioned: gitlabMentioned,
   }
