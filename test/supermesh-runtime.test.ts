@@ -86,6 +86,7 @@ describe('supermesh services composed with the installed official runtime', () =
     ['ticketArchive', 'a ticket that reached a terminal state archives its ended worker sessions and skips them when archiving is off'],
     ['workerRedispatch', 'a requeued worker receives the dispatch prompt again instead of being deduplicated by request id'],
     ['workerRestart', 'a restart reuses the persisted worker session instead of recreating the worker and re-running the ticket'],
+    ['workerRestartWithoutWorktree', 'a restart resumes a persisted worker in the project directory without sending another dispatch prompt'],
     ['answerRelay', 'an answer for an ended worker is relayed to the project orchestrator instead of stalling'],
     ['roleMarker', 'only the four role sessions receive the bot identity marker'],
     ['sendDelivery', 'running sessions steer at the next step while idle sessions and explicit queues open a new turn'],
