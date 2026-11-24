@@ -204,7 +204,7 @@ export type GetApiSupermeshSessionidMailboxResponse = {
     pendingCount: number;
     messages: {
       thread?: undefined | { id: string; kind: "issue" | "pull" | "chat" | "ci"; refId: string; title: string; url: null | string; triage: "pending" | "claimed" | "ignored"; projectId: null | string; repository: null | string; project: null | { id: string; name: string; enabled: false | true } };
-      trigger?: undefined | { kind: string; actorName: null | string; human: false | true; mentioned: false | true; strength: "explicit" | "inferred" };
+      trigger?: undefined | { kind: string; actorName: null | string; human: false | true; mentioned: false | true; strength: "explicit" | "inferred" | "self" };
       status: "pending" | "done" | "stalled";
       message: string;
       id: string;
