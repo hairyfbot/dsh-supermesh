@@ -166,7 +166,9 @@ stateDiagram-v2
     ended --> [*]
 ```
 
-`branch` / `worktree` 记录 Worker 的分支和工作树，`ended` 后仍保留。复用项目目录里的已有会话时，这两项可以为空。
+`branch` / `worktree` 记录 Worker 的分支和工作树，`ended` 后仍保留。**派工必须落在工作树里**：
+`branch` / `worktree` 缺失时插件补建，建不出来就整票退回 `queued` 并留 `prepareError`，
+绝不降级到项目主 clone —— 那等于让多个 Worker 抢同一个 checkout。
 
 应用重启时，仍在运行且会话可恢复的 Worker 沿用原会话和派工时间。空闲时向原会话发送恢复提示。
 
@@ -180,8 +182,11 @@ stateDiagram-v2
 **重开必须重新投递**：`waiting → queued → running` 每一轮都用新的 requestId 投 prompt。
 会话控制器按 rpcId 去重，复用同一个 id 会让重派工被静默吞掉 —— worker 置 `running`、会话里却什么都没有。
 
-**`waiting` 不自动重开**：只有从没派过工的票会被自动排队。worker 结束后回 `waiting` 是等新事实
-（评论、`retry_ticket`、编排 `send`），拿同一份 prompt 反复重派只会让票在 `waiting` / `running` 之间空转。
+**`waiting` 不自动重开**：worker 结束后回 `waiting` 是等新事实（评论、`retry_ticket`、编排 `send`），
+拿同一份 prompt 反复重派只会让票在 `waiting` / `running` 之间空转。
+
+**派工只由 `create_worker` 发起。** 从没派过工、也没有未完成 `depends` 的票，插件只往项目编排的收件箱
+投一条「可以派工」的通知（同一张票只投一次），不建会话、不建工作树；分支名由编排给，工作树由插件保证。
 
 ### 汇报状态
 

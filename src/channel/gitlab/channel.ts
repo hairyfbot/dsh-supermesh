@@ -178,7 +178,7 @@ export class GitLabChannel implements ChannelAdapter {
     if (owner)
       await bindThreads({ channel: 'gitlab', refPrefix: `${resource.source(target)}:`, projectId: owner })
     for (const kind of ['issue', 'pull'] as const) {
-      await context.attempt(async () => {
+      await context.attempt(kind, async () => {
         await courier.stream({
           channel: 'gitlab',
           scope,
@@ -205,7 +205,7 @@ export class GitLabChannel implements ChannelAdapter {
       const ticketIds = await db.ticketThread.listTicketIds(thread.id)
       if (!await courier.polled(ticketIds, thread.updatedAt))
         continue
-      await context.attempt(async () => {
+      await context.attempt(thread.refId, async () => {
         const threadTarget = resource.parse(url, site)
         if (threadTarget.repository !== repository)
           return
@@ -248,7 +248,7 @@ export class GitLabChannel implements ChannelAdapter {
     catch (error) {
       if (signal?.aborted)
         return
-      context.fail(new GitLabError(`ci:${courier.failure(error, true)}`))
+      context.fail(error, `ci:${branch}`)
     }
   }
 

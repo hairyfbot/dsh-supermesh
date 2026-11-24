@@ -85,8 +85,8 @@ export interface CollectContext {
   scope: string
   baseline: string
   environment: ChannelIdentity
-  attempt: (operation: () => Promise<unknown>) => Promise<void>
-  fail: (error: unknown) => void
+  attempt: (step: string, operation: () => Promise<unknown>) => Promise<void>
+  fail: (error: unknown, step?: string) => void
 }
 
 export interface CollectPort {

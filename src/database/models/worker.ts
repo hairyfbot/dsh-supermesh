@@ -117,14 +117,15 @@ export class Worker extends Model<DB, 'worker'> {
         return existing
       const previous = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt', 'desc').orderBy('id', 'desc').executeTakeFirst()
       const now = new Date().toISOString()
+      // 排队就是一次显式重派：上一次准备阶段的失败原因到此为止，失败本身已经另行通知过编排。
       if (previous && !fresh) {
         await trx.updateTable('worker').set({ status: 'queued', startedAt: null, endedAt: null, endedReason: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null, branch: branch ?? previous.branch }).where('id', '=', previous.id).execute()
-        await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
+        await trx.updateTable('ticket').set({ status: 'queued', prepareError: null, updatedAt: now }).where('id', '=', ticketId).execute()
         return (await new Worker(trx).findById(previous.id))!
       }
       const id = randomUUID()
       await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? previous?.branch ?? null, worktree: previous?.worktree ?? null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
-      await trx.updateTable('ticket').set({ status: 'queued', updatedAt: now }).where('id', '=', ticketId).execute()
+      await trx.updateTable('ticket').set({ status: 'queued', prepareError: null, updatedAt: now }).where('id', '=', ticketId).execute()
       return (await new Worker(trx).findById(id))!
     })
   }

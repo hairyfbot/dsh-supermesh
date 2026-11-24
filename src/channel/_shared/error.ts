@@ -1,5 +1,8 @@
 export class ChannelError extends Error {
-  constructor(readonly code: string, readonly retryAfterSeconds?: number) {
+  location?: string
+
+  constructor(readonly code: string, readonly retryAfterSeconds?: number, location?: string) {
     super(code)
+    this.location = location
   }
 }
