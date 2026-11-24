@@ -78,7 +78,7 @@ export const binding = defineService({
       onSubscribedTicket: async (ticket) => {
         if (ticket.status !== 'review' || ticket.paused)
           return
-        await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now() })
+        await db.ticket.setOpenStatus(ticket.id, 'waiting', now())
         await db.worker.queue(ticket.id, ticket.projectId).catch(() => undefined)
       },
     }

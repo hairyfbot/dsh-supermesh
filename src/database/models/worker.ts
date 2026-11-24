@@ -117,15 +117,23 @@ export class Worker extends Model<DB, 'worker'> {
         return existing
       const previous = await trx.selectFrom('worker').selectAll().where('ticketId', '=', ticketId).orderBy('createdAt', 'desc').orderBy('id', 'desc').executeTakeFirst()
       const now = new Date().toISOString()
+      // 票状态是派工的前置条件，而结单可能正好插在上面那次读之后：写入必须带终态守卫，
+      // 写不成就整笔回滚，绝不留下一个把已结单的票重新拉起的 worker 行。
+      const queued = await trx
+        .updateTable('ticket')
+        .set({ status: 'queued', prepareError: null, updatedAt: now })
+        .where('id', '=', ticketId)
+        .where('status', 'not in', ['done', 'cancelled'])
+        .executeTakeFirst()
+      if (!Number(queued.numUpdatedRows ?? 0))
+        throw new Error('工单已结束')
       // 排队就是一次显式重派：上一次准备阶段的失败原因到此为止，失败本身已经另行通知过编排。
       if (previous && !fresh) {
         await trx.updateTable('worker').set({ status: 'queued', startedAt: null, endedAt: null, endedReason: null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null, branch: branch ?? previous.branch }).where('id', '=', previous.id).execute()
-        await trx.updateTable('ticket').set({ status: 'queued', prepareError: null, updatedAt: now }).where('id', '=', ticketId).execute()
         return (await new Worker(trx).findById(previous.id))!
       }
       const id = randomUUID()
       await trx.insertInto('worker').values({ id, ticketId, status: 'queued', createdAt: now, startedAt: null, endedAt: null, title: ticket.title, endedReason: null, branch: branch ?? previous?.branch ?? null, worktree: previous?.worktree ?? null, reportState: null, report: null, reportAt: null, backgroundUntil: null, recoveryNote: null }).execute()
-      await trx.updateTable('ticket').set({ status: 'queued', prepareError: null, updatedAt: now }).where('id', '=', ticketId).execute()
       return (await new Worker(trx).findById(id))!
     })
   }

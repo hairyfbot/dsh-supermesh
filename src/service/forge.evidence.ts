@@ -19,7 +19,9 @@ declare module '@deepseek-ai/dsh-session' {
 
 /** 只有这两个工具会把命令交给 shell，证据也只从它们的调用与结果里取。 */
 const SHELL_TOOLS = new Set(['bash', 'pwsh'])
-const CREATE = /\b(?:glab\s+mr\s+(?:create|new)|gh\s+pr\s+create)\b/
+// 开单命令可能走渠道包装脚本：机器人没有写权限时只能用 `gh-default pr create` 这类入口，
+// 包装名不固定，所以 `gh` / `glab` 后面跟一个 `-<名字>` 也要认。
+const CREATE = /\b(?:glab(?:-\w+)?\s+mr\s+(?:create|new)|gh(?:-\w+)?\s+pr\s+(?:create|new))\b/
 const PUSH = /\bgit(?:\s+(?:-[Cc]\s+\S+|--[\w-]+(?:=\S+)?))*\s+push\b/
 const TARGET = /^To (\S+)$/
 const REF = /^ [ +*=] (\[[^\]]+\]|\S+) +\S+ -> (\S+)(?: \(.*\))?$/
@@ -42,6 +44,8 @@ export interface GithubEvidence {
   urls: string[]
   /** 推到这个仓库的分支。 */
   branches: PushedRef[]
+  /** 推到别的 GitHub 仓库的分支：fork PR 的 head 在这里，PR 本身仍开在本仓库。 */
+  forks: PushedRef[]
 }
 
 /**
@@ -88,9 +92,14 @@ export function changeRequestUrls(text: string): string[] {
  */
 export function githubEvidence(events: readonly SessionEvent[], repository: string): GithubEvidence {
   const evidence = shellEvidence(events)
+  const pushed = evidence.branches.flatMap((entry) => {
+    const remote = githubResource.of(entry.remote)
+    return remote === null ? [] : [{ entry, remote }]
+  })
   return {
     urls: evidence.urls.filter(url => pullRepositoryOf(url) === repository),
-    branches: evidence.branches.filter(entry => githubResource.of(entry.remote) === repository),
+    branches: pushed.filter(item => item.remote === repository).map(item => item.entry),
+    forks: pushed.filter(item => item.remote !== repository).map(item => item.entry),
   }
 }
 

@@ -126,15 +126,13 @@ export const courier = defineService({
       const ticket = await db.ticket.findById(ticketId)
       if (!ticket)
         continue
-      if (['done', 'cancelled'].includes(ticket.status)) {
-        if (!mentioned)
+      // 只有做完的票会被人新的 @ 唤醒；人叫停的票保持结束，那里的新活要重新分诊。
+      if (ticket.status === 'done' || ticket.status === 'cancelled') {
+        if (!mentioned || !(await db.ticket.revive(ticketId, at)))
           continue
-        const resumed = await db.ticket.reopen(ticketId, at)
-        if (resumed) {
-          await db.worker.queue(ticketId, ticket.projectId)
-          const target = courier.route(thread, ticket)
-          targets.set(target.key, target)
-        }
+        await db.worker.queue(ticketId, ticket.projectId)
+        const target = courier.route(thread, ticket)
+        targets.set(target.key, target)
         continue
       }
       // 机器人消息只作上下文：重新开工必须是人说的，不能让 bot / CI 借订阅把票从 review 拉回队列。

@@ -4,7 +4,8 @@ import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { Selectable } from 'kysely'
 import type { DB } from '@/database/types'
 import { getServerContext } from 'dsh-h3/utils'
-import { now } from '@/channel/_shared/primitives'
+import { now, record, text } from '@/channel/_shared/primitives'
+import { github } from '@/channel/github/channel'
 import { resource as githubResource } from '@/channel/github/service/resource'
 import { gitlab } from '@/channel/gitlab/channel'
 import { resource as gitlabResource } from '@/channel/gitlab/service/resource'
@@ -96,19 +97,45 @@ async function evidenceOf(source: Session, project: Project, ticket: Ticket, set
 async function githubUrls(source: Session, project: Project, settled: boolean, live: boolean): Promise<string[]> {
   const service = getServerContext<Context>(server).forgeSession
   const repository = project.remoteUrl ? githubResource.of(project.remoteUrl) : null
-  if (!service || !repository)
-    return []
-  const evidence = settled ? githubEvidence((await session.history(source.id)).events, repository) : { urls: [], branches: [] }
+  const evidence = settled && repository ? githubEvidence((await session.history(source.id)).events, repository) : { urls: [], branches: [], forks: [] }
   // 按 git push 自己报告的分支让官方反查开放 PR，不用 Worker 建树时的分支名去猜。
-  if (live) {
+  if (live && service) {
     for (const entry of evidence.branches)
       await service.discoverBranch(source, entry.remote, entry.branch)
   }
   // 推送发现由官方按 git push 结果自己做；这里只读它折出来的绑定，不拿分支名去猜。
-  const official = service.changeRequests(source)
-    .map(entry => entry.url)
-    .filter(url => githubRepositoryOf(url) === repository)
-  return [...new Set([...official, ...evidence.urls])]
+  const official = service
+    ? service.changeRequests(source).map(entry => entry.url).filter(url => githubRepositoryOf(url) === repository)
+    : []
+  const urls = [...new Set([...official, ...evidence.urls])]
+  if (urls.length || !repository)
+    return urls
+  // 官方投影可能一条都折不出来（provider 没注册、会话已不在）：兜底按 push 报告的分支自己查一次
+  // 打开的 PR，与 GitLab 同一条路。fork PR 的 head 在别的仓库，仓库名对不上，但 PR 开在本仓库。
+  for (const entry of [...evidence.branches, ...evidence.forks]) {
+    const head = githubResource.of(entry.remote)
+    if (!head)
+      continue
+    for (const url of await openPullRequests(repository, head.split('/')[0]!, entry.branch).catch(() => [])) {
+      if (!urls.includes(url))
+        urls.push(url)
+    }
+  }
+  return urls
+}
+
+/** 按 head 分支查这个仓库里打开的 PR：push 之后没走 create 命令时，绑定只能靠这一步。 */
+async function openPullRequests(repository: string, owner: string, branch: string): Promise<string[]> {
+  const rows = await github.pages(`repos/${repository}/pulls?state=open&head=${encodeURIComponent(`${owner}:${branch}`)}`)
+  const urls: string[] = []
+  for (const row of rows) {
+    if (text(row.state) !== 'open' || text(record(row.head).ref) !== branch)
+      continue
+    const url = text(row.html_url)
+    if (githubRepositoryOf(url) === repository && !urls.includes(url))
+      urls.push(url)
+  }
+  return urls
 }
 
 function githubRepositoryOf(url: string): string | null {
