@@ -721,13 +721,13 @@ const cases = {
     await workers.reconcile()
     await settle()
     assert.equal((await dispatches()).length, 1, 'the first dispatch must reach the worker session')
-    // worker 结束、票回 waiting 之后不能自动重开：拿同一份 prompt 反复重派就是线上那个死循环。
+    // worker 结束、票回 idle 之后不能自动重开：拿同一份 prompt 反复重派就是线上那个死循环。
     assert.equal((await db.worker.findById(queued.id)).status, 'ended')
     assert.equal((await db.ticket.findById(ticketId)).status, 'idle')
     await workers.rescue()
     await workers.reconcile()
     await settle()
-    assert.equal((await dispatches()).length, 1, 'a waiting ticket whose worker already ran must not be re-dispatched automatically')
+    assert.equal((await dispatches()).length, 1, 'an idle ticket whose worker already ran must not be re-dispatched automatically')
     // 编排显式重派（retry_ticket / create_worker 走同一条 queue）必须真的送达，不能被 requestId 去重吞掉。
     await db.worker.queue(ticketId, p.id)
     await workers.reconcile()
@@ -896,17 +896,17 @@ const cases = {
     const p = await project('answer-resume-project')
     await db.insertInto('channel').values({ id: 'github', name: 'GitHub', enabled: 0, host: null, createdAt: now }).onConflict(oc => oc.column('id').doNothing()).execute()
     const ticketId = 'answer-resume-ticket'
-    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '答案叫醒 Worker', description: null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
+    await db.ticket.create({ id: ticketId, projectId: p.id, channelId: 'github', title: '答案叫醒 Worker', description: null, status: 'idle', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null })
     const worker = await db.worker.queue(ticketId, p.id)
     await session.create('worker', { sessionId: worker.id, ticketId, projectId: p.id, directory: p.directory })
     await db.worker.start(worker.id, now)
     await db.ticket.start(ticketId, now, now)
     await session.send(worker.id, `${ticketId}: 执行这张票`, 'queue', 'answer-resume:prompt')
     await settle()
-    // Worker 提问后这一轮结束：记录 ended，票退回 waiting，会话仍在。
+    // Worker 提问后这一轮结束：记录 ended，票退回 idle，会话仍在。
     const ask = await db.inbox.enqueueAsk({ type: 'project', origin: 'worker', projectId: p.id, ticketId, workerId: worker.id, message: '按哪个方案做？' })
     await db.worker.end(worker.id, 'completed', now)
-    await db.ticket.update(ticketId, { status: 'waiting', updatedAt: now })
+    await db.ticket.update(ticketId, { status: 'idle', updatedAt: now })
     await db.inbox.answerScoped(ask.id, '按 A 方案', { type: 'project', projectId: p.id }, now)
     await inbox.deliverAnswers()
     await settle()

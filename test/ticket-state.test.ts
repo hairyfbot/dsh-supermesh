@@ -26,14 +26,14 @@ beforeEach(async () => {
   await connection.insertInto('ticket').values([
     { id: 'T-001', projectId: 'p1', channelId: 'github', title: 'cancelled', description: null, status: 'cancelled', createdAt: at, updatedAt: at, startedAt: null, endedAt: at, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null },
     { id: 'T-002', projectId: 'p1', channelId: 'github', title: 'done', description: null, status: 'done', createdAt: at, updatedAt: at, startedAt: null, endedAt: at, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null },
-    { id: 'T-003', projectId: 'p1', channelId: 'github', title: 'waiting', description: null, status: 'waiting', createdAt: at, updatedAt: at, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null },
+    { id: 'T-003', projectId: 'p1', channelId: 'github', title: 'queued', description: null, status: 'queued', createdAt: at, updatedAt: at, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, paused: 0, prepareError: null },
   ]).execute()
 })
 afterEach(async () => connection.destroy())
 
 describe('内部调度推进票状态', () => {
   it('人叫停的票不会被后台路径写回非终态', async () => {
-    expect(await ticket.setOpenStatus('T-001', 'waiting', later)).toBe(false)
+    expect(await ticket.setOpenStatus('T-001', 'queued', later)).toBe(false)
     expect(await ticket.findById('T-001')).toMatchObject({ status: 'cancelled', endedAt: at })
   })
 
@@ -56,7 +56,7 @@ describe('内部调度推进票状态', () => {
 describe('人新的 @ 唤醒票', () => {
   it('只有做完的票会被唤醒', async () => {
     expect(await ticket.revive('T-002', later)).toBe(true)
-    expect(await ticket.findById('T-002')).toMatchObject({ status: 'waiting', endedAt: null })
+    expect(await ticket.findById('T-002')).toMatchObject({ status: 'queued', endedAt: null })
   })
 
   it('人叫停的票保持结束', async () => {

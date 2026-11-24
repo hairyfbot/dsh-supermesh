@@ -222,7 +222,7 @@ describe('terminal ticket state', () => {
     expect(await models.ticket.listFiltered()).toEqual([])
     expect(await models.ticket.setPausedIfOpen(ticketId, true, now)).toBeUndefined()
     await expect(models.worker.queue(ticketId, 'p1')).rejects.toThrow('工单不存在、已结束或不属于当前项目')
-    expect(await models.ticket.reopen(ticketId, now)).toBe(true)
+    expect(await models.ticket.revive(ticketId, now)).toBe(true)
     expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'queued', endedAt: null })
   })
 
