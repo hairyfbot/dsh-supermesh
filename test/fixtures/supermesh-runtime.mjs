@@ -300,13 +300,22 @@ const cases = {
       assert.notEqual(other.code, 0, 'unconfigured credential hosts must fail without prompting')
       assert.equal(`${other.output}${other.error}`.includes(botToken), false)
       assert.equal(`${other.output}${other.error}`.includes(personalToken), false)
+      // Windows 上不再有 git shim（.cmd 会吃掉 ^，无扩展名的 sh 版又会挡住 PowerShell 的真 git），
+      // 角色会话的 git 身份回落到环境里的全局配置；POSIX 上 sh shim 仍然切到 bot 的 gitconfig。
+      const botIdentity = process.platform !== 'win32'
       for (const cwd of [directory, linked]) {
         const name = await native('git config user.name', cwd, { DSH_SUPERMESH_ROLE: 'worker' })
         const email = await native('git config user.email', cwd, { DSH_SUPERMESH_ROLE: 'worker' })
-        assert.equal(name.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit name (${describeRun(name)})`)
-        assert.equal(name.output.trim(), metadata.commitName)
-        assert.equal(email.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit email`)
-        assert.equal(email.output.trim(), metadata.commitEmail)
+        if (botIdentity) {
+          assert.equal(name.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit name (${describeRun(name)})`)
+          assert.equal(name.output.trim(), metadata.commitName)
+          assert.equal(email.code, 0, `${cwd === directory ? 'main repository' : 'linked worktree'} must resolve commit email`)
+          assert.equal(email.output.trim(), metadata.commitEmail)
+        }
+        else {
+          assert.equal(name.output.trim(), '', `Windows role sessions must keep the ambient git identity (${describeRun(name)})`)
+          assert.equal(email.output.trim(), '', `Windows role sessions must keep the ambient git identity (${describeRun(email)})`)
+        }
         const outside = await native('git config user.name', cwd)
         assert.notEqual(outside.output.trim(), metadata.commitName, 'sessions outside the four roles must keep their own git identity')
       }
@@ -357,6 +366,49 @@ const cases = {
         delete process.env.GH_TOKEN
       else
         process.env.GH_TOKEN = original.GH_TOKEN
+    }
+  },
+  /**
+   * 建树失败的真凶：shim 目录里的 git 包装器被官方解析器按 PATHEXT 命中，cmd.exe 又把 `^`
+   * 当转义吃掉，`HEAD^{commit}` 变成 `HEAD{commit}`，官方 worktree 服务直接 128。
+   * 这里用真实官方运行时验证解析结果，并在真实原生 shell 里验证 rev 语法没被改写。
+   */
+  async shellGitRevision() {
+    const { shell } = await import('@/service/shell.ts')
+    const stop = await shell.start()
+    try {
+      const shim = join(process.env.DSH_HOME, '.supermesh', 'cli', 'bin')
+      for (const name of ['git.com', 'git.exe', 'git.bat', 'git.cmd'])
+        assert.equal(existsSync(join(shim, name)), false, `shim 目录不得留下会被官方解析器命中的 ${name}`)
+      if (process.platform === 'win32')
+        assert.equal(existsSync(join(shim, 'git')), false, 'Windows 上无扩展名的 sh 版会挡住 PowerShell 的真 git.exe')
+      else
+        assert.equal(existsSync(join(shim, 'git')), true, 'POSIX 上角色会话仍靠 sh shim 拿 bot 的 gitconfig')
+      const resolved = await runtime.ctx.subprocess.resolveExecutable('git')
+      assert.equal(/\.(?:cmd|bat)$/i.test(resolved), false, `官方解析器必须落到真 git，实际解析到 ${resolved}`)
+      const directory = join(process.cwd(), 'revision-repository')
+      await mkdir(directory)
+      await initRepository(directory)
+      await git('git', ['-c', 'user.name=Second author', '-c', 'user.email=second@example.invalid', '-c', 'core.hooksPath=', '-c', 'commit.gpgSign=false', 'commit', '--allow-empty', '-m', 'Second commit'], { cwd: directory })
+      const head = (await git('git', ['rev-parse', 'HEAD'], { cwd: directory })).stdout.trim()
+      const parent = (await git('git', ['rev-parse', 'HEAD^'], { cwd: directory })).stdout.trim()
+      const run = async (argv) => {
+        const handle = runtime.ctx.subprocess.spawn({ argv, cwd: directory, env: { DSH_SUPERMESH_ROLE: 'worker' }, signal: AbortSignal.timeout(30000), graceMs: 2000, stdio: { stdin: 'ignore', stdout: { maxBytes: 65536 }, stderr: { maxBytes: 65536 } } })
+        const outcome = await handle.done
+        return { code: outcome.exitCode, output: handle.collected.stdout.readFrom(0).text.trim(), error: handle.collected.stderr.readFrom(0).text.trim() }
+      }
+      // 官方 worktree 服务先解析出绝对路径再 spawn，argv 里带着 HEAD^{commit}。
+      const commit = await run([resolved, 'rev-parse', '--verify', '--end-of-options', 'HEAD^{commit}'])
+      assert.equal(commit.code, 0, `官方解析器解析出的 git 必须接受 HEAD^{commit}（stdout=${commit.output} stderr=${commit.error}）`)
+      assert.equal(commit.output, head, 'HEAD^{commit} 必须解析成真实 HEAD')
+      // pwsh 会把裸 `HEAD^{commit}` 拆成两个参数，裸 `HEAD^` 才能证明 ^ 原样到达 git。
+      const command = 'git rev-parse --verify HEAD^'
+      const revision = await run(process.platform === 'win32' ? ['pwsh', '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', `${command}; exit $LASTEXITCODE`] : ['bash', '-c', command])
+      assert.equal(revision.code, 0, `原生 shell 里的 HEAD^ 必须被 git 接受（stdout=${revision.output} stderr=${revision.error}）`)
+      assert.equal(revision.output, parent, 'HEAD^ 必须解析成上一提交，而不是被当成 HEAD')
+    }
+    finally {
+      await stop()
     }
   },
   async projectSync() {

@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { ShellEnvRegistry } from '@deepseek-ai/dsh-shell-env'
-import { access, mkdir, rename, writeFile } from 'node:fs/promises'
+import { access, mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { delimiter, join, resolve } from 'node:path'
 import process from 'node:process'
 import { getServerContext } from 'dsh-h3/utils'
@@ -127,19 +127,25 @@ async function refresh(): Promise<void> {
   const escaping = ['GH_CONFIG_DIR', 'GH_HOST', ...tokens]
   await own(join(bin, 'gh-default'), ['#!/bin/sh', `if [ -z "$${ROLE_MARKER}" ]; then exec ${nativeGh ? quote(nativeGh.replaceAll('\\', '/')) : 'exit 127'} "$@"; fi`, ...escaping.map(key => `unset ${key}`), `export PATH=${quote(shellPath)}`, nativeGh ? `exec ${quote(nativeGh.replaceAll('\\', '/'))} "$@"` : 'echo gh is not installed >&2; exit 127', ''].join('\n'), 0o700)
   await own(join(bin, 'gh-default.cmd'), ['@echo off', 'setlocal', `if not defined ${ROLE_MARKER} goto plain`, ...escaping.map(key => `set "${key}="`), `set "PATH=${basePath.replaceAll('%', '%%')}"`, nativeGh ? `"${nativeGh.replaceAll('%', '%%')}" %*` : 'echo gh is not installed 1>&2 & exit /b 127', 'exit /b %errorlevel%', ':plain', nativeGh ? `"${nativeGh.replaceAll('%', '%%')}" %*` : 'echo gh is not installed 1>&2 & exit /b 127', 'exit /b %errorlevel%', ''].join('\r\n'), 0o700)
-  // git 不再靠全局 GIT_CONFIG_GLOBAL 劫持：角色会话经这个 shim 拿到 bot 的 gitconfig，
-  // 其它会话原样 exec 真实 git，读自己的全局配置。
-  const nativeGit = await nativeCli('git')
+  // git 不能生成 .cmd：cmd.exe 解析命令行时吃掉 `^`，`HEAD^`、`HEAD^{commit}` 这类 rev 语法
+  // 全部变形，官方 worktree 服务按 PATHEXT 命中 shim 后建树直接 128。Windows 上连无扩展名的
+  // sh 版也不能留：PowerShell 会先命中它却无法执行，角色会话的 git 反而全废。
   const gitQuote = (value: string) => JSON.stringify(value)
-  const gitEnv = [
-    ...identities.map(key => `unset ${key}`),
-    `export GIT_CONFIG_GLOBAL=${quote(gitconfig.replaceAll('\\', '/'))}`,
-    'export GIT_CONFIG_NOSYSTEM=1',
-    'export GIT_ASKPASS=',
-    'export GIT_TERMINAL_PROMPT=0',
-  ]
-  await own(join(bin, 'git'), ['#!/bin/sh', `if [ -z "$${ROLE_MARKER}" ]; then exec ${nativeGit ? quote(nativeGit.replaceAll('\\', '/')) : 'exit 127'} "$@"; fi`, ...gitEnv, nativeGit ? `exec ${quote(nativeGit.replaceAll('\\', '/'))} "$@"` : 'echo git is not installed >&2; exit 127', ''].join('\n'), 0o700)
-  await own(join(bin, 'git.cmd'), ['@echo off', 'setlocal', `if not defined ${ROLE_MARKER} goto plain`, ...identities.map(key => `set "${key}="`), `set "GIT_CONFIG_GLOBAL=${gitconfig.replaceAll('%', '%%')}"`, 'set "GIT_CONFIG_NOSYSTEM=1"', 'set "GIT_ASKPASS="', 'set "GIT_TERMINAL_PROMPT=0"', nativeGit ? `"${nativeGit.replaceAll('%', '%%')}" %*` : 'echo git is not installed 1>&2 & exit /b 127', 'exit /b %errorlevel%', ':plain', nativeGit ? `"${nativeGit.replaceAll('%', '%%')}" %*` : 'echo git is not installed 1>&2 & exit /b 127', 'exit /b %errorlevel%', ''].join('\r\n'), 0o700)
+  if (process.platform === 'win32') {
+    await Promise.all(['git', 'git.cmd'].map(name => rm(join(bin, name), { force: true })))
+  }
+  else {
+    // 角色会话经这个 shim 拿到 bot 的 gitconfig，其它会话原样 exec 真实 git，读自己的全局配置。
+    const nativeGit = await nativeCli('git')
+    const gitEnv = [
+      ...identities.map(key => `unset ${key}`),
+      `export GIT_CONFIG_GLOBAL=${quote(gitconfig.replaceAll('\\', '/'))}`,
+      'export GIT_CONFIG_NOSYSTEM=1',
+      'export GIT_ASKPASS=',
+      'export GIT_TERMINAL_PROMPT=0',
+    ]
+    await own(join(bin, 'git'), ['#!/bin/sh', `if [ -z "$${ROLE_MARKER}" ]; then exec ${nativeGit ? quote(nativeGit.replaceAll('\\', '/')) : 'exit 127'} "$@"; fi`, ...gitEnv, nativeGit ? `exec ${quote(nativeGit.replaceAll('\\', '/'))} "$@"` : 'echo git is not installed >&2; exit 127', ''].join('\n'), 0o700)
+  }
   const cliPath = (cli: string) => quote(join(bin, cli).replaceAll('\\', '/'))
   const lines = [
     '[user]',
