@@ -30,3 +30,15 @@ describe('渠道错误归一', () => {
     expect(courier.retryDelay(new Error('boom'), 10, 60)).toBe(60)
   })
 })
+
+describe('采集失败定位', () => {
+  it('把失败步骤拼到原因码后面，接口位置优先于步骤名', () => {
+    expect(courier.reason(new ChannelError('invalid_response'), false, 'topics')).toBe('invalid_response:topics')
+    expect(courier.reason(new ChannelError('invalid_response', undefined, 'GET repos/a/b/pulls/7'), false, 'pull:7')).toBe('invalid_response:GET repos/a/b/pulls/7')
+    expect(courier.reason(new ChannelError('invalid_response'), false)).toBe('invalid_response')
+    expect(courier.reason(new Error('boom'), true, 'comments')).toBe('transport_unknown(boom):comments')
+  })
+  it('定位信息不改变投递失败码', () => {
+    expect(courier.failure(new ChannelError('not_found', undefined, 'GET repos/a/b'), false)).toBe('not_found')
+  })
+})

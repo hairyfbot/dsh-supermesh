@@ -4,6 +4,7 @@ import type { Resource } from '@/channel/github/service/resource.types'
 import type { GhRunner } from '@/channel/github/types'
 import type { DB } from '@/database/types'
 import type { AnswerPort, CollectContext, CollectPort, Cursor, DeliveryPort, IngestPort } from '@/service/courier.types'
+import { ChannelError } from '@/channel/_shared/error'
 import { array, identity, now, number, record, text, timestamp } from '@/channel/_shared/primitives'
 import { recordThread } from '@/channel/_shared/thread'
 import { ExecFileGhRunner, GhError } from '@/channel/github/runner'
@@ -146,20 +147,17 @@ export class GitHubChannel implements ChannelAdapter {
 
   async collectProject(context: CollectContext, signal?: AbortSignal): Promise<void> {
     const repo = context.scope
-    const { attempt, baseline, environment } = context
-    await attempt(() => this.stream(repo, 'topics', `repos/${repo}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
+    const { attempt, fail, baseline, environment } = context
+    await attempt('topics', () => this.stream(repo, 'topics', `repos/${repo}/issues?state=all&sort=updated&direction=asc`, baseline, async (row) => {
       const target: Resource = { repository: repo, number: number(row.number), kind: row.pull_request ? 'pull' : 'issue' }
       resource.validate(row, target)
       const thread = await this.ensureThread(target, row)
       const kind = target.kind === 'issue' && row.state === 'closed' ? 'close' : 'open'
       await courier.ingest(this.ingestor, thread, row, kind, baseline, kind)
-      if (target.kind === 'pull') {
-        const result = await this.collectPullRequest(context.projectId, thread.id, signal)
-        if (!result.ok)
-          throw new GhError(result.reason!)
-      }
+      if (target.kind === 'pull')
+        await this.collectPullRequest(context.projectId, thread.id, target.number, signal)
     }, signal))
-    await attempt(() => this.stream(repo, 'comments', `repos/${repo}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
+    await attempt('comments', () => this.stream(repo, 'comments', `repos/${repo}/issues/comments?sort=updated&direction=asc`, baseline, async (row) => {
       const match = /^https:\/\/api\.github\.com\/repos\/([^/]+\/[^/]+)\/issues\/(\d+)$/.exec(text(row.issue_url))
       if (!match || match[1]!.toLowerCase() !== repo)
         throw new GhError('source_repository_mismatch')
@@ -182,13 +180,20 @@ export class GitHubChannel implements ChannelAdapter {
       const settled = await Promise.all(ticketIds.map(id => db.ticket.findById(id)))
       if (settled.every(ticket => !!ticket && ['done', 'cancelled'].includes(ticket.status) && !!ticket.prState && ['merged', 'closed'].includes(ticket.prState)))
         continue
-      await attempt(async () => {
-        const target = resource.parse(thread.url!)
-        if (target.repository !== repo)
-          return
+      let target: Resource
+      try {
+        target = resource.parse(thread.url)
+      }
+      catch (error) {
+        fail(error, 'pull')
+        continue
+      }
+      if (target.repository !== repo)
+        continue
+      await attempt(`pull:${target.number}`, async () => {
         const root = `repos/${repo}/pulls/${target.number}`
         for (const [path, kind] of [['reviews', 'review'], ['comments', 'review_comment']] as const) {
-          await attempt(async () => {
+          await attempt(`pull:${target.number}:${path}`, async () => {
             // 走增量游标而非全量翻页：每次只取上次之后的变化，避免逐个 PR 翻历史。
             await this.stream(repo, `pull:${target.number}:${path}`, `${root}/${path}?sort=updated&direction=asc`, baseline, async (row) => {
               await courier.answers(this.answerer, thread, row)
@@ -196,13 +201,11 @@ export class GitHubChannel implements ChannelAdapter {
             }, signal)
           })
         }
-        const result = await this.collectPullRequest(context.projectId, thread.id, signal)
-        if (!result.ok)
-          throw new GhError(result.reason!)
+        await this.collectPullRequest(context.projectId, thread.id, target.number, signal)
       })
     }
     if (environment.defaultBranch)
-      await attempt(() => ci.branch(this, context.projectId, environment.defaultBranch!, signal))
+      await attempt('ci', () => ci.branch(this, context.projectId, environment.defaultBranch!, signal))
   }
 
   private async stream(repository: string, name: string, path: string, baseline: string, accept: (row: ChannelRow) => Promise<void>, signal?: AbortSignal): Promise<void> {
@@ -235,8 +238,18 @@ export class GitHubChannel implements ChannelAdapter {
     return recordThread({ channel: 'github', refId: `${target.repository}:${target.number}`, kind: target.kind, title: text(row.title), url: text(row.html_url), createdAt: timestamp(row.created_at), updatedAt: timestamp(row.updated_at) })
   }
 
-  async collectPullRequest(projectId: string, threadId: string, signal?: AbortSignal): Promise<{ ok: boolean, reason?: string }> {
-    return pull.collect(this, projectId, threadId, signal)
+  async collectPullRequest(projectId: string, threadId: string, number: number, signal?: AbortSignal): Promise<void> {
+    try {
+      const result = await pull.collect(this, projectId, threadId, signal)
+      if (!result.ok)
+        throw new GhError(result.reason!, undefined, result.location ?? `pull:${number}`)
+    }
+    catch (error) {
+      // 抛出的错误也要带上 PR 号，否则 topics 流只会留下一个无效响应码。
+      if (error instanceof ChannelError && !error.location)
+        error.location = `pull:${number}`
+      throw error
+    }
   }
 
   async publish(inboxId: string, signal?: AbortSignal): Promise<DeliveryResult> {

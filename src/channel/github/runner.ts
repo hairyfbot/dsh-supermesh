@@ -27,6 +27,8 @@ export class ExecFileGhRunner implements GhRunner {
       args.push('-H', `${key}: ${value}`)
     if (request.body)
       args.push('--input', '-')
+    // 响应异常时把接口带回失败原因，否则调用方只剩一个 invalid_response，定位不到是哪一步。
+    const location = `${request.method} ${request.path.split('?')[0]}`
     return new Promise((resolve, reject) => {
       const child = execFile('gh', args, { signal: request.signal, timeout: 30000, maxBuffer: 16 * 1024 * 1024, env }, (error, stdout, stderr) => {
         const response = stdout.replace(/\r\n/g, '\n')
@@ -39,7 +41,7 @@ export class ExecFileGhRunner implements GhRunner {
         }
         if (error) {
           const code = (error as NodeJS.ErrnoException).code
-          reject(new GhError(code === 'ENOENT' ? 'gh_missing' : status === 401 || /gh auth login|not logged/i.test(stderr) ? 'not_logged_in' : status === 429 || /rate limit/i.test(stderr) ? 'rate_limited' : status === 403 ? 'forbidden' : status === 404 ? 'not_found' : status >= 400 && status < 500 ? 'remote_rejected' : code === 'ABORT_ERR' ? 'interrupted' : 'transport_unknown', retryAfter ? Number(retryAfter) : undefined))
+          reject(new GhError(code === 'ENOENT' ? 'gh_missing' : status === 401 || /gh auth login|not logged/i.test(stderr) ? 'not_logged_in' : status === 429 || /rate limit/i.test(stderr) ? 'rate_limited' : status === 403 ? 'forbidden' : status === 404 ? 'not_found' : status >= 400 && status < 500 ? 'remote_rejected' : code === 'ABORT_ERR' ? 'interrupted' : 'transport_unknown', retryAfter ? Number(retryAfter) : undefined, location))
           return
         }
         try {
@@ -50,7 +52,7 @@ export class ExecFileGhRunner implements GhRunner {
           resolve(body ? JSON.parse(body) : null)
         }
         catch {
-          reject(new GhError('invalid_response'))
+          reject(new GhError('invalid_response', undefined, location))
         }
       })
       if (request.body)

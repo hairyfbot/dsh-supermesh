@@ -327,22 +327,23 @@ export const courier = defineService({
         scope: '',
         baseline: '',
         environment: { providerId: '', login: '', repositoryId: '' },
-        attempt: async (operation) => {
+        attempt: async (step, operation) => {
           try {
             await operation()
           }
           catch (error) {
             if (signal?.aborted)
               throw error
-            errors.push(courier.failure(error, port.detail))
+            errors.push(courier.reason(error, port.detail, step))
           }
         },
-        fail: (error) => {
+        fail: (error, step) => {
           if (signal?.aborted)
             throw error
-          errors.push(courier.failure(error, port.detail))
+          errors.push(courier.reason(error, port.detail, step))
         },
       }
+      let ready = false
       try {
         project = await port.project(projectId)
         const environment = await port.probe(projectId, signal)
@@ -356,12 +357,22 @@ export const courier = defineService({
         context.scope = scope
         context.baseline = baseline
         context.environment = environment
-        await port.collect(context, signal)
+        ready = true
       }
       catch (error) {
         if (signal?.aborted)
           throw error
-        errors.push(courier.failure(error, port.detail))
+        errors.push(courier.reason(error, port.detail, 'probe'))
+      }
+      if (ready) {
+        try {
+          await port.collect(context, signal)
+        }
+        catch (error) {
+          if (signal?.aborted)
+            throw error
+          errors.push(courier.reason(error, port.detail, 'collect'))
+        }
       }
       // probe 失败时作用域解析不出来，仍要按项目记录状态，否则整条采集链无声消失。
       if (port.status && project)
@@ -384,6 +395,13 @@ export const courier = defineService({
     if (error instanceof Error)
       return error.name === 'AbortError' ? 'interrupted' : detail ? `transport_unknown(${error.message.slice(0, 120)})` : 'transport_unknown'
     return 'transport_unknown'
+  },
+  /** 采集失败要能定位到步骤或接口：错误自带位置优先，其次用调用方给的步骤名。 */
+  reason(error: unknown, detail: boolean, step?: string): string {
+    const code = courier.failure(error, detail)
+    const place = error instanceof ChannelError ? error.location : undefined
+    const located = place ?? step
+    return located ? `${code}:${located}` : code
   },
   retryDelay(error: unknown, attempts: number, ceiling: number): number {
     return Math.max(error instanceof ChannelError ? error.retryAfterSeconds ?? 0 : 0, Math.min(ceiling, 2 ** Math.max(1, attempts)))
