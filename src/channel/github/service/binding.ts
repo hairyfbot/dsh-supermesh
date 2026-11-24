@@ -2,7 +2,8 @@ import type { GitHubChannel } from '@/channel/github/channel'
 import type { Resource } from '@/channel/github/service/resource.types'
 import type { AnswerPort, CollectPort, DeliveryPort, IngestPort } from '@/service/courier.types'
 import { answerLines } from '@/channel/_shared/answers'
-import { escapeRegex, identity, now, record, text, timestamp } from '@/channel/_shared/primitives'
+import { githubMentioned } from '@/channel/_shared/mention'
+import { identity, now, record, text, timestamp } from '@/channel/_shared/primitives'
 import { GhError } from '@/channel/github/runner'
 import { ci } from '@/channel/github/service/ci'
 import { resource } from '@/channel/github/service/resource'
@@ -71,7 +72,7 @@ export const binding = defineService({
       ref: row => row.head ? text(record(row.head).ref) : null,
       at: row => timestamp(row.updated_at ?? row.submitted_at ?? row.created_at),
       createdAt: row => timestamp(row.created_at ?? row.submitted_at),
-      mentioned: (body, bots) => bots.some(bot => new RegExp(`@${escapeRegex(bot.name)}(?![a-z0-9-])`, 'i').test(body)),
+      mentioned: githubMentioned,
       // 票停在 review（Worker 已报 ready）时，PR 上又来新的真人意见，必须重新派工，
       // 否则意见进了收件箱却没有 Worker 去改，PR 永远停在旧提交（flow.md 8.2）。
       onSubscribedTicket: async (ticket) => {

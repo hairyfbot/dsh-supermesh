@@ -1,7 +1,8 @@
 import type { GitLabChannel } from '@/channel/gitlab/channel'
 import type { Resource } from '@/channel/gitlab/service/resource.types'
 import type { AnswerPort, CollectPort, DeliveryPort, IngestPort } from '@/service/courier.types'
-import { escapeRegex, identity, record, text, timestamp } from '@/channel/_shared/primitives'
+import { gitlabMentioned } from '@/channel/_shared/mention'
+import { identity, record, text, timestamp } from '@/channel/_shared/primitives'
 import { ci } from '@/channel/gitlab/service/ci'
 import { resource } from '@/channel/gitlab/service/resource'
 import { db } from '@/database'
@@ -67,7 +68,7 @@ function ingestPort(): IngestPort {
     ref: row => typeof row.source_branch === 'string' ? row.source_branch : null,
     at: row => timestamp(row.updated_at ?? row.created_at),
     createdAt: row => timestamp(row.created_at),
-    mentioned: (body, bots) => bots.some(bot => new RegExp(`(?:^|[^a-z0-9_@])@${escapeRegex(bot.name)}(?![a-z0-9_.-])`, 'i').test(body)),
+    mentioned: gitlabMentioned,
   }
 }
 
