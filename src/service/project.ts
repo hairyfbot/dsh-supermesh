@@ -42,7 +42,8 @@ export const project = defineService({
     return Promise.all(rows.map(async (current) => {
       const workspace = workspaces.find(workspace => workspace.id === current.workspaceId)
       const facts = workspace && await workspace.status() === 'ok' ? await repositoryFacts(workspace.path, gitlabHost) : null
-      return { ...current, available: Boolean(facts?.remoteUrl && samePath(facts.directory, current.directory) && facts.remoteUrl === current.remoteUrl), collection: collection.get(current.id) ?? null }
+      // 本地 origin 可能还停在改名前的旧地址，项目本身仍然可用：可用只看工作区还在不在。
+      return { ...current, available: Boolean(facts?.remoteUrl && samePath(facts.directory, current.directory)), collection: collection.get(current.id) ?? null }
     }))
   },
   addRepository(remoteUrl: string, name?: string, signal?: AbortSignal): Promise<{ project: Selectable<DB['project']>, workspaceId: string }> {

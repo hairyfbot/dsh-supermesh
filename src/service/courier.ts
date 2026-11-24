@@ -178,7 +178,7 @@ export const courier = defineService({
     }
   },
   async publish<Resource>(port: DeliveryPort<Resource>, inboxId: string, signal?: AbortSignal): Promise<DeliveryResult> {
-    const destination = async (row: InboxRow): Promise<{ thread: ThreadRow, target: Resource }> => {
+    const destination = async (row: InboxRow): Promise<{ thread: ThreadRow, target: Resource, project: { id: string } }> => {
       if (row.type !== 'user' || !['notice', 'ask'].includes(row.kind) || !row.triggerId)
         throw new ChannelError('invalid_delivery')
       const trigger = await db.trigger.findById(row.triggerId)
@@ -186,9 +186,7 @@ export const courier = defineService({
       if (!thread?.url || thread.channelId !== port.channel || !['issue', 'pull'].includes(thread.kind) || (row.threadId && row.threadId !== thread.id))
         throw new ChannelError('no_reply_address')
       const target = await port.parse(thread.url)
-      const project = await port.projectFor(target)
-      if (!project)
-        throw new ChannelError('unknown_repository')
+      const project = await projectFor(port, thread, target)
       if (row.ticketId) {
         const ticket = await db.ticket.findById(row.ticketId)
         if (row.kind === 'ask' && ticket && ['done', 'completed', 'cancelled'].includes(ticket.status))
@@ -200,7 +198,7 @@ export const courier = defineService({
         if (!(await db.ticketThread.listTicketIds(thread.id)).includes(ticket.id))
           throw new ChannelError('unsubscribed_thread')
       }
-      return { thread, target }
+      return { thread, target, project }
     }
     const deliver = async (): Promise<DeliveryResult> => {
       let row = await db.inbox.findById(inboxId)
@@ -210,8 +208,7 @@ export const courier = defineService({
         return { ok: true }
       let posting = false
       try {
-        const { thread, target } = await destination(row)
-        const project = (await port.projectFor(target))!
+        const { thread, target, project } = await destination(row)
         const environment = await port.probe(project.id, signal)
         const scope = port.scope(target)
         const marker = `<!-- supermesh:${row.id} -->`
@@ -437,7 +434,7 @@ export const courier = defineService({
   },
   failure(error: unknown, detail: boolean): string {
     if (error instanceof ChannelError)
-      return error.code
+      return error.hint ? `${error.code}(${error.hint})` : error.code
     if (error instanceof Error)
       return error.name === 'AbortError' ? 'interrupted' : detail ? `transport_unknown(${error.message.slice(0, 120)})` : 'transport_unknown'
     return 'transport_unknown'
@@ -453,3 +450,20 @@ export const courier = defineService({
     return Math.max(error instanceof ChannelError ? error.retryAfterSeconds ?? 0 : 0, Math.min(ceiling, 2 ** Math.max(1, attempts)))
   },
 })
+
+/** 话题仓库对不上任何项目时把两边地址写进失败原因，否则回复只会停在 unknown_repository，看不出差在哪。 */
+async function projectFor<Resource>(port: DeliveryPort<Resource>, thread: ThreadRow, target: Resource): Promise<{ id: string }> {
+  let project: { id: string } | undefined
+  try {
+    project = await port.projectFor(target)
+  }
+  catch (error) {
+    if (!(error instanceof ChannelError) || error.code !== 'unknown_repository')
+      throw error
+  }
+  if (project)
+    return project
+  const bound = thread.projectId ? await db.project.findById(thread.projectId) : undefined
+  const scope = port.scope(target)
+  throw new ChannelError('unknown_repository', undefined, undefined, bound?.remoteUrl ? `话题仓库 ${scope} 与项目远端地址 ${bound.remoteUrl} 不一致` : `话题仓库 ${scope} 未登记为项目`)
+}
