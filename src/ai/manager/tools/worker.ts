@@ -166,7 +166,7 @@ export const list_worker = defineTool({
       throw new Error('仅项目编排可调用')
     const rows = []
     for (const ticket of await db.ticket.listByProject(identity.projectId)) {
-      if (ticket.status === 'done' || ticket.status === 'cancelled')
+      if (['done', 'completed', 'cancelled'].includes(ticket.status))
         continue
       for (const worker of await db.worker.listByTicket(ticket.id)) {
         if (worker.status === 'ended')

@@ -12,8 +12,8 @@ export default defineHandler(async (): Promise<{ all: number, added: number, inP
   for (const ticket of rows) {
     if (Date.parse(ticket.createdAt) >= since)
       added++
-    const closed = ticket.status === 'done' || ticket.status === 'cancelled'
-    if (ticket.status === 'done')
+    const closed = ['done', 'completed', 'cancelled'].includes(ticket.status)
+    if (ticket.status === 'done' || ticket.status === 'completed')
       completed++
     else if (!closed && (ticket.paused || ticket.prepareError))
       blocked++

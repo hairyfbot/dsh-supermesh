@@ -10,7 +10,7 @@
 **槽位满了就让它留在 `queued`，不要硬开** —— 硬开的后果是两个 Worker 抢同一个端口。
 
 **看着。** Worker 跑完会以一条邮件叫醒你，收尾文本在 `read_mailbox` 里；`reportState` 在票上。
-`ready` 说明能审了，`failed` 说明要重试，`dropped` 说明这活不用做了。
+`ready` 说明这轮做完了：有 PR 的票进 `review` 等人审，没有 PR 的票直接完成。`failed` 说明要重试，`dropped` 说明这活不用做了。
 **收工的时候留下 branch 和 worktree，那是唯一记录。**
 
 **收尾。** PR 合了、CI 绿了、人说行了，就把票推到 `done`。

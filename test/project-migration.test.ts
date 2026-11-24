@@ -20,7 +20,7 @@ describe('project schema migration', () => {
       INSERT INTO project (id, channelId, name, workspaceId, directory, createdAt, updatedAt)
         VALUES ('p', 'github', 'owner/repo', 'w', '/workspace', '2026-11-17', '2026-11-17');
       INSERT INTO ticket (id, projectId, channelId, title, status, createdAt, updatedAt)
-        VALUES ('T-1', 'p', 'github', 'Existing task', 'waiting', '2026-11-17', '2026-11-17');
+        VALUES ('T-1', 'p', 'github', 'Existing task', 'queued', '2026-11-17', '2026-11-17');
       INSERT INTO worker (id, ticketId, status, createdAt) VALUES ('worker', 'T-1', 'queued', '2026-11-17');
       INSERT INTO inbox (id, seq, type, projectId, origin, kind, message, ticketId, workerId, createdAt)
         VALUES ('ask', 1, 'project', 'p', 'worker', 'ask', 'Keep this question', 'T-1', 'worker', '2026-11-17');

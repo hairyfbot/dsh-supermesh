@@ -78,7 +78,7 @@ export const pull = defineService({
       await db.trigger.ingest({ id: triggerId, channelId: 'github', threadId, kind: 'ci', actorName: null, human: 0, mentioned: 0, text: message, url: thread.url, at: now(), ref: head })
       for (const ticketId of subscriptions) {
         const ticket = await db.ticket.findById(ticketId)
-        if (ticket?.projectId === projectId && !['done', 'cancelled'].includes(ticket.status))
+        if (ticket?.projectId === projectId && !['done', 'completed', 'cancelled'].includes(ticket.status))
           await db.inbox.enqueue({ id: `${triggerId}:ticket:${ticketId}`, type: 'project', origin: 'system', kind: 'notice', projectId, ticketId, triggerId, threadId, title: message, message })
       }
       return { ok: !ciError, ...(ciError ? { reason: ciError, location: ciLocation } : {}) }

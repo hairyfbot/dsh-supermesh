@@ -25,7 +25,7 @@ PR 描述里的正式 issue 链接必须从 `read_channel` 的 `ticket/<当前�
 | state | 什么时候用 |
 | --- | --- |
 | progress | 阶段性推进，值得说一句 |
-| ready | 干完了，PR 已开且可审 |
+| ready | 干完了，自查和相关检查已通过 |
 | failed | 干不了，说清卡在哪 |
 | dropped | 这事不用做（复现不了、已被别人修了） |
 

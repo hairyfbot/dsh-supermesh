@@ -143,7 +143,7 @@ describe('queue and project boundary regressions', () => {
     expect(await models.ticket.listFiltered({ attentionOnly: true, projectId: 'p2' })).toEqual([])
     await models.inbox.answerScoped(ask.id, 'Yes', { type: 'main' }, now)
     expect(await models.ticket.listFiltered({ attentionOnly: true })).toEqual([])
-    expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'waiting' })
+    expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'queued' })
   })
 
   it('project activation rejects missing remotes and refuses ambiguous session ownership', async () => {
@@ -171,7 +171,7 @@ describe('source revision and disabled project contracts', () => {
     await models.project.setEnabled('p1', false, now)
     await expect(models.worker.queue(ticketId, 'p1')).rejects.toThrow('项目未启用')
     expect(await models.worker.listByTicket(ticketId)).toEqual([])
-    expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'waiting' })
+    expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'queued' })
   })
 })
 
@@ -194,6 +194,26 @@ describe('workspace fact synchronization', () => {
 })
 
 describe('terminal ticket state', () => {
+  it('ready settlement distinguishes tickets that own a pull request from those that do not', async () => {
+    expect(await models.ticket.hasPullRequest(ticketId)).toBe(false)
+    await models.ticket.save(ticketId, { prUrl: 'https://github.com/org/p1/pull/9' })
+    expect(await models.ticket.hasPullRequest(ticketId)).toBe(true)
+    const linked = await models.ticket.createWithThreads('p1', 'Pull thread', ['thread-3'])
+    await models.thread.record({ id: 'github:org/p1:9', channelId: 'github', projectId: 'p1', refId: 'org/p1:9', kind: 'pull', title: 'PR #9', url: 'https://github.com/org/p1/pull/9', createdAt: now, updatedAt: now, triagedAt: null })
+    await models.ticketThread.link(linked.id, 'github:org/p1:9', now)
+    expect(await models.ticket.hasPullRequest(linked.id)).toBe(true)
+  })
+
+  it('completed is terminal and a human follow-up reopens it as queued', async () => {
+    await models.ticket.finish(ticketId, 'completed', now, now)
+    expect(await models.ticket.listOpen()).toEqual([])
+    expect(await models.ticket.listFiltered()).toEqual([])
+    expect(await models.ticket.setPausedIfOpen(ticketId, true, now)).toBeUndefined()
+    await expect(models.worker.queue(ticketId, 'p1')).rejects.toThrow('工单不存在、已结束或不属于当前项目')
+    expect(await models.ticket.reopen(ticketId, now)).toBe(true)
+    expect(await models.ticket.findById(ticketId)).toMatchObject({ status: 'queued', endedAt: null })
+  })
+
   it('conditional pause changes open tickets and refuses a terminal ticket', async () => {
     expect(await models.ticket.setPausedIfOpen(ticketId, true, now)).toMatchObject({ paused: 1 })
     await models.ticket.finish(ticketId, 'done', now, now)

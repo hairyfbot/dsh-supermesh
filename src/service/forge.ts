@@ -40,7 +40,7 @@ export const forge = defineService({
         return
       }
       const ticket = await db.ticket.findById(worker.ticketId)
-      if (!ticket || ticket.prUrl || ticket.status === 'done' || ticket.status === 'cancelled')
+      if (!ticket || ticket.prUrl || ['done', 'completed', 'cancelled'].includes(ticket.status))
         return
       const project = await db.project.findById(ticket.projectId)
       if (!project?.enabled)
@@ -58,7 +58,7 @@ export const forge = defineService({
     for (const ticket of await db.ticket.listOpen()) {
       if (ticket.prUrl || reconciled.has(ticket.id))
         continue
-      if (ticket.status !== 'waiting' && ticket.status !== 'review')
+      if (ticket.status !== 'idle' && ticket.status !== 'review')
         continue
       reconciled.add(ticket.id)
       const worker = (await db.worker.listByTicket(ticket.id)).at(-1)

@@ -14,7 +14,7 @@ export async function notifyBranchCi(input: { channel: ChannelId, projectId: str
   // CI 不是任务来源：没人订阅这条话题时只落库，不进收件箱、不叫醒任何会话。
   for (const ticketId of await db.ticketThread.listTicketIds(threadId)) {
     const ticket = await db.ticket.findById(ticketId)
-    if (!ticket || ['done', 'cancelled'].includes(ticket.status))
+    if (!ticket || ['done', 'completed', 'cancelled'].includes(ticket.status))
       continue
     await db.inbox.enqueue({ id: `${triggerId}:ticket:${ticketId}`, type: 'project', origin: 'system', kind: 'notice', projectId: ticket.projectId, ticketId, triggerId, threadId, title: input.message, message: input.message })
   }

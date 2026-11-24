@@ -12,7 +12,7 @@ export function Relations({ links, ticketId, empty, clear }: { clear?: boolean, 
   const { openTicket } = useActions()
   const { t } = useTranslation()
   const { data: tickets, error } = useQuery({ queryKey: keys.ticketPage(1, 100), queryFn: () => getApiSupermeshTicket({ page: '1', pageSize: '100' }) })
-  const statusLabels = { waiting: 'overviewStatusWaiting', queued: 'ticketStatusQueued', running: 'overviewStatusRunning', review: 'overviewStatusReview', done: 'overviewCompleted', cancelled: 'ticketStatusCancelled' } as const
+  const statusLabels = { queued: 'ticketStatusQueued', running: 'overviewStatusRunning', idle: 'ticketStatusIdle', review: 'overviewStatusReview', done: 'overviewCompleted', completed: 'overviewCompleted', cancelled: 'ticketStatusCancelled' } as const
   if (error)
     return <p role="alert" className="m-0 text-xs leading-5 text-(--dsw-alias-state-error-primary)">{error instanceof Error ? error.message : '任务列表加载失败'}</p>
   return links.length
@@ -27,7 +27,7 @@ export function Relations({ links, ticketId, empty, clear }: { clear?: boolean, 
                   <span className="text-xs text-(--dsw-alias-label-secondary)">{id}</span>
                   {task && <span className="[overflow-wrap:anywhere]">{task.title}</span>}
                 </Button>
-                {task && <Tag tone={task.prepareError ? 'danger' : task.status === 'done' ? 'success' : task.status === 'review' ? 'warning' : task.status === 'running' ? 'info' : 'quiet'}>{task.paused && task.status !== 'done' && task.status !== 'cancelled' ? t('ticketStatusPaused') : t(statusLabels[task.status])}</Tag>}
+                {task && <Tag tone={task.prepareError ? 'danger' : ['done', 'completed'].includes(task.status) ? 'success' : task.status === 'review' ? 'warning' : task.status === 'running' ? 'info' : 'quiet'}>{task.paused && !['done', 'completed', 'cancelled'].includes(task.status) ? t('ticketStatusPaused') : t(statusLabels[task.status])}</Tag>}
               </li>
             )
           })}

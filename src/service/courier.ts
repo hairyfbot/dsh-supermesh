@@ -126,7 +126,7 @@ export const courier = defineService({
       const ticket = await db.ticket.findById(ticketId)
       if (!ticket)
         continue
-      if (['done', 'cancelled'].includes(ticket.status)) {
+      if (['done', 'completed', 'cancelled'].includes(ticket.status)) {
         if (!mentioned)
           continue
         const resumed = await db.ticket.reopen(ticketId, at)
@@ -173,7 +173,7 @@ export const courier = defineService({
         continue
       if (ask.ticketId) {
         const ticket = await db.ticket.findById(ask.ticketId)
-        if (!ticket || ['done', 'cancelled'].includes(ticket.status))
+        if (!ticket || ['done', 'completed', 'cancelled'].includes(ticket.status))
           continue
       }
       await db.inbox.answerByUser(id, answer, now())
@@ -193,7 +193,7 @@ export const courier = defineService({
         throw new ChannelError('unknown_repository')
       if (row.ticketId) {
         const ticket = await db.ticket.findById(row.ticketId)
-        if (row.kind === 'ask' && ticket && ['done', 'cancelled'].includes(ticket.status))
+        if (row.kind === 'ask' && ticket && ['done', 'completed', 'cancelled'].includes(ticket.status))
           throw new ChannelError('delivery_superseded')
         if (!ticket || ticket.projectId !== project.id)
           throw new ChannelError('scope_denied')
@@ -408,7 +408,7 @@ export const courier = defineService({
     if (!ticketIds.length)
       return true
     const tickets = await Promise.all(ticketIds.map(id => db.ticket.findById(id)))
-    if (tickets.some(ticket => !!ticket && !['done', 'cancelled'].includes(ticket.status)))
+    if (tickets.some(ticket => !!ticket && !['done', 'completed', 'cancelled'].includes(ticket.status)))
       return true
     const times = [updatedAt ?? '', ...tickets.map(ticket => ticket?.endedAt ?? '')].map(value => Date.parse(value)).filter(Number.isFinite)
     return times.length > 0 && at - Math.max(...times) < POLL_HORIZON_MS

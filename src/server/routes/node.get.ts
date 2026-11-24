@@ -31,9 +31,9 @@ export default defineHandler(async () => {
     if (ticket)
       ticketMap.set(ticket.id, ticket)
   }
-  const currentTickets = [...ticketMap.values()].filter(ticket => !['closed', 'done', 'cancelled'].includes(ticket.status) || runningTicketIds.has(ticket.id))
+  const currentTickets = [...ticketMap.values()].filter(ticket => !['closed', 'done', 'completed', 'cancelled'].includes(ticket.status) || runningTicketIds.has(ticket.id))
   const currentTicketIds = new Set(currentTickets.map(ticket => ticket.id))
-  const currentWorkers = activeWorkers.filter(worker => currentTicketIds.has(worker.ticketId) && (worker.status === 'running' || !['closed', 'done', 'cancelled'].includes(ticketMap.get(worker.ticketId)!.status)))
+  const currentWorkers = activeWorkers.filter(worker => currentTicketIds.has(worker.ticketId) && (worker.status === 'running' || !['closed', 'done', 'completed', 'cancelled'].includes(ticketMap.get(worker.ticketId)!.status)))
   const currentProjects = projects.filter(item => ['running', 'background', 'queued'].includes(projectSessions.get(item.id)!.status) || currentTickets.some(ticket => ticket.projectId === item.id))
   const hasRuntime = currentTickets.length > 0 || currentProjects.length > 0 || ['running', 'background', 'queued'].includes(mainBinding.status)
   const channels = channelCatalog.filter(item => item.configured && item.supported && currentTickets.some(ticket => ticket.channelId === item.id))

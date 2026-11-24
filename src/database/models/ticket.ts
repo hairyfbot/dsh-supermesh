@@ -3,7 +3,7 @@ import type { CiState, DB, PullRequestState, TicketStatus } from '@/database/typ
 import { Model } from 'kysely-model'
 import { Inbox } from '@/database/models/inbox'
 
-const CLOSED_STATUS: readonly TicketStatus[] = ['done', 'cancelled']
+const CLOSED_STATUS: readonly TicketStatus[] = ['done', 'completed', 'cancelled']
 const closedName = (threadId: string): string => `thread_closed:${threadId}`
 let creation: Promise<unknown> = Promise.resolve()
 
@@ -39,22 +39,12 @@ export class Ticket extends Model<DB, 'ticket'> {
     return Number(row?.count ?? 0)
   }
 
-  async listDispatchable(): Promise<Selectable<DB['ticket']>[]> {
-    return this.db
-      .selectFrom('ticket')
-      .selectAll()
-      .where('status', 'in', ['waiting', 'queued'])
-      .where('paused', '=', 0)
-      .orderBy('createdAt')
-      .execute()
-  }
-
   async start(id: string, startedAt: string, updatedAt: string): Promise<void> {
     await this.db
       .updateTable('ticket')
       .set({ status: 'running', startedAt, updatedAt })
       .where('id', '=', id)
-      .where('status', 'not in', ['done', 'cancelled'])
+      .where('status', 'not in', [...CLOSED_STATUS])
       .where(eb => eb.or([eb('prState', 'is', null), eb('prState', 'not in', ['merged', 'closed'])]))
       .execute()
   }
@@ -84,6 +74,14 @@ export class Ticket extends Model<DB, 'ticket'> {
       .where('projectId', '=', projectId)
       .where('prUrl', '=', prUrl)
       .execute()
+  }
+
+  /** 票是否已经归属某个变更请求：prUrl 或任一 PR 话题都算。ready 时据此决定 review 还是 completed。 */
+  async hasPullRequest(id: string): Promise<boolean> {
+    const ticket = await this.findById(id)
+    if (!ticket)
+      return false
+    return Boolean(ticket.prUrl) || (await this.pullThreads(id)).length > 0
   }
 
   async setPullRequest(id: string, prUrl: string | null, prState: PullRequestState | null, ciState: CiState | null): Promise<void> {
@@ -152,7 +150,7 @@ export class Ticket extends Model<DB, 'ticket'> {
       query = query.where('ticket.projectId', '=', filters.projectId)
     if (filters.status)
       query = query.where('ticket.status', '=', filters.status)
-    else query = query.where('ticket.status', 'not in', ['done', 'cancelled'])
+    else query = query.where('ticket.status', 'not in', [...CLOSED_STATUS])
     if (filters.attentionOnly)
       query = query.where(eb => eb.exists(eb.selectFrom('inbox').select('id').whereRef('inbox.ticketId', '=', 'ticket.id').where('kind', '=', 'ask').where('inbox.status', '=', 'pending')))
     if (filters.supervisorId)
@@ -194,7 +192,7 @@ export class Ticket extends Model<DB, 'ticket'> {
         sequence++
         id = `T-${String(sequence + 1).padStart(3, '0')}`
       }
-      const row: Insertable<DB['ticket']> = { id, projectId, channelId: threads.find(row => row.id === ids[0])!.channelId, title, description: description ?? null, status: 'waiting', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, prepareError: null }
+      const row: Insertable<DB['ticket']> = { id, projectId, channelId: threads.find(row => row.id === ids[0])!.channelId, title, description: description ?? null, status: 'queued', createdAt: now, updatedAt: now, startedAt: null, endedAt: null, prUrl: null, prState: null, ciState: null, prepareError: null }
       await trx.insertInto('ticket').values(row).execute()
       // 建票即确定归属：话题若还停在 pending，投递给项目编排时就绕过了主编排的 claim，
       // 界面会一直显示"未分诊"。这里补上归属，与 flow.md 的 triage=claimed 对齐。
@@ -210,7 +208,7 @@ export class Ticket extends Model<DB, 'ticket'> {
     const row = await this.findById(id)
     if (!row || (projectId !== undefined && row.projectId !== projectId))
       throw new Error('工单不存在或不属于当前项目')
-    if (row.status === 'done' || row.status === 'cancelled')
+    if (CLOSED_STATUS.includes(row.status))
       throw new Error('工单已结束')
     return row
   }
@@ -218,9 +216,9 @@ export class Ticket extends Model<DB, 'ticket'> {
   async reopen(id: string, updatedAt: string): Promise<boolean> {
     const result = await this.db
       .updateTable('ticket')
-      .set({ status: 'waiting', endedAt: null, updatedAt })
+      .set({ status: 'queued', endedAt: null, updatedAt })
       .where('id', '=', id)
-      .where('status', 'in', ['done', 'cancelled'])
+      .where('status', 'in', [...CLOSED_STATUS])
       .executeTakeFirst()
     return Number(result.numUpdatedRows ?? 0) > 0
   }
@@ -322,6 +320,6 @@ export class Ticket extends Model<DB, 'ticket'> {
   }
 
   async setPausedIfOpen(id: string, paused: boolean, updatedAt: string): Promise<Selectable<DB['ticket']> | undefined> {
-    return this.db.updateTable('ticket').set({ paused: paused ? 1 : 0, updatedAt }).where('id', '=', id).where('status', 'not in', ['done', 'cancelled']).returningAll().executeTakeFirst()
+    return this.db.updateTable('ticket').set({ paused: paused ? 1 : 0, updatedAt }).where('id', '=', id).where('status', 'not in', [...CLOSED_STATUS]).returningAll().executeTakeFirst()
   }
 }

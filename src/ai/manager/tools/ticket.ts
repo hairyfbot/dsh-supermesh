@@ -9,7 +9,7 @@ export const list_ticket = defineTool({
   parameters: {
     status: {
       type: 'string',
-      enum: ['waiting', 'queued', 'running', 'review', 'done', 'cancelled'],
+      enum: ['queued', 'running', 'idle', 'review', 'done', 'completed', 'cancelled'],
       description: '只看某个状态；省略表示不含已终态的票。',
     },
     attentionOnly: {
@@ -49,7 +49,7 @@ export const link_ticket = defineTool({
       type: 'string',
       enum: ['depends', 'relates'],
       required: true,
-      description: 'depends 前置依赖：relatedId 没做完，ticketId 停在 waiting。relates 只是相关，谁都不等谁。',
+      description: 'depends 前置依赖：relatedId 没做完，ticketId 停在 queued。relates 只是相关，谁都不等谁。',
     },
   },
   output: {
@@ -67,8 +67,8 @@ export const link_ticket = defineTool({
     if (ticket.id === related.id)
       throw new Error('工单不能关联自己')
     await db.ticketLink.link(ticket.id, related.id, args.kind, new Date().toISOString())
-    if (args.kind === 'depends' && related.status !== 'done' && related.status !== 'cancelled')
-      await db.ticket.save(ticket.id, { status: 'waiting', updatedAt: new Date().toISOString() })
+    if (args.kind === 'depends' && !['done', 'completed', 'cancelled'].includes(related.status))
+      await db.ticket.save(ticket.id, { status: 'queued', updatedAt: new Date().toISOString() })
     return JSON.stringify({ linked: true })
   },
 })

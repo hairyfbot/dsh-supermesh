@@ -188,7 +188,7 @@ export class GitHubChannel implements ChannelAdapter {
         continue
       // 已合并/已关闭且绑定票已结单的 PR，状态已成定局，不必每轮重查详情与 CI。
       const settled = await Promise.all(ticketIds.map(id => db.ticket.findById(id)))
-      if (settled.every(ticket => !!ticket && ['done', 'cancelled'].includes(ticket.status) && !!ticket.prState && ['merged', 'closed'].includes(ticket.prState)))
+      if (settled.every(ticket => !!ticket && ['done', 'completed', 'cancelled'].includes(ticket.status) && !!ticket.prState && ['merged', 'closed'].includes(ticket.prState)))
         continue
       let target: Resource
       try {

@@ -20,6 +20,9 @@ const eventQueues = new Map<string, Promise<void>>()
 let stopped = false
 let observing = false
 
+/** 终态：不再派工、不再投递、授权已收回。 */
+const closed = (ticket: Selectable<DB['ticket']>): boolean => ticket.status === 'done' || ticket.status === 'completed' || ticket.status === 'cancelled'
+
 /** 票进终态后归档它名下所有已结束的 Worker 会话：已归档跳过，单个失败只告警，不阻断结单。 */
 const archiveEndedWorkers = singlet(
   (ticketId: string) => `worker:archive:${ticketId}`,
@@ -62,18 +65,20 @@ const finish = singlet(
     await db.worker.setBackgroundUntil(worker.id, null)
     await db.worker.end(worker.id, reason ?? (worker.reportState === 'failed' ? 'failed' : 'completed'), now)
     const ticket = await db.ticket.findById(worker.ticketId)
-    if (ticket && ticket.status !== 'done' && ticket.status !== 'cancelled') {
+    if (ticket && !closed(ticket)) {
       if (ticket.prState === 'merged' || ticket.prState === 'closed')
         await finishTicket(ticket.id, 'done', now, now)
       else if (!reason && worker.reportState === 'dropped')
-        await finishTicket(ticket.id, 'done', now, now)
+        await finishTicket(ticket.id, 'completed', now, now)
+      else if (!reason && worker.reportState === 'ready')
+        await settleReady(ticket, now)
       else
-        await db.ticket.update(ticket.id, { status: !reason && worker.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
+        await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
     }
     const ended = await db.ticket.findById(worker.ticketId)
-    // 只有票真正终结才归档会话。票还在 review / waiting 时，后续的 review 意见要复用这个 worker，
+    // 只有票真正终结才归档会话。票还在 review / idle 时，后续的 review 意见要复用这个 worker，
     // 会话一旦归档，resolve 就返回 null，下一轮会直接以 unknown_session 失败。
-    if (ended && (ended.status === 'done' || ended.status === 'cancelled'))
+    if (ended && closed(ended))
       await archiveEndedWorkers(ended.id)
     await notifyRouter(worker, reason)
   },
@@ -103,10 +108,10 @@ export const worker = defineService({
         continue
       }
       // 票进终态就是授权收回：必须结束它的 running Worker，否则它会一直占着槽位继续推代码。
-      if (ticket.status === 'done' || ticket.status === 'cancelled') {
+      if (closed(ticket)) {
         // 冷会话没有可打断的回合：为它 resume 一个 Agent 只会留下一条永远等不到下一步的 steer。
         if (await session.lookup(worker.id))
-          await session.send(worker.id, `票 ${ticket.id} 已${ticket.status === 'done' ? '完成' : '取消'}，本次授权已收回：立即停手，不要再提交、推送或开 PR。`, 'interrupt').catch(() => undefined)
+          await session.send(worker.id, `票 ${ticket.id} 已${ticket.status === 'cancelled' ? '取消' : '完成'}，本次授权已收回：立即停手，不要再提交、推送或开 PR。`, 'interrupt').catch(() => undefined)
         await db.worker.end(worker.id, 'stopped', new Date().toISOString())
         await archiveEndedWorkers(ticket.id)
         continue
@@ -130,14 +135,17 @@ export const worker = defineService({
         continue
       const now = new Date().toISOString()
       await db.worker.end(worker.id, worker.reportState === 'ready' ? 'completed' : 'stopped', now)
-      await db.ticket.update(ticket.id, { status: worker.reportState === 'ready' ? 'review' : 'waiting', updatedAt: now })
+      if (worker.reportState === 'ready')
+        await settleReady(ticket, now)
+      else
+        await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
     }
-    // 内部调度不建会话：可派工的 waiting 票只通知项目编排一次，派工由它的 create_worker 发起。
-    // 被依赖卡住的票留在 waiting 不发通知，依赖满足的那一刻才发。
-    for (const waiting of await db.ticket.listFiltered({ status: 'waiting' })) {
+    // 内部调度不建会话：可派工的 queued 票只通知项目编排一次，派工由它的 create_worker 发起。
+    // 被依赖卡住的票留在 queued 不发通知，依赖满足的那一刻才发。
+    for (const queued of await db.ticket.listFiltered({ status: 'queued' })) {
       if (stopped)
         break
-      await notifyDispatchable(waiting)
+      await notifyDispatchable(queued)
     }
     let running = (await db.worker.listRunning()).length
     // 只有显式排队的 Worker 会被派工：create_worker / retry_ticket / 渠道上的新事实。
@@ -153,7 +161,7 @@ export const worker = defineService({
       if (!current || current.status !== 'queued')
         continue
       const ticket = await db.ticket.findById(worker.ticketId)
-      if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled') {
+      if (!ticket || closed(ticket)) {
         await db.worker.end(worker.id, 'stopped', new Date().toISOString())
         continue
       }
@@ -239,9 +247,9 @@ export const worker = defineService({
         await db.worker.end(worker.id, 'failed', now)
         await db.ticket.setPrepareError(ticket.id, reason, now)
         const latest = await db.ticket.findById(ticket.id)
-        if (latest && latest.prState === 'merged' && latest.status !== 'done')
+        if (latest && latest.prState === 'merged' && !closed(latest))
           await finishTicket(latest.id, 'done', now, now)
-        else if (latest && latest.status !== 'done' && latest.status !== 'cancelled')
+        else if (latest && !closed(latest))
           await db.ticket.update(ticket.id, { status: 'queued', updatedAt: now })
         await notifyDispatchFailure(ticket.id, reason, now)
         if (stopped)
@@ -284,7 +292,7 @@ export const worker = defineService({
     for (const ticket of await db.ticket.listOpen()) {
       if (stopped)
         break
-      if (ticket.status !== 'waiting' || (ticket.prState !== 'merged' && ticket.prState !== 'closed'))
+      if (ticket.status !== 'idle' || (ticket.prState !== 'merged' && ticket.prState !== 'closed'))
         continue
       const now = new Date().toISOString()
       await finishTicket(ticket.id, 'done', now, now)
@@ -297,7 +305,7 @@ export const worker = defineService({
       const ticket = await db.ticket.findById(worker.ticketId)
       if (!ticket)
         continue
-      if (ticket.status === 'done' || ticket.status === 'cancelled') {
+      if (closed(ticket)) {
         if (await session.lookup(worker.id))
           await session.stop(worker.id)
         await db.worker.end(worker.id, 'stopped', new Date().toISOString())
@@ -342,14 +350,14 @@ export const worker = defineService({
           break
         const now = new Date().toISOString()
         const latest = await db.ticket.findById(ticket.id)
-        if (latest && (latest.status === 'done' || latest.status === 'cancelled' || latest.prState === 'merged')) {
-          if (latest.prState === 'merged' && latest.status !== 'done')
+        if (latest && (closed(latest) || latest.prState === 'merged')) {
+          if (latest.prState === 'merged' && !closed(latest))
             await finishTicket(latest.id, 'done', now, now)
           await db.worker.end(worker.id, 'stopped', now)
           continue
         }
         await db.ticket.setPrepareError(ticket.id, error instanceof Error ? error.message : String(error), now)
-        await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
+        await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
         await db.worker.end(worker.id, 'failed', now)
       }
     }
@@ -393,13 +401,24 @@ export const worker = defineService({
   ),
 })
 
+/**
+ * 报 ready 的落点：票归属某个变更请求就等人审，没有就是正常完成。
+ * 没有 PR 可审的票不该停在 review，也不该退回 idle 等一个永远不会来的触发。
+ */
+async function settleReady(ticket: Selectable<DB['ticket']>, now: string): Promise<void> {
+  if (await db.ticket.hasPullRequest(ticket.id))
+    await db.ticket.update(ticket.id, { status: 'review', updatedAt: now })
+  else
+    await finishTicket(ticket.id, 'completed', now, now)
+}
+
 async function blockedByDependency(ticketId: string): Promise<boolean> {
   const links = await db.ticketLink.listDependsOn(ticketId)
   if (!links.length)
     return false
   for (const link of links) {
     const related = await db.ticket.findById(link.relatedId)
-    if (!related || related.status === 'done' || related.status === 'cancelled')
+    if (!related || closed(related))
       continue
     return true
   }
@@ -412,7 +431,7 @@ async function blockedByDependency(ticketId: string): Promise<boolean> {
  * 漏掉这条通知，整条链路就停在原地，票却不报错。
  */
 /** 结单并通知相关方：所有终态路径都必须经过这里，否则 supervisor 收不到「这张做完了」。 */
-async function finishTicket(id: string, status: 'done' | 'cancelled', endedAt: string, updatedAt: string): Promise<void> {
+async function finishTicket(id: string, status: 'done' | 'completed' | 'cancelled', endedAt: string, updatedAt: string): Promise<void> {
   await db.ticket.finish(id, status, endedAt, updatedAt)
   await archiveEndedWorkers(id)
   await notifySupervisor(id)
@@ -420,7 +439,7 @@ async function finishTicket(id: string, status: 'done' | 'cancelled', endedAt: s
 
 async function notifySupervisor(ticketId: string): Promise<void> {
   const ticket = await db.ticket.findById(ticketId)
-  if (!ticket || (ticket.status !== 'done' && ticket.status !== 'cancelled'))
+  if (!ticket || !closed(ticket))
     return
   for (const link of await db.supervisorTicket.listByTicket(ticketId)) {
     const supervisor = await db.supervisor.findById(link.supervisorId)
@@ -432,7 +451,7 @@ async function notifySupervisor(ticketId: string): Promise<void> {
       origin: 'system',
       kind: 'notice',
       supervisorId: link.supervisorId,
-      message: `${ticketId} ${ticket.status === 'done' ? '已完成' : '已取消'}：${ticket.title}`,
+      message: `${ticketId} ${ticket.status === 'cancelled' ? '已取消' : '已完成'}：${ticket.title}`,
       title: ticket.title,
     }).catch(() => undefined)
   }
@@ -452,7 +471,7 @@ async function notifyDispatchable(ticket: Selectable<DB['ticket']>): Promise<voi
     return
   if (await blockedByDependency(ticket.id))
     return
-  // 派过工的票不自动重开：worker 结束后回 waiting 是等新事实（评论、retry_ticket、编排 send）。
+  // 派过工的票不自动重开：worker 结束后回 idle 是等新事实（评论、retry_ticket、编排 send）。
   if ((await db.worker.listByTicket(ticket.id)).length)
     return
   const project = await db.project.findById(ticket.projectId)
@@ -473,7 +492,7 @@ async function notifyDispatchable(ticket: Selectable<DB['ticket']>): Promise<voi
 /** 派工失败必须让编排看见原因：票退回 queued 后不会自动重试，只能由它显式重派。 */
 async function notifyDispatchFailure(ticketId: string, reason: string, at: string): Promise<void> {
   const ticket = await db.ticket.findById(ticketId)
-  if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+  if (!ticket || closed(ticket))
     return
   await db.inbox.enqueue({
     id: `supermesh:dispatch-failed:${ticket.id}:${at}`,
@@ -489,14 +508,14 @@ async function notifyDispatchFailure(ticketId: string, reason: string, at: strin
 
 async function deferWhileWaiting(current: Selectable<DB['worker']>): Promise<void> {
   const ticket = await db.ticket.findById(current.ticketId)
-  if (!ticket || ticket.status === 'done' || ticket.status === 'cancelled')
+  if (!ticket || closed(ticket))
     return
   const now = new Date().toISOString()
   await db.worker.end(current.id, 'completed', now)
   if (ticket.prState === 'merged')
     await finishTicket(ticket.id, 'done', now, now)
   else
-    await db.ticket.update(ticket.id, { status: 'waiting', updatedAt: now })
+    await db.ticket.update(ticket.id, { status: 'idle', updatedAt: now })
   await notifyRouter(current)
 }
 

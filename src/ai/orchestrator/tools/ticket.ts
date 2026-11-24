@@ -56,7 +56,7 @@ export const list_ticket = defineTool({
   parameters: {
     status: {
       type: 'string',
-      enum: ['waiting', 'queued', 'running', 'review', 'done', 'cancelled'],
+      enum: ['queued', 'running', 'idle', 'review', 'done', 'completed', 'cancelled'],
       description: '只看某个状态；省略表示不含已终态的票。',
     },
     projectId: {
