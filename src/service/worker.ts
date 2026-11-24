@@ -179,6 +179,10 @@ export const worker = defineService({
       let started = false
       try {
         let directory = worker.worktree && worker.branch ? worker.worktree : null
+        // 记录下来的工作树可能已经被回收（会话归档时会清掉干净的 checkout）：核对不过就当它不存在，
+        // 补建一个新的，而不是让这张票永远卡在同一个失败上。
+        if (directory && worker.branch)
+          await worktree.verify(project.directory, directory, worker.branch).catch(() => { directory = null })
         // 复用判据必须与 activate 一致：归档后的会话仍有 history，但 resolve 返回 null，
         // 复用它只会在激活时 unknown_session，票就永远卡在 queued。
         const existing = await session.resolve(worker.id).then(Boolean).catch(() => false)
@@ -191,10 +195,7 @@ export const worker = defineService({
         // 复用同一 worker 时上一轮会话已 end-seed；prompt 的契约是「先显式恢复会话再投递」，
         // 不在这里恢复，后面的 send 只会进空气，Worker 永远收不到这一轮的 prompt。
         const agent = await session.activate(worker.id)
-        if (directory && worker.branch) {
-          await worktree.verify(project.directory, directory, worker.branch)
-        }
-        else {
+        if (!directory) {
           // 没有工作树就补建：绝不退回项目主 clone，一票一树的隔离不能靠降级实现。
           const created = await worktree.create(agent, worker.branch ?? worktreeBranch(ticket.title, ticket.id))
           directory = created.worktree
