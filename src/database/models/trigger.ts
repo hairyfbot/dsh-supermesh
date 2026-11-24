@@ -69,8 +69,25 @@ export class Trigger extends Model<DB, 'trigger'> {
     return this.db.selectFrom('trigger').selectAll().orderBy('at', 'desc').orderBy('id').limit(Math.max(1, Math.min(1000, limit))).execute()
   }
 
+  /**
+   * 同一条消息会被编辑：id 不变，正文、点名和时间都会变。
+   * 重读时按最新事实覆盖，否则「先发评论、再补一句 @bot」会永久停在没点名的旧判定上，
+   * 建票和回复两道闸都读这一行，会一起把人挡在外面。
+   */
   async ingest(value: Insertable<DB['trigger']>): Promise<Selectable<DB['trigger']>> {
-    await this.db.insertInto('trigger').values(value).onConflict(oc => oc.column('id').doNothing()).execute()
+    await this.db
+      .insertInto('trigger')
+      .values(value)
+      .onConflict(oc => oc.column('id').doUpdateSet({
+        actorName: value.actorName ?? null,
+        human: value.human ?? 1,
+        mentioned: value.mentioned ?? 0,
+        text: value.text,
+        url: value.url ?? null,
+        at: value.at,
+        ref: value.ref ?? null,
+      }))
+      .execute()
     return (await this.findById(value.id))!
   }
 }
