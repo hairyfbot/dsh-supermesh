@@ -1,5 +1,6 @@
 import type { Buffer } from 'node:buffer'
 import type { Page } from 'playwright'
+import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
@@ -52,6 +53,9 @@ export async function launchShell(): Promise<ShellScaffold> {
   let child: ReturnType<typeof x>['process']
   try {
     await run(['--profile', 'supermesh-e2e', '--from-default-profile', 'web', '--dump-config'])
+    // 官方 CLI 一定把 profile 建在 DSH_HOME 下；这里没有就是被 shim 之类的入口改写了 DSH_HOME。
+    if (!existsSync(join(home, 'profiles', 'supermesh-e2e', 'package.json')))
+      throw new Error(`the launched DSH did not honour the isolated DSH_HOME: ${join(home, 'profiles', 'supermesh-e2e')} was not created`)
     await run(['plugin', '--profile', 'supermesh-e2e', 'add', '--ignore-scripts', `link:${REPO_ROOT.replace(/\\/gu, '/')}`])
     const patch = join(home, 'test.cordis.patch.yml')
     await writeFile(patch, '- id: ui-settings-models\n  config:\n    credentialOnboarding: false\n')

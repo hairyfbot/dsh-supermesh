@@ -1,10 +1,9 @@
 import type { ChildProcess } from 'node:child_process'
 import { once } from 'node:events'
-import { existsSync } from 'node:fs'
 import { createServer } from 'node:net'
-import { isAbsolute } from 'node:path'
 import process from 'node:process'
 import { x } from 'tinyexec'
+import { officialDshEntry } from '../../scripts/dsh-entry'
 
 export interface BrowserSeedCookie {
   name: string
@@ -17,8 +16,8 @@ export interface BrowserSeedCookie {
 }
 
 export function dshCommand(): string {
-  const cli = process.env.DSH_E2E_CLI
-  if (!cli || !isAbsolute(cli) || !existsSync(cli) || !cli.endsWith('.js'))
+  const cli = officialDshEntry(process.env.DSH_E2E_CLI, 'DSH_E2E_CLI')
+  if (!cli)
     throw new Error('Set DSH_E2E_CLI to the installed official @deepseek-ai/dsh lib/bin.js absolute path; command shims are not allowed')
   return cli
 }
