@@ -44,8 +44,9 @@ export const create_ticket = defineTool({
       throw new Error('当前会话没有 Supermesh 身份')
     if (identity.role !== 'main')
       throw new Error('仅主编排可调用')
-    if (!ticketAllowed(await latestTriggerStrength(args.threadIds, args.triggerId), (await setting.load()).inferred))
-      throw new Error('这条触发没有 @ bot，只是 inferred 候选，当前 inferred 模式不是 auto：只能做分诊记录，不能建票。要开工请让人 @ bot 一次，或在设置里把 inferred 改成 auto。你自己开的 issue 强度是 self，不走这条限制。')
+    const admission = await latestTriggerStrength(args.threadIds, args.triggerId)
+    if (admission && !ticketAllowed(admission.strength, (await setting.load()).inferred))
+      throw new Error(`触发 ${admission.triggerId} 没有 @ bot，只是 inferred 候选，当前 inferred 模式不是 auto：只能做分诊记录，不能建票。要开工请让人 @ bot 一次，或在设置里把 inferred 改成 auto。你自己开的 issue 强度是 self，不走这条限制。`)
     return JSON.stringify(await db.ticket.createWithThreads(args.projectId, args.title, args.threadIds, args.description))
   },
 })

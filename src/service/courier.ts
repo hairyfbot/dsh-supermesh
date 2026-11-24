@@ -104,7 +104,7 @@ export const courier = defineService({
     const human = port.human(row, bots)
     const body = port.body(row)
     const mentioned = port.mentioned(body, bots)
-    const at = port.at(row)
+    const at = port.at(row, kind)
     const id = `${thread.id}:${sourceKind}:${identity(row.id)}`
     await db.trigger.ingest({ id, channelId: port.channel, threadId: thread.id, kind, actorName, human: Number(human), mentioned: Number(mentioned), text: body, url: port.url(row, sourceKind, thread), at, ref: port.ref(row) })
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)

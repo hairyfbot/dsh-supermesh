@@ -60,6 +60,16 @@ export function triggerStrengthOf(input: { self: boolean, kind: string, issue: b
   return input.human && input.admin && (input.mentioned || input.subscribed) ? 'explicit' : 'inferred'
 }
 
+/**
+ * 建票闸挑触发：先按发生时间，同一时刻优先真正点名的那条。
+ * issue 正文和它的评论可能落在同一秒，不点名的那条不是开工请求。
+ */
+export function latestTrigger<T extends { id: string, at: string, human: number, mentioned: number }>(rows: T[]): T | undefined {
+  const human = rows.filter(row => row.human === 1)
+  return [...(human.length ? human : rows)].sort((left, right) =>
+    right.at.localeCompare(left.at) || right.mentioned - left.mentioned || right.id.localeCompare(left.id))[0]
+}
+
 /** 建票闸：没有触发来源（人工建票）放行，inferred 候选只有 auto 模式才允许开票；self 是自己开的活，不等于 explicit，也不受 inferred 档位限制。 */
 export function ticketAllowed(strength: TriggerStrength | undefined, inferred: InferredMode): boolean {
   return strength !== 'inferred' || inferred === 'auto'

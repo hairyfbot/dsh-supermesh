@@ -50,7 +50,8 @@ export interface IngestPort {
   body: (row: ChannelRow) => string
   url: (row: ChannelRow, sourceKind: string, thread: ThreadRow) => string
   ref: (row: ChannelRow) => string | null
-  at: (row: ChannelRow) => string
+  /** 事件发生时间。issue/PR 行每次被评论都会刷新 updated_at，只有关闭事件才取它。 */
+  at: (row: ChannelRow, kind: 'open' | 'comment' | 'close') => string
   createdAt: (row: ChannelRow) => string
   mentioned: (body: string, bots: { name: string }[]) => boolean
   onSubscribedTicket?: (ticket: TicketRow) => Promise<void>
