@@ -106,6 +106,9 @@ export const courier = defineService({
     const mentioned = port.mentioned(body, bots)
     const at = port.at(row, kind)
     const id = `${thread.id}:${sourceKind}:${identity(row.id)}`
+    // 采集游标回退 5 秒、靠确定性 id 去重：同一条消息会被反复重读。
+    // 只有第一次读到的那条才算新消息 —— 重读既不是「人又说话了」，也不能再派一次工。
+    const fresh = !(await db.trigger.exists(id))
     await db.trigger.ingest({ id, channelId: port.channel, threadId: thread.id, kind, actorName, human: Number(human), mentioned: Number(mentioned), text: body, url: port.url(row, sourceKind, thread), at, ref: port.ref(row) })
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)
     const historical = port.createdAt(row) < baseline
@@ -128,7 +131,7 @@ export const courier = defineService({
         continue
       // 只有做完的票会被人新的 @ 唤醒；人叫停的票保持结束，那里的新活要重新分诊。
       if (['done', 'completed', 'cancelled'].includes(ticket.status)) {
-        if (!mentioned || !(await db.ticket.revive(ticketId, at)))
+        if (!fresh || !mentioned || !(await db.ticket.revive(ticketId, at)))
           continue
         await db.worker.queue(ticketId, ticket.projectId)
         const target = courier.route(thread, ticket)
@@ -136,7 +139,8 @@ export const courier = defineService({
         continue
       }
       // 机器人消息只作上下文：重新开工必须是人说的，不能让 bot / CI 借订阅把票从 review 拉回队列。
-      if (human)
+      // 重读同一条消息同样不算新意见：只有第一次读到的那条评论才重新派工。
+      if (fresh && human && kind === 'comment')
         await port.onSubscribedTicket?.(ticket)
       const target = courier.route(thread, ticket)
       targets.set(target.key, target)
