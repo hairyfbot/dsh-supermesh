@@ -103,7 +103,7 @@ export const courier = defineService({
    * 所以只剩已取消的票跟着时，人的话回主编排重新分诊 —— 那里的新活要重新接受；
    * 机器人和 CI 在同样的情况下只是上下文，不叫醒任何人。
    */
-  recipients(input: { thread: ThreadRow, tickets: TicketRow[], human: boolean, mentioned: boolean }): { revive: { ticket: TicketRow, target: TriggerTarget }[], follow: { ticket: TicketRow, target: TriggerTarget }[], fallback: TriggerTarget | null } {
+  recipients(input: { thread: ThreadRow, tickets: TicketRow[], human: boolean, mentioned: boolean, fresh: boolean }): { revive: { ticket: TicketRow, target: TriggerTarget }[], follow: { ticket: TicketRow, target: TriggerTarget }[], fallback: TriggerTarget | null } {
     const revive: { ticket: TicketRow, target: TriggerTarget }[] = []
     const follow: { ticket: TicketRow, target: TriggerTarget }[] = []
     let following = false
@@ -113,7 +113,8 @@ export const courier = defineService({
       following = true
       const target = courier.route(input.thread, ticket)
       if (ticket.status === 'done' || ticket.status === 'completed') {
-        if (input.mentioned)
+        // 重读同一条旧 @ 不算新事实：只有第一次读到、或编辑后补上 @ 才唤醒。
+        if (input.fresh && input.mentioned)
           revive.push({ ticket, target })
         continue
       }
@@ -123,7 +124,7 @@ export const courier = defineService({
       return { revive, follow, fallback: null }
     // 判过 ignore 的话题不再打扰主编排，除非有人又 @ 了我们 —— 与未订阅话题的准入规则一致。
     const ignored = input.thread.triage === 'ignored' && !input.mentioned
-    return { revive, follow, fallback: input.human && !ignored ? { key: 'main', type: 'main', projectId: input.thread.projectId, ticketId: null } : null }
+    return { revive, follow, fallback: input.fresh && input.human && !ignored ? { key: 'main', type: 'main', projectId: input.thread.projectId, ticketId: null } : null }
   },
   async ingest(port: IngestPort, thread: ThreadRow, row: ChannelRow, kind: 'open' | 'comment' | 'close', baseline: string, sourceKind: string): Promise<void> {
     const bots = await port.bots()
@@ -135,6 +136,12 @@ export const courier = defineService({
     const mentioned = port.mentioned(body, bots)
     const at = port.at(row, kind)
     const id = `${thread.id}:${sourceKind}:${identity(row.id)}`
+    // 采集游标回退 5 秒、靠确定性 id 去重：同一条消息会被反复重读。
+    // 只有第一次读到的那条才算新消息 —— 重读既不是「人又说话了」，也不能再派一次工。
+    // 编辑补 @ 是例外：mentioned 从 0 变 1 说明这条消息的语义变了，按新事实处理，
+    // 否则 done 票上「先发评论、再编辑补 @」能过准入却唤不醒票。
+    const previous = await db.trigger.findById(id)
+    const fresh = !previous || (previous.mentioned === 0 && mentioned)
     await db.trigger.ingest({ id, channelId: port.channel, threadId: thread.id, kind, actorName, human: Number(human), mentioned: Number(mentioned), text: body, url: port.url(row, sourceKind, thread), at, ref: port.ref(row) })
     const subscriptions = await db.ticketThread.listTicketIds(thread.id)
     const historical = port.createdAt(row) < baseline
@@ -154,9 +161,9 @@ export const courier = defineService({
     if (subscriptions.length) {
       const tickets = (await Promise.all(subscriptions.map(ticketId => db.ticket.findById(ticketId))))
         .filter((ticket): ticket is TicketRow => ticket !== undefined)
-      const plan = courier.recipients({ thread, tickets, human, mentioned })
+      const plan = courier.recipients({ thread, tickets, human, mentioned, fresh })
       for (const { ticket, target } of plan.revive) {
-        // 只有做完的票会被人新的 @ 唤醒；人叫停的票保持结束，那里的新活要重新分诊。
+        // 只有做完的票会被人新的 @ 唤醒（含编辑补上的 @）；人叫停的票保持结束，那里的新活要重新分诊。
         if (!(await db.ticket.revive(ticket.id, at)))
           continue
         await db.worker.queue(ticket.id, ticket.projectId)
@@ -164,7 +171,8 @@ export const courier = defineService({
       }
       for (const { ticket, target } of plan.follow) {
         // 机器人消息只作上下文：重新开工必须是人说的，不能让 bot / CI 借订阅把票从 review 拉回队列。
-        if (human)
+        // 重读同一条消息同样不算新意见：只有第一次读到、或编辑后补上 @ 的评论才重新派工。
+        if (fresh && human && kind === 'comment')
           await port.onSubscribedTicket?.(ticket)
         targets.set(target.key, target)
       }

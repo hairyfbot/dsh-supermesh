@@ -75,7 +75,10 @@ export const pull = defineService({
       const { row: watch } = await db.ciWatch.recordRevision({ id: `github:pull:${ref}`, channelId: 'github', kind: 'pull', ref, fingerprint, head, updatedAt: now() })
       const triggerId = `${watch.id}:revision:${watch.revision}`
       const message = `PR #${target.number}: ${state}, CI ${ciState}${ciError ? ` (${ciError})` : ''}`
-      await db.trigger.ingest({ id: triggerId, channelId: 'github', threadId, kind: 'ci', actorName: null, human: 0, mentioned: 0, text: message, url: thread.url, at: now(), ref: head })
+      // 触发行就是这条快照的消费标记：同一 revision 每轮采集都会重算一次，
+      // 再写一遍只会把 at 刷成当前时刻，让一条没变化的快照永远像刚发生的新消息。
+      if (!(await db.trigger.exists(triggerId)))
+        await db.trigger.ingest({ id: triggerId, channelId: 'github', threadId, kind: 'ci', actorName: null, human: 0, mentioned: 0, text: message, url: thread.url, at: now(), ref: head })
       for (const ticketId of subscriptions) {
         const ticket = await db.ticket.findById(ticketId)
         if (ticket?.projectId === projectId && !['done', 'completed', 'cancelled'].includes(ticket.status))
