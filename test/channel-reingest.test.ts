@@ -85,4 +85,24 @@ describe('订阅话题上的消息按第一次读到算新消息', () => {
     await ingest(row)
     expect(await status()).toBe('completed')
   })
+
+  // #78 的写法是「先发评论、再编辑补 @」：id 不变，但 mentioned 从 0 变 1 是语义变化。
+  // #91 的 fresh 门不能把这种变化当成重读挡掉，否则 done 票永远唤不醒。
+  it('旧评论编辑补 @ 会唤醒已结束的票', async () => {
+    const edited = comment(7188115418, `@${bot} 这里还要改一下`)
+    await ingest(edited)
+    expect(await status()).toBe('queued')
+
+    await db.ticket.finish(ticketId, 'completed', later, later)
+    await ingest(edited)
+    expect(await status()).toBe('completed')
+  })
+
+  it('旧评论编辑补 @ 会把 review 的票重新派工', async () => {
+    await settleRound()
+    await db.ticket.save(ticketId, { status: 'review', endedAt: null })
+    await ingest(comment(7188115419, `@${bot} 还有一处`))
+    expect(await status()).toBe('queued')
+    expect(await db.worker.listByTicket(ticketId)).toMatchObject([{ status: 'queued' }])
+  })
 })
